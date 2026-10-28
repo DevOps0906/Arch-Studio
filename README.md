@@ -14,7 +14,7 @@
 
 | 영역 | 진행률 | 상태 |
 |---|---|---|
-| 환경·멀티에이전트 구성 | 약 95% | NOMAD Agent OS를 적용해 팀원 10명·훅·영역 규칙이 동작합니다. 점검 결과 ❌는 0개입니다 |
+| 환경·멀티에이전트 구성 | 약 97% | NOMAD Agent OS **v3.0**을 적용해 팀원 12명(Codex 2명 포함)·SDLC 9단계·훅·영역 규칙이 동작합니다. 점검 결과 ❌는 0개입니다 |
 | 기획 | 약 92% | 재정비를 마쳤고, 하이브리드 구조(ADR-001)도 확정해 반영했습니다. 남은 일은 결정 항목과 문서 길이 정리입니다 |
 | 디자인 | 약 40% | 토큰과 DESIGN.md 초안을 만들었고 다크 랜딩을 확정했습니다. `/download`·체험 가입·좌석 관리 화면 명세도 썼습니다. 비주얼 판정(AR-06-011)과 화면 구현은 남았습니다 |
 | 다이어그램 | 약 70% | 구조도·도면 생성 흐름·ERD·팀 다이어그램 3종을 만들었습니다(아래). 새 테이블을 반영한 ERD 갱신과 시퀀스도 추가가 남았습니다 |
@@ -39,6 +39,7 @@
   - 확정한 내용을 PRD·구조·화면·API·데이터·보안 문서에 반영했습니다. 웹 스튜디오 `app.`, 클라우드 단일 파일 저장, 좌석·기간제·본인인증 데이터 설계, 규칙 팩 서버 분리가 들어 있습니다.
   - 랜딩에 `/download` 페이지(OS 감지·서명·릴리스 노트)와 "웹에서 바로 시작" 버튼을 넣었습니다.
 - [x] 작업 표를 갱신했습니다. `tasks/README.md`에 84개 작업과 팀원 담당·위험도·웨이브를 정리했습니다.
+- [x] NOMAD v3.0 규칙을 적용했습니다(2026-10-28). Codex 팀원(codex-designer·codex-reviewer)과 위험도별 검증 규칙을 작업 표에 넣었고, 디자인 작업 9개는 공동 디자인으로 바꿨습니다. `tasks/NOW.md`에는 이관용 필드(SDLC 단계·담당 모델·수정 파일·테스트 상태·남은 작업)를 추가했습니다.
 
 ### 진행 중 / 다음
 - [ ] 결정 받을 항목
@@ -67,8 +68,8 @@ Mermaid 원본(`.mmd`)과 렌더링한 그림(`.svg`)을 `docs/diagrams/`에 둡
 ### 팀(멀티에이전트) 업무
 | 다이어그램 | 내용 |
 |---|---|
-| [팀 조직도](docs/diagrams/team-org.svg) ([원본](docs/diagrams/team-org.mmd)) | 팀장(Opus)과 팀원 10명의 모델·역할, 작업 표 84개의 담당 분포(builder 50, challenger→builder 16, designer 9, tester 5 등) |
-| [작업 흐름](docs/diagrams/team-workflow.svg) ([원본](docs/diagrams/team-workflow.mmd)) | `/next` → 위험도 판정 → challenger(고위험) → builder → reviewer → tester → advisor(2회 실패 시) → 팀장 커밋. 기획 단계 흐름도 함께 그렸습니다 |
+| [팀 조직도](docs/diagrams/team-org.svg) ([원본](docs/diagrams/team-org.mmd)) | 팀장(Opus)과 팀원 12명(Claude 10 + Codex 2)의 모델·역할, 작업 표 84개의 담당 분포 |
+| [작업 흐름](docs/diagrams/team-workflow.svg) ([원본](docs/diagrams/team-workflow.mmd)) | SDLC 9단계와 작업 하나의 흐름: 위험도 판정 → challenger(고위험) → builder → codex-reviewer(+reviewer) → tester → advisor(2회 실패 시) → 팀장 커밋. Codex를 못 쓸 때의 대체 경로와 모델 한도 대응(`handoff`)도 그렸습니다 |
 | [2026-10-28 세션](docs/diagrams/team-session-2026-10-28.svg) ([원본](docs/diagrams/team-session-2026-10-28.mmd)) | 오늘 팀원들이 실제로 한 일의 순서이고, 병렬 위임은 par 블록으로 표시했습니다. 순서는 위임 기록 기준이며 호출 시각으로 확인한 것은 아닙니다 |
 
 ![팀 작업 흐름](docs/diagrams/team-workflow.svg)
@@ -95,5 +96,19 @@ Tauri 2 + Rust(설치형) · Next.js 16 + React 19 + Tailwind CSS v4(웹·웹 �
 
 ## 작업 방식
 
-[NOMAD Agent OS](https://github.com/DevOps0906/nomad-agent-os)의 팀 구성으로 진행합니다. 팀장은 Opus이고, scout·builder·planner·designer·diagrammer·tester·reviewer·challenger 등 팀원이 일을 나눠 맡습니다.
-Claude Code에서 `/next`를 입력하면 작업 표의 다음 작업 하나를 끝까지 진행합니다.
+[NOMAD Agent OS](https://github.com/DevOps0906/nomad-agent-os) v3.0의 팀 구성으로 진행합니다. 팀장(Opus 5.5)은 최종 판단과 승인을 맡고, 나머지 일은 팀원에게 나눕니다.
+
+| 팀원 | 모델 | 맡는 일 |
+|---|---|---|
+| planner ⇄ codex-designer | Sonnet ⇄ Codex | 공동 기획(PRD·명세·ADR)과 공동 UX·IA·와이어. 한쪽이 초안을 쓰면 상대는 변경분만 교차 검토합니다 |
+| designer ⇄ codex-designer | Sonnet ⇄ Codex | 공동 UI(토큰·DESIGN.md·미리보기) |
+| diagrammer | Haiku | 구조도·흐름도·ERD(Mermaid) |
+| builder · tester | Sonnet | 구현 · 테스트 |
+| codex-reviewer | Codex | 독립 품질 검증(code·design·a11y·security). Codex를 못 쓰면 reviewer(Sonnet)가 대신합니다 |
+| challenger | Opus | 결제·인증·RLS 같은 고위험 작업을 착수 전에 공격적으로 검토합니다 |
+| scout · intern | Haiku | 탐색 · 반복 변환 |
+| advisor | Fable | 같은 문제로 2회 실패했을 때만 부릅니다 |
+
+- **SDLC 9단계**: 01 검증 → 02 기획 → 03 UX → 04 UI → 05 기술 설계 → 06 구현 → 07 QA → 08 배포 → 09 개선. 단계가 끝날 때마다 `tasks/NOW.md`를 갱신합니다.
+- **모델 한도 대응**: 모델 한도에 걸리면 `handoff sonnet`, `handoff codex`로 다른 모델이 이어서 작업하고, 복귀할 때는 `handoff claude`를 씁니다.
+- Claude Code에서 `/next`를 입력하면 작업 표의 다음 작업 하나를 끝까지 진행합니다.

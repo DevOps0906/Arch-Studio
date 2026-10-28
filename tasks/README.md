@@ -2,20 +2,22 @@
 
 정본: `docs/file/01-관리/06_AGENT_PLAN.md` 2장(작업 상세)·3장(웨이브)·8장·9장(ADR-001 웹·설치형 하이브리드). 이 표는 NOMAD 팀 구성(담당·위험도)으로 옮긴 실행 표다. 84개 고정(기존 71 + ADR-001 신규 13, 2026-10-28).
 담당: `challenger→builder` = 착수 전 계획 공격 후 구현(원 모델 Fable). `사람` = 대표님 판정.
+변경 후 검증(NOMAD v3.0, 2026-10-28): 낮음 = builder 자가 검증(`q`), 화면이면 `codex-reviewer(design)` · 보통 = `codex-reviewer(code)` · 높음 = 착수 전 `challenger` + `codex-reviewer(code)` + `reviewer(security/contract)` → 필요 시 `tester`. Codex 불가 시 codex-reviewer → reviewer, codex-designer → designer·planner.
+`codex-designer⇄designer` = 공동 디자인(초안 한쪽, 상대는 변경분 교차 검토 1회). 기획 문서 작업은 `planner⇄codex-designer`.
 
 | 번호 | 제목 | 웨이브 | 선행 | 위험도 | 담당 | 상태 |
 |---|---|---|---|---|---|---|
 | AR-06-001 | DB 조각 적용·모놀리스 변환·seed·타입 | W0 | — | 높음 | challenger→builder | 대기 |
 | AR-06-003 | 모노레포·web 골격·린트 경계·env 검증 | W0 | — | 보통 | builder | 대기 |
 | AR-06-004 | 데스크톱 셸 골격(Tauri·CSP·capability) | W0 | — | 보통 | builder | 대기 |
-| AR-06-009 | 디자인 레퍼런스 확정(1단계) | W0 | — | 낮음 | designer | 대기 |
+| AR-06-009 | 디자인 레퍼런스 확정(1단계) | W0 | — | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-013 | 도메인 계약 zod(DesignModel 등) | W0 | — | 보통 | builder | 대기 |
 | AR-06-019 | 도면 스파이크 2일(DXF·PDF, D-20·D-23) | W0 | — | 보통 | builder→사람(AutoCAD 확인) | 대기 |
 | AR-06-066 | 주장 장부·V0 질문지·V1 측정 양식 | W0 | — (V1은 060 뒤) | 낮음 | builder(인터뷰는 사람) | 대기 |
 | AR-06-071a | 웹 스튜디오 셸 Vite/Next 공유 스파이크 1주 | W0 | 003, 004 | 보통 | builder | 대기 |
-| AR-06-010 | 디자인 시스템 2단계: 토큰·컴포넌트 | W0-D | 009 | 낮음 | designer | 대기 |
+| AR-06-010 | 디자인 시스템 2단계: 토큰·컴포넌트 | W0-D | 009 | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-011 | 비주얼 검토(3단계, 판정은 사람) | W0-D | 010 | 낮음 | 사람 | 대기 |
-| AR-06-012 | 디자인 정답 확정(4단계) | W0-D | 011 | 낮음 | designer | 대기 |
+| AR-06-012 | 디자인 정답 확정(4단계) | W0-D | 011 | 낮음 | codex-designer⇄designer | 대기 |
 | AR-V2-01 | 공용 compliance 모듈 적용 | W1 | W0, compliance 출시 | 높음 | builder | 대기 |
 | AR-06-002 | RLS·권한 회귀 스모크 | W1 | 001 | 높음 | challenger→builder | 대기 |
 | AR-06-005 | shell-bridge·키체인·Supabase 클라이언트 | W1 | 004 | 높음 | builder | 대기 |
@@ -64,7 +66,7 @@
 | AR-06-037 | 판정 패널(근거·폴백 배너) | W4 | 012, 015, 017 | 보통 | builder | 대기 |
 | AR-06-038 | 프로그램 화면·면적표·공사비 | W4 | 012, 018, 042 | 보통 | builder | 대기 |
 | AR-06-044 | 라이선스·크레딧 화면(데스크톱·웹) | W4 | 007, 012, 040, 043 | 높음 | builder | 대기 |
-| AR-06-069 | 마케팅 컴포넌트 8종 | W4 | 012 | 낮음 | designer | 대기 |
+| AR-06-069 | 마케팅 컴포넌트 8종 | W4 | 012 | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-028 | 매스 자동 제안 3안 | W4 | 015, 016, 036 | 보통 | builder | 대기 |
 | AR-06-027 | 평면 개략도 편집기 | W5 | 012, 017, 026 | 보통 | builder | 대기 |
 | AR-06-030 | 도면 시트 화면·ExportDialog | W5 | 006, 012, 017, 021~025 | 보통 | builder | 대기 |
@@ -73,22 +75,22 @@
 | AR-06-052 | 대화형 설계 입력·상담 녹음 후보 | W5 | 038, 046, 047, 048, 053 | 보통 | builder | 대기 |
 | AR-06-055 | AI 화면: 검토·채팅·위키 | W5 | 012, 051, 053, 054 | 보통 | builder | 대기 |
 | AR-06-056 | AI 렌더: 캡처·fal 워커·렌더 화면 | W5 | 036, 047, 048 | 높음 | builder | 대기 |
-| AR-06-057 | 랜딩·요금·다운로드·법적 고지 | W5 | 003, 012, 023 | 낮음 | designer | 대기 |
+| AR-06-057 | 랜딩·요금·다운로드·법적 고지 | W5 | 003, 012, 023 | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-077 | 로컬↔클라우드 수동 업로드·내려받기 | W5 | 034, 072, 073 | 보통 | builder | 대기 |
 | AR-06-078 | Excel/CSV 내보내기(AR-F-044) | W5 | 015, 038, 072 | 보통 | builder | 대기 |
 | AR-06-059 | 보안 점검(리뷰 전용, 위험 14건) | W6 | 005, 006, 040, 041, 042, 058 | 높음 | reviewer(security) | 대기 |
 | AR-06-060 | 데스크톱 E2E 시나리오 5개+ | W6 | 030, 036, 041, 044 | 보통 | tester | 대기 |
 | AR-06-061 | 웹 E2E 페르소나·잡 흐름 통합 | W6 | 008, 032, 051, 056 | 보통 | tester | 대기 |
 | AR-V2-02 | V2 전환 점검: 모듈 계약 테스트 CI | W6 | AR-V2-01 | 보통 | tester | 대기 |
-| AR-06-065 | 랜딩 설득 칸·판정표·화면 기록 | W6 | 057, 033, 036, 037, 069, 066, D-27·D-30 | 낮음 | designer | 대기 |
-| AR-06-067 | 도입 단계 탭(/pricing) | W6 | 057, 069, D-29 | 낮음 | designer | 대기 |
+| AR-06-065 | 랜딩 설득 칸·판정표·화면 기록 | W6 | 057, 033, 036, 037, 069, 066, D-27·D-30 | 낮음 | codex-designer⇄designer | 대기 |
+| AR-06-067 | 도입 단계 탭(/pricing) | W6 | 057, 069, D-29 | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-045 | 결제 E2E(Toss 테스트 키) → G1 자료 | W6 | 043, 044, 061 | 높음 | tester | 대기 |
-| AR-06-076 | /download 페이지·릴리스 채널(latest.json·체크섬) | W6 | 057, 058, 069 | 낮음 | designer | 대기 |
+| AR-06-076 | /download 페이지·릴리스 채널(latest.json·체크섬) | W6 | 057, 058, 069 | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-079 | 웹+설치형 E2E 동등성·브라우저 매트릭스 | W6 | 060, 061, 071, 072, 074 | 보통 | tester | 대기 |
 | AR-06-062 | Stage B: Google·이메일·딥링크 로그인 | W7 | G1(사람), 008 | 높음 | challenger→builder | 대기 |
 | AR-06-063 | Stage C1 카카오 로그인 | W8 | G2(사람), 062 | 높음 | builder | 대기 |
 | AR-06-064 | Stage C2 네이버 로그인(스파이크) | W8 | G2(사람), 062 | 높음 | challenger→builder | 대기 |
-| AR-06-068 | 제안 준비 시간 비교 계산기 | W8 | 057, 069, D-28 | 낮음 | designer | 대기 |
+| AR-06-068 | 제안 준비 시간 비교 계산기 | W8 | 057, 069, D-28 | 낮음 | codex-designer⇄designer | 대기 |
 
 상태: 대기 / 진행 / 완료 / 보류
 게이트(사람 판정): G1 = 베타 공개 전(W6 끝, 062 진입), G2 = P2 제공자 진입(W8 진입).

@@ -1,31 +1,33 @@
 flowchart TD
+  sdlc["SDLC 9단계: 01 검증 → 02 기획 → 03 UX → 04 UI → 05 기술 설계 → 06 구현 → 07 QA → 08 배포 → 09 개선<br/>(02~07은 기능 단위 반복, 단계마다 tasks/NOW.md 갱신)"]
   start(["/next 작업 선택"]) --> kind{"기획 문서 작업?"}
+  lim["모델 한도 대응 (반자동)<br/>Opus만 제한: handoff sonnet<br/>Sonnet·Claude 전체 제한: handoff codex<br/>Codex도 제한: 가용 모델 확인 후 안전 중단<br/>복귀: handoff claude"]
+  start -.->|"한도 발생 시"| lim
+  sdlc -.- start
 
-  subgraph plan["기획 단계"]
-    pl["planner 기획 섹션 작성"] --> ds{"토큰·화면 필요?"}
-    ds -->|"예"| dz["designer 토큰·DESIGN.md"]
-    ds -->|"아니오"| dg["diagrammer Mermaid<br/>ERD는 sql2erd"]
-    dz --> dg
-    dg --> rd["reviewer doc"]
-  end
-
-  kind -->|"예"| pl
+  co["공동 작업 규칙<br/>초안 → 변경분 교차 검토 1회 → 심각 충돌만 1회 더 → 팀장 결정"]
+  kind -->|"예"| pl["planner ⇄ codex-designer 기획 초안<br/>(화면 필요 시 designer 토큰)"]
+  pl -.- co
+  pl --> dg["diagrammer Mermaid<br/>ERD는 sql2erd"]
+  dg --> rd["reviewer doc"]
   rd --> commit
 
-  kind -->|"아니오 (구현)"| risk{"위험도 판정"}
-
+  kind -->|"아니오 (구현)"| risk{"위험도 판정 (v3.0)"}
   risk -->|"낮음"| low["builder 구현 + 자가 검증 q"]
   risk -->|"보통"| mid["builder 구현"]
-  risk -->|"높음"| ch["challenger 착수 전 공격"]
-  ch --> hi["builder 구현"]
+  risk -->|"높음"| ch["challenger 착수 전 공격<br/>→ builder 구현"]
 
   low --> ui{"화면 변경?"}
-  ui -->|"예"| rdes["reviewer design"]
+  ui -->|"예"| rdes["codex-reviewer design"]
   ui -->|"아니오"| ok
-  rdes --> ok
+  mid --> rcode["codex-reviewer code"]
+  ch --> rsec["codex-reviewer code<br/>+ reviewer security/contract"]
 
-  mid --> rcode["reviewer code"]
-  hi --> rsec["reviewer code + security/contract"]
+  rdes -.->|"Codex 불가 시"| rv["reviewer 대체 (같은 mode)"]
+  rcode -.->|"Codex 불가 시"| rv
+  rsec -.->|"Codex 불가 시"| rv
+  rv --> ok
+  rdes --> ok
   rcode --> tneed{"테스트 필요?"}
   rsec --> tneed
   tneed -->|"예"| tst["tester 실행"]
