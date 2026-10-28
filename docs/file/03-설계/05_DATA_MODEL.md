@@ -169,7 +169,7 @@ RLS(정책 문장, `seat_id` 추가분): 기존 SELECT 정책 그대로 두고 �
 | `license_id`, `sku`, `updates_until` | `licenses`(플랜 기기면 `license_id` null, `sku`는 플랜 코드) |
 | `org_id`, `activation_id`, `device_hash`, `source` | `license_activations` |
 | `seat_id` | `license_activations.seat_id` |
-| `rights{web_edit, desktop_edit, view_export, ai_render, cloud_review, devices_max}` | `arch.org_features(org_id, 사용자)`의 사용자 합성값(`ADR-001` 4.7절). 합성 대상은 대상 조직의 좌석만(2.18절) |
+| `rights{web_edit, desktop_edit, view_export, ai_render, ai_chat, cloud_review, devices_max}` | `arch.org_features(org_id, 사용자)`의 사용자 합성값(`ADR-001` 4.7절). 합성 대상은 대상 조직의 좌석만(2.18절) |
 | `rights_expiry{권리: 시각 \| null}` | 권리별로 그 권리를 주는 유효 상품 중 가장 늦은 종료 시각. 영구가 주는 권리는 `issued_at + 30일`(온라인 재확인, 확정 D-H5 ②), `view_export`는 null. 영구 상품의 `offline_valid_until=null` 때문에 구독 권리나 회수된 영구 좌석이 오프라인에서 무기한 남지 않게 한다 |
 | `features{drafting_watermark, rule_pack_updates, cloud_review, ai_render}` | `rights`에서 파생한 발급 시점 값(표시용) |
 | `offline_valid_until` | 설치형 편집을 주는 상품 중 가장 늦은 값. 영구가 하나라도 있으면 null이되, 각 `rights_expiry`는 별도로 적용. 기간제·구독·체험은 `min(issued_at + 7일, 상품 종료일)`로 clamp(D-H3) |
@@ -320,7 +320,7 @@ RLS: SELECT `is_org_member(org_id)`, 쓰기 GRANT 없음·service 정리 잡만.
 
 RLS(정책 문장): SELECT는 `is_org_member(org_id)`(같은 조직 멤버는 누가 좌석을 가졌는지 열람, 자기 행은 항상 가능). INSERT·UPDATE·DELETE 정책·GRANT 없음. 쓰기는 `arch.assign_seat`·`arch.unassign_seat`(owner/admin 또는 service)만이며 감사 `seat.assign`·`seat.unassign`. 비멤버는 존재를 숨긴다(P0002).
 
-`arch.org_features` 확장(함수라 테이블 변경 없음): 호출 사용자 기준으로 반환에 `seats`(구매 수), `seats_used`, `seat_state`(`assigned`·`unassigned`·`revoked`·`shortage`), `term_ends_at`, `rights`(`web_edit`·`desktop_edit`·`view_export`·`ai_render`·`cloud_review`·`devices_max`, `ADR-001` 4.7절 합성 결과)를 더한다. 좌석 미배정·회수 사용자와 만료 사용자는 `entitled=false` 취급(편집·저장·AI 402)이되, 열람·내려받기는 허용하는 예외다(`04_API.md` 1장). 사용자 인자 추가 방식(`p_user` 오버로드)과 정확한 반환 키는 신규 마이그레이션에서 확정.
+`arch.org_features` 확장(함수라 테이블 변경 없음): 호출 사용자 기준으로 반환에 `seats`(구매 수), `seats_used`, `seat_state`(`assigned`·`unassigned`·`revoked`·`shortage`), `term_ends_at`, `rights`(`web_edit`·`desktop_edit`·`view_export`·`ai_render`·`ai_chat`·`cloud_review`·`devices_max`, `ADR-001` 4.7절 합성 결과)를 더한다. 좌석 미배정·회수 사용자와 만료 사용자는 `entitled=false` 취급(편집·저장·AI 402)이되, 열람·내려받기는 허용하는 예외다(`04_API.md` 1장). 사용자 인자 추가 방식(`p_user` 오버로드)과 정확한 반환 키는 신규 마이그레이션에서 확정.
 
 ### 2.19 identity_credit_grants (추가 예정 2026-10-28) — 본인인증 1회 크레딧 지급 기록
 

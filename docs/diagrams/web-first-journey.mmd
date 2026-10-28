@@ -1,0 +1,63 @@
+sequenceDiagram
+    actor u as 사용자(브라우저)
+    participant app as app. 웹 스튜디오
+    participant wk as 웹 워커(엔진·도면)
+    participant rh as Route Handler
+    participant sb as Supabase(Auth·DB·RLS)
+    participant st as Storage
+
+    Note over u,st: ① 신규 가입(이메일)
+    u->>app: /signup 이메일 가입
+    app->>sb: 코어 이메일 가입
+    sb-->>u: 확인 메일
+    u->>rh: GET /auth/callback
+    rh->>sb: 세션 교환
+    u->>app: /login?step=terms 약관 동의
+    app->>rh: GET /api/entitlement
+    rh->>sb: 체험 좌석 권리 조회(ADR-001 4.7)
+    rh-->>app: 체험 권리 → app./projects
+
+    Note over u,st: ② 샘플 대지 판정(0크레딧)
+    u->>app: [샘플 대지로 시작]
+    app->>rh: GET /api/rule-packs (cloud_review)
+    rh-->>app: 팩 버전
+    app->>rh: GET /api/rule-packs/{version}/download
+    rh-->>app: 규칙 팩
+    app->>wk: EngineRequest(샘플 모델)
+    wk-->>app: 판정 결과
+    Note over app: 첫 저장 전까지 저장 전 상태
+
+    Note over u,st: ③ 매스 편집·실시간 판정(web_edit, 0크레딧)
+    u->>app: 매스 편집
+    app->>wk: EngineRequest
+    wk-->>app: 실시간 판정
+
+    Note over u,st: ④ 첫 클라우드 저장(Ctrl+S)
+    u->>app: 저장
+    app->>rh: POST /api/uploads/sign(project_snapshot)
+    rh->>sb: web_edit 권리 검사
+    rh-->>app: 서명 URL
+    app->>st: 스냅샷 업로드
+    app->>rh: POST /api/cloud-projects(새 project_uuid, expected_version=0)
+    rh->>sb: DB 함수 호출(함수 안에서 web_edit·버전 검사)
+    alt 권리 없음·한도 초과
+        sb-->>rh: 거부
+        rh-->>app: 402
+        app-->>u: 열람 모드 배너, 미저장 변경 유지
+    else 버전 충돌
+        sb-->>rh: expected_version 불일치
+        rh-->>app: 409 충돌
+        app-->>u: 충돌 안내
+    else 성공
+        sb-->>rh: version=1
+        rh-->>app: 저장 완료
+        app-->>u: 헤더 저장 상태 갱신
+    end
+
+    Note over u,st: ⑤ 도면 출력(view_export, 0크레딧)
+    u->>app: app./projects/:id/sheets 출력
+    app->>rh: GET /api/drafting-profile
+    rh-->>app: 표제란·로고
+    app->>wk: DXF·PDF·Excel/CSV 생성
+    wk-->>app: 파일(Blob)
+    app-->>u: 브라우저 다운로드
