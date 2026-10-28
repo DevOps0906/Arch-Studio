@@ -1,0 +1,116 @@
+/* tokens.css — Arch Studio 디자인 정답 소스 (Tailwind CSS v4). DESIGN.md 표는 design-preview --md 로 재생성.
+   두 표면: 기본 = 앱(라이트 "트레이싱지") / [data-surface="landing"] = 랜딩(다크·민트).
+   출처: 앱 = design/reference/dashboard canvas.json notes.sub · 03_SCREENS_UX.md 4.3 / 랜딩 = design/reference/landing/landing.html :root.
+   "제안" 표시 값은 시안·기획서에 없던 값(AR-06-010 토큰 확정 전)이다. 비주얼 수치의 최종 확정은 사람. */
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ===== 색: 앱 라이트(기본) ===== */
+  --color-bg: #f1f2ee;            /* 트레이싱지 */
+  --color-surface: #fbfbf9;       /* 제안 */
+  --color-raised: #f7f8f5;        /* 제안: 팝오버·카드 위 */
+  --color-nav: #e7e9e3;           /* 제안: GNB 셸 바탕 */
+  --color-fg: #1f2328;            /* 제도 먹 */
+  --color-fg-2: #474d53;          /* 제안 */
+  --color-fg-3: #5b6167;          /* 제안: nav 위 약 5.1:1 */
+  --color-line: #d8dbd5;          /* 모눈: 장식 구분선 전용(대비 기준 없음) */
+  --color-input: #5b6167;         /* 제안: 입력창 경계 3:1 이상 (fg-3과 같은 값) */
+  --color-accent: #1f2328;        /* 앱은 주 버튼도 먹 */
+  --color-accent-fg: #f1f2ee;
+  --color-info: #34507a;          /* 배치도 남: 링크 */
+  --color-info-fg: #ffffff;
+  --color-ok: #2a7549;            /* PASS 녹 */
+  --color-ok-fg: #ffffff;
+  --color-warn: #8a5a00;          /* WARN 황 */
+  --color-warn-fg: #ffffff;
+  --color-danger: #b3261e;        /* FAIL 적 */
+  --color-danger-fg: #ffffff;
+  --color-envelope: #276f80;      /* 엔벨로프 청록: 한 화면에 한 곳, 셸에는 쓰지 않음 */
+  --color-envelope-fg: #ffffff;
+  --color-concrete: #a7aba8;      /* 매스 재질·비활성: 글자·점에 쓰지 않음 */
+
+  /* ===== 서체 ===== */
+  --font-sans: "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif; /* SUIT는 라이선스 확인 전 후보 */
+  --font-mono: ui-monospace, "SFMono-Regular", Consolas, monospace;  /* 숫자·코드. 앱 숫자는 sans + tabular-nums도 가능 */
+
+  /* ===== 글자 크기: 모바일 기준(~767). 태블릿·데스크톱은 아래 @media ===== */
+  --text-hero: 28px;       /* 앱에서는 쓰지 않음(랜딩 표면에서 덮어씀) */
+  --text-display: 24px;    /* 제안: 앱 화면 제목 */
+  --text-h1: 20px;
+  --text-h2: 17px;
+  --text-body: 14px;       /* 4.3: 앱 본문 14/20 */
+  --text-caption: 12px;
+  --text-num: 13px;        /* 4.3: 앱 숫자 13/18(제안), tabular-nums */
+
+  /* ===== 간격·반경·그림자·레이아웃 ===== */
+  --spacing: 4px;
+  --radius-control: 6px;   /* 앱 컨트롤 */
+  --radius-panel: 10px;    /* 앱 패널 */
+  --radius-card: 10px;
+  --shadow-pop: 0 16px 40px rgb(0 0 0 / 0.35);
+  --layout-max: 1240px;
+  --gnb-h: 64px;
+  --sidebar-w: 248px;            /* 앱 GNB 펼침 */
+  --sidebar-w-collapsed: 64px;   /* 접힘 */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ===== 반응형 3구간 폰트 표 (앱) ===== */
+@media (width >= 768px) {
+  :root { --text-display: 28px; --text-h1: 22px; --text-h2: 18px; --text-body: 14px; --text-caption: 12px; --text-num: 13px; }
+}
+@media (width >= 1200px) {
+  :root { --text-display: 32px; --text-h1: 24px; --text-h2: 20px; --text-body: 14px; --text-caption: 12px; --text-num: 13px; }
+}
+/* 앱 GNB: 1024px 미만은 햄버거 + 드로어(시안 Shell.dc). 미디어쿼리에는 변수를 못 쓰므로 컴포넌트가 이 값을 문서대로 쓴다. */
+
+/* ===== 랜딩 표면: 다크·민트 (불투명 면, 한글 서체, 유리·블러 없음) ===== */
+[data-surface="landing"] {
+  color-scheme: dark;
+  --color-bg: #1e1d1b;
+  --color-bg-deep: #171614;
+  --color-surface: #282624;
+  --color-raised: #22201e;        /* 시안 --panel */
+  --color-panel-2: #1b1a18;
+  --color-nav: #1e1d1b;           /* 시안 --gnb */
+  --color-nav-sub: #232220;       /* 시안 --sub (하위 GNB) */
+  --color-fg: #f4f0e8;
+  --color-fg-2: #c8c1b6;
+  --color-fg-3: #9a9388;
+  --color-line: #3d3a36;
+  --color-line-2: #312f2c;
+  --color-input: #9a9388;         /* 제안: line은 장식용이라 입력 경계는 fg-3 */
+  --color-accent: #5eead4;        /* 시안 --acc (mint-ink) */
+  --color-accent-fg: #14161b;
+  --color-accent-strong: #007a64; /* 시안 .btn.mint 배경 */
+  --color-accent-strong-fg: #ffffff;
+  --color-mint: #00c9a7;          /* 장식(테두리·바)용. 글자는 accent */
+  --color-info: #8fb0ff;          /* denim-ink */
+  --color-info-fg: #14161b;
+  --color-ok: #5eead4;
+  --color-ok-fg: #14161b;
+  --color-warn: #fbbf24;          /* amber-ink */
+  --color-warn-fg: #14161b;
+  --color-danger: #fb7185;        /* coral-ink */
+  --color-danger-fg: #14161b;
+  --color-envelope: #5eead4;      /* 제안: 다크에서는 밝게(4.3). 시안에 별도 값 없음 */
+  --color-envelope-fg: #14161b;
+  --color-violet: #b4a3ff;
+  --radius-control: 10px;
+  --radius-panel: 10px;
+  --radius-card: 14px;
+  --text-hero: 44px;
+  --text-display: 34px;
+  --text-h1: 24px;
+  --text-h2: 24px;
+  --text-body: 15px;
+  --text-caption: 12px;
+  --text-num: 12px;
+}
+@media (width >= 768px) {
+  [data-surface="landing"] { --text-hero: 56px; --text-display: 40px; --text-h1: 26px; --text-h2: 28px; --text-body: 15px; --text-caption: 12px; --text-num: 12px; }
+}
+@media (width >= 1200px) {
+  [data-surface="landing"] { --text-hero: 84px; --text-display: 52px; --text-h1: 30px; --text-h2: 34px; --text-body: 16px; --text-caption: 13px; --text-num: 13px; }
+}

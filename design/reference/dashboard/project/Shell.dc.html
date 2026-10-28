@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>Arch Studio 대시보드 셸</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F1F2EE}
+button{font:inherit;cursor:pointer}
+input,textarea,select{font:inherit}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--sf-acc);outline-offset:2px}
+.sf-burger{display:none !important}
+@media (max-width: 640px){.sf-prog{grid-template-columns:4px minmax(0,1fr) auto !important;row-gap:6px !important}.sf-prog > .sf-pbar{grid-row:1 / 3}.sf-prog > .sf-segs{grid-column:2 / 4;grid-row:2}}
+@container (max-width: 460px){.sf-prog{grid-template-columns:4px minmax(0,1fr) auto !important;row-gap:6px !important}.sf-prog > .sf-pbar{grid-row:1 / 3}.sf-prog > .sf-segs{grid-column:2 / 4;grid-row:2}}
+@media (max-width: 480px){.sf-hide-xs{display:none !important}}
+@media (max-width: 900px){.sf-split{grid-template-columns:minmax(0,1fr) !important}.sf-ed{grid-template-columns:minmax(0,1fr) !important}.sf-ed > div{border-right:0 !important;border-left:0 !important;border-bottom:1px solid var(--ln)}}
+@media (max-width: 1023px){.sf-nav{display:none !important}.sf-burger{display:inline-flex !important}.sf-hide-sm{display:none !important}}
+</style>
+</helmet>
+<div style="--sf-acc: {{t.accent}}; min-height: 100vh; box-sizing: border-box; background: {{t.bg}}; color: {{t.fg}}; font-family: {{t.fontStack}}; font-size: 14px; line-height: 1.5; display: flex; flex-direction: column;">
+
+<header style="display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid {{t.line}}; background: {{t.surface}};">
+  <button type="button" class="sf-burger" onClick="{{openDrawer}}" aria-label="메뉴 열기" style="width: 40px; height: 40px; align-items: center; justify-content: center; border: 1px solid {{t.line}}; border-radius: {{t.rs}}; background: none; color: {{t.fg}};">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+  </button>
+  <button type="button" class="sf-hide-sm" onClick="{{toggleCollapse}}" aria-label="{{collapseLabel}}" title="{{collapseLabel}}" style="width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid {{t.line}}; border-radius: {{t.rs}}; background: none; color: {{t.fg2}};">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16"></path></svg>
+  </button>
+  <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+    <span aria-hidden="true" style="width: 26px; height: 26px; flex: 0 0 auto; border-radius: {{t.rs}}; background: {{t.accent}}; color: {{t.accentFg}}; display: grid; place-items: center; font-family: {{t.numStack}}; font-weight: 700; font-size: 14px;">{{brandInitial}}</span>
+    <span style="display: flex; flex-direction: column; line-height: 1.15; min-width: 0;"><strong style="font-size: 15px; white-space: nowrap;">{{product.name}}</strong><span class="sf-hide-sm" style="font-size: 11px; color: {{t.fg3}}; white-space: nowrap;">{{product.tagline}}</span></span>
+  </div>
+  <button type="button" onClick="{{openPalette}}" class="sf-hide-sm" style="flex: 0 1 340px; margin-left: 8px; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: {{t.bg}}; color: {{t.fg3}}; text-align: left;">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+    <span style="flex: 1 1 auto;">{{searchHint}}</span>
+    <span style="font-family: {{t.numStack}}; font-size: 12px; padding: 1px 6px; border: 1px solid {{t.line}}; border-radius: 4px;">⌘K</span>
+  </button>
+  <span style="flex: 1 1 auto;"></span>
+  <sc-if value="{{hasVerticals}}" hint-placeholder-val="{{false}}">
+    <div class="sf-hide-sm" role="group" aria-label="업종 전환" style="display: flex; gap: 2px; padding: 3px; border-radius: {{t.rs}}; border: 1px solid {{t.line}};">
+      <sc-for list="{{verticals}}" as="vt" hint-placeholder-count="3"><button type="button" onClick="{{vt.pick}}" aria-pressed="{{vt.on}}" style="border: 0; padding: 4px 9px; min-height: 30px; border-radius: 4px; background: {{vt.bg}}; color: {{vt.fg}}; font-weight: 600; font-size: 12px;">{{vt.label}}</button></sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{hasNew}}" hint-placeholder-val="{{true}}">
+  <div style="position: relative;">
+    <button type="button" onClick="{{toggleNew}}" aria-expanded="{{newOpen}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 0; border-radius: {{t.rs}}; background: {{t.accent}}; color: {{t.accentFg}}; font-weight: 700; white-space: nowrap;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg><span class="sf-hide-xs">새로 만들기</span>
+    </button>
+    <sc-if value="{{newOpen}}" hint-placeholder-val="{{false}}">
+      <div role="menu" style="position: absolute; right: 0; top: 44px; z-index: 20; width: 260px; padding: 6px; border-radius: {{t.r}}; border: 1px solid {{t.line}}; background: {{t.raised}}; box-shadow: 0 16px 40px rgba(0,0,0,0.35);">
+        <sc-for list="{{newItems}}" as="ni" hint-placeholder-count="3">
+          <button type="button" role="menuitem" onClick="{{ni.go}}" style="display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 9px 10px; min-height: 40px; border: 0; border-radius: {{t.rs}}; background: none; color: {{t.fg}};">
+            <span style="width: 8px; height: 8px; flex: 0 0 auto; border-radius: 2px; background: {{ni.color}};"></span>
+            <span style="display: flex; flex-direction: column;"><strong style="font-size: 13px;">{{ni.label}}</strong><span style="font-size: 12px; color: {{t.fg3}};">{{ni.sub}}</span></span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+  <sc-if value="{{hasPlans}}" hint-placeholder-val="{{true}}">
+    <div class="sf-hide-sm" role="group" aria-label="플랜 시뮬레이션" style="display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: {{t.rs}}; border: 1px solid {{t.line}};">
+      <sc-for list="{{plans}}" as="p" hint-placeholder-count="4">
+        <button type="button" onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="border: 0; padding: 4px 9px; min-height: 30px; border-radius: 4px; background: {{p.bg}}; color: {{p.fg}}; font-weight: 600; font-size: 12px;">{{p.label}}</button>
+      </sc-for>
+    </div>
+  </sc-if>
+  <sc-if value="{{hasCredits}}" hint-placeholder-val="{{true}}">
+    <div class="sf-hide-sm" style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2;">
+      <span style="font-size: 11px; color: {{t.fg3}};">{{creditsLabel}}(예시)</span>
+      <strong style="font-family: {{t.numStack}}; color: {{t.accentText}};">{{creditsValue}}</strong>
+    </div>
+  </sc-if>
+  <div style="position: relative;">
+    <button type="button" onClick="{{toggleBell}}" aria-label="{{bellLabel}}" aria-expanded="{{bellOpen}}" style="position: relative; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid {{t.line}}; border-radius: {{t.rs}}; background: none; color: {{t.fg}};">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"></path></svg>
+      <sc-if value="{{hasUnread}}" hint-placeholder-val="{{true}}"><span style="position: absolute; top: -4px; right: -4px; min-width: 18px; height: 18px; padding: 0 4px; box-sizing: border-box; border-radius: 9px; background: {{t.danger}}; color: #FFFFFF; font-size: 11px; font-weight: 700; display: grid; place-items: center;">{{unread}}</span></sc-if>
+    </button>
+    <sc-if value="{{bellOpen}}" hint-placeholder-val="{{false}}">
+      <div style="position: absolute; right: 0; top: 46px; z-index: 20; width: 300px; padding: 8px; border-radius: {{t.r}}; border: 1px solid {{t.line}}; background: {{t.raised}}; box-shadow: 0 16px 40px rgba(0,0,0,0.35); display: flex; flex-direction: column; gap: 4px;">
+        <sc-for list="{{notes}}" as="nt" hint-placeholder-count="3">
+          <button type="button" onClick="{{nt.go}}" style="display: flex; gap: 8px; align-items: flex-start; text-align: left; padding: 8px; border: 0; border-radius: {{t.rs}}; background: none; color: {{t.fg}};">
+            <span style="width: 8px; height: 8px; flex: 0 0 auto; margin-top: 6px; border-radius: 50%; background: {{nt.color}};"></span>
+            <span style="display: flex; flex-direction: column;"><span style="font-size: 13px;">{{nt.text}}</span><span style="font-size: 11px; color: {{t.fg3}};">{{nt.time}}</span></span>
+          </button>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+</header>
+
+<sc-if value="{{paletteOpen}}" hint-placeholder-val="{{false}}">
+  <div style="position: fixed; inset: 0; z-index: 40; background: rgba(5,5,10,0.55); display: flex; justify-content: center; padding-top: 90px;">
+    <div role="dialog" aria-label="검색" style="width: min(560px, 92vw); max-height: 70vh; overflow: auto; border-radius: {{t.r}}; border: 1px solid {{t.line}}; background: {{t.raised}}; box-shadow: 0 24px 60px rgba(0,0,0,0.45); display: flex; flex-direction: column;">
+      <div style="display: flex; gap: 8px; align-items: center; padding: 12px; border-bottom: 1px solid {{t.line}};">
+        <input value="{{q}}" onChange="{{onQ}}" placeholder="메뉴 이름이나 원본 기능을 입력하세요" aria-label="검색어" style="flex: 1 1 auto; height: 40px; padding: 0 10px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: {{t.bg}}; color: {{t.fg}};">
+        <button type="button" onClick="{{closePalette}}" style="height: 40px; padding: 0 12px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: none; color: {{t.fg2}};">닫기</button>
+      </div>
+      <sc-for list="{{qResults}}" as="qr" hint-placeholder-count="5">
+        <button type="button" onClick="{{qr.go}}" style="display: flex; justify-content: space-between; gap: 8px; text-align: left; padding: 10px 14px; min-height: 44px; border: 0; border-bottom: 1px solid {{t.line}}; background: none; color: {{t.fg}};">
+          <span><strong>{{qr.label}}</strong> <span style="font-size: 12px; color: {{t.fg3}};">· {{qr.group}}</span></span>
+          <span style="font-size: 12px; color: {{t.fg3}}; text-align: right;">{{qr.sub}}</span>
+        </button>
+      </sc-for>
+      <sc-if value="{{qEmpty}}" hint-placeholder-val="{{false}}"><span style="padding: 16px; color: {{t.fg3}};">찾는 메뉴가 없습니다. 다른 이름으로 검색해 보세요.</span></sc-if>
+    </div>
+  </div>
+</sc-if>
+
+<div style="display: flex; flex: 1 1 auto; min-height: 0; position: relative;">
+
+<sc-if value="{{drawerOpen}}" hint-placeholder-val="{{false}}">
+  <div style="position: fixed; inset: 0; z-index: 30; background: rgba(5,5,10,0.5);" onClick="{{closeDrawer}}"></div>
+</sc-if>
+
+<nav class="{{navClass}}" aria-label="{{navLabel}}" style="{{navStyle}}">
+  <sc-for list="{{gnb}}" as="g" hint-placeholder-count="6">
+    <sc-if value="{{g.hasLabel}}" hint-placeholder-val="{{true}}">
+      <sc-if value="{{expanded}}" hint-placeholder-val="{{true}}">
+        <span style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; letter-spacing: 0.06em; color: {{t.fg3}}; padding: 14px 10px 4px;">{{g.label}}<span style="font-size: 10px; color: {{g.tagColor}};">{{g.tag}}</span></span>
+      </sc-if>
+      <sc-if value="{{collapsed}}" hint-placeholder-val="{{false}}">
+        <span aria-hidden="true" style="display: block; height: 1px; margin: 10px 8px; background: {{t.line}};"></span>
+      </sc-if>
+    </sc-if>
+    <sc-for list="{{g.items}}" as="n" hint-placeholder-count="3">
+      <button type="button" onClick="{{n.go}}" aria-current="{{n.cur}}" title="{{n.title}}" style="position: relative; display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; text-align: left; border: 0; padding: {{n.pad}}; min-height: 40px; border-radius: {{t.rs}}; background: {{n.bg}}; color: {{n.fg}}; justify-content: {{n.justify}};">
+        <span aria-hidden="true" style="position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 2px; background: {{n.bar}};"></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 auto;"><path d="{{n.icon}}"></path></svg>
+        <sc-if value="{{expanded}}" hint-placeholder-val="{{true}}">
+          <span style="flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{n.label}}
+            <sc-for list="{{n.dots}}" as="d" hint-placeholder-count="0"><span style="width: 7px; height: 7px; flex: 0 0 auto; border-radius: 2px; background: {{d.c}};"></span></sc-for>
+          </span>
+          <sc-if value="{{n.hasCount}}" hint-placeholder-val="{{false}}"><span style="font-family: {{t.numStack}}; font-size: 11px; font-weight: 700; padding: 0 6px; min-width: 18px; text-align: center; border-radius: 9px; background: {{n.countBg}}; color: {{n.countFg}};">{{n.count}}</span></sc-if>
+          <sc-if value="{{n.hasBadge}}" hint-placeholder-val="{{false}}"><span style="font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 4px; border: 1px solid {{n.badgeColor}}; color: {{n.badgeColor}}; white-space: nowrap;">{{n.badge}}</span></sc-if>
+        </sc-if>
+        <sc-if value="{{n.dotCollapsed}}" hint-placeholder-val="{{false}}"><span aria-hidden="true" style="position: absolute; top: 6px; right: 8px; width: 7px; height: 7px; border-radius: 50%; background: {{t.danger}};"></span></sc-if>
+      </button>
+    </sc-for>
+  </sc-for>
+  <span style="flex: 1 1 auto; min-height: 16px;"></span>
+  <div style="border-top: 1px solid {{t.line}}; padding-top: 8px; display: flex; flex-direction: column; gap: 2px;">
+    <sc-for list="{{footer}}" as="n" hint-placeholder-count="3">
+      <button type="button" onClick="{{n.go}}" aria-current="{{n.cur}}" title="{{n.title}}" style="display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box; text-align: left; border: 0; padding: {{n.pad}}; min-height: 40px; border-radius: {{t.rs}}; background: {{n.bg}}; color: {{n.fg}}; justify-content: {{n.justify}};">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 auto;"><path d="{{n.icon}}"></path></svg>
+        <sc-if value="{{expanded}}" hint-placeholder-val="{{true}}"><span style="flex: 1 1 auto; font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{n.label}}</span><span style="font-size: 11px; color: {{t.fg3}};">{{n.tail}}</span></sc-if>
+      </button>
+    </sc-for>
+  </div>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 18px 22px 32px; display: flex; flex-direction: column; gap: 16px;">
+
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}">
+  <div role="status" aria-live="polite" style="padding: 10px 14px; border-radius: {{t.r}}; background: {{t.raised}}; border: 1px solid {{t.accent}}; display: flex; justify-content: space-between; gap: 12px; align-items: center;">
+    <span>{{toast}}</span>
+    <button type="button" onClick="{{closeToast}}" style="border: 0; background: none; color: {{t.fg2}}; min-height: 32px;">닫기</button>
+  </div>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 8px;">
+  <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+    <span style="font-size: 12px; color: {{t.fg3}};">{{crumb}}</span>
+    <strong style="font-size: 22px; letter-spacing: -0.01em;">{{page.title}}</strong>
+    <span style="font-size: 13px; color: {{t.fg2}};">{{page.desc}}</span>
+  </div>
+  <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+    <span style="font-family: {{t.numStack}}; font-size: 11px; color: {{t.fg3}};">{{page.route}}</span>
+    <sc-for list="{{page.origins}}" as="o" hint-placeholder-count="2"><span style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: {{t.raised}}; border: 1px solid {{t.line}}; color: {{t.fg2}};">{{o.t}}</span></sc-for>
+  </div>
+</div>
+
+<sc-if value="{{page.locked}}" hint-placeholder-val="{{false}}">
+  <div style="padding: 14px; border-radius: {{t.r}}; border: 1px solid {{t.warn}}; background: {{t.surface}}; display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center;">
+    <span>{{page.lockText}}</span>
+    <button type="button" onClick="{{upgrade}}" style="min-height: 38px; padding: 0 14px; border: 0; border-radius: {{t.rs}}; background: {{t.accent}}; color: {{t.accentFg}}; font-weight: 700;">요금제 비교</button>
+  </div>
+</sc-if>
+
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="4">
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch;">
+<sc-for list="{{row.cells}}" as="s" hint-placeholder-count="1">
+<section aria-label="{{s.title}}" style="container-type: inline-size; flex: {{s.flex}}; min-width: 0; box-sizing: border-box; border-radius: {{t.r}}; background: {{s.bg}}; border: {{s.border}}; padding: {{s.pad}}; display: flex; flex-direction: {{s.dir}}; flex-wrap: {{s.wrap}}; gap: 10px; align-items: {{s.align}};">
+
+  <sc-if value="{{s.showHead}}" hint-placeholder-val="{{true}}">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: center; width: 100%;">
+      <strong style="font-size: 15px;">{{s.title}} <sc-if value="{{s.hasBadge}}" hint-placeholder-val="{{false}}"><span style="font-size: 11px; font-weight: 600; padding: 1px 6px; border: 1px solid {{t.fg3}}; border-radius: 4px; color: {{t.fg3}};">{{s.badge}}</span></sc-if></strong>
+      <span style="font-size: 12px; color: {{t.fg3}};">{{s.note}}</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isTodo}}" hint-placeholder-val="{{false}}">
+    <strong style="margin-right: 4px;">{{s.title}}</strong>
+    <sc-for list="{{s.items}}" as="td" hint-placeholder-count="4">
+      <button type="button" onClick="{{td.go}}" style="display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid {{td.color}}; background: none; color: {{t.fg}}; font-size: 13px;">
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: {{td.color}};"></span>{{td.label}} <strong style="font-family: {{t.numStack}};">{{td.n}}</strong>
+      </button>
+    </sc-for>
+    <span style="font-size: 12px; color: {{t.fg3}}; margin-left: auto;">{{s.note}}</span>
+  </sc-if>
+
+  <sc-if value="{{s.isPipeline}}" hint-placeholder-val="{{false}}">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; width: 100%;">
+      <sc-for list="{{s.items}}" as="pp" hint-placeholder-count="5">
+        <button type="button" onClick="{{pp.go}}" style="position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px; min-height: 82px; border: 1px solid {{t.line}}; border-radius: {{t.rs}}; background: {{t.bg}}; color: {{t.fg}}; text-align: left;">
+          <span style="font-size: 12px; color: {{t.fg2}};">{{pp.step}} · {{pp.label}}</span>
+          <strong style="font-family: {{t.numStack}}; font-size: 26px; line-height: 1.1;">{{pp.n}}</strong>
+          <span style="font-size: 11px; color: {{pp.subColor}};">{{pp.sub}}</span>
+          <span aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0; height: 3px; border-radius: 0 0 6px 6px; background: {{pp.color}};"></span>
+        </button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isProgress}}" hint-placeholder-val="{{false}}">
+    <sc-for list="{{s.items}}" as="j" hint-placeholder-count="4">
+      <button type="button" class="sf-prog" onClick="{{j.go}}" style="display: grid; grid-template-columns: 4px minmax(0, 1fr) minmax(90px, 150px) minmax(64px, auto); gap: 12px; align-items: center; text-align: left; padding: 10px 12px; border: 0; border-radius: {{t.rs}}; background: {{t.bg}}; color: {{t.fg}};">
+        <span class="sf-pbar" style="width: 4px; height: 100%; min-height: 38px; border-radius: 2px; background: {{j.color}};"></span>
+        <span style="min-width: 0; display: flex; flex-direction: column;"><strong style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{j.title}}</strong><span style="font-size: 12px; color: {{t.fg3}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{j.sub}}</span></span>
+        <span class="sf-segs" style="display: flex; gap: 2px;" aria-label="{{j.aria}}">
+          <sc-for list="{{j.segs}}" as="sg" hint-placeholder-count="6"><span style="flex: 1 1 0; height: 8px; border-radius: 2px; background: {{sg.c}};"></span></sc-for>
+        </span>
+        <span style="font-family: {{t.numStack}}; font-size: 12px; text-align: right; color: {{j.stColor}};">{{j.status}}</span>
+      </button>
+    </sc-for>
+  </sc-if>
+
+  <sc-if value="{{s.isBars}}" hint-placeholder-val="{{false}}">
+    <sc-for list="{{s.items}}" as="qt" hint-placeholder-count="4">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; font-size: 13px; gap: 8px;"><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{qt.label}} <span style="color: {{t.fg3}};">{{qt.meta}}</span></span><span style="font-family: {{t.numStack}}; color: {{qt.color}}; white-space: nowrap;">{{qt.text}}</span></div>
+        <div style="height: 6px; border-radius: 3px; background: {{t.bg}};"><div style="height: 6px; border-radius: 3px; width: {{qt.pct}}; background: {{qt.color}};"></div></div>
+      </div>
+    </sc-for>
+  </sc-if>
+
+  <sc-if value="{{s.isCalendar}}" hint-placeholder-val="{{false}}">
+    <div style="overflow-x: auto; width: 100%;"><div style="display: grid; grid-template-columns: repeat(7, minmax(84px, 1fr)); gap: 6px; min-width: 620px;">
+      <sc-for list="{{s.days}}" as="cd" hint-placeholder-count="7">
+        <div style="min-height: 120px; padding: 8px; border-radius: {{t.rs}}; background: {{cd.bg}}; border: 1px solid {{cd.border}}; display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 12px; color: {{cd.headColor}}; font-weight: 600;">{{cd.day}}</span>
+          <sc-for list="{{cd.items}}" as="ci" hint-placeholder-count="1">
+            <button type="button" onClick="{{ci.go}}" style="display: flex; flex-direction: column; text-align: left; padding: 4px 6px; border: 0; border-left: 3px solid {{ci.color}}; border-radius: 3px; background: {{t.raised}}; color: {{t.fg}}; font-size: 11px;">
+              <span style="font-family: {{t.numStack}}; color: {{t.fg2}};">{{ci.time}}</span><span>{{ci.title}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div></div>
+  </sc-if>
+
+  <sc-if value="{{s.isTable}}" hint-placeholder-val="{{false}}">
+    <div style="overflow-x: auto; width: 100%;">
+      <div style="min-width: {{s.minW}}; display: flex; flex-direction: column;">
+        <div style="display: grid; grid-template-columns: {{s.grid}}; gap: 14px; padding: 0 8px 6px; font-size: 12px; color: {{t.fg3}};">
+          <sc-for list="{{s.cols}}" as="hc" hint-placeholder-count="4"><span style="text-align: {{hc.align}};">{{hc.t}}</span></sc-for>
+        </div>
+        <sc-for list="{{s.rowsV}}" as="tr" hint-placeholder-count="5">
+          <div style="display: grid; grid-template-columns: {{s.grid}}; gap: 14px; align-items: center; padding: 9px 8px; min-height: 40px; border-top: 1px solid {{t.line}}; color: {{t.fg}}; font-size: 13px;">
+            <sc-for list="{{tr.cells}}" as="tc" hint-placeholder-count="4">
+              <span style="min-width: 0; display: flex; flex-direction: column; align-items: {{tc.align}};">
+                <sc-if value="{{tc.isLink}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{tr.go}}" style="max-width: 100%; border: 0; padding: 0; background: none; text-align: left; color: {{tc.color}}; font-weight: {{tc.weight}}; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: {{tc.ws}};">{{tc.t}}<sc-if value="{{tc.hasBadge}}" hint-placeholder-val="{{false}}"><span style="margin-left: 6px; font-size: 10.5px; font-weight: 600; padding: 1px 5px; border-radius: 3px; background: {{tc.badgeBg}}; color: {{tc.badgeFg}};">{{tc.badge}}</span></sc-if></button></sc-if>
+                <sc-if value="{{tc.isPlain}}" hint-placeholder-val="{{true}}"><span style="max-width: 100%; overflow: hidden; text-overflow: ellipsis; color: {{tc.color}}; font-weight: {{tc.weight}}; font-family: {{tc.font}}; white-space: {{tc.ws}};"><sc-if value="{{tc.isStatus}}" hint-placeholder-val="{{false}}"><span style="display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 6px; background: {{tc.color}};"></span></sc-if>{{tc.t}}<sc-if value="{{tc.hasBadge}}" hint-placeholder-val="{{false}}"><span style="margin-left: 6px; font-size: 10.5px; font-weight: 600; padding: 1px 5px; border-radius: 3px; background: {{tc.badgeBg}}; color: {{tc.badgeFg}};">{{tc.badge}}</span></sc-if></span></sc-if>
+                <sc-if value="{{tc.hasSub}}" hint-placeholder-val="{{false}}"><span style="max-width: 100%; font-size: 11.5px; color: {{t.fg3}}; overflow: hidden; text-overflow: ellipsis; white-space: {{tc.ws}};">{{tc.sub}}</span></sc-if>
+              </span>
+            </sc-for>
+            <sc-if value="{{s.hasActions}}" hint-placeholder-val="{{false}}"><span style="display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap;">
+              <sc-for list="{{tr.acts}}" as="ta" hint-placeholder-count="2"><button type="button" onClick="{{ta.go}}" style="min-height: 32px; padding: 0 10px; border-radius: {{t.rs}}; border: 1px solid {{ta.border}}; background: {{ta.bg}}; color: {{ta.fg}}; font-size: 12.5px; font-weight: 600; white-space: nowrap;">{{ta.label}}</button></sc-for>
+            </span></sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isList}}" hint-placeholder-val="{{false}}">
+    <sc-for list="{{s.items}}" as="pk" hint-placeholder-count="3">
+      <div style="display: grid; grid-template-columns: {{pk.grid}}; gap: 10px; align-items: center; padding: 8px; border-radius: {{t.rs}}; background: {{t.bg}};">
+        <sc-if value="{{pk.hasThumb}}" hint-placeholder-val="{{true}}"><span aria-hidden="true" style="width: 44px; height: 44px; border-radius: 4px; background: {{pk.thumb}};"></span></sc-if>
+        <span style="min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+          <strong style="font-size: 13px; overflow-wrap: anywhere;">{{pk.title}}</strong>
+          <span style="font-size: 11px; color: {{t.fg3}};">{{pk.meta}}</span>
+        </span>
+        <sc-if value="{{pk.hasAction}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{pk.go}}" style="min-height: 30px; padding: 0 10px; border-radius: 4px; border: 1px solid {{t.accent}}; background: none; color: {{t.accentText}}; font-size: 12px; white-space: nowrap;">{{pk.action}}</button></sc-if>
+      </div>
+    </sc-for>
+  </sc-if>
+
+  <sc-if value="{{s.isHeatmap}}" hint-placeholder-val="{{false}}">
+    <div style="display: grid; grid-template-columns: {{s.grid}}; gap: 3px; font-size: 11px; color: {{t.fg3}}; width: 100%;">
+      <span></span>
+      <sc-for list="{{s.cols}}" as="hc" hint-placeholder-count="8"><span style="text-align: center;">{{hc.t}}</span></sc-for>
+      <sc-for list="{{s.hrows}}" as="hr" hint-placeholder-count="7">
+        <span style="display: flex; align-items: center;">{{hr.d}}</span>
+        <sc-for list="{{hr.cells}}" as="hx" hint-placeholder-count="8"><span title="{{hx.t}}" style="height: 22px; border-radius: 3px; background: {{hx.c}};"></span></sc-for>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isFeed}}" hint-placeholder-val="{{false}}">
+    <sc-for list="{{s.items}}" as="fd" hint-placeholder-count="4">
+      <button type="button" onClick="{{fd.go}}" style="display: grid; grid-template-columns: 56px 10px minmax(0, 1fr); gap: 8px; align-items: center; text-align: left; padding: 6px 4px; border: 0; background: none; color: {{t.fg}}; font-size: 13px;">
+        <span style="font-family: {{t.numStack}}; font-size: 11px; color: {{t.fg3}};">{{fd.time}}</span>
+        <span style="width: 8px; height: 8px; border-radius: 50%; background: {{fd.color}};"></span>
+        <span style="min-width: 0;">{{fd.text}}</span>
+      </button>
+    </sc-for>
+  </sc-if>
+
+  <sc-if value="{{s.isSummary}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;"><strong style="font-family: {{t.numStack}}; font-size: 28px; color: {{t.accentText}};">{{s.value}}</strong><span style="font-size: 12px; color: {{t.fg3}};">{{s.sub}}</span></div>
+    <sc-for list="{{s.items}}" as="us" hint-placeholder-count="4">
+      <div style="display: grid; grid-template-columns: minmax(70px, 110px) minmax(0, 1fr) 54px; gap: 8px; align-items: center; font-size: 12px;">
+        <span style="color: {{t.fg2}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{us.label}}</span>
+        <div style="height: 8px; border-radius: 4px; background: {{t.bg}};"><div style="height: 8px; border-radius: 4px; width: {{us.pct}}; background: {{us.color}};"></div></div>
+        <span style="font-family: {{t.numStack}}; text-align: right;">{{us.value}}</span>
+      </div>
+    </sc-for>
+  </sc-if>
+
+  <sc-if value="{{s.isKanban}}" hint-placeholder-val="{{false}}">
+    <div style="overflow-x: auto; width: 100%;"><div style="display: grid; grid-template-columns: {{s.grid}}; gap: 8px; min-width: {{s.minW}};">
+      <sc-for list="{{s.kcols}}" as="kc" hint-placeholder-count="4">
+        <div style="display: flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: {{t.rs}}; background: {{t.bg}}; border-top: 3px solid {{kc.color}}; min-height: 160px;">
+          <span style="font-size: 12px; font-weight: 700; color: {{t.fg2}};">{{kc.label}} <span style="font-family: {{t.numStack}}; color: {{t.fg3}};">{{kc.n}}</span></span>
+          <sc-for list="{{kc.cards}}" as="kd" hint-placeholder-count="2">
+            <div style="padding: 8px; border-radius: 4px; background: {{t.raised}}; border-left: 3px solid {{kd.color}}; display: flex; flex-direction: column; gap: 2px;"><strong style="font-size: 12.5px;">{{kd.title}}</strong><span style="font-size: 11px; color: {{t.fg3}};">{{kd.meta}}</span></div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div></div>
+  </sc-if>
+
+  <sc-if value="{{s.isTabs}}" hint-placeholder-val="{{false}}">
+    <div role="tablist" aria-label="{{s.title}}" style="display: flex; flex-wrap: wrap; gap: 8px;">
+      <sc-for list="{{s.items}}" as="tb" hint-placeholder-count="4">
+        <button type="button" role="tab" aria-selected="{{tb.on}}" onClick="{{tb.pick}}" style="min-height: 42px; padding: 0 16px; border-radius: {{t.rs}}; border: 1px solid {{tb.border}}; background: {{tb.bg}}; color: {{tb.fg}}; font-weight: 700; font-size: 14px;">{{tb.label}}<sc-if value="{{tb.hasBadge}}" hint-placeholder-val="{{false}}"><span style="margin-left: 6px; font-size: 11px; font-weight: 600; opacity: 0.85;">{{tb.badge}}</span></sc-if></button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isFilters}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center;">
+      <sc-if value="{{s.hasSearch}}" hint-placeholder-val="{{false}}"><span style="flex: 1 1 220px; max-width: 340px; min-height: 36px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid {{t.line}}; border-radius: {{t.rs}}; background: {{t.bg}}; color: {{t.fg3}}; font-size: 13px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="{{s.searchIcon}}"></path></svg>{{s.search}}</span></sc-if>
+      <sc-for list="{{s.groups}}" as="fg" hint-placeholder-count="3">
+        <span role="group" aria-label="{{fg.label}}" style="display: flex; flex-wrap: wrap; gap: 4px; align-items: center;">
+          <sc-if value="{{fg.hasLabel}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; color: {{t.fg3}}; margin-right: 2px;">{{fg.label}}</span></sc-if>
+          <sc-for list="{{fg.opts}}" as="fo" hint-placeholder-count="3"><button type="button" aria-pressed="{{fo.on}}" onClick="{{fo.pick}}" style="min-height: 34px; padding: 0 12px; border-radius: {{fo.radius}}; border: 1px solid {{fo.border}}; background: {{fo.bg}}; color: {{fo.fg}}; font-size: 13px; font-weight: 600;">{{fo.label}}</button></sc-for>
+        </span>
+      </sc-for>
+      <sc-if value="{{s.hasFBtns}}" hint-placeholder-val="{{false}}"><span style="display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap;"><sc-for list="{{s.tbtns}}" as="bt" hint-placeholder-count="2"><button type="button" onClick="{{bt.go}}" style="min-height: 36px; padding: 0 14px; border-radius: {{t.rs}}; border: 1px solid {{bt.border}}; background: {{bt.bg}}; color: {{bt.fg}}; font-weight: 700; font-size: 13px;">{{bt.label}}</button></sc-for></span></sc-if>
+    </div>
+    <sc-if value="{{s.hasCaption}}" hint-placeholder-val="{{false}}"><span style="font-size: 12px; color: {{t.fg3}};">{{s.caption}}</span></sc-if>
+  </sc-if>
+
+  <sc-if value="{{s.isToolbar}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+      <sc-if value="{{s.hasSearch}}" hint-placeholder-val="{{false}}"><span style="flex: 1 1 220px; max-width: 360px; min-height: 38px; box-sizing: border-box; display: flex; align-items: center; gap: 8px; padding: 0 10px; border: 1px solid {{t.line}}; border-radius: {{t.rs}}; background: {{t.bg}}; color: {{t.fg3}}; font-size: 13px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="{{s.searchIcon}}"></path></svg>{{s.search}}</span></sc-if>
+      <span style="flex: 1 1 auto;"></span>
+      <sc-for list="{{s.tbtns}}" as="bt" hint-placeholder-count="3"><button type="button" onClick="{{bt.go}}" style="min-height: 38px; padding: 0 14px; border-radius: {{t.rs}}; border: 1px solid {{bt.border}}; background: {{bt.bg}}; color: {{bt.fg}}; font-weight: 700; font-size: 13px;">{{bt.label}}</button></sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isStats}}" hint-placeholder-val="{{false}}">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+      <sc-for list="{{s.items}}" as="kp" hint-placeholder-count="4">
+        <div style="padding: 12px; border-radius: {{t.rs}}; background: {{t.bg}}; border: 1px solid {{t.line}}; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+          <span style="font-size: 12px; color: {{t.fg2}};">{{kp.label}}</span>
+          <strong style="font-family: {{t.numStack}}; font-size: 22px; line-height: 1.2;">{{kp.value}}</strong>
+          <span style="font-size: 11.5px; color: {{kp.color}};">{{kp.sub}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isCards}}" hint-placeholder-val="{{false}}">
+    <div style="display: grid; grid-template-columns: {{s.grid}}; gap: 12px;">
+      <sc-for list="{{s.items}}" as="cv" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; border: 1px solid {{cv.border}}; border-radius: {{t.rs}}; background: {{t.bg}}; overflow: hidden; min-width: 0;">
+          <sc-if value="{{cv.hasThumb}}" hint-placeholder-val="{{true}}">
+            <div style="aspect-ratio: {{s.ratio}}; background: {{cv.thumbBg}}; display: flex; flex-direction: column; justify-content: space-between; padding: 8px; box-sizing: border-box;">
+              <span style="align-self: flex-start; min-height: 1px;"><sc-if value="{{cv.hasTL}}" hint-placeholder-val="{{true}}"><span style="display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.55); color: #FFFFFF;">{{cv.thumbLabel}}</span></sc-if></span>
+              <span style="align-self: flex-end; min-height: 1px;"><sc-if value="{{cv.hasTT}}" hint-placeholder-val="{{true}}"><span style="display: inline-block; font-family: {{t.numStack}}; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: rgba(0, 0, 0, 0.55); color: #FFFFFF;">{{cv.thumbTag}}</span></sc-if></span>
+            </div>
+          </sc-if>
+          <div style="padding: 10px; display: flex; flex-direction: column; gap: 4px; flex: 1 1 auto;">
+            <div style="display: flex; justify-content: space-between; gap: 6px; align-items: flex-start;">
+              <strong style="font-size: 13.5px; line-height: 1.35; min-width: 0;">{{cv.title}}</strong>
+              <sc-if value="{{cv.hasBadge}}" hint-placeholder-val="{{false}}"><span style="flex: 0 0 auto; font-size: 10.5px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: {{cv.badgeBg}}; color: {{cv.badgeFg}};">{{cv.badge}}</span></sc-if>
+            </div>
+            <span style="font-size: 12px; color: {{t.fg3}};">{{cv.meta}}</span>
+            <sc-for list="{{cv.lines}}" as="cl" hint-placeholder-count="2"><span style="font-size: 12px; color: {{t.fg2}}; display: flex; justify-content: space-between; gap: 8px;"><span>{{cl.k}}</span><strong style="font-family: {{t.numStack}}; color: {{t.fg}}; font-weight: 600;">{{cl.v}}</strong></span></sc-for>
+            <sc-if value="{{cv.hasActs}}" hint-placeholder-val="{{false}}"><div style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 6px;">
+              <sc-for list="{{cv.acts}}" as="ca" hint-placeholder-count="2"><button type="button" onClick="{{ca.go}}" style="flex: 1 1 auto; min-height: 32px; padding: 0 10px; border-radius: {{t.rs}}; border: 1px solid {{ca.border}}; background: {{ca.bg}}; color: {{ca.fg}}; font-size: 12.5px; font-weight: 600;">{{ca.label}}</button></sc-for>
+            </div></sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isSteps}}" hint-placeholder-val="{{false}}">
+    <ol style="display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0;">
+      <sc-for list="{{s.stepsV}}" as="st" hint-placeholder-count="4">
+        <li style="flex: 1 1 130px; min-width: 0;"><button type="button" aria-current="{{st.cur}}" onClick="{{st.pick}}" style="width: 100%; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px; border-radius: {{t.rs}}; border: 1px solid {{st.border}}; background: {{st.bg}}; color: {{st.fg}}; text-align: left; font-size: 13px;"><span style="flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: {{st.numBg}}; color: {{st.numFg}}; font-size: 12px; font-weight: 700;">{{st.n}}</span><span style="font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{st.label}}</span></button></li>
+      </sc-for>
+    </ol>
+    <sc-if value="{{s.hasStepDesc}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; color: {{t.fg2}};">{{s.stepDesc}}</span></sc-if>
+  </sc-if>
+
+  <sc-if value="{{s.isSplit}}" hint-placeholder-val="{{false}}">
+    <div class="sf-split" style="display: grid; grid-template-columns: minmax(220px, 1fr) minmax(0, 2fr); gap: 12px; align-items: start;">
+      <div style="display: flex; flex-direction: column; gap: 4px;">
+        <sc-for list="{{s.litems}}" as="lv" hint-placeholder-count="4">
+          <button type="button" aria-pressed="{{lv.on}}" onClick="{{lv.pick}}" style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; text-align: left; padding: 10px; border-radius: {{t.rs}}; border: 1px solid {{lv.border}}; background: {{lv.bg}}; color: {{t.fg}};">
+            <span style="min-width: 0; display: flex; flex-direction: column;"><strong style="font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{lv.title}}</strong><span style="font-size: 11.5px; color: {{t.fg3}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{lv.meta}}</span></span>
+            <span style="font-size: 11.5px; font-weight: 600; color: {{lv.stColor}}; white-space: nowrap;">{{lv.status}}</span>
+          </button>
+        </sc-for>
+      </div>
+      <div style="border: 1px solid {{t.line}}; border-radius: {{t.rs}}; background: {{t.bg}}; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; align-items: baseline;"><strong style="font-size: 16px;">{{s.det.title}}</strong><span style="font-size: 12px; color: {{s.det.stColor}}; font-weight: 600;">{{s.det.status}}</span></div>
+        <span style="font-size: 12px; color: {{t.fg3}};">{{s.det.meta}}</span>
+        <sc-for list="{{s.det.rows}}" as="dr" hint-placeholder-count="3"><div style="display: grid; grid-template-columns: minmax(80px, 130px) minmax(0, 1fr); gap: 10px; padding: 6px 0; border-top: 1px solid {{t.line}}; font-size: 13px;"><span style="color: {{t.fg3}};">{{dr.k}}</span><span style="overflow-wrap: anywhere;">{{dr.v}}</span></div></sc-for>
+        <sc-if value="{{s.det.hasBody}}" hint-placeholder-val="{{false}}"><div style="white-space: pre-wrap; line-height: 1.65; padding: 12px; border-radius: {{t.rs}}; background: {{t.surface}}; border: 1px solid {{t.line}}; font-size: 13px;">{{s.det.body}}</div></sc-if>
+        <sc-if value="{{s.det.hasFields}}" hint-placeholder-val="{{false}}">
+          <sc-for list="{{s.det.fields}}" as="ff" hint-placeholder-count="2">
+            <div style="display: grid; grid-template-columns: minmax(80px, 130px) minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid {{t.line}};">
+              <span style="font-size: 13px; color: {{t.fg2}};">{{ff.label}}</span>
+              <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+                <sc-if value="{{ff.isToggle}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{ff.flip}}" aria-pressed="{{ff.on}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid {{ff.border}}; background: none; color: {{t.fg}}; font-size: 13px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{ff.dot}};"></span>{{ff.value}}</button></sc-if>
+                <sc-if value="{{ff.isChips}}" hint-placeholder-val="{{false}}"><span style="display: flex; flex-wrap: wrap; gap: 6px;"><sc-for list="{{ff.opts}}" as="fo" hint-placeholder-count="3"><button type="button" aria-pressed="{{fo.on}}" onClick="{{fo.pick}}" style="min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid {{fo.border}}; background: {{fo.bg}}; color: {{fo.fg}}; font-size: 13px; font-weight: 600;">{{fo.label}}</button></sc-for></span></sc-if>
+                <sc-if value="{{ff.isText}}" hint-placeholder-val="{{true}}"><span style="min-height: {{ff.minH}}; box-sizing: border-box; padding: 8px 10px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: {{t.surface}}; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; color: {{ff.fg}};">{{ff.value}}</span></sc-if>
+                <span style="font-size: 11px; color: {{t.fg3}};">{{ff.hint}}</span>
+              </span>
+            </div>
+          </sc-for>
+        </sc-if>
+        <sc-if value="{{s.det.hasActs}}" hint-placeholder-val="{{false}}"><div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <sc-for list="{{s.det.acts}}" as="da" hint-placeholder-count="2"><button type="button" onClick="{{da.go}}" style="min-height: 36px; padding: 0 14px; border-radius: {{t.rs}}; border: 1px solid {{da.border}}; background: {{da.bg}}; color: {{da.fg}}; font-weight: 700; font-size: 13px;">{{da.label}}</button></sc-for>
+        </div></sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isEditor}}" hint-placeholder-val="{{false}}">
+    <div class="sf-ed" style="--ln: {{t.line}}; display: grid; grid-template-columns: {{s.grid}}; border: 1px solid {{t.line}}; border-radius: {{t.rs}}; overflow: hidden; background: {{t.bg}};">
+      <sc-if value="{{s.hasLeft}}" hint-placeholder-val="{{true}}">
+      <div style="border-right: 1px solid {{t.line}}; padding: 10px; display: flex; flex-direction: column; gap: 4px; min-width: 0; background: {{t.surface}};">
+        <span style="font-size: 12px; font-weight: 700; color: {{t.fg3}}; padding: 2px 4px 6px;">{{s.left.title}}</span>
+        <sc-for list="{{s.left.items}}" as="el" hint-placeholder-count="5"><button type="button" aria-pressed="{{el.on}}" onClick="{{el.pick}}" style="display: flex; justify-content: space-between; gap: 6px; text-align: left; padding: 8px; border-radius: 4px; border: 0; border-left: 3px solid {{el.bar}}; background: {{el.bg}}; color: {{el.fg}}; font-size: 12.5px;"><span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{el.label}}</span><span style="font-family: {{t.numStack}}; font-size: 11px; color: {{t.fg3}}; white-space: nowrap;">{{el.meta}}</span></button></sc-for>
+      </div>
+      </sc-if>
+      <div style="padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+        <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding-bottom: 8px; border-bottom: 1px solid {{t.line}};">
+          <strong style="font-size: 14px; margin-right: auto;">{{s.center.title}}</strong>
+          <sc-for list="{{s.center.tools}}" as="et" hint-placeholder-count="3"><button type="button" onClick="{{et.go}}" style="min-height: 30px; padding: 0 10px; border-radius: 4px; border: 1px solid {{t.line}}; background: {{t.surface}}; color: {{t.fg2}}; font-size: 12px;">{{et.label}}</button></sc-for>
+        </div>
+        <sc-for list="{{s.center.blocks}}" as="eb" hint-placeholder-count="4">
+          <sc-if value="{{eb.isH}}" hint-placeholder-val="{{false}}"><strong style="font-size: 18px; line-height: 1.4;">{{eb.text}}</strong></sc-if>
+          <sc-if value="{{eb.isP}}" hint-placeholder-val="{{true}}"><p style="margin: 0; font-size: 13.5px; line-height: 1.75; color: {{t.fg}}; white-space: pre-wrap; overflow-wrap: anywhere;">{{eb.text}}</p></sc-if>
+          <sc-if value="{{eb.isMedia}}" hint-placeholder-val="{{false}}"><div style="aspect-ratio: {{eb.ratio}}; width: {{eb.mw}}; margin: 0 auto; border-radius: {{t.rs}}; background: {{eb.bg}}; display: flex; align-items: flex-end; padding: 10px; box-sizing: border-box;"><span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: rgba(0, 0, 0, 0.55); color: #FFFFFF;">{{eb.text}}</span></div></sc-if>
+          <sc-if value="{{eb.isScene}}" hint-placeholder-val="{{false}}"><div style="display: grid; grid-template-columns: 34px 72px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px; border-radius: {{t.rs}}; border: 1px solid {{eb.border}}; background: {{t.surface}};"><span style="font-family: {{t.numStack}}; font-weight: 700; color: {{t.fg3}};">{{eb.n}}</span><span aria-hidden="true" style="width: 72px; aspect-ratio: 16 / 9; border-radius: 3px; background: {{eb.bg}}; opacity: {{eb.thumbOp}};"></span><span style="font-size: 13px; min-width: 0;">{{eb.text}}</span><span style="font-family: {{t.numStack}}; font-size: 12px; color: {{t.fg2}};">{{eb.meta}}</span></div></sc-if>
+          <sc-if value="{{eb.isNote}}" hint-placeholder-val="{{false}}"><div style="padding: 8px 10px; border-radius: 4px; border-left: 3px solid {{eb.color}}; background: {{t.surface}}; font-size: 12.5px; color: {{t.fg2}};">{{eb.text}}</div></sc-if>
+        </sc-for>
+      </div>
+      <div style="border-left: 1px solid {{t.line}}; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0; background: {{t.surface}};">
+        <span style="font-size: 12px; font-weight: 700; color: {{t.fg3}}; padding: 2px 4px;">{{s.right.title}}</span>
+        <sc-for list="{{s.right.items}}" as="er" hint-placeholder-count="3"><div style="padding: 10px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: {{t.bg}}; display: flex; flex-direction: column; gap: 6px;"><strong style="font-size: 12.5px;">{{er.label}}</strong><span style="font-size: 12.5px; color: {{t.fg2}}; line-height: 1.55;">{{er.text}}</span><sc-if value="{{er.hasAct}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{er.go}}" style="align-self: flex-start; min-height: 30px; padding: 0 10px; border-radius: 4px; border: 1px solid {{t.accent}}; background: none; color: {{t.accentText}}; font-size: 12px; font-weight: 600;">{{er.act}}</button></sc-if></div></sc-for>
+        <sc-if value="{{s.right.hasPrompt}}" hint-placeholder-val="{{false}}"><div style="margin-top: auto; display: flex; flex-direction: column; gap: 6px;"><span style="min-height: 64px; box-sizing: border-box; padding: 8px 10px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: {{t.bg}}; font-size: 12.5px; color: {{t.fg3}};">{{s.right.prompt}}</span><button type="button" onClick="{{s.right.go}}" style="min-height: 36px; border: 0; border-radius: {{t.rs}}; background: {{t.accent}}; color: {{t.accentFg}}; font-weight: 700;">{{s.right.send}}</button></div></sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isChart}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: {{t.fg2}};">
+      <sc-for list="{{s.legend}}" as="lg" hint-placeholder-count="2"><span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 3px; border-radius: 2px; background: {{lg.c}};"></span>{{lg.name}}</span></sc-for>
+    </div>
+    <sc-if value="{{s.lineMode}}" hint-placeholder-val="{{false}}">
+      <svg viewBox="0 0 600 160" width="100%" height="170" preserveAspectRatio="none" role="img" aria-label="{{s.title}}">
+        <sc-for list="{{s.gridLines}}" as="gl" hint-placeholder-count="4"><path d="{{gl.d}}" stroke="{{t.line}}" stroke-width="1" fill="none"></path></sc-for>
+        <sc-for list="{{s.paths}}" as="pp2" hint-placeholder-count="2"><path d="{{pp2.d}}" stroke="{{pp2.c}}" stroke-width="2.5" fill="none" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path></sc-for>
+      </svg>
+      <div style="display: grid; grid-template-columns: {{s.labGrid}}; font-size: 11px; color: {{t.fg3}};"><sc-for list="{{s.labels}}" as="lb" hint-placeholder-count="7"><span style="text-align: center;">{{lb.t}}</span></sc-for></div>
+      <sc-if value="{{s.hasRange}}" hint-placeholder-val="{{false}}"><span style="font-size: 11px; color: {{t.fg3}};">{{s.range}}</span></sc-if>
+    </sc-if>
+    <sc-if value="{{s.barMode}}" hint-placeholder-val="{{false}}">
+      <div style="display: flex; align-items: flex-end; gap: 6px; height: 170px;">
+        <sc-for list="{{s.bars}}" as="bb" hint-placeholder-count="7"><div style="flex: 1 1 0; min-width: 0; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 4px;"><span style="font-size: 11px; font-family: {{t.numStack}}; color: {{t.fg2}};">{{bb.v}}</span><div style="width: 100%; max-width: 40px; height: {{bb.h}}; background: {{bb.c}}; border-radius: 3px 3px 0 0;"></div><span style="font-size: 11px; color: {{t.fg3}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">{{bb.l}}</span></div></sc-for>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <sc-if value="{{s.isChecklist}}" hint-placeholder-val="{{false}}">
+    <sc-for list="{{s.items}}" as="ck" hint-placeholder-count="4">
+      <button type="button" aria-pressed="{{ck.on}}" onClick="{{ck.flip}}" style="display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: 10px; align-items: center; text-align: left; padding: 9px 6px; border: 0; border-top: 1px solid {{t.line}}; background: none; color: {{t.fg}}; font-size: 13px;">
+        <span aria-hidden="true" style="width: 18px; height: 18px; box-sizing: border-box; border-radius: 4px; border: 2px solid {{ck.bc}}; background: {{ck.bg}}; display: flex; align-items: center; justify-content: center; color: {{t.accentFg}}; font-size: 12px; font-weight: 700;">{{ck.mark}}</span>
+        <span style="display: flex; flex-direction: column; min-width: 0;"><span style="color: {{ck.fg}};">{{ck.label}}</span><span style="font-size: 11.5px; color: {{t.fg3}};">{{ck.hint}}</span></span>
+        <span style="font-size: 12px; font-weight: 600; color: {{ck.stColor}}; white-space: nowrap;">{{ck.status}}</span>
+      </button>
+    </sc-for>
+  </sc-if>
+
+  <sc-if value="{{s.isPreview}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start;">
+      <sc-for list="{{s.items}}" as="pv" hint-placeholder-count="2">
+        <div style="flex: 0 1 {{pv.w}}; max-width: 100%; display: flex; flex-direction: column; gap: 6px;">
+          <div style="width: 100%; aspect-ratio: {{pv.ratio}}; border-radius: {{t.rs}}; background: {{pv.bg}}; border: 1px solid {{t.line}}; overflow: hidden; display: flex; flex-direction: column; justify-content: {{pv.justify}}; gap: 6px; padding: 12px; box-sizing: border-box;">
+            <sc-for list="{{pv.lines}}" as="pl" hint-placeholder-count="2"><span style="font-size: {{pl.size}}; font-weight: {{pl.w}}; color: {{pl.c}}; line-height: 1.35; background: {{pl.bg}}; padding: {{pl.pad}}; border-radius: 3px;">{{pl.t}}</span></sc-for>
+          </div>
+          <span style="font-size: 12px; color: {{t.fg2}};">{{pv.caption}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.hasFields}}" hint-placeholder-val="{{false}}">
+    <sc-for list="{{s.fields}}" as="ff" hint-placeholder-count="4">
+      <div style="display: grid; grid-template-columns: {{s.fgrid}}; gap: 6px 12px; align-items: center; padding: 6px 0; border-top: 1px solid {{t.line}};">
+        <span style="font-size: 13px; color: {{t.fg2}};">{{ff.label}}</span>
+        <span style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+          <sc-if value="{{ff.isToggle}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{ff.flip}}" aria-pressed="{{ff.on}}" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border-radius: 999px; border: 1px solid {{ff.border}}; background: none; color: {{t.fg}}; font-size: 13px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: {{ff.dot}};"></span>{{ff.value}}</button></sc-if>
+          <sc-if value="{{ff.isChips}}" hint-placeholder-val="{{false}}"><span style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <sc-for list="{{ff.opts}}" as="fo" hint-placeholder-count="3"><button type="button" aria-pressed="{{fo.on}}" onClick="{{fo.pick}}" style="min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid {{fo.border}}; background: {{fo.bg}}; color: {{fo.fg}}; font-size: 13px; font-weight: 600;">{{fo.label}}</button></sc-for>
+          </span></sc-if>
+          <sc-if value="{{ff.isText}}" hint-placeholder-val="{{true}}"><span style="min-height: {{ff.minH}}; box-sizing: border-box; padding: 8px 10px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: {{t.bg}}; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; display: flex; justify-content: space-between; gap: 8px; color: {{ff.fg}};"><span>{{ff.value}}</span><span aria-hidden="true" style="color: {{t.fg3}};">{{ff.caret}}</span></span></sc-if>
+          <span style="font-size: 11px; color: {{t.fg3}};">{{ff.hint}}</span>
+        </span>
+      </div>
+    </sc-for>
+  </sc-if>
+  <sc-if value="{{s.hasButtons}}" hint-placeholder-val="{{false}}">
+    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+      <sc-for list="{{s.btns}}" as="bt" hint-placeholder-count="2"><button type="button" onClick="{{bt.go}}" style="min-height: 38px; padding: 0 16px; border-radius: {{t.rs}}; border: 1px solid {{bt.border}}; background: {{bt.bg}}; color: {{bt.fg}}; font-weight: 700;">{{bt.label}}</button></sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{s.isSpec}}" hint-placeholder-val="{{false}}">
+    <sc-for list="{{s.items}}" as="sp" hint-placeholder-count="4">
+      <div style="display: grid; grid-template-columns: minmax(80px, 120px) minmax(0, 1fr); gap: 12px; padding: 9px 0; border-top: 1px solid {{t.line}};"><span style="color: {{t.fg3}}; font-size: 13px;">{{sp.k}}</span><span style="overflow-wrap: anywhere; min-width: 0;">{{sp.v}}</span></div>
+    </sc-for>
+  </sc-if>
+
+  <sc-if value="{{s.hasGo}}" hint-placeholder-val="{{false}}">
+    <button type="button" onClick="{{s.goFn}}" style="align-self: flex-start; min-height: 34px; padding: 0 12px; border-radius: {{t.rs}}; border: 1px solid {{t.line}}; background: none; color: {{t.accentText}}; font-size: 13px;">{{s.goLabel}}</button>
+  </sc-if>
+</section>
+</sc-for>
+</div>
+</sc-for>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"startView": {"editor": "enum", "options": ["home", "chat", "wiki", "credits", "license", "settings"], "default": "home"}, "collapsed": {"editor": "boolean", "default": false}, "drawer": {"editor": "boolean", "default": false}, "startTab": {"editor": "enum", "options": ["", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11"], "default": ""}, "$preview": {"width": 1440, "height": 1447}}'>
+var CFG = {"product": {"slug": "arch-studio", "name": "Arch Studio", "tagline": "대지에서 법규 볼륨·판정·도면까지"}, "tokens": {"mode": "light", "bg": "#F1F2EE", "surface": "#FBFBF9", "nav": "#E7E9E3", "raised": "#F7F8F5", "line": "#D8DBD5", "fg": "#1F2328", "fg2": "#474D53", "fg3": "#5B6167", "accent": "#1F2328", "accentFg": "#F1F2EE", "ok": "#2A7549", "warn": "#8A5A00", "danger": "#B3261E", "info": "#34507A", "font": "Noto Sans KR", "numFont": "Noto Sans KR", "radius": 6, "tokensNote": "출처 03_SCREENS_UX.md 4.3절 :553-556, 4.4절 :589. bg 트레이싱지 #F1F2EE, fg 제도 먹 #1F2328(글자·선·주 버튼이라 accent도 먹, accentFg 트레이싱지 대비 약 14:1), line 모눈 #D8DBD5(구분선 전용), info 배치도 남 #34507A(링크, 약 7.2:1), ok·warn·danger는 PASS 녹 #2A7549·WARN 황 #8A5A00·FAIL 적 #B3261E(약 5.0·5.3·5.8:1). 엔벨로프 청록 #276F80은 '한 화면에 한 곳'(엔벨로프 볼륨) 규칙이라 셸에 쓰지 않고, 콘크리트 #A7ABA8은 글자·점에 쓰지 않는다(5.1절 :645). 제안(4.3절에 없음, AR-06-010 토큰 작업 전): surface #FBFBF9, nav #E7E9E3, raised #F7F8F5, fg2 #474D53, fg3 #5B6167(nav 위 약 5.1:1). 서체 SUIT는 Google Fonts에 없어 Noto Sans KR로 대체(숫자는 tabular-nums). radius 6은 컨트롤 값(패널 10px은 렌더러가 따로 표현하지 못함). 다크(흑판 #20262A)는 바탕 외 값이 정해지지 않아 라이트 기준(01장 D-34). 상단 상태 전환(업데이트 유효·열람만·폴백)은 01장 4.3절 상태를 업데이트 가능 여부로 묶은 시안 보기 전용"}, "plans": [{"key": "valid", "label": "업데이트 유효", "rank": 2}, {"key": "readonly", "label": "열람만", "rank": 0}, {"key": "fallback", "label": "폴백", "rank": 1}], "defaultPlan": "valid", "credits": {"label": "크레딧", "value": "284"}, "newItems": [{"label": "새 프로젝트", "sub": "빈 대지에서 시작 · 주소·지번 조회 또는 직접 그리기", "color": "accent", "go": "home"}, {"label": "샘플 대지로 시작", "sub": "예시 대지(가상)로 판정과 도면 먼저 보기", "color": "info", "go": "home"}, {"label": "DXF에서 대지 가져오기", "sub": "새 프로젝트 › 대지 · 20MB까지 · P1", "color": "#5B6167", "go": "home"}], "searchHint": "메뉴·프로젝트 검색", "groups": [{"id": "top", "label": "", "tag": "", "items": ["home"]}, {"id": "law", "label": "법규", "tag": "", "items": ["chat", "wiki"]}], "footer": ["credits", "license", "settings"], "connected": [], "menus": {"home": {"label": "프로젝트", "icon": "folder", "route": "/projects", "desc": "오늘 처리할 일과 이어서 열 프로젝트", "origins": ["1.1절 앱 셸 내비 '프로젝트'", "FortuneDocs 결정적 계산 원칙"], "need": 0, "spec": [["구성", "오늘 처리할 일 → 상단 탭 [프로젝트 목록 · 대지 · 모델·판정 · 프로그램 · 평면 · 도면 · 렌더 · 제안서 · 검토]. 목록 탭: 툴바 → 프로젝트 표(행 '열기') + 새로 시작 → 클라우드 작업 + 일일 한도 → 최근 활동. 프로젝트 탭마다 툴바(경로·ID) + 주 작업(대지 뷰·모델러·면적표·평면 편집기·시트·렌더·제안서·검토 결과). 크레딧 잔액 칸·큰 KPI 카드 없음(3.3절 :190)"], ["데이터", "로컬 projects, judgment_snapshots, sheets, model_revisions, GET /api/cloud-projects, arch.renders·reviews·proposals·intake_runs, Realtime core.jobs, arch.org_features"], ["행동", "열기, 새 프로젝트, 샘플 대지로 시작, 조회, 직접 그리기, 매스 자동 제안, 후보 만들기, 시트 만들기, 내보내기, 렌더 만들기, 제안서 만들기, 검토 요청"], ["권한·플랜", "로컬 탭(대지~도면)은 활성화된 PC, 렌더·제안서·검토는 로그인 필수, 검토는 폴백 잠금(AR012). 체험만료·구독만료는 열람 모드"], ["근거", "03장 1절 :15, :21-29, 3.3~3.11절 :180-379, 5절 :636-707, 8.4·8.5절 :927-951"]], "ids": "AR-F-001~008 · 011~015 · 028~038"}, "chat": {"label": "법규 채팅", "icon": "chat", "route": "/chat", "desc": "근거 조항과 함께 답하는 법규 질의", "origins": ["1.1절 앱 셸 내비 '법규 채팅'", "AR-F-009 법규 질의 채팅"], "need": 2, "sections": [{"type": "editor", "title": "대화", "note": "답변마다 'AI 답변' 표시와 출처 칩 · 예시", "left": {"title": "[예시] 대화 목록", "items": [{"label": "일조사선 신·구", "meta": "오늘"}, {"label": "건폐율 조례", "meta": "어제"}, {"label": "공지 이격 거리", "meta": "10-16"}, {"label": "새 대화", "meta": "Ctrl+/"}]}, "center": {"title": "[예시] 정북 일조사선 신·구 기준", "tools": ["맥락 첨부: 끔", "마이크", "읽어 주기"], "blocks": [{"kind": "h", "text": "[예시] 정북 일조사선 신·구 기준은 신청일로 어떻게 갈리나요"}, {"kind": "p", "text": "AI 답변 · [예시] 개정 기준은 공포 후 3개월이 지나 시행되고, 그 뒤 허가·신고 신청분부터 적용됩니다. 정확한 시행일은 확인되지 않았습니다. 개별 사안의 적법성은 단정하지 않습니다."}, {"kind": "note", "text": "출처 2 · [예시] 건축법 개정(2026) · 시행일 미확인 · 누르면 원문 요약", "color": "info"}, {"kind": "h", "text": "[예시] 우리 구 조례에는 반영됐나요"}, {"kind": "note", "text": "근거를 찾지 못했습니다. 조문 이름이나 지자체를 알려 주면 다시 찾습니다.", "color": "warn"}]}, "right": {"title": "출처", "items": [{"label": "[예시] 건축법 개정 일조 기준", "text": "법령명 · 조항 · 시행일 미확인", "action": "원문 요약"}, {"label": "[예시] 지자체 조례 입법예고", "text": "반영 시점은 지자체마다 다름", "action": "원문 요약"}], "prompt": "질문 입력 · 1턴 1 크레딧, 오늘 남은 188턴", "send": "보내기 · 1 크레딧"}}, {"type": "form", "title": "입력 옵션", "wide": true, "fields": [{"label": "현재 프로젝트 맥락 첨부", "value": "끔", "kind": "toggle", "hint": "기본 끔. 켜면 용도지역과 판정 행만 보냅니다(도면·3D 원본은 보내지 않음)"}, {"label": "입력 방식", "kind": "chips", "options": ["텍스트", "마이크"], "value": "텍스트", "hint": "마이크는 분당 1 크레딧 · 변환 텍스트는 입력창에만 채우고 자동 전송하지 않음"}, {"label": "읽어 주기 자동 재생", "value": "끔", "kind": "toggle", "hint": "OS 음성 합성 · 0 크레딧 · 안 되면 버튼 숨김"}]}, {"type": "bars", "title": "오늘 쓴 턴", "note": "예시 값", "wide": false, "items": [{"label": "법규 채팅", "meta": "1턴 1 크레딧", "value": 12, "max": 200, "unit": "턴"}]}, {"type": "feed", "title": "상태 안내", "note": "해당할 때 입력창 위에 · 예시", "items": [{"time": "마이크", "text": "마이크를 쓸 수 없습니다. Windows 설정 > 개인정보 > 마이크에서 허용하거나 텍스트로 입력하세요.", "kind": "warn"}, {"time": "국외 이전", "text": "국외 AI 사용에 동의하지 않아 오픈소스 경로로 처리합니다. 가격은 같습니다.", "kind": "info", "go": "settings"}, {"time": "오프라인", "text": "인터넷 연결 후 씁니다. 입력창이 비활성입니다.", "kind": "muted"}, {"time": "폴백", "text": "업데이트가 만료되어 법규 채팅을 쓸 수 없습니다(일일 턴 0). 업데이트를 연장하세요.", "kind": "danger", "go": "license"}]}], "spec": [["구성", "ChatThread 3단: 대화 목록 / 스트리밍 답변(AI 답변 표시, 출처 칩, 근거 없음 답) / 출처 패널 + 입력창('1턴 1 크레딧, 오늘 남은 n턴') → 입력 옵션(맥락 첨부·마이크·읽어 주기) + 오늘 쓴 턴 → 상태 안내(마이크 거부·국외 이전·오프라인·폴백)"], ["데이터", "POST /api/ai/chat(Dify arch-chat 중계), ai-gateway 턴 선차감, POST /api/voice/stt, arch.org_features.ai_chat_turns_per_day"], ["행동", "질문 보내기, 현재 프로젝트 맥락 첨부(기본 끔), 출처 칩 눌러 원문 요약, 마이크 입력"], ["권한·플랜", "로그인 필수. 체험·영구·구독(업데이트 유효). 폴백은 일일 턴 0이라 잠금, 체험만료·구독만료 잠금. 오프라인이면 입력 비활성"], ["근거", "03장 1절 :30, 3.12절 :385-388, 01장 AR-F-009, 4.8절 :183"]], "ids": "AR-F-009"}, "wiki": {"label": "법규 위키", "icon": "book", "route": "/wiki", "desc": "조례별 차이·질의회신 요약·용어 해설", "origins": ["1.1절 앱 셸 내비 '법규 위키'", "AR-F-010 법규 해설 위키"], "need": 0, "sections": [{"type": "tabs", "tabs": ["목록", "페이지", "개정 이력"]}, {"type": "filters", "tab": "목록", "search": "해설 검색", "groups": [{"options": ["전체", "조례별 차이", "질의회신 요약", "용어"]}, {"label": "점검", "options": ["전체", "출처 확인 필요"]}], "caption": "운영자 위키 · 사용자는 읽기만 · 0 크레딧"}, {"type": "table", "tab": "목록", "title": "해설 페이지", "note": "예시 값", "wide": true, "columns": ["제목", "분류", "출처", "확인일", "점검"], "numCols": [2], "statusCol": 4, "statusKinds": {"출처 확인됨": "ok", "출처 확인 필요": "warn"}, "actions": [{"label": "열기", "primary": true}], "rows": [[{"t": "[예시] 주차 설치 기준 조례 비교", "sub": "관련 규칙 팩 항목 1"}, "조례별 차이", "3", "2026-10-14", "출처 확인됨"], [{"t": "[예시] 대지안의 공지 산정 기준", "sub": "관련 규칙 팩 항목 2"}, "질의회신 요약", "2", "2026-10-02", "출처 확인됨"], [{"t": "[예시] 정북 일조사선", "sub": "신·구 기준"}, "용어", "4", "2026-09-21", "출처 확인 필요"], [{"t": "[예시] 건폐율 완화 조항 정리", "sub": "관련 규칙 팩 항목 1"}, "조례별 차이", "2", "2026-08-30", "출처 확인 필요"], [{"t": "[예시] 제로에너지건축물 대상", "sub": "대상 여부만"}, "용어", "1", "2026-08-12", "출처 확인됨"]]}, {"type": "list", "tab": "목록", "title": "분류", "note": "예시 값", "wide": false, "items": [{"title": "조례별 차이", "meta": "[예시] 12쪽", "action": "보기"}, {"title": "질의회신 요약", "meta": "[예시] 8쪽", "action": "보기"}, {"title": "용어", "meta": "[예시] 21쪽", "action": "보기"}]}, {"type": "editor", "tab": "페이지", "title": "[예시] 주차 설치 기준 조례 비교", "note": "최근 점검일 2026-10-14 · 편집 없음 · 예시", "left": {"title": "목차", "items": ["1. 법령 기준", "2. 조례별 차이", "3. 질의회신 요약", "출처 목록"]}, "center": {"title": "본문", "tools": ["출처로 이동", "관련 규칙 보기"], "blocks": [{"kind": "h", "text": "1. 법령 기준"}, {"kind": "p", "text": "[예시] 주차장법 시행령 기준을 먼저 보고, 조례로 강화·완화할 수 있습니다. 2025~2026 개정은 찾지 못했습니다."}, {"kind": "h", "text": "2. 조례별 차이"}, {"kind": "p", "text": "[예시] 지자체마다 다르며 운영자가 출처와 확인일을 함께 갱신합니다."}, {"kind": "note", "text": "출처 확인 필요 1건: 링크가 깨져 다시 확인 중입니다", "color": "warn"}]}, "right": {"title": "출처 · 확인일", "items": [{"label": "[예시] 주차장법 시행령", "text": "확인일 2026-10-14", "action": "원문 보기"}, {"label": "[예시] 지자체 조례 A", "text": "확인일 2026-10-14", "action": "원문 보기"}, {"label": "관련 규칙 팩 항목", "text": "주차대수 산정", "action": "규칙 보기"}]}}, {"type": "feed", "tab": "개정 이력", "title": "개정 이력", "note": "날짜 · 바뀐 절 · 예시 값", "wide": true, "items": [{"time": "10-14", "text": "[예시] '주차 설치 기준 조례 비교' 2절 출처를 다시 확인했습니다", "kind": "info"}, {"time": "10-02", "text": "[예시] '대지안의 공지 산정 기준' 페이지가 추가되었습니다", "kind": "ok"}, {"time": "09-21", "text": "[예시] '정북 일조사선' 출처 링크 1건이 깨져 확인 필요로 바뀌었습니다", "kind": "warn"}, {"time": "08-30", "text": "[예시] '건폐율 완화 조항 정리' 1절을 고쳤습니다", "kind": "info"}]}, {"type": "list", "tab": "개정 이력", "title": "점검 결과", "wide": false, "items": [{"title": "최근 점검일", "meta": "[예시] 2026-10-14"}, {"title": "출처 확인 필요", "meta": "[예시] 2쪽", "action": "보기"}, {"title": "오프라인", "meta": "인터넷 연결 후 씁니다"}]}], "spec": [["구성", "탭 [목록 · 페이지 · 개정 이력]. 목록: 분류·점검 필터 + 해설 표(행 '열기') + 분류. 페이지: 목차 / 본문(G페이지) / 출처·확인일·관련 규칙 팩 항목. 개정 이력: 날짜·바뀐 절 + 점검 결과('최근 점검일'·'출처 확인 필요')"], ["데이터", "core.wiki_pages(운영자 조직 위키), core.wiki_links, core.wiki_revisions, GET /api/ai/wiki/pages, /pages/[...slug](읽기 전용)"], ["행동", "검색, 분류 보기, 페이지 열기, 관련 규칙 팩 항목으로 이동. 편집 없음"], ["권한·플랜", "로그인 필수, 전 상태 열람(폴백 포함), 0 크레딧. 오프라인이면 안내만"], ["근거", "03장 1절 :31, 3.13절 :390-399, 01장 AR-F-010"]], "ids": "AR-F-010"}, "credits": {"label": "크레딧", "icon": "coins", "route": "/credits", "desc": "잔액, 사용 내역, 단가표, 팩 구매(브라우저)", "origins": ["1.1절 앱 셸 내비 '크레딧'", "AR-F-020 크레딧 지갑", "FortuneDocs 크레딧 차감"], "need": 0, "sections": [{"type": "summary", "title": "잔액", "note": "예시 값", "wide": true, "value": "284", "sub": "연간 업데이트 480 · 지급일 [예시] 01-05 · plan은 다음 지급 때 만료, pack은 소멸 없음", "items": [{"label": "plan 버킷", "value": 220, "max": 480, "color": "accent"}, {"label": "pack 버킷", "value": 64, "max": 550, "color": "info"}]}, {"type": "list", "title": "크레딧팩", "note": "브라우저로 열림 · 01장 4.6절 제안값", "wide": false, "items": [{"title": "100 크레딧", "meta": "pack_100 · 10,000원", "action": "구매"}, {"title": "550 크레딧", "meta": "pack_550 · 50,000원 · 보너스 10%", "action": "구매"}, {"title": "1,200 크레딧", "meta": "pack_1200 · 100,000원 · 보너스 20%", "action": "구매"}]}, {"type": "filters", "search": "작업·프로젝트 검색", "groups": [{"label": "구분", "options": ["전체", "차감", "환불", "지급"]}, {"label": "기간", "options": ["이번 달", "지난 달", "올해"]}], "caption": "실패 작업의 환불은 1분 안에 내역에 보입니다."}, {"type": "table", "title": "사용 내역", "note": "예시 값", "wide": true, "columns": ["일시", "작업", "크레딧", "구분"], "numCols": [2], "statusCol": 3, "statusKinds": {"차감": "muted", "환불": "ok", "지급": "info"}, "rows": [["10-19 14:22", {"t": "AI 렌더 고품질", "sub": "[예시] 단독주택 A"}, "-5", "차감"], ["10-19 14:25", {"t": "AI 렌더 고품질 실패", "sub": "[예시] 단독주택 A · 전액 환불"}, "+5", "환불"], ["10-19 11:03", {"t": "클라우드 법규 검토", "sub": "[예시] 근생 B"}, "-15", "차감"], ["10-18 16:40", {"t": "대화형 입력 후보 만들기", "sub": "[예시] 단독주택 A"}, "-2", "차감"], ["10-18 09:12", {"t": "법규 채팅 3턴"}, "-3", "차감"], ["01-05 00:00", {"t": "연간 업데이트 지급", "sub": "plan 버킷"}, "+480", "지급"]]}, {"type": "feed", "title": "결제·부족 안내", "note": "예시", "wide": false, "items": [{"time": "부족", "text": "크레딧이 3 부족합니다. 크레딧팩을 사면 바로 이어서 만듭니다(CR001)", "kind": "warn"}, {"time": "결제", "text": "브라우저에서 결제를 마치면 여기에 자동으로 표시됩니다", "kind": "info"}, {"time": "내역 없음", "text": "아직 사용 내역이 없습니다. 도면 출력은 크레딧을 쓰지 않습니다", "kind": "muted"}]}, {"type": "table", "title": "단가표", "note": "01장 4.5절·9.4절 제안값", "columns": ["작업", "크레딧", "비고"], "rows": [["AI 렌더 표준 · 고품질", "3 · 5", "실패·3분 초과는 전액 환불"], ["업스케일(4K)", "2", "-"], ["클라우드 법규 검토", "15", "출처 없는 결과는 보이지 않고 환불"], ["제안서 PDF", "10", "렌더 이미지는 따로"], ["템플릿 문서(설계개요서·면적표·공사비)", "1", "같은 버전 다시 요청은 0"], ["대화형 입력 후보", "2", "음성은 STT 분당 1 추가"], ["법규 채팅", "1턴 1", "-"], ["도면 생성·출력, 매스 자동 제안, 판정", "0", "이 PC에서 계산, 인터넷 연결 없이도"]]}], "spec": [["구성", "잔액(plan·pack 분리, 연 플랜 지급일) + 팩 3종(브라우저) → 구분·기간 필터 → 사용 내역 표(환불 행) + 결제·부족 안내(CR001, 결제 대기, 빈 내역) → 단가표(정적). 구매는 owner·admin + 이메일 확인(AR005)"], ["데이터", "core.wallets(RLS 직접 조회), core.credit_ledger, POST /api/checkout(credit_pack), 결제 확정은 웹훅 → Realtime"], ["행동", "팩 구매(브라우저로 열림), 내역 필터. 데스크톱은 금액·크레딧 수를 보내지 않는다"], ["권한·플랜", "로그인 필수, 전 상태. 구매는 owner·admin + 이메일 확인 계정(AR005)"], ["근거", "03장 1절 :35, 3.17절 :467-474, 5.4절 :706, 01장 4.5·4.6절, AR-F-020"]], "ids": "AR-F-020"}, "license": {"label": "라이선스", "icon": "key", "route": "/license", "desc": "라이선스 상태, 이 PC 활성화·해제, 업데이트", "origins": ["1.1절 앱 셸 내비 '라이선스'", "AR-F-017~019 시리얼·기기·업데이트"], "need": 0, "sections": [{"type": "list", "title": "라이선스 상태", "note": "Rust license.rs가 검증한 결과만 · 체험·구독은 \"체험 n일 남음\"·\"월 구독 활성, 다음 결제일\" · 예시 값", "items": [{"title": "영구 + 업데이트 유효", "meta": "업데이트 기한 [예시] 2027-10-20 · 시리얼 끝 5자 [예시] 7KQ2M", "action": "업데이트 연장"}, {"title": "이 PC: 활성화됨 2/2", "meta": "마지막 확인 [예시] 10-19", "action": "이 PC 해제"}, {"title": "앱 1.0.0 · 규칙 팩 2026.10", "meta": "업데이트 기한 안의 빌드와 규칙 팩만 받습니다", "action": "업데이트 확인"}]}, {"type": "form", "title": "시리얼 입력", "fields": [{"label": "시리얼", "value": "ARCH-_____-_____-_____-_____", "kind": "text", "hint": "메일의 시리얼을 그대로 붙여 넣으세요. 입력 중 대문자·하이픈 정리 · IP당 10회/시간"}], "submit": "이 PC에서 활성화"}, {"type": "table", "title": "활성화된 기기", "note": "owner·admin · 남은 셀프 해제 3/3(30일) · 예시 값", "columns": ["기기", "마지막 사용", "상태"], "statusCol": 2, "statusKinds": {"활성": "ok", "해제됨": "muted"}, "actions": ["해제"], "rows": [[{"t": "[예시] 사무실 PC", "sub": "이 PC"}, "2026-10-19", "활성"], [{"t": "[예시] 노트북", "sub": "다른 PC"}, "2026-10-02", "활성"], [{"t": "[예시] 이전 PC", "sub": "09-12 해제"}, "2026-09-10", "해제됨"]]}, {"type": "feed", "title": "활성화·업데이트 기록", "note": "예시 값", "wide": true, "items": [{"time": "10-19", "text": "이 라이선스는 PC 2대에서 이미 활성화되어 있습니다. 쓰지 않는 PC를 해제하고 다시 활성화하세요(AR001)", "kind": "danger"}, {"time": "10-19", "text": "시리얼 번호를 찾지 못했습니다. 메일의 시리얼을 그대로 붙여 넣었는지 확인하세요(AR002)", "kind": "warn"}, {"time": "10-18", "text": "[예시] 규칙 팩 2026.10을 받았습니다", "kind": "info"}, {"time": "폴백", "text": "업데이트 기간 밖의 버전입니다. 사용 가능한 마지막 버전을 설치하거나 업데이트를 연장하세요(AR010)", "kind": "muted"}]}, {"type": "list", "title": "브라우저로 열림", "items": [{"title": "라이선스 구매", "meta": "웹 /pricing · 환불 조건은 결제 전 표시", "action": "열기"}, {"title": "업데이트 연장", "meta": "웹 /pricing?plan=updates_yearly · 290,000원/년(제안값)", "action": "열기"}, {"title": "계정에서 마지막 자격 버전 받기", "meta": "웹 /account/licenses", "action": "열기"}], "wide": false}], "spec": [["구성", "상태 카드(LicenseStatusBadge, 업데이트 확인) + 시리얼 입력 → 기기 표(행 '해제', owner·admin) → 활성화·업데이트 기록(AR001·AR002·AR010) + 브라우저 링크 3개. 체험·구독은 시리얼 카드 대신 '체험 n일 남음'·'월 구독 활성, 다음 결제일'"], ["데이터", "license_store(Rust 검증), 온라인이면 arch.org_features, GET /api/license/list, POST /api/license/activate·deactivate, tauri-plugin-updater + GET /api/updates/..."], ["행동", "이 PC에서 활성화, 이 PC 해제, 다른 PC 해제(owner·admin), 업데이트 확인, 구매·연장·마지막 자격 버전(브라우저)"], ["권한·플랜", "상태 보기는 전 상태·오프라인 가능. 활성화는 로그인 계정, 다른 PC 해제는 owner·admin. AR001·AR002·AR003·AR004·AR006"], ["근거", "03장 1절 :34, 2.6절 :126-137, 2.7절 :148, 3.16절 :436-465, 01장 4.4절"]], "ids": "AR-F-017~019"}, "settings": {"label": "설정", "icon": "settings", "route": "/settings/general", "desc": "일반 · 도면(표제란·레이어 매핑·기본 용지)", "origins": ["1.1절 앱 셸 내비 '설정'", "FortuneDocs 개인정보 동의(원칙만)"], "need": 0, "sections": [{"type": "tabs", "tabs": ["일반", "도면"]}, {"type": "form", "title": "일반", "note": "/settings/general", "fields": [{"label": "화면 테마", "value": "라이트", "kind": "select", "hint": "라이트·다크. 기본값은 01장 D-34", "options": ["라이트", "다크"]}, {"label": "밀도", "value": "기본", "kind": "select", "hint": "컴팩트·기본", "options": ["컴팩트", "기본"]}, {"label": "치수 표시 단위", "value": "mm", "kind": "select", "hint": "모델 좌표는 항상 mm 정수", "options": ["mm", "m"]}, {"label": "자동 저장 간격", "value": "[예시] 1분", "kind": "select", "hint": "기본값 (미확인)"}, {"label": "프로젝트 저장 위치", "value": "[예시] D:\\Projects", "kind": "text"}, {"label": "AI 국외 이전", "value": "동의 안 함 · 오픈소스 경로", "kind": "select", "hint": "owner·admin만 바꿉니다. 가격은 같습니다"}], "submit": "저장", "tab": "일반", "wide": true}, {"type": "list", "tab": "일반", "title": "고지·계정", "wide": false, "items": [{"title": "녹음 고지문", "meta": "버전 [예시] v1", "action": "보기"}, {"title": "오픈소스 고지", "meta": "Manifold Apache-2.0 · web-ifc MPL-2.0 등", "action": "보기"}, {"title": "로그아웃", "meta": "로컬 프로젝트는 지우지 않고 묻습니다", "action": "로그아웃"}]}, {"type": "feed", "tab": "일반", "title": "안내", "note": "해당할 때만", "items": [{"time": "국외 이전", "text": "국외 AI 사용에 동의하지 않아 오픈소스 경로로 처리합니다. 가격은 같습니다.", "kind": "info"}, {"time": "조직 정책", "text": "이 조직은 오픈소스 AI만 쓰도록 정해져 있어 바꿀 수 없습니다(AI001)", "kind": "warn"}, {"time": "저장 위치", "text": "프로젝트 폴더에 쓸 수 없습니다. 저장 위치를 바꾸세요", "kind": "danger"}]}, {"type": "form", "title": "표제란", "note": "/settings/drafting · 저장은 owner·admin(member는 읽기 전용, AR042)", "fields": [{"label": "사무소명", "value": "[예시] 나무건축사사무소", "kind": "text"}, {"label": "건축사 이름", "value": "", "kind": "text", "hint": "선택"}, {"label": "연락처", "value": "", "kind": "text", "hint": "선택"}, {"label": "고정 문구", "value": "기획설계 검토용 자료이며 인허가 설계도서가 아닙니다", "kind": "text", "hint": "지울 수 없음 · 날인·서명란은 만들지 않음"}], "submit": "저장", "tab": "도면", "wide": true, "buttons": ["로고 올리기 PNG·SVG"]}, {"type": "preview", "tab": "도면", "title": "표제란 미리보기 A3", "wide": false, "items": [{"ratio": "1.414 / 1", "width": "260px", "bg": "#FBFBF9", "light": true, "lines": ["[예시] 나무건축사사무소", {"t": "[예시] 단독주택 A · 배치도 · 1/200", "size": "s"}, {"t": "작성일 [예시] 10-19 · 규칙 팩 2026.10", "size": "s"}, {"t": "기획설계 검토용 자료이며 인허가 설계도서가 아닙니다", "size": "s"}], "caption": "날인·서명란 없음"}]}, {"type": "table", "title": "레이어 이름 매핑", "note": "표준 16종 중 8 · 01장 9.6절(제안) · 사무소 이름은 예시", "columns": ["표준 이름", "내용", "ACI", "선 종류", "사무소 이름"], "rows": [["A-SITE-BNDY", "대지 경계, 지번", "1", "1점 쇄선", "[예시] 대지경계"], ["A-SITE-ROAD", "도로 경계, 도로 폭", "8", "실선", "[예시] 도로"], ["A-SITE-SETB", "건축선, 대지안의 공지", "3", "파선", "[예시] 이격선"], ["A-ENVL", "엔벨로프, 일조사선", "4", "파선", "[예시] 법규선"], ["A-MASS", "매스 외곽", "7", "실선", {"t": "[예시] 매스/외곽", "sub": "쓸 수 없는 문자 /", "kind": "danger"}], ["A-PARK", "주차구획", "3", "실선", "[예시] 주차"], ["A-ANNO-DIMS", "치수(분해)", "1", "실선", "[예시] 치수"], ["A-TTLB", "도곽, 표제란", "7", "실선", "[예시] 도곽"]], "tab": "도면", "badge": "P1", "numCols": [2], "actions": ["표준으로 되돌리기"]}, {"type": "form", "tab": "도면", "title": "기본값", "note": "오프라인이면 캐시 읽기 전용 · 온라인에서 저장합니다", "fields": [{"label": "기본 용지", "kind": "chips", "options": ["A3", "A2", "A1"], "value": "A3"}, {"label": "글자 높이", "value": "2.5mm", "kind": "text", "hint": "(제안) 국내 표준 원문 미확인"}, {"label": "글꼴", "value": "SUIT", "kind": "select", "hint": "앱에 넣은 OFL 글꼴 목록 · SUIT OFL 여부 미확인"}], "submit": "저장"}], "spec": [["구성", "탭 [일반(/settings/general) · 도면(/settings/drafting)]. 일반: 테마·밀도·단위·자동 저장·저장 위치·국외 이전 폼 + 고지·계정(녹음 고지·오픈소스 고지·로그아웃) + 안내(AI001 등). 도면: 표제란 폼 + 표제란 미리보기, 레이어 매핑 표(P1, 이름 검증, 표준으로 되돌리기), 기본값(용지·글자 높이·글꼴)"], ["데이터", "local_settings(화면 표시용), core.set_ai_cross_border_ack, GET|PUT /api/drafting-profile(arch.drafting_profiles), drafting_profile_cache"], ["행동", "섹션별 저장(패턴 H), 로고 올리기, 레이어 이름 검증, 표준으로 되돌리기, 로그아웃(로컬 프로젝트는 지우지 않고 묻는다)"], ["권한·플랜", "일반은 본인(국외 이전은 owner·admin), 도면 저장은 owner·admin(AR042), member 읽기 전용. 전 상태. 오프라인이면 표제란은 캐시 읽기 전용"], ["근거", "03장 1절 :32, :33, 3.14절 :401-430, 3.15절 :434, 01장 9.6절"]], "ids": "AR-F-028"}}, "home": [{"type": "todo", "title": "오늘 처리할 일", "note": "0이면 칩을 숨김 · 예시 값", "items": [{"label": "확인할 검토 결과", "n": 1, "kind": "warn", "go": "home"}, {"label": "실패한 AI 작업(환불 완료)", "n": 1, "kind": "danger", "go": "credits"}, {"label": "클라우드 사본 충돌", "n": 1, "kind": "warn", "go": "home"}, {"label": "새 규칙 팩", "n": 1, "kind": "info", "go": "license"}]}, {"type": "tabs", "tabs": ["프로젝트 목록", "대지", "모델·판정", "프로그램", {"label": "평면", "badge": "P1"}, "도면", {"label": "렌더", "badge": "로그인"}, {"label": "제안서", "badge": "로그인"}, {"label": "검토", "badge": "로그인"}]}, {"type": "toolbar", "tab": "프로젝트 목록", "search": "프로젝트 이름 검색 · Ctrl+K", "buttons": ["DXF에서 대지 가져오기 · P1", "샘플 대지로 시작", {"label": "새 프로젝트", "primary": true}]}, {"type": "table", "tab": "프로젝트 목록", "title": "프로젝트", "note": "최근 수정순 · 판정은 로컬 최신 스냅샷 · 예시 값", "wide": true, "columns": ["이름", "판정(통과·확인·초과)", "시트", "수정", "클라우드 사본"], "numCols": [2], "statusCol": 1, "statusKinds": {"기준 초과": "danger", "확인 필요": "warn", "통과": "ok", "판정 전": "muted"}, "actions": [{"label": "열기", "primary": true}], "rows": [[{"t": "[예시] 단독주택 A", "sub": "2종 일반주거 · 마지막 탭 모델·판정"}, {"t": "기준 초과", "sub": "4 · 1 · 1"}, "3", "10-19 14:30", "있음"], [{"t": "[예시] 근생 B", "sub": "1종 일반주거 · 마지막 탭 검토"}, {"t": "확인 필요", "sub": "5 · 1 · 0"}, "2", "10-18 18:02", {"t": "충돌", "kind": "warn", "badge": "AR041", "badgeKind": "warn"}], [{"t": "[예시] 전원주택 C", "sub": "계획관리 · 마지막 탭 도면"}, {"t": "통과", "sub": "6 · 0 · 0"}, "4", "10-15 10:11", "없음"], [{"t": "[예시] 다가구 D", "sub": "용도지역 미입력 · 대지 탭부터"}, {"t": "판정 전", "sub": "매스 없음"}, "0", "10-12 09:40", "없음"]]}, {"type": "list", "tab": "프로젝트 목록", "title": "새로 시작", "wide": false, "items": [{"title": "새 프로젝트", "meta": "주소·지번 조회 또는 직접 그리기", "action": "만들기"}, {"title": "샘플 대지로 시작", "meta": "예시 대지(가상) · 판정 화면이 바로 열림", "action": "시작"}, {"title": "DXF에서 대지 가져오기", "meta": "20MB까지 · P1", "action": "가져오기"}, {"title": "클라우드에 사본 올리기", "meta": "올리는 것: 모델 파일 1개 · 4/100개", "action": "올리기"}]}, {"type": "progress", "tab": "프로젝트 목록", "title": "진행 중인 클라우드 작업", "note": "서버가 보고한 단계만 · 로그인·온라인일 때만 · 예시 값", "wide": true, "items": [{"title": "[예시] 클라우드 법규 검토 · 근생 B", "sub": "규칙 확인 → 해석 조항 검색 → 출처 확인 · 15 크레딧", "color": "info", "status": "실행 중", "statusKind": "info", "steps": 3, "done": 2}, {"title": "[예시] AI 렌더 표준 · 단독주택 A", "sub": "남동 투시 · 3 크레딧", "color": "accent", "status": "완료", "statusKind": "ok", "steps": 3, "done": 3}, {"title": "[예시] AI 렌더 고품질 · 단독주택 A", "sub": "만들지 못해 크레딧 5를 돌려드렸습니다", "color": "accent", "status": "환불", "statusKind": "danger", "steps": 3, "done": 1, "failAt": 1, "go": "credits"}, {"title": "[예시] 제안서 PDF · 전원주택 C", "sub": "대기 중 · 10 크레딧", "color": "accent", "status": "대기", "statusKind": "muted", "steps": 3, "done": 0}]}, {"type": "bars", "tab": "프로젝트 목록", "title": "오늘 쓴 일일 한도", "note": "크레딧이 아닌 상한 · 예시 값", "wide": false, "items": [{"label": "대지 조회", "meta": "하루", "value": 7, "max": 30, "unit": "회"}, {"label": "법규 채팅", "meta": "하루", "value": 12, "max": 200, "unit": "턴"}, {"label": "클라우드 사본", "meta": "조직", "value": 4, "max": 100, "unit": "개"}]}, {"type": "feed", "tab": "프로젝트 목록", "title": "최근 활동", "note": "예시 값", "items": [{"time": "14:31", "text": "[예시] 단독주택 A 시트 4개 파일을 내보냈습니다(DXF·PDF, 0 크레딧)", "kind": "ok"}, {"time": "14:25", "text": "[예시] 렌더를 만들지 못해 크레딧 5를 돌려드렸습니다", "kind": "danger", "go": "credits"}, {"time": "11:20", "text": "[예시] 근생 B 클라우드 사본이 다른 PC에서 먼저 바뀌었습니다. 두 버전을 비교한 뒤 고르세요(AR041)", "kind": "warn"}, {"time": "어제", "text": "[예시] 규칙 팩 2026.10을 받았습니다", "kind": "info", "go": "license"}]}, {"type": "toolbar", "tab": "대지", "title": "[예시] 단독주택 A › 대지", "note": "/projects/:id/site · AR-F-001 · 오늘 남은 조회 23/30 · 예시 값", "buttons": ["직접 그리기", "DXF에서 가져오기 · P1", {"label": "조회", "primary": true}], "search": "주소·지번 입력 · 예: [예시] 가상동 12-3"}, {"type": "editor", "tab": "대지", "title": "대지 편집", "note": "0 크레딧 · 좌표 mm 정수 · 예시 값", "left": {"title": "대지 요소", "items": [{"label": "대지 경계", "meta": "1점 쇄선 · 꼭짓점 6"}, {"label": "도로 1 (남측)", "meta": "폭 6,000mm"}, {"label": "도로 2 (동측)", "meta": "폭 입력 필요"}, {"label": "건축선", "meta": "도로 1 기준"}, {"label": "정북 방향", "meta": "12°"}]}, "center": {"title": "2D 대지 뷰", "tools": ["선택 V", "꼭짓점 편집", "도로 지정", "정북 지정", "측정 D"], "blocks": [{"kind": "media", "text": "[예시] 2D 대지 뷰 · 경계(1점 쇄선) · 도로와 폭 · 건축선 · 정북 화살표", "color": "info"}, {"kind": "note", "text": "도로 폭은 도로 변마다 넣습니다 · 도로 2 미입력", "color": "warn"}, {"kind": "p", "text": "대지면적 [예시] 148.30㎡ · 꼭짓점 6 · 공공데이터 출처 표기 위치는 D-14 확인 후(미확인)"}]}, "right": {"title": "속성", "items": [{"label": "용도지역·지구", "text": "[예시] 제2종 일반주거지역 · 조회값", "action": "확인"}, {"label": "허가 신청 예정일", "text": "[예시] 2027-03-02 · 일조사선 신·구 기준을 이 날짜로 고름", "action": "바꾸기"}, {"label": "조례 반영 여부", "text": "[예시] 반영 안 됨 · 지자체 확인 전", "action": "바꾸기"}, {"label": "규칙 팩", "text": "2026.10 · 이 PC 캐시", "action": "버전 보기"}]}}, {"type": "steps", "tab": "대지", "title": "DXF에서 대지 가져오기", "badge": "P1", "note": "20MB까지 · 0 크레딧", "steps": [{"label": "파일 선택", "desc": "OS 파일 대화상자로 DXF를 고릅니다. 20MB를 넘으면 필요한 레이어만 남겨 다시 저장하세요(AR055).", "fields": [{"label": "파일", "value": "[예시] 대지_현황.dxf · 3.2MB", "kind": "text", "hint": "닫힌 폴리라인 후보 목록을 만듭니다"}]}, {"label": "단위 확인", "desc": "범위로 단위를 추정하고, 확신하지 못하면 묻습니다(AR053).", "fields": [{"label": "도면 단위", "kind": "chips", "options": ["mm", "m"], "value": "mm"}]}, {"label": "경계 선택", "desc": "대지 경계로 쓸 닫힌 폴리라인을 누르고 정북 방향을 정합니다.", "fields": [{"label": "경계", "value": "[예시] 후보 2 · 꼭짓점 6", "kind": "select"}, {"label": "정북 방향", "value": "12°", "kind": "text"}]}, {"label": "도로 지정", "desc": "도로 경계를 고르고 폭을 넣습니다. 열린 선은 대지 경계로 쓸 수 없습니다.", "fields": [{"label": "도로 폭", "value": "6,000mm", "kind": "text", "hint": "도로 변마다 입력"}]}], "submit": "대지로 쓰기"}, {"type": "feed", "tab": "대지", "title": "조회 기록", "note": "오프라인이면 조회 버튼 비활성 · 예시 값", "items": [{"time": "14:02", "text": "[예시] 가상동 12-3 조회 · 대지 폴리곤과 용도지역을 표시했습니다", "kind": "ok"}, {"time": "13:58", "text": "공공 데이터 서비스가 응답하지 않습니다. 잠시 뒤 다시 조회하거나 직접 그리세요(AR021)", "kind": "danger"}, {"time": "13:40", "text": "[예시] 대지_현황.dxf: 지원하지 않는 요소 3개(SPLINE)를 건너뛰었습니다. 나머지로 계속합니다(AR054)", "kind": "warn"}, {"time": "10-18", "text": "오늘 대지 조회 한도를 모두 썼습니다. 직접 그리기로 이어 가세요(AR020)", "kind": "warn"}]}, {"type": "toolbar", "tab": "모델·판정", "title": "[예시] 단독주택 A › 모델·판정", "note": "/projects/:id/model · AR-F-002~007·033 · 저장됨 · 0 크레딧", "buttons": ["투시 1", "평면 2", "정북 단면 3", {"label": "매스 자동 제안", "primary": true}]}, {"type": "editor", "tab": "모델·판정", "title": "모델러", "note": "실행취소 100단계 · 예시 값", "left": {"title": "레이어", "items": [{"label": "대지", "meta": "표시 · 잠금"}, {"label": "엔벨로프", "meta": "표시 · H"}, {"label": "매스 1", "meta": "1F 2F 3F"}, {"label": "주차구획", "meta": "숨김"}, {"label": "치수", "meta": "표시"}]}, "center": {"title": "3D 뷰포트", "tools": ["선택 V", "매스 M", "압출 E", "측정 D", "단면 S", "엔벨로프 H"], "blocks": [{"kind": "media", "text": "[예시] 3D 뷰포트 · 청록 반투명 엔벨로프 안 콘크리트 매스 3층 · 선택 면 치수", "color": "#276F80"}, {"kind": "note", "text": "북측 3층이 정북 일조사선(신)을 0.4m 넘습니다 · 해당 면 경고 해치", "color": "danger"}, {"kind": "p", "text": "연면적 182.40㎡ · 건축면적 86.10㎡ · 판정 38ms · 엔진 1.0.0 · 규칙 팩 2026.10"}]}, "right": {"title": "속성 인스펙터 · 매스 1", "items": [{"label": "층 수", "text": "3", "action": "고치기"}, {"label": "층고", "text": "3,000mm", "action": "고치기"}, {"label": "지붕", "text": "평", "action": "바꾸기"}, {"label": "바닥", "text": "0mm", "action": "고치기"}]}}, {"type": "table", "tab": "모델·판정", "title": "판정 패널", "note": "판정은 설계 검토를 돕는 참고 자료입니다. 최종 판단은 건축사와 허가권자가 합니다 · 행을 누르면 해당 매스 강조 · 예시 값", "columns": ["항목", "값 / 기준", "판정", "근거"], "numCols": [1], "statusCol": 2, "statusKinds": {"PASS 통과": "ok", "WARN 확인 필요": "warn", "FAIL 기준 초과": "danger", "대상": "info", "대상 아님": "muted", "예정 규칙(참고)": "muted"}, "actions": ["근거 펼치기"], "rows": [[{"t": "건폐율"}, "58.2 / 60%", "PASS 통과", {"t": "[예시] 건폐율 조항·조례", "sub": "규칙 팩 2026.10"}], [{"t": "용적률"}, "132 / 150%", "PASS 통과", {"t": "[예시] 용적률 조항·조례", "sub": "규칙 팩 2026.10"}], [{"t": "정북 일조사선", "sub": "신 기준 · 신청 예정일로 고름"}, "0.4m 초과", "FAIL 기준 초과", {"t": "건축법 개정(2026) 일조", "sub": "시행일 미확인"}], [{"t": "대지안의 공지·이격"}, "1.2 / 1.0m", "PASS 통과", {"t": "[예시] 이격 조항", "sub": "규칙 팩 2026.10"}], [{"t": "주차대수"}, "2 / 2대", "WARN 확인 필요", {"t": "주차장법 시행령", "sub": "조례 미확인 · 법령 기준"}], [{"t": "내진설계 대상 여부"}, "3층 · 182.40㎡", "대상", {"t": "2층 또는 200㎡ 이상 등", "sub": "설계 내용 검토 안 함"}], [{"t": "제로에너지 대상 여부"}, "182.40㎡", "대상 아님", {"t": "민간 1,000㎡ 이상", "sub": "2025-01-01부터"}], [{"t": "다가구·다세대 완화", "sub": "8·13 대책"}, "-", "예정 규칙(참고)", {"t": "시행령 개정 예정", "sub": "확정일 미확인 · 판정 제외"}]]}, {"type": "cards", "tab": "모델·판정", "title": "매스 자동 제안", "badge": "P1", "note": "판정을 통과한 후보만 · 0 크레딧 · 예시 값", "ratio": "16 / 9", "minW": 240, "items": [{"title": "1안 건폐 최대", "meta": "목표 연면적 180㎡ · 3층", "thumb": "#A7ABA8", "thumbLabel": "1안", "thumbTag": "통과 6", "lines": [["연면적", "186.20㎡"], ["건축면적", "88.40㎡"]], "actions": ["이 안으로 모델 만들기"], "selected": true}, {"title": "2안 일조 여유", "meta": "목표 연면적 180㎡ · 3층", "thumb": "#A7ABA8", "thumbLabel": "2안", "thumbTag": "통과 6", "lines": [["연면적", "181.10㎡"], ["건축면적", "79.20㎡"]], "actions": ["이 안으로 모델 만들기"]}, {"title": "3안 정형 평면", "meta": "목표 연면적 180㎡ · 2층", "thumb": "#A7ABA8", "thumbLabel": "3안", "thumbTag": "통과 6", "lines": [["연면적", "180.60㎡"], ["건축면적", "90.30㎡"]], "actions": ["이 안으로 모델 만들기"]}, {"title": "목표 260㎡로 요청했을 때", "meta": "만족하는 안 없음", "badge": "안 없음", "badgeKind": "warn", "lines": [["안내", "엔벨로프 안에서 최대 241.0㎡입니다"]], "actions": ["목표 조정"]}]}, {"type": "list", "tab": "모델·판정", "title": "상태 배너", "note": "해당 상태일 때만 헤더 아래에", "items": [{"title": "판정 기준: 규칙 팩 2026.10(기준일 2026-10-01). 이후 개정 2건", "meta": "폴백일 때만 · 개정 제목만 열람 · 예시 값", "action": "개정 목록 보기"}, {"title": "열람 모드: 편집하려면 라이선스나 구독이 필요합니다", "meta": "체험만료·구독만료 · 뷰포트 읽기 전용, 도구 막대 숨김", "action": "라이선스", "go": "license"}, {"title": "엔벨로프 안에 매스를 그리면 판정이 시작됩니다", "meta": "매스 없음 · 매스 그리기 M 또는 자동 제안", "action": "매스 그리기"}]}, {"type": "toolbar", "tab": "프로그램", "title": "[예시] 단독주택 A › 프로그램", "note": "/projects/:id/program · AR-F-011·012·015·034 · 잔액 284 · 예시 값", "buttons": ["행 추가", {"label": "템플릿 PDF · 1 크레딧", "primary": true}]}, {"type": "form", "tab": "프로그램", "title": "요구 체크리스트", "note": "0 크레딧 · 같은 입력이면 같은 결과", "fields": [{"label": "가족", "value": "[예시] 부부 + 자녀 2", "kind": "text", "hint": "고치면 면적표를 다시 계산합니다(잠금 행 제외)"}, {"label": "생활", "value": "[예시] 재택 근무 1 · 손님방 있음", "kind": "text"}, {"label": "예산", "value": "[예시] 4억 이하", "kind": "select"}], "submit": "답 고치기"}, {"type": "form", "tab": "프로그램", "title": "대화형 입력", "note": "AI · 2 크레딧", "wide": true, "fields": [{"label": "건축주 요구", "value": "[예시] 2층에 아이방 둘, 서재는 1층 남향", "kind": "textarea", "hint": "음성은 STT 분당 1 추가 · 변환 텍스트는 입력창에만"}, {"label": "입력 방식", "kind": "chips", "options": ["텍스트", "마이크", "상담 녹음 P1"], "value": "텍스트", "hint": "상담 녹음은 매번 제3자 고지 후 · STT 분당 1 + 5"}], "submit": "후보 만들기 · 2 크레딧"}, {"type": "checklist", "tab": "프로그램", "title": "AI 추출 후보", "note": "누르면 채택 · 채택한 항목만 반영", "wide": false, "items": [{"label": "[예시] 아이방 2실, 각 12㎡", "hint": "면적표 행으로", "done": true, "status": "채택", "statusKind": "ok"}, {"label": "[예시] 서재 1층, 남향 메모", "hint": "메모로", "status": "AI 추출 후보", "statusKind": "info"}, {"label": "[예시] 예산 4억 이하", "hint": "체크리스트 답으로", "status": "AI 추출 후보", "statusKind": "info"}]}, {"type": "table", "tab": "프로그램", "title": "면적표", "note": "합계 182.40㎡ / 엔벨로프 최대 241.0㎡ · 예시 값", "wide": true, "columns": ["실", "목표(㎡)", "잠금"], "numCols": [1], "actions": ["잠금"], "rows": [["거실·주방", "38.00", "안 함"], ["안방", "18.00", {"t": "잠금", "kind": "accent"}], [{"t": "아이방 1", "badge": "AI 추출 후보 채택", "badgeKind": "info"}, "12.00", "안 함"], [{"t": "아이방 2", "badge": "AI 추출 후보 채택", "badgeKind": "info"}, "12.00", "안 함"], ["서재", "10.00", "안 함"], [{"t": "기타", "sub": "욕실·현관·계단 등"}, "92.40", "안 함"]]}, {"type": "feed", "tab": "프로그램", "title": "대화형 입력 기록", "note": "예시 값", "wide": false, "items": [{"time": "14:10", "text": "후보 3개를 만들었습니다 · 2 크레딧", "kind": "ok"}, {"time": "13:52", "text": "요구를 정리하지 못했습니다. 크레딧 2를 돌려드렸습니다. 문장을 나눠 다시 시도하세요(AR032)", "kind": "danger", "go": "credits"}, {"time": "13:50", "text": "마이크를 쓸 수 없습니다. 텍스트로 입력하세요", "kind": "warn"}]}, {"type": "form", "tab": "프로그램", "title": "개략 공사비", "note": "금액은 엔진 계산(LLM 안 씀) · 예시 값", "fields": [{"label": "구조", "value": "철근콘크리트", "kind": "select"}, {"label": "마감", "value": "보통", "kind": "select"}, {"label": "합계(부가세 포함)", "value": "[예시] 3억 8,900만 원", "kind": "text", "hint": "단가 출처와 기준일 [예시] 2026-10-01 표시"}]}, {"type": "toolbar", "tab": "평면", "title": "[예시] 단독주택 A › 평면", "note": "/projects/:id/plans · AR-F-032·035 · 0 크레딧", "buttons": ["참조 도면 깔기 · Phase 2", "AI 실 배치 초안 · Phase 2", {"label": "저장(오류 1건)", "primary": true}], "badge": "P1"}, {"type": "filters", "tab": "평면", "groups": [{"label": "층", "options": ["1F", "2F", "3F"]}, {"label": "그리드 스냅", "options": ["100mm", "끔"]}], "caption": "실 경계를 옮기면 면적과 목표 차이를 바로 다시 계산합니다(p95 100ms). 벽 두께는 외벽 200·내벽 100(제안값, 표시만)."}, {"type": "editor", "tab": "평면", "title": "평면 개략도 편집기", "note": "예시 값", "left": {"title": "실 목록 · 목표 대비", "items": [{"label": "거실·주방", "meta": "-4.7%"}, {"label": "안방", "meta": "+2.2%"}, {"label": "아이방 1", "meta": "미배치"}, {"label": "아이방 2", "meta": "외곽 이탈"}, {"label": "서재", "meta": "+3.0%"}]}, "center": {"title": "1F 캔버스", "tools": ["실 R", "분할 X", "병합 J", "문 D", "창 W", "그리드 G"], "blocks": [{"kind": "media", "text": "[예시] 층 외곽(매스) 안 실 다각형 · 그리드 점 100mm · 선택 변 치수", "color": "info"}, {"kind": "note", "text": "오류 1: 아이방 2가 층 외곽 밖으로 나갔습니다 · 고친 뒤 저장하세요(AR051)", "color": "danger"}, {"kind": "p", "text": "층 합계 152.30 / 182.40㎡"}]}, "right": {"title": "실 속성 · 거실·주방", "items": [{"label": "이름 · 용도", "text": "거실·주방 · 거실", "action": "고치기"}, {"label": "면적", "text": "36.20㎡ · 목표 38.00㎡ · -1.80㎡(-4.7%)"}, {"label": "문·창", "text": "D1 900mm 여닫이", "action": "고치기"}]}}, {"type": "checklist", "tab": "평면", "title": "저장 전 검사", "note": "겹침·이탈이 있으면 저장 비활성", "items": [{"label": "실 겹침 없음", "done": true}, {"label": "층 외곽 이탈 없음", "hint": "아이방 2", "status": "오류 1", "statusKind": "danger"}, {"label": "미배치 실", "hint": "아이방 1 · 왼쪽 목록에서 끌어 놓거나 실 그리기 R", "status": "1실", "statusKind": "warn"}]}, {"type": "cards", "tab": "평면", "title": "AI 실 배치 초안", "badge": "Phase 2", "note": "5 크레딧(제안) · LLM은 조닝 의도만, 배치는 솔버", "minW": 240, "items": [{"title": "[예시] 1안", "meta": "남향 거실", "lines": [["실 겹침", "0"], ["목표 대비", "±15% 이내(제안)"]], "actions": ["편집기에서 열기"]}, {"title": "[예시] 2안", "meta": "현관 동측", "lines": [["실 겹침", "0"], ["목표 대비", "±15% 이내(제안)"]], "actions": ["편집기에서 열기"]}, {"title": "[예시] 3안", "meta": "서재 분리", "lines": [["실 겹침", "0"], ["목표 대비", "±15% 이내(제안)"]], "actions": ["편집기에서 열기"]}]}, {"type": "toolbar", "tab": "도면", "title": "[예시] 단독주택 A › 도면", "note": "/projects/:id/sheets · AR-F-028~031·038 · 0 크레딧", "buttons": ["시트 만들기 ▾", {"label": "내보내기 Ctrl+E", "primary": true}]}, {"type": "editor", "tab": "도면", "title": "시트", "note": "엔진 1.0.0 · 예시 값", "left": {"title": "시트 목록", "items": [{"label": "배치도", "meta": "1/200"}, {"label": "면적 산정도", "meta": "1/200"}, {"label": "일조사선 단면", "meta": "1/100"}, {"label": "1F 평면", "meta": "P1"}]}, "center": {"title": "SVG 미리보기 · 배치도", "tools": ["맞춤 0", "축소 -", "확대 +", "레이어 미리보기 L"], "blocks": [{"kind": "media", "text": "[예시] 용지 mm 좌표 · 대지 경계, 이격선, 매스, 치수, 주차구획 · 표제란", "color": "info"}, {"kind": "note", "text": "일조사선 FAIL 위치에 '검토 필요' 기호", "color": "danger"}, {"kind": "note", "text": "형상은 모델·평면 화면에서 고칩니다 · 여기서는 주석 위치만 옮깁니다", "color": "info"}]}, "right": {"title": "시트 설정", "items": [{"label": "용지 · 방향", "text": "A3 · 가로", "action": "바꾸기"}, {"label": "축척", "text": "자동(1/200)", "action": "바꾸기"}, {"label": "건축주 이름 표시", "text": "끔(기본)", "action": "켜기"}, {"label": "제안서에 넣기", "text": "켬", "action": "끄기"}]}}, {"type": "preview", "tab": "도면", "title": "시트 미리보기", "note": "내보내는 SVG와 같은 결과 · 예시", "items": [{"ratio": "1.414 / 1", "bg": "#FBFBF9", "light": true, "top": true, "lines": ["[예시] 배치도 1/200", {"t": "대지 경계 · 이격선 · 매스 · 치수 · 주차구획", "size": "s"}, {"t": "표제란: 기획설계 검토용 자료이며 인허가 설계도서가 아닙니다", "size": "s"}], "caption": "A3 가로 · 배치도"}, {"ratio": "1.414 / 1", "bg": "#FBFBF9", "light": true, "top": true, "lines": ["[예시] 면적 산정도 1/200", {"t": "층별 바닥면적 구획 · 면적표(㎡ 소수 둘째 자리)", "size": "s"}, {"t": "산정 기준: 외벽 중심선 가정 · 규칙 팩 2026.10", "size": "s"}], "caption": "A3 가로 · 면적 산정도"}, {"ratio": "1.414 / 1", "bg": "#FBFBF9", "light": true, "top": true, "lines": ["[예시] 일조사선 단면 1/100", {"t": "정북 방향 단면 · 신 기준 라벨", "size": "s"}, {"t": "사선을 넘는 구간 표시", "size": "s"}], "caption": "A3 가로 · 일조사선 단면"}]}, {"type": "form", "tab": "도면", "title": "도면 내보내기", "note": "0 크레딧 · 이 PC에서 만들며 인터넷 연결이 필요 없습니다", "wide": true, "fields": [{"label": "시트", "value": "배치도 · 면적 산정도 · 일조사선 단면 (1F 평면 빼기)", "kind": "text"}, {"label": "형식", "value": "DXF(AutoCAD 2013 형식) · PDF(시트 묶음 1파일)", "kind": "text", "hint": "SVG · PNG(미리보기)도 고를 수 있습니다"}, {"label": "레이어 이름", "kind": "chips", "options": ["사무소 매핑", "표준 이름"], "value": "사무소 매핑"}, {"label": "저장 위치", "value": "[예시] D:\\Projects\\단독주택A\\도면", "kind": "text", "hint": "OS 저장 대화상자로만"}, {"label": "파일 이름", "value": "[예시] 단독주택A_배치도_1-200.dxf 외 3개", "kind": "text"}], "submit": "내보내기", "buttons": ["취소"]}, {"type": "list", "tab": "도면", "title": "레이어 매핑 미리보기", "wide": false, "go": "settings", "items": [{"title": "A-SITE-BNDY → [예시] 대지경계", "meta": "1점 쇄선 · ACI 1"}, {"title": "A-SITE-SETB → [예시] 이격선", "meta": "파선 · ACI 3"}, {"title": "A-ENVL → [예시] 법규선", "meta": "파선 · ACI 4"}, {"title": "A-MASS → [예시] 매스외곽", "meta": "실선 · ACI 7"}]}, {"type": "feed", "tab": "도면", "title": "내보내기·오류", "note": "예시 값", "items": [{"time": "14:31", "text": "4개 파일을 내보냈습니다 · 폴더 열기", "kind": "ok"}, {"time": "14:30", "text": "선택한 글꼴을 찾지 못해 [예시] 대체 글꼴로 표시합니다. CAD에서 한글이 깨지면 같은 이름의 글꼴을 설치하세요(AR057)", "kind": "warn"}, {"time": "10-12", "text": "[예시] 다가구 D: 모델에 빠진 정보가 있어 시트를 만들 수 없습니다: 매스 / 층 정보(AR050)", "kind": "danger"}, {"time": "10-02", "text": "이전 엔진([예시] 0.9.0)으로 만든 시트입니다. 다시 만들면 현재 엔진 기준으로 바뀝니다. 주석 위치는 유지합니다(AR059)", "kind": "info"}, {"time": "체험", "text": "체험판: 출력하면 표제란에 '체험판'이 표시됩니다. 라이선스나 구독이 있으면 표시되지 않습니다", "kind": "muted"}]}, {"type": "toolbar", "tab": "렌더", "title": "[예시] 단독주택 A › 렌더", "note": "/projects/:id/render · AR-F-013 · 로그인 필수", "buttons": ["현재 시점 쓰기", {"label": "렌더 만들기 · 3 크레딧", "primary": true}]}, {"type": "form", "tab": "렌더", "title": "프리셋", "note": "버튼에 차감 크레딧 표시", "wide": true, "fields": [{"label": "시점", "value": "[예시] 남동 투시 · 모델러 시점", "kind": "text", "hint": "보내는 것: 뷰포트 깊이·윤곽 이미지 1장. 도면·3D 원본은 보내지 않습니다"}, {"label": "재질", "value": "[예시] 노출 콘크리트", "kind": "select", "hint": "프리셋 목록 (미확인)"}, {"label": "시간대 · 계절", "value": "[예시] 늦은 오후 · 가을", "kind": "select"}, {"label": "품질", "kind": "chips", "options": ["표준 1024px · 3", "고품질 2K · 5"], "value": "표준 1024px · 3", "hint": "체험에서는 1024px 렌더만 됩니다"}], "submit": "렌더 만들기 · 3 크레딧"}, {"type": "preview", "tab": "렌더", "title": "현재 시점", "wide": false, "items": [{"ratio": "16 / 9", "width": "260px", "bg": "info", "lines": ["[예시] 남동 투시", {"t": "깊이·윤곽 이미지(이 PC에서 만듦)", "size": "s"}], "caption": "모델러 뷰포트 축소판"}]}, {"type": "progress", "tab": "렌더", "title": "진행", "note": "서버가 보고한 상태만 · 예시 값", "items": [{"title": "[예시] 표준 · 남측 투시", "sub": "실행 중 · 3 크레딧", "color": "info", "status": "실행 중", "statusKind": "info", "steps": 3, "done": 1}, {"title": "[예시] 고품질 · 남동 투시", "sub": "렌더를 만들지 못했습니다. 크레딧 5를 돌려드렸습니다. 시점이나 프리셋을 바꿔 다시 시도하세요", "color": "info", "status": "환불", "statusKind": "danger", "steps": 3, "done": 1, "failAt": 1, "go": "credits"}, {"title": "[예시] 표준 · 북서 투시", "sub": "렌더가 3건 진행 중입니다. 하나가 끝나면 시작하세요(AR030)", "color": "info", "status": "시작 안 됨", "statusKind": "warn", "steps": 3, "done": 0}]}, {"type": "cards", "tab": "렌더", "title": "결과", "note": "AI 렌더(실제 시공과 다를 수 있음) · 클라우드 보관 90일 · 예시", "ratio": "16 / 9", "minW": 250, "items": [{"title": "[예시] 남동 투시 · 늦은 오후", "meta": "표준 1024px · 10-19 14:20", "thumb": "info", "thumbLabel": "AI 렌더", "thumbTag": "1024px", "badge": "AI 렌더", "badgeKind": "warn", "lines": [["보관", "클라우드 90일"]], "actions": ["이 PC에 저장", "제안서에 넣기", "업스케일 · 2"], "selected": true}, {"title": "[예시] 남측 정면 · 한낮", "meta": "표준 1024px · 10-18 16:02", "thumb": "info", "thumbLabel": "AI 렌더", "thumbTag": "1024px", "badge": "AI 렌더", "badgeKind": "warn", "lines": [["보관", "이 PC에 저장됨"]], "actions": ["제안서에 넣기", "업스케일 · 2"]}, {"title": "[예시] 고품질 · 남동 투시", "meta": "10-19 14:25", "badge": "환불 5", "badgeKind": "danger", "lines": [["안내", "실패해 전액 환불"]], "actions": ["다시 시도"]}, {"title": "[예시] 북측 투시", "meta": "07-10", "badge": "보관 끝남", "badgeKind": "muted", "lines": [["안내", "이 PC에 저장한 이미지만 남습니다"]], "actions": ["이 PC 사본 열기"]}]}, {"type": "toolbar", "tab": "제안서", "title": "[예시] 단독주택 A › 제안서", "note": "/projects/:id/proposal · AR-F-014 · 로그인 필수", "buttons": ["템플릿 문서만 · 1 크레딧", {"label": "제안서 만들기 · 10 크레딧", "primary": true}]}, {"type": "checklist", "tab": "제안서", "title": "섹션 구성", "note": "판정·면적·공사비·시트는 엔진 값 그대로", "wide": true, "items": [{"label": "설계개요", "done": true}, {"label": "법규 판정 요약", "hint": "확인 필요·기준 초과 표시 그대로", "done": true}, {"label": "면적표", "done": true}, {"label": "개략 공사비", "done": true}, {"label": "렌더", "hint": "[예시] 2장 · 렌더 화면에서 '제안서에 넣기'", "done": true}, {"label": "도면 시트", "hint": "'제안서에 넣기' 켠 시트 3장", "done": true}, {"label": "AI 서술(설계 의도)", "hint": "서술만 LLM · 숫자는 판정 값 그대로", "status": "AI 초안", "statusKind": "info"}]}, {"type": "list", "tab": "제안서", "title": "보내는 것", "wide": false, "items": [{"title": "시트 SVG 3장", "meta": "업로드 후 서버가 HTML 조립"}, {"title": "렌더 이미지 2장", "meta": "[예시] 이미 만든 이미지"}, {"title": "시트가 없을 때", "meta": "도면 화면에서 시트를 먼저 만드세요", "action": "도면 열기"}]}, {"type": "preview", "tab": "제안서", "title": "쪽 미리보기", "note": "최대 20쪽 · 꼬리말 '법적 판정 아님' · 예시", "items": [{"ratio": "1 / 1.414", "bg": "#FBFBF9", "light": true, "top": true, "lines": ["[예시] 단독주택 A 기획설계 제안", {"t": "설계개요", "size": "s"}], "caption": "1쪽 · 표지·설계개요"}, {"ratio": "1 / 1.414", "bg": "#FBFBF9", "light": true, "top": true, "lines": ["법규 판정 요약", {"t": "통과 4 · 확인 필요 1 · 기준 초과 1", "size": "s"}, {"t": "법적 판정 아님", "size": "s"}], "caption": "2쪽 · 판정 요약"}, {"ratio": "1 / 1.414", "bg": "#FBFBF9", "light": true, "top": true, "lines": ["면적표 · 개략 공사비", {"t": "엔진 계산값", "size": "s"}], "caption": "3쪽"}, {"ratio": "1 / 1.414", "bg": "#FBFBF9", "light": true, "top": true, "lines": ["설계 의도", {"t": "AI 초안", "size": "s"}], "caption": "5쪽 · 서술"}]}, {"type": "table", "tab": "제안서", "title": "생성 기록", "note": "실패는 전액 환불 · 예시 값", "columns": ["문서", "쪽", "크레딧", "상태"], "numCols": [1, 2], "statusCol": 3, "statusKinds": {"완료": "ok", "환불": "danger", "시작 안 됨": "warn", "생성 중": "info"}, "actions": ["PDF 미리보기", "다시 만들기"], "rows": [[{"t": "[예시] 제안서 v4", "sub": "서버에서 PDF 조립 중"}, "-", "10", "생성 중"], [{"t": "[예시] 제안서 v3", "sub": "10-19 14:40 · 시트 3 · 렌더 2"}, "12", "10", "완료"], [{"t": "[예시] 제안서 v2", "sub": "보내는 파일이 너무 큽니다. 해상도를 낮추거나 시트 수를 줄이세요(AR031)"}, "-", "0", "시작 안 됨"], [{"t": "[예시] 제안서 v1", "sub": "만들지 못해 크레딧 10을 돌려드렸습니다"}, "-", "+10", "환불"], [{"t": "[예시] 템플릿 문서", "sub": "설계개요서·면적표·공사비 · 같은 버전 다시 요청은 0"}, "4", "1", "완료"]]}, {"type": "toolbar", "tab": "검토", "title": "[예시] 단독주택 A › 검토", "note": "/projects/:id/review · AR-F-008 · 로그인 필수 · 폴백은 잠금(AR012)", "buttons": [{"label": "검토 요청 · 15 크레딧", "primary": true}]}, {"type": "progress", "tab": "검토", "title": "진행", "note": "p95 3분 · 10분 넘으면 실패·환불 · 예시 값", "wide": true, "items": [{"title": "[예시] 검토 요청 10-19 15:02", "sub": "규칙 확인 → 해석 조항 검색 → 출처 확인", "color": "info", "status": "출처 확인", "statusKind": "info", "steps": 3, "done": 2}, {"title": "[예시] 검토 요청 10-18 17:40", "sub": "근거를 확인하지 못한 검토 결과라 보여 드리지 않습니다. 크레딧 15를 돌려드렸습니다(AR033)", "color": "info", "status": "환불", "statusKind": "danger", "steps": 3, "done": 2, "failAt": 2, "go": "credits"}]}, {"type": "list", "tab": "검토", "title": "보내는 것", "wide": false, "items": [{"title": "대지 속성", "meta": "용도지역 · 도로 · 정북"}, {"title": "판정 결과", "meta": "서버가 같은 규칙으로 다시 계산"}, {"title": "매스 요약", "meta": "층수 · 면적"}, {"title": "보내지 않는 것", "meta": "도면 · 3D 원본"}]}, {"type": "split", "tab": "검토", "title": "검토 결과", "note": "출처 없는 문장은 표시하지 않음 · 예시", "items": [{"title": "정북 일조사선", "meta": "규칙 엔진 + 해석 조항", "status": "기준 초과", "statusKind": "danger", "detail": {"rows": [["판정", "기준 초과 · 0.4m"], ["근거", "2026 건축법 개정 일조 기준"], ["시행일", "미확인 · 신청 예정일로 신 기준"], ["출처", "[예시] 출처 칩 2"]], "body": "[예시] 북측 3층 매스가 신 기준 사선을 넘습니다. 조례 반영 시점은 지자체마다 다릅니다.", "actions": ["모델·판정에서 보기", "출처 원문 요약"]}}, {"title": "지구단위계획", "meta": "해석 조항 검색", "status": "확인 필요", "statusKind": "warn", "detail": {"rows": [["판정", "확인 필요"], ["이유", "[예시] 해당 구역 계획 열람 필요"], ["출처", "[예시] 출처 칩 1"]], "body": "[예시] 구역 지정 여부를 허가권자 자료로 확인하세요.", "actions": ["확인함"]}}, {"title": "외장재 준불연", "meta": "해석 + 경고만", "status": "확인 필요", "statusKind": "warn", "detail": {"rows": [["판정", "확인 필요"], ["이유", "적용 범위 원문 미확인"]], "actions": ["확인함"]}}, {"title": "주차대수", "meta": "조례 연동", "status": "확인 필요", "statusKind": "warn", "detail": {"rows": [["판정", "확인 필요"], ["이유", "조례 미확인, 법령 기준으로 표시"]], "actions": ["확인함"]}}, {"title": "건폐율", "meta": "규칙 엔진", "status": "통과", "statusKind": "ok", "detail": {"rows": [["판정", "통과 · 58.2 / 60%"], ["출처", "[예시] 출처 칩 1"]]}}]}, {"type": "checklist", "tab": "검토", "title": "확인 필요 사항", "note": "확인 필요는 확인 체크 후 씁니다", "items": [{"label": "[예시] 지구단위계획 열람", "hint": "허가권자 자료", "status": "확인 필요", "statusKind": "warn"}, {"label": "[예시] 외장재 준불연 적용 범위", "hint": "원문 미확인 · 경고만", "status": "확인 필요", "statusKind": "warn"}, {"label": "[예시] 주차 조례 값", "hint": "조례 미확인, 법령 기준으로 표시", "done": true}]}], "artboards": [{"menu": "chat", "title": "법규 › 법규 채팅"}, {"menu": "wiki", "title": "법규 › 법규 위키"}, {"menu": "credits", "title": "크레딧"}, {"menu": "license", "title": "라이선스"}, {"menu": "settings", "title": "설정 (일반 · 도면)"}]};
+var IC = {
+  home: 'M3 11l9-8 9 8M5 10v10h14V10', grid: 'M3 3h8v8H3zM13 3h8v8h-8zM3 13h8v8H3zM13 13h8v8h-8z', search: 'M11 4a7 7 0 1 0 0 14a7 7 0 0 0 0-14M20 20l-4-4',
+  radar: 'M12 3a9 9 0 1 0 9 9M12 7a5 5 0 1 0 5 5M12 12l7-7', download: 'M12 3v12M7 10l5 5 5-5M4 21h16', upload: 'M12 21V9M7 14l5-5 5 5M4 3h16',
+  activity: 'M3 12h4l3 8 4-16 3 8h4', phone: 'M7 2h10v20H7zM11 18h2', layers: 'M12 3l9 5-9 5-9-5zM3 13l9 5 9-5M3 17l9 5 9-5', music: 'M9 18V5l12-2v13M6 21a3 3 0 1 0 0-6a3 3 0 0 0 0 6M18 19a3 3 0 1 0 0-6a3 3 0 0 0 0 6',
+  calendar: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4', tv: 'M3 7h18v12H3zM8 3l4 4 4-4', link: 'M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1',
+  layout: 'M4 3h16v18H4zM4 8h16M9 8v13', smartphone: 'M8 3h8v18H8zM10 7h4M10 11h4M10 15h4', megaphone: 'M3 11v3l12 5V6L3 11zM15 9h3a3 3 0 0 1 0 6h-3', shield: 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z',
+  chart: 'M4 20V10M10 20V4M16 20v-7M2 20h20', chat: 'M4 4h16v12H8l-4 4zM8 9h8M8 12h5', workflow: 'M4 4h5v5H4zM15 15h5v5h-5zM9 6h4a2 2 0 0 1 2 2v7', briefcase: 'M3 7h18v13H3zM8 7V4h8v3M3 12h18',
+  card: 'M3 6h18v12H3zM3 10h18M7 15h3', settings: 'M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4', external: 'M14 4h6v6M20 4l-9 9M18 14v6H4V6h6', book: 'M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-6M20 4v14h-6',
+  pen: 'M4 20l4-1 11-11-3-3L5 16zM14 6l3 3', file: 'M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h6', folder: 'M3 6h6l2 2h10v12H3z', users: 'M9 11a4 4 0 1 0 0-8a4 4 0 0 0 0 8M2 21a7 7 0 0 1 14 0M16 3a4 4 0 0 1 0 8M18 14a6 6 0 0 1 4 7',
+  user: 'M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8M4 21a8 8 0 0 1 16 0', bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0', cart: 'M3 4h2l3 12h11l2-8H6M9 20a1 1 0 1 0 0-2a1 1 0 0 0 0 2M18 20a1 1 0 1 0 0-2a1 1 0 0 0 0 2', package: 'M12 3l9 4.5v9L12 21l-9-4.5v-9zM3 7.5l9 4.5 9-4.5M12 12v9',
+  store: 'M4 10v10h16V10M3 4h18l-1 6H4zM9 20v-6h6v6', truck: 'M2 6h12v10H2zM14 9h4l4 4v3h-8M6 19a2 2 0 1 0 0-4a2 2 0 0 0 0 4M18 19a2 2 0 1 0 0-4a2 2 0 0 0 0 4', image: 'M3 4h18v16H3zM8 10a2 2 0 1 0 0-4a2 2 0 0 0 0 4M21 16l-5-5-9 9', video: 'M3 6h12v12H3zM15 10l6-3v10l-6-3',
+  mic: 'M9 3h6v11H9zM5 11a7 7 0 0 0 14 0M12 18v3', globe: 'M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18', news: 'M4 4h13v16H6a2 2 0 0 1-2-2zM17 8h3v10a2 2 0 0 1-2 2M8 8h5M8 12h5M8 16h3', map: 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15',
+  poll: 'M5 20V12M12 20V4M19 20v-6', check: 'M4 12l5 5L20 6', clipboard: 'M8 4h8v3H8zM6 5H5v16h14V5h-1M9 12h6M9 16h6', building: 'M4 21V3h10v18M14 8h6v13M8 7h2M8 11h2M8 15h2M17 12h1M17 16h1M2 21h20',
+  'plus-square': 'M4 4h16v16H4zM12 8v8M8 12h8', school: 'M2 9l10-5 10 5-10 5zM6 11v5c3 3 9 3 12 0v-5', coins: 'M8 8a5 3 0 1 0 0 .1M3 8v4c0 1.7 2.2 3 5 3M13 11a5 3 0 1 0 0 .1M8 14v3c0 1.7 2.2 3 5 3s5-1.3 5-3v-6', trending: 'M3 17l6-6 4 4 8-8M15 7h6v6',
+  star: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z', tag: 'M3 3h8l10 10-8 8L3 11zM7 7h.01', mail: 'M3 5h18v14H3zM3 6l9 7 9-7', cpu: 'M7 7h10v10H7zM10 2v3M14 2v3M10 19v3M14 19v3M2 10h3M2 14h3M19 10h3M19 14h3',
+  palette: 'M12 3a9 9 0 1 0 0 18c1 0 2-1 2-2s-1-2 0-3 2 0 3 0a4 4 0 0 0 4-4c0-5-4-9-9-9M7.5 11h.01M10 7h.01M15 7h.01', printer: 'M6 9V3h12v6M6 17H3v-8h18v8h-3M6 14h12v7H6z', camera: 'M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8a4 4 0 0 0 0 8', sparkles: 'M12 3l2 5 5 2-5 2-2 5-2-5-5-2 5-2zM19 15l1 2 2 1-2 1-1 2-1-2-2-1 2-1z',
+  lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4', inbox: 'M3 13l3-9h12l3 9v7H3zM3 13h5l2 3h4l2-3h5', database: 'M12 3c5 0 8 1.3 8 3s-3 3-8 3-8-1.3-8-3 3-3 8-3M4 6v12c0 1.7 3 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3 3 8 3s8-1.3 8-3', key: 'M8 15a4 4 0 1 0 0-8a4 4 0 0 0 0 8M11 11h10M18 11v3M21 11v2',
+  clock: 'M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M12 7v5l3 2', heart: 'M12 20s-8-5-8-11a4 4 0 0 1 8-1 4 4 0 0 1 8 1c0 6-8 11-8 11', receipt: 'M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2zM9 8h6M9 12h6M9 16h4', list: 'M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01',
+  edit: 'M11 4H4v16h16v-7M18 2l4 4-10 10H8v-4z', eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12M12 15a3 3 0 1 0 0-6a3 3 0 0 0 0 6', play: 'M6 4l14 8-14 8z', monitor: 'M3 4h18v12H3zM8 20h8M12 16v4', box: 'M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10', award: 'M12 15a6 6 0 1 0 0-12a6 6 0 0 0 0 12M8.5 14L7 22l5-3 5 3-1.5-8'
+};
+function hexA(h, a) { if (!h || h.charAt(0) !== '#') return h; var n = h.length === 4 ? h.slice(1).split('').map(function (c) { return c + c; }).join('') : h.slice(1, 7); var r = parseInt(n.slice(0, 2), 16), g = parseInt(n.slice(2, 4), 16), b = parseInt(n.slice(4, 6), 16); return 'rgba(' + r + ', ' + g + ', ' + b + ', ' + a + ')'; }
+function fmtN(v) { return typeof v === 'number' ? v.toLocaleString('ko-KR') : v; }
+function hash(s) { var h = 0; for (var i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; } return Math.abs(h); }
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    var p = props || {};
+    var vs = CFG.verticals || [];
+    this.state = { view: p.startView || 'home', collapsed: !!p.collapsed, drawerOpen: !!p.drawer, plan: CFG.defaultPlan || ((CFG.plans || [])[0] || {}).key || '', vertical: p.startVertical || (vs[0] || {}).key || '', paletteOpen: false, q: '', newOpen: false, bellOpen: false, toast: '', read: false, toggles: {}, sel: {} };
+    var st0 = this.state.view, mm0 = CFG.menus[st0] || {}, secs00 = st0 === 'home' ? (CFG.home || []) : (mm0.sections || []); var ti0 = secs00.findIndex(function (x) { return x.type === 'tabs'; }); if (ti0 >= 0 && p.startTab != null && p.startTab !== '') this.state.sel[st0 + ':t' + ti0] = Number(p.startTab) || 0;
+  }
+  renderVals() {
+    var self = this, s = this.state, menus = CFG.menus;
+    var vObj0 = (CFG.verticals || []).find(function (v) { return v.key === s.vertical; });
+    var T = Object.assign({}, CFG.tokens, (vObj0 && vObj0.tokens) || {});
+    var dark = T.mode !== 'light';
+    var t = { bg: T.bg, surface: T.surface, nav: T.nav || T.surface, raised: T.raised || T.surface, line: T.line, fg: T.fg, fg2: T.fg2, fg3: T.fg3, accent: T.accent, accentFg: T.accentFg, accentText: T.accentText || T.accent, ok: T.ok, warn: T.warn, danger: T.danger, info: T.info,
+      r: (T.radius || 8) + 'px', rs: Math.max(4, (T.radius || 8) - 2) + 'px', fontStack: "'" + T.font + "', system-ui, sans-serif", numStack: "'" + (T.numFont || T.font) + "', '" + T.font + "', sans-serif" };
+    var kind = function (k) { if (!k) return t.fg3; if (k.charAt(0) === '#') return k; return { accent: t.accentText, ok: t.ok, warn: t.warn, danger: t.danger, info: t.info, muted: t.fg3 }[k] || t.fg3; };
+    var plans = CFG.plans || [];
+    var planObj = plans.find(function (p) { return p.key === s.plan; }) || { rank: 99, label: '' };
+    var pr = plans.length ? planObj.rank : 99;
+    var close = { drawerOpen: false, paletteOpen: false, newOpen: false, bellOpen: false };
+    var go = function (v) { return function () { if (!menus[v]) return; self.setState(Object.assign({ view: v }, close)); }; };
+    var say = function (msg) { return function () { self.setState(Object.assign({ toast: msg }, close)); }; };
+    var expanded = !s.collapsed || s.drawerOpen;
+    var planLabelFor = function (rank) { var p = plans.find(function (x) { return x.rank === rank; }); return p ? p.label + '+' : '상위 플랜'; };
+    var isLocked = function (id) { var m = menus[id]; return !!(m && m.need && pr < m.need); };
+    var vsList = CFG.verticals || [];
+    var vObj = vsList.find(function (v) { return v.key === s.vertical; });
+    var groups = (vObj && vObj.groups) || CFG.groups;
+    var groupOf = {}; groups.forEach(function (g) { g.items.forEach(function (id) { groupOf[id] = g.label; }); });
+
+    var mk = function (id) {
+      var m = menus[id] || { label: id, icon: 'file' }, on = s.view === id, locked = isLocked(id);
+      var b = m.badge ? [m.badge[0], kind(m.badge[1] || 'muted')] : null;
+      if (locked) b = [planLabelFor(m.need), t.warn];
+      var c = m.count && !locked ? m.count : 0;
+      return { label: m.label, title: m.label + ' — ' + (m.desc || ''), icon: IC[m.icon] || IC.file, cur: on ? 'page' : 'false', go: go(id), bg: on ? t.raised : 'transparent', fg: on ? t.fg : (locked ? t.fg3 : t.fg2), bar: on ? t.accent : 'transparent',
+        pad: expanded ? '8px 10px 8px 12px' : '10px 0', justify: expanded ? 'flex-start' : 'center',
+        hasCount: !!c, count: c, countBg: m.countKind === 'danger' ? t.danger : t.accent, countFg: m.countKind === 'danger' ? '#FFFFFF' : t.accentFg,
+        hasBadge: !!b, badge: b ? b[0] : '', badgeColor: b ? b[1] : t.fg3, dots: (m.dots || []).map(function (x) { return { c: x }; }), dotCollapsed: !expanded && !!c, tail: '' };
+    };
+    var gnb = groups.map(function (g) { return { hasLabel: !!g.label, label: g.label, tag: g.tag || '', tagColor: g.tag ? t.warn : t.fg3, items: g.items.map(mk) }; });
+    var footer = (CFG.footer || []).map(mk);
+    (CFG.connected || []).forEach(function (c) { footer.push({ label: c.label, title: c.toast, icon: IC.external, cur: 'false', bg: 'transparent', fg: t.fg2, bar: 'transparent', pad: expanded ? '8px 10px 8px 12px' : '10px 0', justify: expanded ? 'flex-start' : 'center', tail: '↗', go: say(c.toast) }); });
+
+    var navW = s.drawerOpen ? '264px' : (s.collapsed ? '64px' : '248px');
+    var navStyle = 'flex: 0 0 ' + navW + '; width: ' + navW + '; box-sizing: border-box; padding: 10px 8px; border-right: 1px solid ' + t.line + '; background: ' + t.nav + '; display: flex; flex-direction: column; gap: 2px; overflow-y: auto;' + (s.drawerOpen ? ' position: fixed; top: 0; bottom: 0; left: 0; z-index: 35; display: flex !important; box-shadow: 16px 0 40px rgba(0,0,0,0.4);' : '');
+
+    var m = menus[s.view] || menus.home;
+    var locked = isLocked(s.view);
+    var page = { title: m.label, desc: m.desc || '', route: (m.route || '') + (m.ids ? ' · ' + m.ids : ''), origins: (m.origins || []).map(function (o) { return { t: '원본 · ' + o }; }), locked: locked,
+      lockText: locked ? '‘' + m.label + '’ 메뉴는 ' + planLabelFor(m.need).replace('+', '') + ' 플랜부터 쓸 수 있습니다. 메뉴는 숨기지 않고 잠금으로 보여 줍니다.' : '' };
+
+    // ---- sections
+    var sid = 0;
+    var build = function (sec) {
+      sid++;
+      var ty = sec.type, o = { title: sec.title || '', note: sec.note || '', hasBadge: !!sec.badge, badge: sec.badge || '', bg: t.surface, pad: '14px', dir: 'column', wrap: 'nowrap', align: 'stretch', showHead: ty !== 'todo' && !((ty === 'tabs' || ty === 'filters' || ty === 'toolbar') && !sec.title),
+        isTodo: ty === 'todo', isPipeline: ty === 'pipeline', isProgress: ty === 'progress', isBars: ty === 'bars', isCalendar: ty === 'calendar', isTable: ty === 'table', isList: ty === 'list', isHeatmap: ty === 'heatmap', isFeed: ty === 'feed', isSummary: ty === 'summary', isKanban: ty === 'kanban', isForm: ty === 'form', isSpec: ty === 'spec', isTabs: ty === 'tabs', isFilters: ty === 'filters', isToolbar: ty === 'toolbar', isStats: ty === 'stats', isCards: ty === 'cards', isSteps: ty === 'steps', isSplit: ty === 'split', isEditor: ty === 'editor', isChart: ty === 'chart', isChecklist: ty === 'checklist', isPreview: ty === 'preview', hasFields: false, hasButtons: false, border: '1px solid ' + t.line,
+        hasGo: !!(sec.go && menus[sec.go]), goFn: go(sec.go), goLabel: sec.go && menus[sec.go] ? menus[sec.go].label + ' 전체 보기' : '' };
+      if (ty === 'todo') { o.dir = 'row'; o.wrap = 'wrap'; o.align = 'center'; o.pad = '12px 14px'; o.items = (sec.items || []).map(function (x) { return { label: x.label, n: x.n, color: kind(x.kind), go: menus[x.go] ? go(x.go) : say(x.label + ': 예시 화면입니다.') }; }); }
+      if (ty === 'pipeline') o.items = (sec.steps || []).map(function (x, i, a) { return { step: String(i + 1), label: x.label, n: x.n, sub: x.sub || '', subColor: x.kind === 'warn' || x.kind === 'danger' ? kind(x.kind) : t.fg3, color: x.kind ? kind(x.kind) : (i < a.length - 1 ? t.accent : t.info), go: menus[x.go] ? go(x.go) : say(x.label) }; });
+      if (ty === 'progress') o.items = (sec.items || []).map(function (x) {
+        var n = x.steps || 8, done = x.done != null ? x.done : Math.round((x.pct || 0) / 100 * n), col = kind(x.color || 'accent');
+        var segs = []; for (var i = 0; i < n; i++) segs.push({ c: x.failAt === i ? t.danger : (i < done ? col : (i === done && x.statusKind !== 'muted' ? t.fg2 : t.line)) });
+        return { title: x.title, sub: x.sub || '', color: col, segs: segs, status: x.status || ((x.pct || 0) + '%'), stColor: kind(x.statusKind || 'muted'), aria: n + '단계 중 ' + done + '단계 완료', go: menus[x.go] ? go(x.go) : say(x.title) };
+      });
+      if (ty === 'bars') o.items = (sec.items || []).map(function (x) { var p = x.max ? x.value / x.max : 0; return { label: x.label, meta: x.meta ? '· ' + x.meta : '', text: x.pctOnly ? Math.round(p * 100) + '%' : (fmtN(x.value) + (x.max ? ' / ' + fmtN(x.max) : '') + (x.unit || '')), pct: Math.min(100, Math.round(p * 100)) + '%', color: (p >= 0.8 && !sec.good) ? t.warn : t.accent }; });
+      if (ty === 'calendar') { var ti = sec.todayIndex != null ? sec.todayIndex : 0; o.days = (sec.days || ['월', '화', '수', '목', '금', '토', '일']).map(function (d, i) { var today = i === ti; return { day: d + (today ? ' · 오늘' : ''), bg: today ? t.raised : t.bg, border: today ? t.accent : t.line, headColor: today ? t.accentText : t.fg2, items: (sec.items || []).filter(function (c) { return c.day === i; }).map(function (c) { return { time: c.time || '', title: c.title, color: kind(c.color || 'accent'), go: menus[c.go] ? go(c.go) : say(c.title) }; }) }; }); }
+      var K = s.view + ':' + (sec._i != null ? sec._i : 'x' + sid);
+      var selOf = function (k, d) { return s.sel[k] != null ? s.sel[k] : (d || 0); };
+      var setSel = function (k, v, msg) { return function () { var ns = Object.assign({}, s.sel); ns[k] = v; var st = { sel: ns }; if (msg) st.toast = msg; self.setState(st); }; };
+      var bstyle = function (primary) { return primary ? { bg: t.accent, fg: t.accentFg, border: t.accent } : { bg: 'transparent', fg: t.fg, border: t.line }; };
+      var tabGo = function (lab) { var ss = s.view === 'home' ? (CFG.home || []) : ((menus[s.view] || {}).sections || []); for (var q = 0; q < ss.length; q++) { if (ss[q].type === 'tabs') { var tl = (ss[q].tabs || []).map(function (z) { return typeof z === 'string' ? z : z.label; }); var ix = tl.indexOf(lab); if (ix >= 0) return setSel(s.view + ':t' + q, ix); } } return null; };
+      var act = function (a, i) { var x = typeof a === 'string' ? { label: a } : a; var st = x.kind ? { bg: kind(x.kind), fg: '#FFFFFF', border: kind(x.kind) } : bstyle(x.primary != null ? x.primary : false); var tg = (typeof x.go === 'string' && x.go.charAt(0) === '#') ? tabGo(x.go.slice(1)) : null; return { label: x.label, bg: st.bg, fg: st.fg, border: st.border, go: tg || (menus[x.go] ? go(x.go) : say(x.label + ': 예시 동작입니다(실제로 실행하지 않음).')) }; };
+      var badgeOf = function (txt, k) { var c = kind(k || 'muted'); return { badge: txt, badgeBg: hexA(c, 0.16), badgeFg: c }; };
+      var fieldsOf = function (list, key) { return (list || []).map(function (f, i) { var fk = key + ':f' + i; var tg = f.kind === 'toggle'; var on = tg ? (s.toggles[fk] != null ? s.toggles[fk] : !/끔|꺼짐|off|아니|사용 안/i.test(String(f.value))) : false; var ch = f.kind === 'chips' || (f.kind === 'select' && f.options && f.options.length && f.options.length <= 6); var opts = ch ? (f.options || []).map(function (op, oi) { var di = f.value != null && f.value !== '' ? Math.max(0, (f.options || []).indexOf(f.value)) : -1; var onx = selOf(fk, di) === oi; return { label: op, on: onx, bg: onx ? t.accent : 'transparent', fg: onx ? t.accentFg : t.fg2, border: onx ? t.accent : t.line, pick: setSel(fk, oi) }; }) : []; var ta = f.kind === 'textarea'; return { label: f.label, hint: f.hint || '', isToggle: tg, isChips: ch, isText: !tg && !ch, opts: opts, value: tg ? (on ? '켜짐' : '꺼짐') : (f.value || f.placeholder || ''), fg: f.value ? t.fg : t.fg3, caret: f.kind === 'select' ? '▾' : '', minH: ta ? '84px' : '36px', on: on, dot: on ? t.accent : t.line, border: on ? t.accent : t.line, flip: function () { var nt = Object.assign({}, s.toggles); nt[fk] = !on; self.setState({ toggles: nt }); } }; }); };
+      if (ty === 'table') {
+        var cols = sec.columns || [], sc = sec.statusCol, sk = sec.statusKinds || {}, nc = sec.numCols || [], hl = sec.highlightCol, rank = !!sec.rank, acts = sec.actions || [];
+        var hasAct = acts.length > 0 || !!sec.rowActions; var allCols = (rank ? ['#'] : []).concat(cols).concat(hasAct ? ['행동'] : []);
+        o.cols = allCols.map(function (c, i) { var ci = rank ? i - 1 : i; return { t: c, align: (nc.indexOf(ci) >= 0) ? 'right' : (hasAct && i === allCols.length - 1 ? 'right' : 'left') }; });
+        var gcols = cols.map(function (c, i) { return i === 0 ? 'minmax(180px, 2.4fr)' : (nc.indexOf(i) >= 0 ? 'minmax(70px, 0.8fr)' : 'minmax(90px, 1fr)'); });
+        if (rank) gcols.unshift('28px');
+        if (acts.length) gcols.push('minmax(' + Math.min(320, acts.length * 112) + 'px, auto)');
+        if (sec.widths && sec.widths.length === cols.length) { gcols = sec.widths.slice(); if (rank) gcols.unshift('28px'); if (acts.length || sec.rowActions) gcols.push('minmax(' + Math.min(320, Math.max(1, acts.length) * 112) + 'px, auto)'); }
+        else if (sec.rowActions && !acts.length) gcols.push('minmax(112px, auto)');
+        o.grid = gcols.join(' ');
+        o.minW = Math.max(sec.wide === false ? 320 : 560, cols.length * (sec.wide === false ? 90 : 120) + (acts.length ? acts.length * 112 : 0)) + 'px';
+        o.hasActions = acts.length > 0 || !!sec.rowActions;
+        o.rowsV = (sec.rows || []).map(function (r, ri) {
+          var cells = r.map(function (c0, i) { var c = (c0 && typeof c0 === 'object') ? c0 : { t: c0 }; var st = i === sc; var num = nc.indexOf(i) >= 0; var link = i === 0 && !!menus[sec.rowGo]; var bd = c.badge ? badgeOf(c.badge, c.badgeKind || 'warn') : { badge: '', badgeBg: '', badgeFg: '' };
+            var col = st ? kind(sk[c.t] || 'muted') : (c.kind ? kind(c.kind) : (i === hl ? t.accentText : (i === 0 ? t.fg : t.fg2)));
+            return { ws: sec.wrap ? 'normal' : 'nowrap', t: c.t, sub: c.sub || '', hasSub: !!c.sub, isStatus: st, isLink: link, isPlain: !link, color: col, weight: (i === 0 || i === hl) ? 600 : 400, font: num ? t.numStack : 'inherit', align: num ? 'flex-end' : 'flex-start', hasBadge: !!c.badge, badge: bd.badge, badgeBg: bd.badgeBg, badgeFg: bd.badgeFg }; });
+          if (rank) cells.unshift({ ws: 'nowrap', t: String(ri + 1), sub: '', hasSub: false, isStatus: false, isLink: false, isPlain: true, color: t.fg3, weight: 600, font: t.numStack, align: 'flex-start', hasBadge: false });
+          var ra = (sec.rowActions || {})[String(ri)]; return { go: menus[sec.rowGo] ? go(sec.rowGo) : say('행 상세는 예시입니다.'), cells: cells, acts: (ra || acts).map(act) };
+        });
+      }
+      if (ty === 'form') { o.fgrid = sec.wide === false ? 'minmax(0, 1fr)' : 'minmax(72px, min(160px, 32%)) minmax(0, 1fr)'; o.hasFields = true; o.fields = fieldsOf(sec.fields, K); o.hasButtons = !!(sec.submit || (sec.buttons || []).length); o.btns = (sec.buttons || []).map(act); if (sec.submit) o.btns.unshift({ label: sec.submit, bg: t.accent, fg: t.accentFg, border: t.accent, go: say(sec.submit + ': 예시 화면이라 저장하지 않습니다.') }); }
+      if (ty === 'tabs') {
+        o.bg = 'transparent'; o.border = '0'; o.pad = '0';
+        var tk = sec._k || K, cur = selOf(tk);
+        o.items = (sec.tabs || []).map(function (q, qi) { var x = typeof q === 'string' ? { label: q } : q; var on = qi === cur; return { label: x.label, on: on, hasBadge: !!x.badge, badge: x.badge || '', bg: on ? t.accent : t.surface, fg: on ? t.accentFg : t.fg, border: on ? t.accent : t.line, pick: setSel(tk, qi) }; });
+      }
+      if (ty === 'filters' || ty === 'toolbar') {
+        o.hasSearch = !!sec.search; o.search = sec.search || ''; o.searchIcon = IC.search; o.caption = sec.caption || ''; o.hasCaption = !!sec.caption;
+        if (!sec.title) { o.pad = '12px 14px'; }
+        o.groups = (sec.groups || []).map(function (g, gi) { var gk = K + ':g' + gi; var cur = selOf(gk, g.selected || 0); return { label: g.label || '', hasLabel: !!g.label, opts: (g.options || []).map(function (op, oi) { var on = oi === cur; return { label: op, on: on, radius: g.pill ? '999px' : t.rs, bg: on ? t.accent : 'transparent', fg: on ? t.accentFg : t.fg2, border: on ? t.accent : t.line, pick: setSel(gk, oi) }; }) }; });
+        o.tbtns = (sec.buttons || []).map(act); o.hasFBtns = ty === 'filters' && o.tbtns.length > 0;
+      }
+      if (ty === 'stats') o.items = (sec.items || []).map(function (x) { return { label: x.label, value: x.value, sub: x.sub || '', color: kind(x.kind || 'muted') }; });
+      if (ty === 'cards') {
+        var ncol = sec.cols || 3; o.grid = 'repeat(auto-fill, minmax(min(' + (sec.minW || (ncol >= 4 ? 170 : 220)) + 'px, 44%), 1fr))'; o.ratio = sec.ratio || '16 / 9';
+        o.items = (sec.items || []).map(function (x) { var bd = x.badge ? badgeOf(x.badge, x.badgeKind || 'accent') : { badge: '', badgeBg: '', badgeFg: '' }; var c = x.thumb ? kind(x.thumb) : null; return { title: x.title, meta: x.meta || '', hasThumb: !!c, thumbBg: c ? 'linear-gradient(140deg, ' + c + ', ' + hexA(c, 0.35) + ')' : 'transparent', thumbLabel: x.thumbLabel || '', thumbTag: x.thumbTag || '', hasTL: !!x.thumbLabel, hasTT: !!x.thumbTag, hasBadge: !!x.badge, badge: bd.badge, badgeBg: bd.badgeBg, badgeFg: bd.badgeFg, border: x.selected ? t.accent : t.line, lines: (x.lines || []).map(function (l) { return { k: l[0], v: l[1] }; }), hasActs: !!(x.actions || []).length, acts: (x.actions || []).map(function (a, ai) { var q = typeof a === 'string' ? { label: a, primary: ai === 0 } : a; return act(q); }) }; });
+      }
+      if (ty === 'steps') {
+        var stl = sec.steps || [], cur = selOf(K, sec.current || 0), cs = stl[cur] || {};
+        o.stepsV = stl.map(function (x, i) { var q = typeof x === 'string' ? { label: x } : x; var on = i === cur, done = i < cur; return { n: done ? '✓' : String(i + 1), label: q.label, cur: on ? 'step' : 'false', bg: on ? t.raised : 'transparent', fg: on || done ? t.fg : t.fg3, border: on ? t.accent : t.line, numBg: on || done ? t.accent : t.line, numFg: on || done ? t.accentFg : t.fg2, pick: setSel(K, i) }; });
+        o.stepDesc = cs.desc || ''; o.hasStepDesc = !!cs.desc;
+        o.fgrid = sec.wide === false ? 'minmax(0, 1fr)' : 'minmax(72px, min(160px, 32%)) minmax(0, 1fr)'; o.hasFields = !!(cs.fields || []).length; o.fields = fieldsOf(cs.fields, K + ':s' + cur);
+        o.hasButtons = true;
+        o.btns = [];
+        if (cur > 0) o.btns.push({ label: '이전', bg: 'transparent', fg: t.fg, border: t.line, go: setSel(K, cur - 1) });
+        if (cur < stl.length - 1) o.btns.push({ label: '다음: ' + ((typeof stl[cur + 1] === 'string') ? stl[cur + 1] : stl[cur + 1].label), bg: t.accent, fg: t.accentFg, border: t.accent, go: setSel(K, cur + 1) });
+        else o.btns.push({ label: sec.submit || '완료', bg: t.accent, fg: t.accentFg, border: t.accent, go: say((sec.submit || '완료') + ': 예시 화면이라 실행하지 않습니다.') });
+      }
+      if (ty === 'split') {
+        var li = sec.items || [], cur = Math.min(selOf(K, sec.selected || 0), Math.max(0, li.length - 1)), d = (li[cur] || {});
+        o.litems = li.map(function (x, i) { var on = i === cur; return { title: x.title, meta: x.meta || '', status: x.status || '', stColor: kind(x.statusKind || 'muted'), on: on, bg: on ? t.raised : t.bg, border: on ? t.accent : t.line, pick: setSel(K, i) }; });
+        var dd = d.detail || {};
+        o.det = { title: dd.title || d.title || '', meta: dd.meta || d.meta || '', status: d.status || '', stColor: kind(d.statusKind || 'muted'), rows: (dd.rows || []).map(function (r) { return { k: r[0], v: r[1] }; }), body: dd.body || '', hasBody: !!dd.body, acts: (dd.actions || sec.actions || []).map(function (a, ai) { var q = typeof a === 'string' ? { label: a, primary: ai === 0 } : a; return act(q); }) };
+        o.det.hasActs = o.det.acts.length > 0; o.det.fields = fieldsOf(dd.fields, K + ':d' + cur); o.det.hasFields = o.det.fields.length > 0;
+      }
+      if (ty === 'editor') {
+        var L0 = sec.left || {}, C0 = sec.center || {}, R0 = sec.right || {};
+        var lcur = selOf(K, L0.selected || 0);
+        o.grid = L0.items ? 'minmax(170px, 0.8fr) minmax(0, 2.6fr) minmax(220px, 1fr)' : 'minmax(0, 2.6fr) minmax(220px, 1fr)';
+        o.left = { title: L0.title || '', items: (L0.items || []).map(function (x, i) { var q = typeof x === 'string' ? { label: x } : x; var on = i === lcur; return { label: q.label, meta: q.meta || '', on: on, bg: on ? t.raised : 'transparent', fg: on ? t.fg : t.fg2, bar: on ? t.accent : 'transparent', pick: setSel(K, i) }; }) };
+        o.center = { title: C0.title || '', tools: (C0.tools || []).map(function (x) { return { label: x, go: say(x + ': 예시 동작입니다.') }; }), blocks: (C0.blocks || []).map(function (b, bi) { var k2 = b.kind || 'p'; var c = kind(b.color || 'info'); return { isH: k2 === 'h', isP: k2 === 'p', isMedia: k2 === 'media', isScene: k2 === 'scene', isNote: k2 === 'note', hasThumb: b.thumb !== false, thumbOp: b.thumb === false ? 0 : 1, text: b.text || '', meta: b.meta || '', n: b.n || String(bi + 1), ratio: b.ratio || '16 / 9', mw: (function (r) { var q = String(r || '16 / 9').split('/'); var w = parseFloat(q[0]) || 16, h = parseFloat(q[1]) || 9; return 'min(100%, ' + Math.round(300 * w / h) + 'px)'; })(b.ratio), color: c, bg: 'linear-gradient(140deg, ' + c + ', ' + hexA(c, 0.3) + ')', border: b.selected ? t.accent : t.line }; }) };
+        o.right = { title: R0.title || '', items: (R0.items || []).map(function (x) { return { label: x.label, text: x.text || '', hasAct: !!x.action, act: x.action || '', go: say((x.action || '') + ': 예시 동작입니다.') }; }), hasPrompt: !!R0.prompt, prompt: R0.prompt || '', send: R0.send || '보내기', go: say((R0.send || '보내기') + ': 예시 화면이라 AI를 호출하지 않습니다.') };
+        if (!L0.items) o.left = { title: '', items: [] };
+        o.hasLeft = !!L0.items;
+      }
+      if (ty === 'chart') {
+        var labs = sec.labels || [], ser = sec.series || [], pal = [t.accent, t.warn, t.ok, t.info, t.danger];
+        o.legend = ser.map(function (x, i) { return { name: x.name || '', c: x.color ? kind(x.color) : pal[i % pal.length] }; });
+        o.lineMode = sec.kind !== 'bar'; o.barMode = sec.kind === 'bar';
+        var allv = ser.reduce(function (a, x) { return a.concat(x.values || []); }, []); var mxv = Math.max.apply(null, allv.concat([sec.min != null ? sec.min + 1 : 1])); var mnv = sec.min != null ? sec.min : 0; var rng = Math.max(1e-9, mxv - mnv);
+        o.gridLines = [0, 1, 2, 3].map(function (g) { var y = 10 + g * 46.6; return { d: 'M0 ' + y.toFixed(1) + ' H600' }; });
+        o.paths = ser.map(function (x, i) { var v = x.values || [], n = Math.max(1, v.length - 1); return { c: o.legend[i].c, d: v.map(function (val, j) { return (j ? 'L' : 'M') + ((j + 0.5) / v.length * 600).toFixed(1) + ' ' + (150 - (val - mnv) / rng * 140).toFixed(1); }).join(' ') }; });
+        o.labels = labs.map(function (l) { return { t: l }; }); o.range = (sec.min != null || sec.showRange) ? ('세로 범위 ' + mnv + ' ~ ' + mxv + (sec.unit ? ' ' + sec.unit : '')) : ''; o.hasRange = !!o.range; o.labGrid = 'repeat(' + Math.max(1, labs.length) + ', minmax(0, 1fr))';
+        var s0 = (ser[0] || { values: [] }); o.bars = (s0.values || []).map(function (val, j) { return { v: (sec.valueFmt || '{v}').replace('{v}', val), h: Math.max(2, Math.round((val - mnv) / rng * 130)) + 'px', c: o.legend[0] ? o.legend[0].c : t.accent, l: labs[j] || '' }; });
+      }
+      if (ty === 'checklist') o.items = (sec.items || []).map(function (x, i) { var ck = K + ':c' + i; var on = s.toggles[ck] != null ? s.toggles[ck] : !!x.done; return { label: x.label, hint: x.hint || '', on: on, mark: on ? '✓' : '', bg: on ? t.accent : 'transparent', bc: on ? t.accent : t.fg3, fg: on ? t.fg2 : t.fg, status: on ? (x.doneStatus || x.status || '완료') : (x.status || ''), stColor: kind(x.statusKind || (on ? 'ok' : 'muted')), flip: function () { var nt = Object.assign({}, s.toggles); nt[ck] = !on; self.setState({ toggles: nt }); } }; });
+      if (ty === 'preview') o.items = (sec.items || []).map(function (x) { var r = x.ratio || '16 / 9'; var w = { '9 / 16': '200px', '16 / 9': '380px', '1 / 1': '240px', '3 / 4': '220px', '1 / 1.414': '220px', '1 / 3': '160px', '4 / 5': '230px' }[r] || '300px'; var c = x.bg ? kind(x.bg) : t.raised; var light = x.light; var fgv = x.fg || (light ? '#111111' : '#FFFFFF'); return { ratio: r, w: x.width || w, bg: x.bg ? 'linear-gradient(160deg, ' + c + ', ' + hexA(c, 0.45) + ')' : t.raised, fg: fgv, justify: x.top ? 'flex-start' : 'flex-end', caption: x.caption || '', lines: (x.lines || []).map(function (l, li) { var q = typeof l === 'string' ? { t: l } : l; var big = q.size === 'l' || (li === 0 && q.size == null); return { c: q.chip ? '#FFFFFF' : fgv, t: q.t, size: big ? '17px' : (q.size === 's' ? '11px' : '13px'), w: big ? 800 : 500, bg: q.chip ? 'rgba(0, 0, 0, 0.5)' : (q.bg ? hexA(kind(q.bg), 0.35) : 'transparent'), pad: (q.chip || q.bg) ? '4px 8px' : '0' }; }) }; });
+      if (ty === 'list') o.items = (sec.items || []).map(function (x) { var th = !!x.thumb; var ac = !!x.action; return { title: x.title, meta: x.meta || '', thumb: x.thumb || 'transparent', hasThumb: th, hasAction: ac, action: x.action || '', grid: (th ? '44px ' : '') + 'minmax(0, 1fr)' + (ac ? ' auto' : ''), go: menus[x.go] ? go(x.go) : say((x.action || x.title) + ': 예시 동작입니다.') }; });
+      if (ty === 'heatmap') { var hc = sec.cols || [], seed = sec.seed || 7; o.cols = hc.map(function (c) { return { t: c }; }); o.grid = '28px repeat(' + hc.length + ', minmax(0, 1fr))'; o.hrows = (sec.rows || []).map(function (d, r) { return { d: d, cells: hc.map(function (c, ci) { var v = ((r * 7 + ci * 13 + seed) % 10) / 10; if (ci >= hc.length - 3) v = Math.min(1, v + 0.4); if (ci <= 1) v = v * 0.35; return { c: hexA(t.accent, Math.round((0.1 + v * 0.85) * 100) / 100), t: d + ' ' + c + ' · 예시' }; }) }; }); }
+      if (ty === 'feed') o.items = (sec.items || []).map(function (x) { return { time: x.time || '', text: x.text, color: kind(x.kind), go: menus[x.go] ? go(x.go) : say(x.text) }; });
+      if (ty === 'summary') { o.value = sec.value || ''; o.sub = sec.sub || ''; var mx = Math.max.apply(null, (sec.items || []).map(function (x) { return x.max || x.value || 1; }).concat([1])); o.items = (sec.items || []).map(function (x) { var v = Number(String(x.value).replace(/[^0-9.]/g, '')) || 0; var mm = x.max || mx; return { label: x.label, value: x.value, pct: Math.min(100, Math.round(v / (Number(String(mm).replace(/[^0-9.]/g, '')) || 1) * 100)) + '%', color: kind(x.color || 'accent') }; }); }
+      if (ty === 'kanban') { var kc = sec.cols || []; o.grid = 'repeat(' + kc.length + ', minmax(170px, 1fr))'; o.minW = kc.length * 180 + 'px'; o.kcols = kc.map(function (c) { return { label: c.label, n: (c.cards || []).length, color: kind(c.kind || 'muted'), cards: (c.cards || []).map(function (d) { return { title: d.title, meta: d.meta || '', color: kind(d.color || c.kind || 'muted') }; }) }; }); }
+      if (ty === 'spec') o.items = (sec.items || []).map(function (x) { return { k: x[0], v: x[1] }; });
+      return o;
+    };
+    var secs0 = s.view === 'home' ? (CFG.home || []) : (m.sections || []).slice();
+    var curTab = null, secs = [];
+    secs0.forEach(function (x, xi) { x._i = xi; if (x.type === 'tabs') { var k = s.view + ':t' + xi; var tl = (x.tabs || []).map(function (q) { return typeof q === 'string' ? q : q.label; }); curTab = tl[s.sel[k] || 0]; x._k = k; secs.push(x); return; } if (x.tab && curTab != null && x.tab !== curTab) return; secs.push(x); });
+    if (s.view !== 'home' && (m.spec || []).length) secs = secs.concat([{ type: 'spec', title: '화면 기획 근거', note: (m.sections || []).length ? '기획서 03장 기준' : '기획서 기준 · 동작 시안은 다음 단계', items: m.spec }]);
+    var built = secs.map(function (x) { var b = build(x); b._wide = x.wide; return b; });
+    var rows = [];
+    for (var i = 0; i < built.length; i++) {
+      var a = built[i], nx = built[i + 1];
+      if (a._wide === true && nx && nx._wide === false) { a.flex = '999 1 520px'; nx.flex = '1 1 300px'; rows.push({ cells: [a, nx] }); i++; }
+      else { a.flex = '1 1 100%'; rows.push({ cells: [a] }); }
+    }
+
+    var plansV = plans.map(function (p) { var on = s.plan === p.key; return { label: p.label, on: on, bg: on ? t.accent : 'transparent', fg: on ? t.accentFg : t.fg2, pick: function () { self.setState({ plan: p.key, toast: p.label + ' 플랜으로 보기: 잠긴 메뉴와 배지가 바뀝니다.' }); } }; });
+    var verticals = vsList.map(function (v) { var on = s.vertical === v.key; return { label: v.label, on: on, bg: on ? t.accent : 'transparent', fg: on ? t.accentFg : t.fg2, pick: function () { var first = ((v.groups || [])[0] || { items: ['home'] }).items[0]; self.setState({ vertical: v.key, view: first, toast: v.label + ' 메뉴 묶음과 토큰으로 바꿨습니다(시안 보기 전용).' }); } }; });
+    var newSrc = (vObj && vObj.newItems) || CFG.newItems || [];
+    var prod = vObj && vObj.name ? Object.assign({}, CFG.product, { name: vObj.name, tagline: vObj.tagline || CFG.product.tagline }) : CFG.product;
+    var newItems = newSrc.map(function (x) { return { label: x.label, sub: x.sub || '', color: kind(x.color || 'accent'), go: menus[x.go] ? go(x.go) : say(x.label) }; });
+    var todoSec = (CFG.home || []).find(function (x) { return x.type === 'todo'; });
+    var notes = ((todoSec && todoSec.items) || []).slice(0, 3).map(function (x, i) { return { text: x.label + ' ' + x.n + '건', time: ['10분 전', '32분 전', '1시간 전'][i], color: kind(x.kind), go: menus[x.go] ? go(x.go) : say(x.label) }; });
+    var allIds = Object.keys(menus);
+    var qq = s.q.trim().toLowerCase();
+    var qResults = allIds.filter(function (id) { var mm = menus[id]; var hay = (mm.label + ' ' + (mm.origins || []).join(' ') + ' ' + (mm.desc || '')).toLowerCase(); return !qq || hay.indexOf(qq) >= 0; }).slice(0, 8).map(function (id) { var mm = menus[id]; return { label: mm.label, group: groupOf[id] || '기본', sub: (mm.origins || []).slice(0, 2).join(' · '), go: go(id) }; });
+    var gName = groupOf[s.view] || '';
+    var upId = (CFG.footer || []).find(function (id) { return /credit|billing|plan|pricing|요금/.test(id + (menus[id] || {}).label); });
+
+    return {
+      t: t, product: prod, brandInitial: (prod.name || 'A').trim().charAt(0).toUpperCase(), searchHint: CFG.searchHint || '메뉴 검색', navLabel: prod.name + ' 메뉴',
+      expanded: expanded, collapsed: !expanded, navStyle: navStyle, navClass: s.drawerOpen ? '' : 'sf-nav', gnb: gnb, footer: footer,
+      collapseLabel: s.collapsed ? '메뉴 펼치기' : '메뉴 접기', toggleCollapse: function () { self.setState({ collapsed: !s.collapsed }); },
+      drawerOpen: s.drawerOpen, openDrawer: function () { self.setState({ drawerOpen: true }); }, closeDrawer: function () { self.setState({ drawerOpen: false }); },
+      paletteOpen: s.paletteOpen, openPalette: function () { self.setState({ paletteOpen: true, q: '' }); }, closePalette: function () { self.setState({ paletteOpen: false }); }, q: s.q, onQ: function (e) { self.setState({ q: e.target.value }); }, qResults: qResults, qEmpty: qResults.length === 0,
+      hasNew: newItems.length > 0, newOpen: s.newOpen, toggleNew: function () { self.setState({ newOpen: !s.newOpen, bellOpen: false }); }, newItems: newItems,
+      bellOpen: s.bellOpen, toggleBell: function () { self.setState({ bellOpen: !s.bellOpen, newOpen: false, read: true }); }, notes: notes, hasUnread: !s.read && notes.length > 0, unread: notes.length, bellLabel: '알림' + (s.read ? '' : ' ' + notes.length + '건 읽지 않음'),
+      hasPlans: plans.length > 0, plans: plansV, hasVerticals: verticals.length > 0, verticals: verticals,
+      hasCredits: !!CFG.credits, creditsLabel: (CFG.credits || {}).label || '', creditsValue: (CFG.credits || {}).value || '',
+      toast: s.toast, closeToast: function () { self.setState({ toast: '' }); },
+      crumb: prod.name + (gName ? ' › ' + gName : '') + ' › ' + m.label, page: page, rows: rows,
+      upgrade: upId ? go(upId) : say('요금제 비교 화면은 예시입니다.')
+    };
+  }
+}
+</script>
+</body>
+</html>

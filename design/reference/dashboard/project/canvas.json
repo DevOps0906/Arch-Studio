@@ -1,0 +1,243 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-10-19T03:00:00Z"
+ },
+ "title": "Arch Studio 대시보드 · GNB 초안",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "V2_01_Home.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 1393,
+   "title": "홈 · GNB 펼침(248px)",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_02_Collapsed.dc.html": {
+   "x": 1520,
+   "y": 0,
+   "w": 1440,
+   "h": 1375,
+   "title": "홈 · GNB 접힘(64px 아이콘 레일)",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_03_home_t1.dc.html": {
+   "x": 0,
+   "y": 2748,
+   "w": 1440,
+   "h": 1596,
+   "title": "홈 › 대지",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_04_home_t2.dc.html": {
+   "x": 1520,
+   "y": 2748,
+   "w": 1440,
+   "h": 2288,
+   "title": "홈 › 모델·판정",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_05_home_t3.dc.html": {
+   "x": 3040,
+   "y": 2748,
+   "w": 1440,
+   "h": 1885,
+   "title": "홈 › 프로그램",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_06_home_t4.dc.html": {
+   "x": 4560,
+   "y": 2748,
+   "w": 1440,
+   "h": 1614,
+   "title": "홈 › 평면",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_07_home_t5.dc.html": {
+   "x": 6080,
+   "y": 2748,
+   "w": 1440,
+   "h": 2129,
+   "title": "홈 › 도면",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_08_home_t6.dc.html": {
+   "x": 0,
+   "y": 5276,
+   "w": 1440,
+   "h": 1587,
+   "title": "홈 › 렌더",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_09_home_t7.dc.html": {
+   "x": 1520,
+   "y": 5276,
+   "w": 1440,
+   "h": 1790,
+   "title": "홈 › 제안서",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_10_home_t8.dc.html": {
+   "x": 3040,
+   "y": 5276,
+   "w": 1440,
+   "h": 1521,
+   "title": "홈 › 검토",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_11_chat.dc.html": {
+   "x": 4560,
+   "y": 5276,
+   "w": 1440,
+   "h": 1571,
+   "title": "법규 › 법규 채팅",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_12_wiki.dc.html": {
+   "x": 6080,
+   "y": 5276,
+   "w": 1440,
+   "h": 1138,
+   "title": "법규 › 법규 위키 › 목록",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_13_wiki_t1.dc.html": {
+   "x": 0,
+   "y": 7306,
+   "w": 1440,
+   "h": 1086,
+   "title": "법규 › 법규 위키 › 페이지",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_14_wiki_t2.dc.html": {
+   "x": 1520,
+   "y": 7306,
+   "w": 1440,
+   "h": 950,
+   "title": "법규 › 법규 위키 › 개정 이력",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_15_credits.dc.html": {
+   "x": 3040,
+   "y": 7306,
+   "w": 1440,
+   "h": 1991,
+   "title": "크레딧",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_16_license.dc.html": {
+   "x": 4560,
+   "y": 7306,
+   "w": 1440,
+   "h": 1622,
+   "title": "라이선스",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_17_settings.dc.html": {
+   "x": 6080,
+   "y": 7306,
+   "w": 1440,
+   "h": 1402,
+   "title": "설정 (일반 · 도면) › 일반",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_18_settings_t1.dc.html": {
+   "x": 0,
+   "y": 9537,
+   "w": 1440,
+   "h": 1984,
+   "title": "설정 (일반 · 도면) › 도면",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_19_MobileHome.dc.html": {
+   "x": 3040,
+   "y": 0,
+   "w": 390,
+   "h": 2508,
+   "title": "모바일 · 1024px 미만 햄버거",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "V2_20_MobileDrawer.dc.html": {
+   "x": 3510,
+   "y": 0,
+   "w": 390,
+   "h": 1000,
+   "title": "모바일 · 햄버거 메뉴 열림",
+   "expand": "fill",
+   "is_interactive": true
+  },
+  "Shell.dc.html": {
+   "x": 0,
+   "y": 11921,
+   "w": 1440,
+   "h": 1447,
+   "title": "컴포넌트 · 대시보드 셸(위 화면들이 불러 씀, config로 그림)",
+   "expand": "fill",
+   "is_interactive": true
+  }
+ },
+ "order": [
+  "V2_01_Home.dc.html",
+  "V2_02_Collapsed.dc.html",
+  "V2_03_home_t1.dc.html",
+  "V2_04_home_t2.dc.html",
+  "V2_05_home_t3.dc.html",
+  "V2_06_home_t4.dc.html",
+  "V2_07_home_t5.dc.html",
+  "V2_08_home_t6.dc.html",
+  "V2_09_home_t7.dc.html",
+  "V2_10_home_t8.dc.html",
+  "V2_11_chat.dc.html",
+  "V2_12_wiki.dc.html",
+  "V2_13_wiki_t1.dc.html",
+  "V2_14_wiki_t2.dc.html",
+  "V2_15_credits.dc.html",
+  "V2_16_license.dc.html",
+  "V2_17_settings.dc.html",
+  "V2_18_settings_t1.dc.html",
+  "V2_19_MobileHome.dc.html",
+  "V2_20_MobileDrawer.dc.html",
+  "Shell.dc.html"
+ ],
+ "notes": {
+  "head": {
+   "x": 0,
+   "y": -300,
+   "text": "Arch Studio 대시보드 · GNB 초안 — 기획서 03장 화면 표와 원본 프로젝트 메뉴를 모두 담은 구조",
+   "kind": "title1",
+   "maxW": 7600
+  },
+  "sub": {
+   "x": 0,
+   "y": -180,
+   "text": "GNB 모든 메뉴가 그 일을 하는 동작 화면입니다(2판, SceneFlow 방식). 탭·필터 칩·단계·목록 항목·체크를 눌러 보세요. 메뉴를 눌러 이동, ⌘K 검색·새로 만들기·알림·플랜 전환 동작. 예시 데이터는 [예시]로 표시. 화면 아래 \"화면 기획 근거\"는 기획서 03장 기준. 토큰: 출처 03_SCREENS_UX.md 4.3절 :553-556, 4.4절 :589. bg 트레이싱지 #F1F2EE, fg 제도 먹 #1F2328(글자·선·주 버튼이라 accent도 먹, accentFg 트레이싱지 대비 약 14:1), line 모눈 #D8DBD5(구분선 전용), info 배치도 남 #34507A(링크, 약 7.2:1), ok·warn·danger는 PASS 녹 #2A7549·WARN 황 #8A5A00·FAIL 적 #B3261E(약 5.0·5.3·5.8:1). 엔벨로프 청록 #276F80은 '한 화면에 한 곳'(엔벨로프 볼륨) 규칙이라 셸에 쓰지 않고, 콘크리트 #A7ABA8은 글자·점에 쓰지 않는다(5.1절 :645). 제안(4.3절에 없음, AR-06-010 토큰 작업 전): surface #FBFBF9, nav #E7E9E3, raised #F7F8F5, fg2 #474D53, fg3 #5B6167(nav 위 약 5.1:1). 서체 SUIT는 Google Fonts에 없어 Noto Sans KR로 대체(숫자는 tabular-nums). radius 6은 컨트롤 값(패널 10px은 렌더러가 따로 표현하지 못함). 다크(흑판 #20262A)는 바탕 외 값이 정해지지 않아 라이트 기준(01장 D-34). 상단 상태 전환(업데이트 유효·열람만·폴백)은 01장 4.3절 상태를 업데이트 가능 여부로 묶은 시안 보기 전용",
+   "kind": "body",
+   "maxW": 7600
+  }
+ },
+ "designSystems": []
+}
