@@ -12,3 +12,6 @@ id_rsa*
 id_ed25519*
 
 target/
+
+apps/web/next-env.d.ts
+.next/

@@ -1,0 +1,5 @@
+# spikes/*는 버리는 코드라 워크스페이스에 넣지 않는다(AGENTS.md 3장).
+packages:
+  - apps/*
+  - packages/*
+  - workers/*

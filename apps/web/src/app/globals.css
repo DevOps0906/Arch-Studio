@@ -1,0 +1,2 @@
+/* 토큰 정본(packages/ui/src/tokens.css)이 tailwindcss를 함께 불러온다. */
+@import "@arch-studio/ui/tokens.css";

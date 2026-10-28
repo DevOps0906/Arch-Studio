@@ -8,7 +8,7 @@
 | 번호 | 제목 | 웨이브 | 선행 | 위험도 | 담당 | 상태 |
 |---|---|---|---|---|---|---|
 | AR-06-001 | DB 조각 적용·모놀리스 변환·seed·타입 | W0 | — | 높음 | challenger→builder | 대기 |
-| AR-06-003 | 모노레포·web 골격·린트 경계·env 검증 | W0 | — | 보통 | builder | 대기 |
+| AR-06-003 | 모노레포·web 골격·린트 경계·env 검증 | W0 | — | 보통 | builder | 완료 |
 | AR-06-004 | 데스크톱 셸 골격(Tauri·CSP·capability) | W0 | — | 보통 | builder | 대기 |
 | AR-06-009 | 디자인 레퍼런스 확정(1단계) | W0 | — | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-013 | 도메인 계약 zod(DesignModel 등) | W0 | — | 보통 | builder | 대기 |
