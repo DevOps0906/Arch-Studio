@@ -315,3 +315,48 @@ MVP·P1 기능 29개가 모두 1개 이상의 작업에 매핑된다. 열린 결
 | 057 | 랜딩 5섹션, `(marketing)/**` 소유(`samples/` 제외) | 7섹션 배치(03장 7.1절), 추가 섹션은 065·067이 장착. 소유에서 `tools/` 제외 |
 | 5.4절 PRD 9.10절 3단계 인터뷰 | 작업 없음(사람) | 066이 질문지·기록 양식을 맡고 인터뷰는 그대로 사람이 진행 |
 | 코어 요청 | - | 없음 |
+
+## 9. 웹·설치형 하이브리드 작업 (2026-10-28, ADR-001)
+
+결정은 `docs/file/03-설계/ADR-001_DELIVERY_AND_LICENSING.md`(이하 ADR-001), 제안 ID는 ADR-001 7장이다. 이 장은 1~8장을 고치지 않고 추가분만 둔다(줄 번호 인용 보호). 작업 합계는 기존 71개 + 13개 = 84개다. ADR-001의 070~079에 `071a`(스파이크)가 있고, 좌석 관리(D-H1)·휴대폰 본인인증(D-H2)은 ADR-001 7장에 ID가 없어 `074a`·`074b`로 부여했다(팀장 확인 필요). `미확인` 표시는 근거 확인 전 값이다.
+
+### 9.1 작업 목록 (2절과 같은 열)
+
+| ID | 작업 | 소유 파일/디렉토리 | 선행 작업 | 우선순위 | 규모 | 권장 모델 | 수용 기준 | 출처 |
+|---|---|---|---|---|---|---|---|---|
+| AR-06-070 | 플랫폼 어댑터 5종 인터페이스(`ProjectStore`·`FileGateway`·`SecureStore`·`EntitlementClient`·`Updater`) + `capabilities` + 설치형(`tauri/`) 구현 이전. 005의 `packages/shell-bridge/src/**` 소유를 이어받음(task `log.md` 1줄 요청) | `packages/shell-bridge/src/{adapters,tauri}/**` | 005, 006 | P0 | M | Opus | 화면 코드가 `platform === 'web'` 직접 검사 0(린트). `capabilities`로만 분기. 설치형 기존 단위 테스트 통과, 어댑터 5종 계약 테스트가 `tauri/`·`web/` 양쪽에 같은 케이스를 돌릴 수 있는 하네스 | ADR-001 2.1절, 7장 |
+| AR-06-071a | W0 스파이크 1주: `packages/features` 라우트 정의를 Vite(설치형)와 Next.js `(studio)`가 공유하는지 확인. 실패 시 Vite SPA 하나 + web 어댑터 + 정적 호스팅 | `spikes/studio-shell/**`(버리는 코드, 019와 같은 규칙) | 003, 004 | P0 | S | Opus | `[DECISION]` 1건(공유 가능 / SPA 대안)과 근거 측정(번들 크기·라우터 차이 흡수 방법). 071의 구조가 이 결정에 의존. 실현 가능성 `미확인` | ADR-001 2장 경계 규칙 |
+| AR-06-071 | 웹 스튜디오 셸 `(studio)`: 별도 서브도메인(`app.`, 기본값)·라우트 그룹·엔진 워커 생성·스튜디오 전용 CSP(`wasm-unsafe-eval`만, `unsafe-eval`·`unsafe-inline` 스크립트 금지)·쿠키 세션 시 CSRF·SVG 정화 | `web/src/app/(studio)/**`, `web/src/lib/studio/**`(`lib/auth` 제외), `web/next.config.ts`의 스튜디오 헤더(003에 1줄 요청) | 070, 071a, 003, 008 | P0 | L | Fable | 마케팅·계정 페이지 CSP에 `wasm-unsafe-eval` 0. 스튜디오 번들에 비밀 0(`VITE_`/`NEXT_PUBLIC_` 허용 목록 검사 확대). 쿠키 세션과 Bearer 혼용 0. 로그인 없이 `(studio)` 접근 시 거부. 노출 면 위협 메모는 ADR-001 5장 표를 따름. 서브도메인 vs 같은 출처는 예외로 팀장 승인 | ADR-001 2장, 5장 |
+| AR-06-072 | 웹 어댑터(`web/`): `ProjectStore`(클라우드 + IndexedDB 읽기 캐시), `FileGateway`(`<input type=file>`·File System Access API·다운로드 Blob, 크기 상한 DXF 20MB·IFC/.3dm 100MB 동일), `SecureStore`(메모리 + httpOnly 쿠키), `EntitlementClient`(서버 조회), `Updater`(없음) | `packages/shell-bridge/src/web/**` | 070, 073 | P0 | M | Opus | 070 계약 테스트 5종 통과(웹 쪽). IndexedDB는 읽기 캐시만, 편집 캐시를 서버로 올리는 호출 0. 로그아웃 시 캐시 삭제. 토큰 `localStorage` 0건. 크기 상한 초과는 읽기 전 거부 | ADR-001 2.1절, 3.1절 |
+| AR-06-073 | 클라우드 프로젝트 blob 저장: `arch.cloud_projects`(단일 blob, `project_uuid` 정본, `local_id` nullable), 업서트 `(org_id, project_uuid)` + `expected_version` 충돌 거절, 목록·열기 API, RLS. 스키마 변경은 001 소유 규칙(1장)의 예외이므로 팀장 결정 필요 | `supabase/**` 신규 번호 조각(적용된 파일 수정 0), `web/src/server/cloud-projects/**`, `web/src/app/api/cloud-projects/**` | 001, 002, 003 | P0 | M | Fable | `expected_version` 불일치 시 거절 + 저장 안 됨(테스트). 다른 조직 행 0건(RLS 스모크에 추가). 본문 크기 상한, 본문 로그 0. 충돌 대화상자 선택지 2개("내 변경을 사본으로 저장"·"서버 최신 열기")를 API가 지원. 용량 한도 값은 Q4 전 `미확정` | ADR-001 3장, 5장 표 2행, 7장 |
+| AR-06-074 | 라이선스 3종(영구·기간제·구독) 서버 판정: `license_skus`에 `term_*`·연 구독 코드, `licenses.term_ends_at`(제안 이름), 웹 `arch.org_features` 판정(영구는 업데이트 유효 기간 포함), 라이선스 파일 `sku` 코드·`offline_valid_until ≤ 종료일` clamp, 동시 보유 우선순위(영구 > 구독 > 기간제 > 체험), 결제 화면 영구-웹 안내·동의 체크(D-H4) | `supabase/**` 신규 번호 조각, `web/src/server/{licenses,checkout}/**`, `rust/src/license.rs`의 필드(041에 요청), 결제 화면 문구 | 040, 041, 043, 073 | P0 | L | Fable | 상태별 접근 매트릭스(영구 유효·영구 업데이트 만료·기간제·구독·체험 x 설치형·웹) 통과. 만료 후 열람·내보내기 유지, 웹 편집 거부. 시계 조작 수용(D-H3), 오프라인 AI·클라우드 불가. 가격·전환·환불 값은 Q3 전 `미확정`, 하드코딩 0 | ADR-001 4.1~4.5절, 7장 |
+| AR-06-074a | 좌석 관리(D-H1): `licenses`/`org_features`에 `seats` 컬럼(판매 시작 전 스키마), 조직 멤버 좌석 배정·회수, 좌석 초과 시 웹 로그인·설치형 활성화 거부 판정, 추가 좌석 구매 경로 | `supabase/**` 신규 번호 조각, `web/src/server/seats/**`, `feat/seats/**` | 074 | P0 | M | Fable | 라이선스 1개 = 사용자 1명(웹 + PC 2대) 판정 테스트. 미배정 멤버 거부, 회수 후 재배정, `outsider` 거부(RLS). 좌석 변경은 `member`가 못 한다(42501). 웹 동시 세션 수·캐시 TTL은 Q6 전 `미확정` | ADR-001 4.1절, 9장 D-H1 |
+| AR-06-074b | 휴대폰 본인인증 크레딧(D-H2): 체험은 이메일로 시작, 가입 크레딧 30은 본인인증 1회당 1번만 지급(멱등 키), 인증 제공자 연동. 제공자·비용·개인정보 보관 형태(번호 원문 금지, 식별값 해시 여부)는 `미확인`·팀장 결정 필요 | `web/src/lib/auth/phone/**`, `web/src/app/api/auth/phone/**`, `supabase/**` 신규 번호 조각(원장 지급 RPC) | 008, 074, 새 의존성 `secscan license` | P0 | M | Fable | 같은 인증 식별값으로 재가입 시 크레딧 원장 추가 0행. 지급 요청 재전송이 멱등. 번호·식별값 로그 0, 인증 코드·토큰 로그 0. 미인증 계정은 체험 가능, 가입 크레딧 0. 개인정보 분류는 `09_SECURITY_PLAN.md` 2장 | ADR-001 9장 D-H2 |
+| AR-06-075 | 규칙 팩 서버 분리 + 웹 자격 게이트: 팩을 엔진 패키지 밖(서버 배포 데이터)으로 분리, 서명 URL 15분, 팩 다운로드 레이트 리밋(수치 `미확정`), 운영 소스맵 비공개. CI 번들 검사에 "엔진 번들에 팩 0바이트" 추가 | `packages/rules/src/loader/**`(015에 요청), `scripts/rule-packs/**`, `web/src/server/rule-packs/**`, `.github/workflows/bundle-check.yml`, `scripts/ci/bundle-check.mjs` | 015, 042, 071 | P0 | M | Fable | 엔진 번들 분석에서 팩 바이트 0(CI 실패 조건). 자격 없는 계정의 팩 요청 거부(체험은 허용). 운영 소스맵 공개 경로 0. 팩 자체는 평문 노출이 전제이므로 복제 억제는 최신성·서버 기능에 한정(ADR-001 5장 사실 정정). 비로그인 체험 범위는 Q7 전 로그인 필수 | ADR-001 5장 |
+| AR-06-076 | `/download` 페이지·릴리스 채널: 듀얼 CTA("Windows용 다운로드(x64)"·"웹에서 바로 시작"), OS 감지(Mac·Linux "준비 중", 모바일 "웹 열기" + PC로 링크 보내기), `latest.json`(Tauri updater 형식) 버전·배포일·크기·릴리스 노트, SHA-256 체크섬 + Authenticode 게시자명, 시스템 요구사항 펼침 | `web/src/app/(marketing)/download/**`, `web/src/features/download/**`, `scripts/release/latest-json.mjs` | 057, 058, 069 | P0 | M | Sonnet | `latest.json`이 058 릴리스 산출물과 일치(CI 비교). 체크섬 표시가 실제 파일과 일치. 두 CTA 같은 무게(받은 시안 정본, 057 랜딩 CTA 교체 요청 1줄). 01장 6.1절 금지 문구 0. 메모리 요구 기준 `미확인` | ADR-001 6장 |
+| AR-06-077 | 로컬 ↔ 클라우드 수동 업로드·내려받기(설치형): 최초 1회 새 `project_uuid` 발급(사본), 이후 같은 `local_id`는 업서트. 자동 양방향 동기화는 Phase 2 | `feat/cloud-sync/**`, `rust/src/commands/local_db.rs`의 `local_id` 매핑(006에 요청) | 034, 073, 072 | P1 | M | Opus | 업로드 후 원본 유지, 재업로드는 같은 행 `version+1`. 충돌 시 거절 + 2선택. 설치형 클라우드 모드 오프라인은 읽기 전용 + "로컬로 복사해 편집" 안내. 만료 후 클라우드 → 로컬 내려받기 허용 | ADR-001 3장, 3.1절 |
+| AR-06-078 | Excel/CSV 내보내기(`AR-F-044`): 면적표·판정표·공사비 표 등 PRD 13장 044 범위.(MVP 확정 2026-10-28) | `packages/io/src/tabular/**`, `feat/export-table/**` | 038, 015, 072 | P0 | M | Opus | 웹·설치형 같은 파일 출력(바이트 동일 골든). CSV 수식 주입 방어(`=`·`+`·`-`·`@` 접두 처리). 한글 깨짐 0(BOM 정책 `[DECISION]`). 043·045·046은 Phase 2라 포함 0 | ADR-001 1장 ⑤, 9장 Q1 |
+| AR-06-079 | 웹 E2E·브라우저 매트릭스: Playwright(웹) + WebDriver(설치형) 동등성 시나리오, 지원 브라우저 Chrome·Edge·Safari·Firefox 최신 2개 버전(제안), 브라우저 간 PDF·PNG·폰트 골든 비교 기준 신설 | `e2e/web-parity/**`, `tests/browser-matrix/**` | 060, 061, 071, 072, 074 | P0 | L | Sonnet | 동등성 시나리오(로그인 → 대지 → 매스 → 판정 → 시트 → 내보내기)가 웹·설치형 양쪽 통과. 매트릭스 4개 브라우저 x 최신 2개 버전 결과표. 골든 비교 허용 오차 `[DECISION]`. 실패 주입 시 같은 화면 문구 | ADR-001 7장 QA 행 |
+
+### 9.2 웨이브
+
+| 작업 | 웨이브 | 이유 |
+|---|---|---|
+| 071a | W0 | 071 구조를 정하는 스파이크(1주). 019와 병렬 |
+| 070 | W1 | 005·006 뒤. W4 화면 작업이 어댑터 주입 지점을 쓰기 전에 끝나야 함 |
+| 073 → 072, 071 | W2 | 073(저장 정본) 뒤 072. 071은 070·071a 뒤 |
+| 074 → 074a, 074b, 075 | W3 | 074는 040·041·043(W2) 뒤. 074a·074b는 074 뒤. 075는 015·042·071 뒤 |
+| 077, 078 | W5 | 077은 034(W4)·073 뒤, 078은 038(W4) 뒤 |
+| 076, 079 | W6 | 076은 057(W5)·058 뒤. 079는 060·061 뒤이며 045와 병렬 |
+
+### 9.3 기존 작업 영향
+
+| 대상 | 변경 |
+|---|---|
+| W4 화면 작업 026, 028, 029, 031, 034, 035, 036, 037, 038, 044 (10건) | 데이터·파일 접근을 070 어댑터 주입으로만 한다(`packages/features`가 `apps/*`·Tauri·Supabase를 직접 import하면 린트 실패). 웹 셸에서 화면이 열리는 확인 1건씩 추가. 034는 클라우드 사본·저장 모드, 044는 3종·좌석 상태를 표시 |
+| W5 화면 작업 027, 030, 032, 039, 052, 055, 056 (7건) | 같은 추가. 030 ExportDialog는 `FileGateway`만 쓴다. 039의 3D 입출력은 웹 파일 크기 상한 동일 |
+| 057 | `/download` 듀얼 CTA 장착 요청(076) |
+| W6 E2E 060, 061 | 웹 E2E는 `(studio)` 진입 포함. 060·061 위에 079가 동등성·브라우저 매트릭스를 얹음 |
+| 001, 002, 040, 041, 043 | 스키마 변경(073·074·074a·074b)에 따라 RLS 스모크(002)에 `cloud_projects`·`seats` 추가, 041의 라이선스 파일 필드 확장. 1장 "스키마는 001만" 규칙 예외는 팀장 결정 필요 |
+| 일정 | ADR-001 7장 표시: W4·W5 화면 작업에 웹 어댑터·E2E 추가 부담(위 17건, ADR-001의 "약 20건"과 차이는 기능 화면 판정 기준 차이로 팀장 확인 필요). 일정 재산정 `미확인` |
+| 일정 영향 없는 작업 | 069, 033, 065, 067, 068(마케팅·랜딩)은 영향 없음 |

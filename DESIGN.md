@@ -25,7 +25,7 @@
 | 숫자 | `font-variant-numeric: tabular-nums` | 모노(`--font-mono`)를 번호·코드에 |
 - 같은 컴포넌트가 두 표면에서 동작해야 하므로 컴포넌트는 `--color-*` 시맨틱 토큰만 쓴다.
 - 앱 다크(흑판 #20262A)는 바탕 외 값이 정해지지 않아 이번 범위에서 제외(시안도 라이트 기준). 결정되면 `.dark` 블록으로 추가.
-- 랜딩은 다크 단일 테마(기획서 4.3의 "랜딩은 라이트만"과 시안이 다름: 확정 시안을 따름. 4.3 갱신 필요).
+- 랜딩은 다크 단일 테마(사용자 확정 2026-10-28, 03_SCREENS_UX 4.3·4.4 갱신 완료). 한 단어 강조(w2) 허용.
 
 ## 3. 토큰 요약 (값은 tokens.css)
 - 색 시맨틱: bg · surface · raised · nav · fg · fg-2 · fg-3 · line · input · accent(+fg) · info · ok · warn · danger · envelope (각 `-fg` 짝), concrete(앱, 글자 금지), 랜딩 전용 bg-deep · line-2 · nav-sub · accent-strong · mint · violet.
@@ -85,4 +85,4 @@
 
 ## 7. 사람 확인 필요
 1. 앱 폰트 크기(display·h1·h2) 전부 제안값. 2. 랜딩 hero 84px 상한(시안 최대 104). 3. 입력 경계색 두 개(제안).
-4. 서체 SUIT vs Noto Sans KR, 숫자 tabular 지원. 5. 랜딩 다크 vs 기획서 4.3 "랜딩은 라이트만" 충돌. 6. 랜딩 w2 강조 vs 4.4 7번.
+4. 서체 SUIT vs Noto Sans KR, 숫자 tabular 지원. (5·6 랜딩 다크·w2 강조는 2026-10-28 확정으로 해소.)

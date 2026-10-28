@@ -13,7 +13,9 @@
 core.organizations ─┬─ arch.licenses (serial_hash, serial_last5, updates_until) ── arch.license_activations (source license)
                     ├─ arch.license_activations (source plan, license_id null: 체험·월 구독 기기)
                     ├─ arch.drafting_profiles (조직당 1행: 표제란, layer_map)
-                    ├─ arch.cloud_projects (local_id, version, storage_path)
+                    ├─ arch.cloud_projects (project_uuid PK, local_id null 허용, version, storage_path)  ← 변경 예정 2026-10-28
+                    ├─ arch.license_seats (좌석 배정: license ── user)  ← 추가 예정 2026-10-28
+                    ├─ arch.identity_credit_grants (본인인증 1회 크레딧 지급 기록)  ← 추가 예정 2026-10-28
                     ├─ arch.renders ── source_render_id(업스케일, 같은 조직)
                     ├─ arch.reviews / arch.intake_runs / arch.proposals   (각 행 ── core.jobs, core.credit_ledger)
                     └─ arch.site_lookups (service 전용: 날짜 + 지번 HMAC)
@@ -58,6 +60,8 @@ license_store, local_settings, rule_pack_cache, cost_catalog_cache, drafting_pro
 | `intake_runs` | 클라우드 | AR-F-015, 034 |
 | `proposals` | 클라우드 | AR-F-014 |
 | `site_lookups` | 클라우드 | AR-F-001 |
+| `license_seats` (추가 예정 2026-10-28) | 클라우드 | AR-F-017, 018 |
+| `identity_credit_grants` (추가 예정 2026-10-28) | 클라우드 | -(전용 ID 없음) |
 | Storage 버킷 | 클라우드 | AR-F-013, 014, 015, 028 |
 | `projects` | 로컬 | AR-F-003 |
 | `model_revisions` | 로컬 | AR-F-002, 003, 032 |
@@ -87,7 +91,7 @@ license_store, local_settings, rule_pack_cache, cost_catalog_cache, drafting_pro
 
 | 컬럼 | 타입 | NULL | 기본 | 설명 |
 |---|---|---|---|---|
-| `code` | text PK | 아니오 | - | `perpetual_early`, `perpetual_standard`(`01_PRD.md 4.1절`) |
+| `code` | text PK | 아니오 | - | `perpetual_early`, `perpetual_standard`(`01_PRD.md 4.1절`). 추가 예정 2026-10-28: 기간제 `term_*`(1년·3년), 연 구독 `sub_yearly`(코드·가격은 `ADR-001` Q3 후 확정, `미확정`). 이 표에 `term_months integer null`(기간제만 값) 추가 |
 | `price_krw` | integer | 아니오 | - | 490,000 / 890,000(VAT 포함) |
 | `includes_updates_months` | integer | 아니오 | 12 | 첫 1년 업데이트 |
 | `bonus_credits` | integer | 아니오 | 0 | 가입 크레딧 300(pack 버킷) |
@@ -134,9 +138,11 @@ anon·authenticated는 `fallback_features`를 뺀 컬럼만 읽는다(가격 화
 | `updates_until` | date | 아니오 | - | 발급 시 KST 오늘 + `includes_updates_months` |
 | `max_activations` | integer | 아니오 | 2 | 발급 시 상품 값 복사 |
 | `extension_order_ids` | uuid[] | 아니오 | `{}` | `extend_updates` 멱등(같은 주문 두 번 연장 금지) |
+| `seats` (추가 예정) | integer | 아니오 | 1 | 구매 좌석 수(확정 D-H1: 라이선스 1개 = 사용자 1명, 직원 추가는 좌석 추가 구매). CHECK `seats >= 1`. 판매 시작 전 스키마에 포함. 발급 시 주문 수량으로 설정 |
+| `term_ends_at` (추가 예정) | timestamptz | 예 | - | 기간제·구독의 종료 시각. 영구는 null. 오프라인 유예 `offline_valid_until`은 이 값 이하로 clamp(D-H3). CHECK: 기간제 SKU면 not null |
 | `status_changed_at`, `status_reason` | | 예 | | 상태 전이 기록 |
 
-사용자는 `serial_hash`, `extension_order_ids`, `order_id`를 뺀 컬럼만 읽는다(2400:1755).
+사용자는 `serial_hash`, `extension_order_ids`, `order_id`를 뺀 컬럼만 읽는다(2400:1755). 추가 컬럼 `seats`·`term_ends_at`은 화면 표시용이라 같은 조직 멤버가 읽을 수 있다(기존 `is_org_member(org_id)` SELECT 정책 그대로, 쓰기는 `issue_license`·service만, 4장).
 
 ### 2.7 license_activations (2400:168)
 
@@ -170,10 +176,14 @@ anon·authenticated는 `fallback_features`를 뺀 컬럼만 읽는다(가격 화
 
 | 컬럼 | 설명 |
 |---|---|
-| `local_id` | 데스크톱 `projects.id`. `(org_id, local_id)` 유일 |
+| `project_uuid` (변경 예정 2026-10-28) | **정본 키(PK)**. 웹에서 새로 만든 프로젝트도 갖는다. 업서트 기준 `(org_id, project_uuid)` |
+| `local_id` (변경 예정) | 데스크톱 `projects.id`. **nullable**(설치형 업로드 때만 채움). `(org_id, local_id)` 부분 유일(`where local_id is not null`). 같은 `local_id` 재업로드는 같은 행에 업서트, 최초 업로드는 새 `project_uuid` 발급(사본) |
 | `name` | 1~120자 |
-| `storage_path` | `<org_id>/arch/project_snapshot/<local_id>/<uuid>.<ext>`(CHECK, 버킷 `arch-user`) |
+| `storage_path` | `<org_id>/arch/project_snapshot/<project_uuid>/<uuid>.<ext>`(CHECK, 버킷 `arch-user`) |
 | `version` | 1부터, 저장마다 +1. 줄어들지 않는다(트리거). 기대 버전과 다르면 `AR041` |
+| `blob_bytes`, `schema_version` (추가 예정) | 프로젝트 전체 단일 blob(관계형 복제는 Phase 2)의 크기와 `DesignModel` `schema_version`. 본문 크기 상한 검사는 서명·사용 시점 |
+
+RLS(정책 문장): SELECT는 `is_org_member(org_id) and has_entitlement(org_id,'arch')`(4장 그대로, 만료 후에도 열람·내려받기 유지). INSERT·UPDATE·DELETE는 사용자 GRANT 없음이고 `save_cloud_project`(member+, 경로 첫 폴더 = 자기 조직, `expected_version` 검사)로만 쓴다. 다른 조직의 `project_uuid`는 존재를 숨겨 P0002.
 
 보존: 계정이 있는 동안(`01_PRD.md 5절`). 조직 삭제 시 cascade.
 
@@ -270,6 +280,41 @@ anon·authenticated는 `fallback_features`를 뺀 컬럼만 읽는다(가격 화
 | | `include_in_proposal` | 불리언 | |
 | 파생(D, 저장 안 함) | JudgmentResult(스냅샷 제외), 엔벨로프, SheetModel, DXF/SVG/PDF/PNG 바이트 | - | 내보낼 때만 사용자가 고른 경로에 파일로 |
 
+### 2.18 license_seats (추가 예정 2026-10-28) — 좌석 배정
+
+| 컬럼 | 타입 | NULL | 설명 |
+|---|---|---|---|
+| `id` | uuid PK | 아니오 | |
+| `org_id`, `license_id` | uuid | 아니오 | `(license_id, org_id)` 복합 FK(같은 조직만, 1장 경계 규칙) |
+| `user_id` | uuid | 아니오 | 조직 멤버(`org_members`)여야 함(RPC 검사) |
+| `assigned_by`, `assigned_at` | | 아니오 | 배정자(owner/admin)·시각 |
+| `unassigned_at` | timestamptz | 예 | 해제 시각. 해제 후 새 행으로 재배정(되살리기 금지) |
+
+활성 유일: `(license_id, user_id) where unassigned_at is null`. 활성 행 수 ≤ `licenses.seats`는 `assign_seat` RPC가 검사(초과 `AR043`, 신규 코드 제안). 기간제·구독·체험의 좌석 소유 주체는 `licenses`가 아니라 `org_features`가 계산한다(영구 > 구독 > 기간제 > 체험 우선, `ADR-001` 4.5절).
+
+RLS(정책 문장): SELECT는 `is_org_member(org_id)`(같은 조직 멤버는 누가 좌석을 가졌는지 열람, 자기 행은 항상 가능). INSERT·UPDATE·DELETE 정책·GRANT 없음. 쓰기는 `arch.assign_seat`·`arch.unassign_seat`(owner/admin 또는 service)만이며 감사 `seat.assign`·`seat.unassign`. 비멤버는 존재를 숨긴다(P0002).
+
+`arch.org_features` 확장(함수라 테이블 변경 없음): 반환에 `seats`(구매 수), `seats_used`, `seat_assigned`(호출 사용자 기준), `term_ends_at`을 더하고, 좌석 미배정 사용자는 `entitled=false` 취급(클라우드 기능 402)이다. 정확한 반환 키는 신규 마이그레이션에서 확정.
+
+### 2.19 identity_credit_grants (추가 예정 2026-10-28) — 본인인증 1회 크레딧 지급 기록
+
+| 컬럼 | 타입 | NULL | 설명 |
+|---|---|---|---|
+| `id` | uuid PK | 아니오 | |
+| `ci_hash` | text | 아니오 | 본인인증 제공자 식별값의 HMAC-SHA-256 hex(서버 비밀 키 `IDENTITY_HASH_KEY`, 제안 환경변수). 휴대폰 번호·식별값 원문은 저장하지 않는다 |
+| `user_id`, `org_id` | uuid | 아니오 | 지급받은 사용자·개인 조직 |
+| `credit_ledger_id` | uuid | 아니오 | `core.credit_ledger`의 지급 행(`core.grant_credits`, 멱등 키 `identity:<ci_hash>`) |
+| `credits` | integer | 아니오 | 30(D-H2 확정값, 값은 `runtime_config`로 둘지 `팀장 결정 필요`) |
+| `granted_at` | timestamptz | 아니오 | |
+
+**중복 방지 유니크 키**: `unique (ci_hash)` 하나로 "본인인증 1회당 1번만"을 강제한다(다른 이메일로 재가입해도 같은 `ci_hash`는 두 번 지급되지 않음). 보조로 `unique (user_id)`. 제공자 식별값 종류·해시 입력(연계정보 등)은 제공자 확정 후 정함(`미확인`).
+
+RLS(정책 문장): RLS ON, 사용자 GRANT와 정책 없음(식별 해시는 사용자에게도 노출하지 않는다). 쓰기는 service_role의 `arch.grant_identity_credit`뿐이며 `core.is_service_caller()`로 잠그고 지급·거절은 감사 `identity.credit`로 남긴다. 사용자는 04장 `POST /api/identity/callback` 결과만 본다. 보존: 계정 삭제 후에도 재가입 남용 방지를 위해 `ci_hash`만 유지할지 `팀장 결정 필요`(개인정보 검토 `미확인`).
+
+### 2.20 신규 마이그레이션 메모 (SQL 파일 없음)
+
+적용된 마이그레이션 `2400_arch.sql`과 모놀리스 `0002_arch_domain.sql`은 수정하지 않는다. 위 2.2·2.6·2.9·2.18·2.19 변경은 **신규 마이그레이션 `2026102800000x`로 추가 예정**(번호 `x`는 착수 때 확정, 작업 AR-06-073·074). 내용 요약: `cloud_projects` 키 교체(`project_uuid` 백필 후 PK 전환, `local_id` nullable, `save_cloud_project` 시그니처 교체), `licenses.seats`·`term_ends_at`, `license_skus.term_months`, `license_seats`, `identity_credit_grants`, `org_features` 반환 확장. 이 문서에서는 SQL을 쓰지 않는다. 기존 행 이행 방식(기존 `cloud_projects` 행의 `project_uuid` 부여)은 `팀장 결정 필요`.
+
 ## 3. 상태 전이
 
 | 대상 | 현재 → 허용 | 누가 | 부수 효과 | 구현 |
@@ -297,7 +342,8 @@ anon·authenticated는 `fallback_features`를 뺀 컬럼만 읽는다(가격 화
 | `rule_packs` | published·withdrawn + `has_arch_access()`, 또는 플랫폼 관리자 | `storage_path` 제외 | service |
 | `rule_pack_changes` | 게시된 팩의 개정 + `has_arch_access()` | 전체 | service |
 | `drafting_profiles`, `cloud_projects`, `renders`, `reviews`, `intake_runs`, `proposals` | `is_org_member(org_id) and has_entitlement(org_id, 'arch')` | 전체 | 각각 `upsert_drafting_profile`, `save_cloud_project`, service AI RPC |
-| `runtime_config`, `builds`, `cost_catalogs`, `site_lookups` | 정책 없음 | 없음 | service. 사용자에게는 RPC 결과만 |
+| `runtime_config`, `builds`, `cost_catalogs`, `site_lookups`, `identity_credit_grants`(추가 예정) | 정책 없음 | 없음 | service. 사용자에게는 RPC 결과만 |
+| `license_seats` (추가 예정 2026-10-28) | `is_org_member(org_id)` 또는 플랫폼 관리자 | 전체 | `assign_seat`·`unassign_seat`(owner/admin) 또는 service. 2.18절 |
 
 viewer는 SELECT만 된다(모든 RPC가 member+ 또는 owner/admin을 요구). 사용자는 자기 플랜(`core.app_entitlements`), 크레딧(`core.wallets`·`credit_ledger`), 라이선스, 기기 행을 바꿀 수 없다: 코어 테이블은 코어 guard, 제품 테이블은 쓰기 GRANT 없음 + guard + 전이 트리거(스모크 "A 자기 플랜 변경 42501", "A 라이선스 상태 직접 변경 42501", "A 기기 활성화 직접 삽입 42501").
 
@@ -323,7 +369,9 @@ viewer는 SELECT만 된다(모든 RPC가 member+ 또는 owner/admin을 요구). 
 | `license_activations_active_idx (license_id) where 활성` | 활성 수 판정(AR001) |
 | `license_activations_self_idx (org_id, deactivated_at) where self` | 30일 셀프 해제 수(AR004) |
 | `builds (platform, channel, version)` 유일 | 매니페스트 |
-| `cloud_projects (org_id, local_id)` 유일, `cloud_projects_org_updated_idx` | 저장, 목록 |
+| `cloud_projects (org_id, project_uuid)` PK/유일, `(org_id, local_id)` 부분 유일(local_id not null, 변경 예정), `cloud_projects_org_updated_idx` | 저장, 목록 |
+| `license_seats_active_uniq (license_id, user_id) where unassigned_at is null`, `license_seats_org_user_idx (org_id, user_id)` (추가 예정) | 좌석 중복 방지, `org_features` 좌석 판정 |
+| `identity_credit_grants (ci_hash)` 유일, `(user_id)` 유일 (추가 예정) | 본인인증 크레딧 중복 지급 방지 |
 | `renders_active_idx (org_id, status) where queued/running` | 동시 렌더 3건(AR030) |
 | `<run>_org_created_idx (org_id, created_at desc)` 4개 | 작업 기록, 일일 상한 합계 |
 | `renders_expiry_idx (expires_at) where succeeded and purged_at null`, `intake_runs_expiry_idx` | 보존 정리 |

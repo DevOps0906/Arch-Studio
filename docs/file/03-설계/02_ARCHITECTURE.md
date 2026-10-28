@@ -14,6 +14,7 @@
 | 파일 입출력 | web-ifc(MPL-2.0), rhino3dm(.3dm, 라이선스 미확인, AR-02-D2), glTF(three.js GLTFExporter), DXF 가져오기 자체 파서(P1, 엔티티 부분집합) | 구현 시 고정 | `01_PRD.md 3절`, `:232` |
 | 로컬 DB | SQLite(`rusqlite` bundled). 화면은 이름 붙은 Rust 명령 `local_db_*`만 | 구현 시 고정 | `D:/WorkSpace/platform/docs/Tauri/README.md:111` |
 | 클라우드 웹 | Next.js 16.2.x App Router + React 19.2(`apps/web`), Tailwind CSS v4, three.js 히어로 | 16.2.x | 확정 결정 3, `D:/WorkSpace/platform/docs/Tauri/README.md:218` |
+| 웹 스튜디오 셸 (추가 2026-10-28) | `apps/web`의 `src/app/(studio)/**`를 `app.` 서브도메인으로 배포(출처·쿠키·스토리지를 마케팅 도메인과 분리, 같은 출처는 팀장 승인 예외). 엔진은 웹 워커에서 그대로 실행. 라우팅·워커 생성·CSP는 이 셸이 소유. 공유 가능성은 W0 스파이크 AR-06-071a로 확인(아래) | 위 Next.js 16.2.x | `ADR-001_DELIVERY_AND_LICENSING.md` 2·5장 |
 | AI 서비스 | FastAPI(Python) `apps/api`, LangChain, LangGraph + `langgraph-checkpoint-postgres`(`ai_runtime`), pgvector RAG(HNSW, 1024차원) | Python 3.12(제안), pgvector 0.8 이상 | `docs/file/03-설계/공용코어/AI_ARCHITECTURE.md` 4~6장 |
 | 채팅·음성·이미지 | 공용 Dify 앱 `arch-chat`, `packages/core-voice`(STT), fal(렌더) | 설치 버전 확인 | `docs/file/03-설계/공용코어/SHARED_MODULES.md:502-506`, `:241` |
 | 워커 | Node 20 TS `workers/arch-jobs`, 큐는 `core.jobs`(`claim_jobs`)만 | Node 20 | `docs/file/03-설계/공용코어/CORE_SPEC.md:308` |
@@ -22,6 +23,8 @@
 | 테스트·검증 | Vitest + 속성 테스트(fast-check, 제안), pytest, Playwright(web), WebDriver E2E(desktop, T-012), Python ezdxf `audit`(CI 전용, 버전 고정, 런타임 미포함), `cargo audit` | 고정 | `01_PRD.md 9.3절`, `D:/WorkSpace/platform/docs/Tauri/README.md:212` |
 
 열린 기술 결정(이 문서에서 추가, 1주 스파이크에서 확정): AR-02-D1 2D 다각형 라이브러리 선택과 라이선스(후보 Clipper2 계열, 확인 실패 시 정수 좌표 자체 구현), AR-02-D2 rhino3dm 라이선스(확인 실패 시 .3dm은 MVP에서 내보내기만 보류). D-23의 jsPDF·svg2pdf.js 라이선스도 같은 스파이크에서 확인한다.
+
+W0 공유 스파이크 (추가 2026-10-28, `ADR-001_DELIVERY_AND_LICENSING.md` 2장): AR-06-071a, 1주. 질문 = `packages/features` 라우트 정의를 Vite(`apps/desktop`)와 Next.js App Router(`(studio)`)가 얇은 래퍼만으로 공유할 수 있는가(실현 가능성 `미확인`). 실패 시 대안 = Vite SPA 하나에 `web` 어댑터를 붙여 정적 호스팅하고 Next는 마케팅·계정만 맡는다(그 경우 `(studio)` 행은 `apps/studio-web`로 바뀌며 Q8 결정에 따름).
 
 ## 2. 모듈 경계
 
@@ -34,19 +37,21 @@
 | local-migrations | `apps/desktop/migrations/**` | 로컬 SQLite(B 분류 테이블) 마이그레이션, 업데이트 전 스냅샷 | 필드 추가만 허용(`D:/WorkSpace/platform/docs/Tauri/README.md:104`) |
 | domain | `packages/domain/src/**` | DesignModel·SheetSpec·JudgmentResult·DraftingProfile 타입, zod 스키마, `schema_version` 이주 함수 | 모든 패키지가 import. Python 쪽은 pydantic 동치 테스트 |
 | geometry | `packages/geometry/src/**` | 2D 다각형(합집합, 오프셋, 면적, 최단거리), 압출, 엔벨로프 솔리드(Manifold 래퍼). mm 정수 | 순수 함수. 면적·거리 함수는 rules와 drafting이 같은 것을 쓴다 |
-| rules | `packages/rules/src/**`, `packages/rules/packs/**`, `packages/rules/golden/**` | 판정 엔진, 규칙 팩 로더·선택(신청 예정일), 엔벨로프 한계, 주차·대상 여부 | 입력 DesignModel + 규칙 팩 → JudgmentResult. 판정 행마다 근거 조항·시행일·팩 버전(AR-F-004) |
+| rules | `packages/rules/src/**`, `packages/rules/golden/**` (규칙 팩 `packs/**`는 엔진 밖, 아래 rule-pack-data 행) | 판정 엔진, 규칙 팩 로더·선택(신청 예정일), 엔벨로프 한계, 주차·대상 여부 | 입력 DesignModel + 규칙 팩 → JudgmentResult. 판정 행마다 근거 조항·시행일·팩 버전(AR-F-004). CI 번들 검사: 엔진 번들에 팩 0바이트(`ADR-001` 5장) |
+| rule-pack-data (추가 2026-10-28) | 서버 배포 데이터: 버킷 `arch-releases` `rule-packs/<version>/pack.json`(05장 2.15). 소스 저장소 경로는 `팀장 결정 필요` | 규칙 팩(법령 데이터). `packages/rules/packs/**`에서 이동 | 서버가 `arch.eligible_rule_packs()`로 자격 확인 후 서명 URL로만 제공(웹·데스크톱 공통, 04장 2.1). 체험에도 내려가며 브라우저에서 평문이라 팩 자체는 비밀 아님 |
 | program | `packages/program/src/**` | 체크리스트 → 실 프로그램·면적표(AR-F-011), 개략 공사비(AR-F-012) | 결정적 순수 함수, 사용자 잠금 행 보존 |
 | massing | `packages/massing/src/**` | 매스 후보 3안(AR-F-033, D-26 결정적 격자 탐색) | 후보는 rules로 판정 PASS인 것만 반환 |
 | layout | `packages/layout/src/**` | 실 배치 편집 규칙(겹침·외곽 검사 AR051, 벽 두께, 문·창 위치), Phase 2 배치 솔버 | 입력 실 인접 의도 JSON + 층 외곽 → 실 다각형 3안 |
 | drafting | `packages/drafting/src/{sheet,views,annotate,titleblock,layers,writers/dxf,writers/svg,writers/pdf,writers/png}/**`, `packages/drafting/golden/**` | 도면 엔진(AR-F-028~032, 036, 038). 2.3절 | 2.3절 계약 |
 | io | `packages/io/src/{ifc,gltf,rhino,dxf-import}/**` | AR-F-016 내보내기·가져오기, AR-F-037 | 가져오기 결과는 "후보"이고 사용자가 확정해야 DesignModel에 들어간다 |
 | engine-worker | `apps/desktop/src/workers/**`(`engine.worker.ts` 판정·엔벨로프·매스, `drafting.worker.ts` 시트·작성기·가져오기, 이름은 제안) | 무거운 계산을 UI 스레드 밖에서 실행 | 2.4절 메시지 프로토콜 |
-| shell-bridge | `packages/shell-bridge/src/**` | NativeBridge(Tauri 구현 + 웹 대체), SecureStore, LicenseClient, Exporter, 데스크톱 인증 흐름(`src/auth/**`) | `D:/WorkSpace/platform/docs/Tauri/README.md:237-249`. 화면은 Tauri API를 직접 import하지 않는다(`:234`) |
+| web-studio (추가 2026-10-28) | `apps/web/src/app/(studio)/**`(`app.` 서브도메인), 웹 워커 `apps/web/src/workers/**`(제안) | 로그인 후 스튜디오 셸: 라우팅, 워커 생성, CSP(`wasm-unsafe-eval`은 여기에만, `unsafe-eval`·`unsafe-inline` 금지), SVG 정화 | `packages/features`, `packages/shell-bridge`의 `web/` 구현. `(marketing)`·`(account)`와 라우트 그룹 분리. 같은 `EngineRequest/Response`(2.4절). `packages/features`는 `apps/*`를 import하지 않는다 |
+| shell-bridge | `packages/shell-bridge/src/{tauri,web}/**`(구현 2벌) | 플랫폼 어댑터 5종 `ProjectStore`·`FileGateway`·`SecureStore`·`EntitlementClient`·`Updater`(+`capabilities`, 계약 `ADR-001` 2.1). 기존 NativeBridge·LicenseClient·Exporter는 `tauri/` 구현 안으로 들어가고 웹 대체는 `web/`이 맡는다(제안). 데스크톱 인증 흐름(`src/auth/**`). 기능 코드는 `capabilities`로 분기하고 `platform === 'web'` 직접 검사 금지 | `D:/WorkSpace/platform/docs/Tauri/README.md:237-249`. 화면은 Tauri API를 직접 import하지 않는다(`:234`) |
 | features | `packages/features/src/{auth,projects,site,modeler,judgment,program,plans,sheets,render,proposal,review,chat,wiki,voice,license,credits,settings,api-client}/**` | 화면 기능 단위. 데이터 접근은 주입받은 클라이언트로만 | api-client: Bearer, 재시도 대기열(`D:/WorkSpace/platform/docs/Tauri/README.md:318`) |
 | ui | `packages/ui/src/**`, `packages/ui/tokens.css` | 디자인 시스템 컴포넌트, Tailwind CSS v4 `@theme` 토큰(웹·데스크톱 공유) | 03장 |
 | web-public | `apps/web/src/app/(marketing)/**`, `apps/web/src/app/legal/**` | 랜딩, 가격, 다운로드, 샘플 도면 | 샘플 DXF·PDF는 골든 케이스 출력물을 CI가 복사(실제 엔진 출력만 게시, 제안) |
 | web-account | `apps/web/src/app/(account)/**` | 라이선스·기기·크레딧·결제 결과 화면. 표제란 설정은 데스크톱에서만 | `requireSession('arch')` |
-| web-api | `apps/web/src/app/api/**` → `apps/web/src/server/{licenses,updates,rule-packs,site,cloud-projects,drafting-profile,billing,ai,voice,jobs,account}/**` | Route Handler(얇게), 라이선스 서명, 업데이트 매니페스트, VWorld 중계, 크레딧 선차감 RPC 호출, 서명 URL | 04장 2절. 데스크톱 요청은 Bearer(T-C1), CORS 셸 출처만(T-C2) |
+| web-api | `apps/web/src/app/api/**` → `apps/web/src/server/{licenses,updates,rule-packs,site,cloud-projects,drafting-profile,billing,ai,voice,jobs,account}/**` | Route Handler(얇게), 라이선스 서명, 업데이트 매니페스트, VWorld 중계, 크레딧 선차감 RPC 호출, 서명 URL | 04장 2절. 데스크톱 요청은 Bearer(T-C1), CORS 셸 출처만(T-C2). 스튜디오(`app.` 출처)는 Bearer 또는 쿠키+CSRF 중 하나만(04장 1절, 섞지 않음) |
 | auth | `apps/web/src/lib/auth/`, `apps/web/src/app/(auth)/`, `apps/web/src/app/auth/`, `apps/web/src/app/api/dev/login/`, 데스크톱 `packages/shell-bridge/src/auth/**` + `packages/features/src/auth/**` | 로그인 단계 분기(A/B/C)와 데스크톱 앱 복귀(9절) | 단계 분기는 이 경로에서만(`AUTH_ROADMAP.md` 3.1절). 기능 코드는 `session_context`만 |
 | hero3d | `apps/web/src/components/hero3d/**`, `apps/web/public/hero/**` | 랜딩 3D 히어로 | three.js import는 여기와 `features/modeler`만 |
 | ai-service | `apps/api/app/ai/graphs/arch_{review,intake,layout}.py`, `apps/api/app/ai/compliance/arch.py`, `apps/api/app/ai/products/arch/**` | 그래프 3종, 제품 compliance 규칙, 제안서 서술 생성, 법령 RAG 수집 | 서명 토큰·잡 토큰만 신뢰(`AI_ARCHITECTURE.md` 2.1절) |
