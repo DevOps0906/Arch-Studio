@@ -12,7 +12,7 @@
 | AR-06-004 | 데스크톱 셸 골격(Tauri·CSP·capability) | W0 | — | 보통 | builder | 대기 |
 | AR-06-009 | 디자인 레퍼런스 확정(1단계) | W0 | — | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-013 | 도메인 계약 zod(DesignModel 등) | W0 | — | 보통 | builder | 대기 |
-| AR-06-019 | 도면 스파이크 2일(DXF·PDF, D-20·D-23) | W0 | — | 보통 | builder→사람(AutoCAD 확인) | 대기 |
+| AR-06-019 | 도면 스파이크 2일(DXF·PDF, D-20·D-23) | W0 | — | 보통 | builder→사람(AutoCAD 확인) | 진행 |
 | AR-06-066 | 주장 장부·V0 질문지·V1 측정 양식 | W0 | — (V1은 060 뒤) | 낮음 | builder(인터뷰는 사람) | 대기 |
 | AR-06-071a | 웹 스튜디오 셸 Vite/Next 공유 스파이크 1주 | W0 | 003, 004 | 보통 | builder | 대기 |
 | AR-06-010 | 디자인 시스템 2단계: 토큰·컴포넌트 | W0-D | 009 | 낮음 | codex-designer⇄designer | 대기 |

@@ -1,0 +1,11 @@
+<!doctype html><meta charset="utf-8"><body>spike
+<script>
+const w = new Worker('/worker.js');
+w.onmessage = async (e) => {
+  const { meta, first, error } = e.data;
+  await fetch('/result?meta=' + encodeURIComponent(JSON.stringify({ meta, error })), { method: 'POST', body: first ? new Blob([first]) : '' });
+  document.title = 'done';
+};
+w.onerror = async (e) => { await fetch('/result?meta=' + encodeURIComponent(JSON.stringify({ error: 'worker.onerror ' + e.message })), { method: 'POST', body: '' }); };
+fetch('/font').then((r) => r.arrayBuffer()).then((font) => w.postMessage({ font }, [font]));
+</script>

@@ -1,0 +1,3156 @@
+  0
+SECTION
+  2
+HEADER
+  9
+$ACADVER
+  1
+AC1027
+  9
+$ACADMAINTVER
+ 70
+105
+  9
+$DWGCODEPAGE
+  3
+ANSI_949
+  9
+$INSBASE
+ 10
+0
+ 20
+0
+ 30
+0
+  9
+$EXTMIN
+ 10
+0
+ 20
+0
+ 30
+0
+  9
+$EXTMAX
+ 10
+188000
+ 20
+59400
+ 30
+0
+  9
+$LIMMIN
+ 10
+0
+ 20
+0
+  9
+$LIMMAX
+ 10
+188000
+ 20
+59400
+  9
+$ORTHOMODE
+ 70
+0
+  9
+$LTSCALE
+ 40
+1
+  9
+$TEXTSIZE
+ 40
+600
+  9
+$TEXTSTYLE
+  7
+ARCH-KR
+  9
+$CLAYER
+  8
+0
+  9
+$CELTYPE
+  6
+ByLayer
+  9
+$CECOLOR
+ 62
+256
+  9
+$LUNITS
+ 70
+2
+  9
+$LUPREC
+ 70
+2
+  9
+$AUNITS
+ 70
+0
+  9
+$AUPREC
+ 70
+0
+  9
+$PDMODE
+ 70
+0
+  9
+$PDSIZE
+ 40
+0
+  9
+$MEASUREMENT
+ 70
+1
+  9
+$INSUNITS
+ 70
+4
+  9
+$DIMSTYLE
+  2
+Standard
+  9
+$HANDSEED
+  5
+70
+  0
+ENDSEC
+  0
+SECTION
+  2
+CLASSES
+  0
+ENDSEC
+  0
+SECTION
+  2
+TABLES
+  0
+TABLE
+  2
+VPORT
+  5
+2
+330
+0
+100
+AcDbSymbolTable
+ 70
+1
+  0
+VPORT
+  5
+B
+330
+2
+100
+AcDbSymbolTableRecord
+100
+AcDbViewportTableRecord
+  2
+*Active
+ 70
+0
+ 10
+0
+ 20
+0
+ 11
+1
+ 21
+1
+ 12
+94000
+ 22
+29700
+ 13
+0
+ 23
+0
+ 14
+10
+ 24
+10
+ 15
+10
+ 25
+10
+ 16
+0
+ 26
+0
+ 36
+1
+ 17
+0
+ 27
+0
+ 37
+0
+ 40
+59400
+ 41
+1.5
+ 42
+50
+ 43
+0
+ 44
+0
+ 50
+0
+ 51
+0
+ 71
+0
+ 72
+1000
+ 73
+1
+ 74
+3
+ 75
+0
+ 76
+0
+ 77
+0
+ 78
+0
+281
+0
+ 65
+1
+110
+0
+120
+0
+130
+0
+111
+1
+121
+0
+131
+0
+112
+0
+122
+1
+132
+0
+ 79
+0
+146
+0
+  0
+ENDTAB
+  0
+TABLE
+  2
+LTYPE
+  5
+3
+330
+0
+100
+AcDbSymbolTable
+ 70
+5
+  0
+LTYPE
+  5
+E
+330
+3
+100
+AcDbSymbolTableRecord
+100
+AcDbLinetypeTableRecord
+  2
+ByBlock
+ 70
+0
+  3
+
+ 72
+65
+ 73
+0
+ 40
+0
+  0
+LTYPE
+  5
+F
+330
+3
+100
+AcDbSymbolTableRecord
+100
+AcDbLinetypeTableRecord
+  2
+ByLayer
+ 70
+0
+  3
+
+ 72
+65
+ 73
+0
+ 40
+0
+  0
+LTYPE
+  5
+10
+330
+3
+100
+AcDbSymbolTableRecord
+100
+AcDbLinetypeTableRecord
+  2
+CONTINUOUS
+ 70
+0
+  3
+Solid line
+ 72
+65
+ 73
+0
+ 40
+0
+  0
+LTYPE
+  5
+11
+330
+3
+100
+AcDbSymbolTableRecord
+100
+AcDbLinetypeTableRecord
+  2
+DASHED
+ 70
+0
+  3
+Dashed __ __ __
+ 72
+65
+ 73
+2
+ 40
+900
+ 49
+600
+ 74
+0
+ 49
+-300
+ 74
+0
+  0
+LTYPE
+  5
+12
+330
+3
+100
+AcDbSymbolTableRecord
+100
+AcDbLinetypeTableRecord
+  2
+DASHDOT
+ 70
+0
+  3
+Dash dot __ . __ .
+ 72
+65
+ 73
+4
+ 40
+1000
+ 49
+600
+ 74
+0
+ 49
+-200
+ 74
+0
+ 49
+0
+ 74
+0
+ 49
+-200
+ 74
+0
+  0
+ENDTAB
+  0
+TABLE
+  2
+LAYER
+  5
+4
+330
+0
+100
+AcDbSymbolTable
+ 70
+17
+  0
+LAYER
+  5
+24
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+0
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+25
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-SITE-BNDY
+ 70
+0
+ 62
+1
+  6
+DASHDOT
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+26
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-SITE-ROAD
+ 70
+0
+ 62
+8
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+27
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-SITE-SETB
+ 70
+0
+ 62
+3
+  6
+DASHED
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+28
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-ENVL
+ 70
+0
+ 62
+4
+  6
+DASHED
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+29
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-MASS
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+2A
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-WALL
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+2B
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-DOOR
+ 70
+0
+ 62
+2
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+2C
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-GLAZ
+ 70
+0
+ 62
+5
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+2D
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-AREA
+ 70
+0
+ 62
+6
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+2E
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-AREA-IDEN
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+2F
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-PARK
+ 70
+0
+ 62
+3
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+30
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-ANNO-DIMS
+ 70
+0
+ 62
+1
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+31
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-ANNO-TEXT
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+32
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-ANNO-NRTH
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+33
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-TTLB
+ 70
+0
+ 62
+7
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+LAYER
+  5
+34
+330
+4
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+A-REFR
+ 70
+0
+ 62
+9
+  6
+CONTINUOUS
+290
+1
+370
+-3
+390
+1C
+  0
+ENDTAB
+  0
+TABLE
+  2
+STYLE
+  5
+5
+330
+0
+100
+AcDbSymbolTable
+ 70
+2
+  0
+STYLE
+  5
+13
+330
+5
+100
+AcDbSymbolTableRecord
+100
+AcDbTextStyleTableRecord
+  2
+Standard
+ 70
+0
+ 40
+0
+ 41
+1
+ 50
+0
+ 71
+0
+ 42
+600
+  3
+txt
+  4
+
+  0
+STYLE
+  5
+14
+330
+5
+100
+AcDbSymbolTableRecord
+100
+AcDbTextStyleTableRecord
+  2
+ARCH-KR
+ 70
+0
+ 40
+0
+ 41
+1
+ 50
+0
+ 71
+0
+ 42
+600
+  3
+malgun.ttf
+  4
+
+1001
+ACAD
+1000
+Malgun Gothic
+1071
+0
+  0
+ENDTAB
+  0
+TABLE
+  2
+VIEW
+  5
+6
+330
+0
+100
+AcDbSymbolTable
+ 70
+0
+  0
+ENDTAB
+  0
+TABLE
+  2
+UCS
+  5
+7
+330
+0
+100
+AcDbSymbolTable
+ 70
+0
+  0
+ENDTAB
+  0
+TABLE
+  2
+APPID
+  5
+8
+330
+0
+100
+AcDbSymbolTable
+ 70
+1
+  0
+APPID
+  5
+C
+330
+8
+100
+AcDbSymbolTableRecord
+100
+AcDbRegAppTableRecord
+  2
+ACAD
+ 70
+0
+  0
+ENDTAB
+  0
+TABLE
+  2
+DIMSTYLE
+  5
+9
+330
+0
+100
+AcDbSymbolTable
+ 70
+1
+100
+AcDbDimStyleTable
+ 71
+1
+  0
+DIMSTYLE
+105
+D
+330
+9
+100
+AcDbSymbolTableRecord
+100
+AcDbDimStyleTableRecord
+  2
+Standard
+ 70
+0
+340
+14
+  0
+ENDTAB
+  0
+TABLE
+  2
+BLOCK_RECORD
+  5
+A
+330
+0
+100
+AcDbSymbolTable
+ 70
+4
+  0
+BLOCK_RECORD
+  5
+15
+330
+A
+100
+AcDbSymbolTableRecord
+100
+AcDbBlockTableRecord
+  2
+*Model_Space
+340
+1E
+ 70
+0
+280
+1
+281
+0
+  0
+BLOCK_RECORD
+  5
+16
+330
+A
+100
+AcDbSymbolTableRecord
+100
+AcDbBlockTableRecord
+  2
+*Paper_Space
+340
+1F
+ 70
+0
+280
+1
+281
+0
+  0
+BLOCK_RECORD
+  5
+35
+330
+A
+100
+AcDbSymbolTableRecord
+100
+AcDbBlockTableRecord
+  2
+DOOR-900
+ 70
+0
+280
+1
+281
+0
+  0
+BLOCK_RECORD
+  5
+36
+330
+A
+100
+AcDbSymbolTableRecord
+100
+AcDbBlockTableRecord
+  2
+WIN-1200
+ 70
+0
+280
+1
+281
+0
+  0
+ENDTAB
+  0
+ENDSEC
+  0
+SECTION
+  2
+BLOCKS
+  0
+BLOCK
+  5
+20
+330
+15
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockBegin
+  2
+*Model_Space
+ 70
+0
+ 10
+0
+ 20
+0
+ 30
+0
+  3
+*Model_Space
+  1
+
+  0
+ENDBLK
+  5
+21
+330
+15
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockEnd
+  0
+BLOCK
+  5
+22
+330
+16
+ 67
+1
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockBegin
+  2
+*Paper_Space
+ 70
+0
+ 10
+0
+ 20
+0
+ 30
+0
+  3
+*Paper_Space
+  1
+
+  0
+ENDBLK
+  5
+23
+330
+16
+ 67
+1
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockEnd
+  0
+BLOCK
+  5
+37
+330
+35
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockBegin
+  2
+DOOR-900
+ 70
+0
+ 10
+0
+ 20
+0
+ 30
+0
+  3
+DOOR-900
+  1
+
+  0
+LINE
+  5
+38
+330
+35
+100
+AcDbEntity
+  8
+A-DOOR
+100
+AcDbLine
+ 10
+0
+ 20
+0
+ 30
+0
+ 11
+0
+ 21
+900
+ 31
+0
+  0
+ARC
+  5
+39
+330
+35
+100
+AcDbEntity
+  8
+A-DOOR
+100
+AcDbCircle
+ 10
+0
+ 20
+0
+ 30
+0
+ 40
+900
+100
+AcDbArc
+ 50
+0
+ 51
+90
+  0
+ENDBLK
+  5
+3A
+330
+35
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockEnd
+  0
+BLOCK
+  5
+3B
+330
+36
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockBegin
+  2
+WIN-1200
+ 70
+0
+ 10
+0
+ 20
+0
+ 30
+0
+  3
+WIN-1200
+  1
+
+  0
+LWPOLYLINE
+  5
+3C
+330
+36
+100
+AcDbEntity
+  8
+A-GLAZ
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+0
+ 20
+-100
+ 10
+1200
+ 20
+-100
+ 10
+1200
+ 20
+100
+ 10
+0
+ 20
+100
+  0
+LINE
+  5
+3D
+330
+36
+100
+AcDbEntity
+  8
+A-GLAZ
+100
+AcDbLine
+ 10
+0
+ 20
+0
+ 30
+0
+ 11
+1200
+ 21
+0
+ 31
+0
+  0
+ENDBLK
+  5
+3E
+330
+36
+100
+AcDbEntity
+  8
+0
+100
+AcDbBlockEnd
+  0
+ENDSEC
+  0
+SECTION
+  2
+ENTITIES
+  0
+LWPOLYLINE
+  5
+3F
+330
+15
+100
+AcDbEntity
+  8
+A-SITE-BNDY
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+16000
+ 20
+24000
+ 10
+36000
+ 20
+24000
+ 10
+36000
+ 20
+49000
+ 10
+16000
+ 20
+49000
+  0
+LINE
+  5
+40
+330
+15
+100
+AcDbEntity
+  8
+A-SITE-ROAD
+100
+AcDbLine
+ 10
+12000
+ 20
+18000
+ 30
+0
+ 11
+42000
+ 21
+18000
+ 31
+0
+  0
+LINE
+  5
+41
+330
+15
+100
+AcDbEntity
+  8
+A-SITE-ROAD
+100
+AcDbLine
+ 10
+12000
+ 20
+21000
+ 30
+0
+ 11
+42000
+ 21
+21000
+ 31
+0
+  0
+TEXT
+  5
+42
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+16500
+ 20
+18800
+ 30
+0
+ 40
+600
+  1
+도로 폭 6m
+  7
+ARCH-KR
+100
+AcDbText
+  0
+LWPOLYLINE
+  5
+43
+330
+15
+100
+AcDbEntity
+  8
+A-SITE-SETB
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+17500
+ 20
+25500
+ 10
+34500
+ 20
+25500
+ 10
+34500
+ 20
+47500
+ 10
+17500
+ 20
+47500
+  0
+LWPOLYLINE
+  5
+44
+330
+15
+100
+AcDbEntity
+  8
+A-MASS
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+19000
+ 20
+27000
+ 10
+31000
+ 20
+27000
+ 10
+31000
+ 20
+41500
+ 10
+19000
+ 20
+41500
+  0
+INSERT
+  5
+45
+330
+15
+100
+AcDbEntity
+  8
+A-DOOR
+100
+AcDbBlockReference
+  2
+DOOR-900
+ 10
+21000
+ 20
+27000
+ 30
+0
+  0
+INSERT
+  5
+46
+330
+15
+100
+AcDbEntity
+  8
+A-GLAZ
+100
+AcDbBlockReference
+  2
+WIN-1200
+ 10
+24000
+ 20
+27000
+ 30
+0
+  0
+TEXT
+  5
+47
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbText
+ 10
+16500
+ 20
+50200
+ 30
+0
+ 40
+600
+  1
+서울특별시 마포구 합정동 123-4 대지
+  7
+ARCH-KR
+100
+AcDbText
+  0
+LINE
+  5
+48
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-DIMS
+100
+AcDbLine
+ 10
+16000
+ 20
+22500
+ 30
+0
+ 11
+36000
+ 21
+22500
+ 31
+0
+  0
+LINE
+  5
+49
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-DIMS
+100
+AcDbLine
+ 10
+16000
+ 20
+23800
+ 30
+0
+ 11
+16000
+ 21
+22200
+ 31
+0
+  0
+LINE
+  5
+4A
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-DIMS
+100
+AcDbLine
+ 10
+36000
+ 20
+23800
+ 30
+0
+ 11
+36000
+ 21
+22200
+ 31
+0
+  0
+TEXT
+  5
+4B
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-DIMS
+100
+AcDbText
+ 10
+26000
+ 20
+22700
+ 30
+0
+ 40
+500
+  1
+20000
+  7
+ARCH-KR
+ 72
+1
+ 11
+26000
+ 21
+22700
+ 31
+0
+100
+AcDbText
+ 73
+0
+  0
+LINE
+  5
+4C
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-DIMS
+100
+AcDbLine
+ 10
+37500
+ 20
+24000
+ 30
+0
+ 11
+37500
+ 21
+49000
+ 31
+0
+  0
+TEXT
+  5
+4D
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-DIMS
+100
+AcDbText
+ 10
+37700
+ 20
+36500
+ 30
+0
+ 40
+500
+  1
+25000
+  7
+ARCH-KR
+100
+AcDbText
+  0
+CIRCLE
+  5
+4E
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-NRTH
+100
+AcDbCircle
+ 10
+41000
+ 20
+44000
+ 30
+0
+ 40
+1200
+  0
+LINE
+  5
+4F
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-NRTH
+100
+AcDbLine
+ 10
+41000
+ 20
+42800
+ 30
+0
+ 11
+41000
+ 21
+45200
+ 31
+0
+  0
+LWPOLYLINE
+  5
+50
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-NRTH
+100
+AcDbPolyline
+ 90
+3
+ 70
+1
+ 43
+0
+ 10
+41000
+ 20
+45200
+ 10
+40650
+ 20
+44300
+ 10
+41350
+ 20
+44300
+  0
+TEXT
+  5
+51
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-NRTH
+100
+AcDbText
+ 10
+41000
+ 20
+45500
+ 30
+0
+ 40
+600
+  1
+N
+  7
+ARCH-KR
+ 72
+1
+ 11
+41000
+ 21
+45500
+ 31
+0
+100
+AcDbText
+ 73
+0
+  0
+LWPOLYLINE
+  5
+52
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+0
+ 20
+0
+ 10
+84000
+ 20
+0
+ 10
+84000
+ 20
+59400
+ 10
+0
+ 20
+59400
+  0
+LWPOLYLINE
+  5
+53
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+2000
+ 20
+2000
+ 10
+82000
+ 20
+2000
+ 10
+82000
+ 20
+57400
+ 10
+2000
+ 20
+57400
+  0
+LWPOLYLINE
+  5
+54
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+60000
+ 20
+2000
+ 10
+82000
+ 20
+2000
+ 10
+82000
+ 20
+10000
+ 10
+60000
+ 20
+10000
+  0
+LINE
+  5
+55
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbLine
+ 10
+60000
+ 20
+4000
+ 30
+0
+ 11
+82000
+ 21
+4000
+ 31
+0
+  0
+LINE
+  5
+56
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbLine
+ 10
+60000
+ 20
+6000
+ 30
+0
+ 11
+82000
+ 21
+6000
+ 31
+0
+  0
+LINE
+  5
+57
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbLine
+ 10
+60000
+ 20
+8000
+ 30
+0
+ 11
+82000
+ 21
+8000
+ 31
+0
+  0
+TEXT
+  5
+58
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbText
+ 10
+60400
+ 20
+8750
+ 30
+0
+ 40
+500
+  1
+도면명: 배치도
+  7
+ARCH-KR
+100
+AcDbText
+  0
+TEXT
+  5
+59
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbText
+ 10
+60400
+ 20
+6750
+ 30
+0
+ 40
+500
+  1
+사업명: 합정동 근린생활시설 신축
+  7
+ARCH-KR
+100
+AcDbText
+  0
+TEXT
+  5
+5A
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbText
+ 10
+60400
+ 20
+4750
+ 30
+0
+ 40
+500
+  1
+축척: 1/200  단위: mm
+  7
+ARCH-KR
+100
+AcDbText
+  0
+TEXT
+  5
+5B
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbText
+ 10
+60400
+ 20
+2750
+ 30
+0
+ 40
+500
+  1
+대지면적 500.00㎡ / 건축면적 174.00㎡ / 건폐율 34.80%
+  7
+ARCH-KR
+100
+AcDbText
+  0
+LWPOLYLINE
+  5
+5C
+330
+15
+100
+AcDbEntity
+  8
+A-SITE-BNDY
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+120000
+ 20
+24000
+ 10
+140000
+ 20
+24000
+ 10
+140000
+ 20
+49000
+ 10
+120000
+ 20
+49000
+  0
+HATCH
+  5
+5D
+330
+15
+100
+AcDbEntity
+  8
+A-AREA
+ 62
+6
+100
+AcDbHatch
+ 10
+0
+ 20
+0
+ 30
+0
+210
+0
+220
+0
+230
+1
+  2
+SOLID
+ 70
+1
+ 71
+0
+ 91
+1
+ 92
+3
+ 72
+0
+ 73
+1
+ 93
+4
+ 10
+123000
+ 20
+27000
+ 10
+135000
+ 20
+27000
+ 10
+135000
+ 20
+41500
+ 10
+123000
+ 20
+41500
+ 97
+0
+ 75
+0
+ 76
+1
+ 98
+0
+  0
+LWPOLYLINE
+  5
+5E
+330
+15
+100
+AcDbEntity
+  8
+A-AREA
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+123000
+ 20
+27000
+ 10
+135000
+ 20
+27000
+ 10
+135000
+ 20
+41500
+ 10
+123000
+ 20
+41500
+  0
+TEXT
+  5
+5F
+330
+15
+100
+AcDbEntity
+  8
+A-AREA-IDEN
+100
+AcDbText
+ 10
+129000
+ 20
+25200
+ 30
+0
+ 40
+600
+  1
+건축면적 174.00㎡
+  7
+ARCH-KR
+ 72
+1
+ 11
+129000
+ 21
+25200
+ 31
+0
+100
+AcDbText
+ 73
+0
+  0
+TEXT
+  5
+60
+330
+15
+100
+AcDbEntity
+  8
+A-AREA-IDEN
+100
+AcDbText
+ 10
+120500
+ 20
+50200
+ 30
+0
+ 40
+600
+  1
+대지면적 500.00㎡
+  7
+ARCH-KR
+100
+AcDbText
+  0
+MTEXT
+  5
+61
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-TEXT
+100
+AcDbMText
+ 10
+143000
+ 20
+46000
+ 30
+0
+ 40
+500
+ 41
+30000
+ 71
+1
+ 72
+5
+  1
+면적 산정 (샘플)\P대지면적 = 500.00㎡\P건축면적 = 174.00㎡\P건폐율 = 174.00 / 500.00 × 100 = 34.80%
+  7
+ARCH-KR
+  0
+CIRCLE
+  5
+62
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-NRTH
+100
+AcDbCircle
+ 10
+145000
+ 20
+32000
+ 30
+0
+ 40
+1200
+  0
+LINE
+  5
+63
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-NRTH
+100
+AcDbLine
+ 10
+145000
+ 20
+30800
+ 30
+0
+ 11
+145000
+ 21
+33200
+ 31
+0
+  0
+LWPOLYLINE
+  5
+64
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-NRTH
+100
+AcDbPolyline
+ 90
+3
+ 70
+1
+ 43
+0
+ 10
+145000
+ 20
+33200
+ 10
+144650
+ 20
+32300
+ 10
+145350
+ 20
+32300
+  0
+TEXT
+  5
+65
+330
+15
+100
+AcDbEntity
+  8
+A-ANNO-NRTH
+100
+AcDbText
+ 10
+145000
+ 20
+33500
+ 30
+0
+ 40
+600
+  1
+N
+  7
+ARCH-KR
+ 72
+1
+ 11
+145000
+ 21
+33500
+ 31
+0
+100
+AcDbText
+ 73
+0
+  0
+LWPOLYLINE
+  5
+66
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+104000
+ 20
+0
+ 10
+188000
+ 20
+0
+ 10
+188000
+ 20
+59400
+ 10
+104000
+ 20
+59400
+  0
+LWPOLYLINE
+  5
+67
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+106000
+ 20
+2000
+ 10
+186000
+ 20
+2000
+ 10
+186000
+ 20
+57400
+ 10
+106000
+ 20
+57400
+  0
+LWPOLYLINE
+  5
+68
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbPolyline
+ 90
+4
+ 70
+1
+ 43
+0
+ 10
+164000
+ 20
+2000
+ 10
+186000
+ 20
+2000
+ 10
+186000
+ 20
+10000
+ 10
+164000
+ 20
+10000
+  0
+LINE
+  5
+69
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbLine
+ 10
+164000
+ 20
+4000
+ 30
+0
+ 11
+186000
+ 21
+4000
+ 31
+0
+  0
+LINE
+  5
+6A
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbLine
+ 10
+164000
+ 20
+6000
+ 30
+0
+ 11
+186000
+ 21
+6000
+ 31
+0
+  0
+LINE
+  5
+6B
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbLine
+ 10
+164000
+ 20
+8000
+ 30
+0
+ 11
+186000
+ 21
+8000
+ 31
+0
+  0
+TEXT
+  5
+6C
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbText
+ 10
+164400
+ 20
+8750
+ 30
+0
+ 40
+500
+  1
+도면명: 면적 산정도
+  7
+ARCH-KR
+100
+AcDbText
+  0
+TEXT
+  5
+6D
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbText
+ 10
+164400
+ 20
+6750
+ 30
+0
+ 40
+500
+  1
+사업명: 합정동 근린생활시설 신축
+  7
+ARCH-KR
+100
+AcDbText
+  0
+TEXT
+  5
+6E
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbText
+ 10
+164400
+ 20
+4750
+ 30
+0
+ 40
+500
+  1
+축척: 1/200  단위: mm
+  7
+ARCH-KR
+100
+AcDbText
+  0
+TEXT
+  5
+6F
+330
+15
+100
+AcDbEntity
+  8
+A-TTLB
+100
+AcDbText
+ 10
+164400
+ 20
+2750
+ 30
+0
+ 40
+500
+  1
+대지면적 500.00㎡ / 건축면적 174.00㎡ / 건폐율 34.80%
+  7
+ARCH-KR
+100
+AcDbText
+  0
+ENDSEC
+  0
+SECTION
+  2
+OBJECTS
+  0
+DICTIONARY
+  5
+1
+330
+0
+100
+AcDbDictionary
+  3
+ACAD_GROUP
+350
+17
+  3
+ACAD_LAYOUT
+350
+18
+  3
+ACAD_MLINESTYLE
+350
+19
+  3
+ACAD_PLOTSETTINGS
+350
+1A
+  3
+ACAD_PLOTSTYLENAME
+350
+1B
+  0
+DICTIONARY
+  5
+17
+330
+1
+100
+AcDbDictionary
+281
+1
+  0
+DICTIONARY
+  5
+18
+330
+1
+100
+AcDbDictionary
+281
+1
+  3
+Layout1
+350
+1F
+  3
+Model
+350
+1E
+  0
+DICTIONARY
+  5
+19
+330
+1
+100
+AcDbDictionary
+281
+1
+  3
+Standard
+350
+1D
+  0
+DICTIONARY
+  5
+1A
+330
+1
+100
+AcDbDictionary
+281
+1
+  0
+ACDBDICTIONARYWDFLT
+  5
+1B
+330
+1
+100
+AcDbDictionary
+281
+1
+  3
+Normal
+350
+1C
+100
+AcDbDictionaryWithDefault
+340
+1C
+  0
+ACDBPLACEHOLDER
+  5
+1C
+330
+1B
+  0
+MLINESTYLE
+  5
+1D
+330
+19
+100
+AcDbMlineStyle
+  2
+Standard
+ 70
+0
+  3
+
+ 62
+256
+ 51
+90
+ 52
+90
+ 71
+2
+ 49
+0.5
+ 62
+256
+  6
+BYLAYER
+ 49
+-0.5
+ 62
+256
+  6
+BYLAYER
+  0
+LAYOUT
+  5
+1E
+102
+{ACAD_REACTORS
+330
+18
+102
+}
+330
+18
+100
+AcDbPlotSettings
+  1
+
+  2
+none_device
+  4
+
+  6
+
+ 40
+0
+ 41
+0
+ 42
+0
+ 43
+0
+ 44
+0
+ 45
+0
+ 46
+0
+ 47
+0
+ 48
+0
+ 49
+0
+140
+0
+141
+0
+142
+1
+143
+1
+ 70
+1024
+ 72
+0
+ 73
+0
+ 74
+0
+  7
+
+ 75
+16
+147
+1
+148
+0
+149
+0
+100
+AcDbLayout
+  1
+Model
+ 70
+1
+ 71
+0
+ 10
+0
+ 20
+0
+ 11
+420
+ 21
+297
+ 12
+0
+ 22
+0
+ 32
+0
+ 14
+0
+ 24
+0
+ 34
+0
+ 15
+188000
+ 25
+59400
+ 35
+0
+146
+0
+ 13
+0
+ 23
+0
+ 33
+0
+ 16
+1
+ 26
+0
+ 36
+0
+ 17
+0
+ 27
+1
+ 37
+0
+ 76
+0
+330
+15
+  0
+LAYOUT
+  5
+1F
+102
+{ACAD_REACTORS
+330
+18
+102
+}
+330
+18
+100
+AcDbPlotSettings
+  1
+
+  2
+none_device
+  4
+
+  6
+
+ 40
+0
+ 41
+0
+ 42
+0
+ 43
+0
+ 44
+0
+ 45
+0
+ 46
+0
+ 47
+0
+ 48
+0
+ 49
+0
+140
+0
+141
+0
+142
+1
+143
+1
+ 70
+688
+ 72
+0
+ 73
+0
+ 74
+0
+  7
+
+ 75
+16
+147
+1
+148
+0
+149
+0
+100
+AcDbLayout
+  1
+Layout1
+ 70
+1
+ 71
+1
+ 10
+0
+ 20
+0
+ 11
+420
+ 21
+297
+ 12
+0
+ 22
+0
+ 32
+0
+ 14
+0
+ 24
+0
+ 34
+0
+ 15
+188000
+ 25
+59400
+ 35
+0
+146
+0
+ 13
+0
+ 23
+0
+ 33
+0
+ 16
+1
+ 26
+0
+ 36
+0
+ 17
+0
+ 27
+1
+ 37
+0
+ 76
+0
+330
+16
+  0
+ENDSEC
+  0
+EOF

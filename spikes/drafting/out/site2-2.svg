@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420mm" height="297mm" viewBox="0 0 84000 59400">
+<rect x="0" y="0" width="84000" height="59400" fill="#ffffff"/>
+<polygon data-layer="A-SITE-BNDY" points="16000,35400 40000,35400 37000,7400 18000,9400" fill="none" stroke="#ff0000" stroke-width="40" stroke-dasharray="600 200 50 200"/>
+<polygon data-layer="A-AREA" points="20000,31400 32000,31400 32000,19400 20000,19400" fill="#c000c0" fill-opacity="0.25" stroke="none"/>
+<polygon data-layer="A-AREA" points="20000,31400 32000,31400 32000,19400 20000,19400" fill="none" stroke="#c000c0" stroke-width="40"/>
+<text data-layer="A-AREA-IDEN" x="26000" y="34200" font-family="NanumGothic" font-size="720" fill="#000000" text-anchor="middle">건축면적 144.00㎡</text>
+<text data-layer="A-AREA-IDEN" x="16500" y="6200" font-family="NanumGothic" font-size="720" fill="#000000">대지면적 581.00㎡</text>
+<text data-layer="A-ANNO-TEXT" x="43000" y="13400" font-family="NanumGothic" font-size="600" fill="#000000"><tspan x="43000" dy="0">면적 산정 (샘플)</tspan><tspan x="43000" dy="840">대지면적 = 581.00㎡</tspan><tspan x="43000" dy="840">건축면적 = 144.00㎡</tspan><tspan x="43000" dy="840">건폐율 = 144.00 / 581.00 × 100 = 24.78%</tspan></text>
+<circle data-layer="A-ANNO-NRTH" cx="45000" cy="27400" r="1200" fill="none" stroke="#000000" stroke-width="40"/>
+<line data-layer="A-ANNO-NRTH" x1="45000" y1="28600" x2="45000" y2="26200" fill="none" stroke="#000000" stroke-width="40"/>
+<polygon data-layer="A-ANNO-NRTH" points="45000,26200 44650,27100 45350,27100" fill="none" stroke="#000000" stroke-width="40"/>
+<text data-layer="A-ANNO-NRTH" x="45000" y="25900" font-family="NanumGothic" font-size="720" fill="#000000" text-anchor="middle">N</text>
+<polygon data-layer="A-TTLB" points="0,59400 84000,59400 84000,0 0,0" fill="none" stroke="#000000" stroke-width="70"/>
+<polygon data-layer="A-TTLB" points="2000,57400 82000,57400 82000,2000 2000,2000" fill="none" stroke="#000000" stroke-width="70"/>
+<polygon data-layer="A-TTLB" points="60000,57400 82000,57400 82000,49400 60000,49400" fill="none" stroke="#000000" stroke-width="70"/>
+<line data-layer="A-TTLB" x1="60000" y1="55400" x2="82000" y2="55400" fill="none" stroke="#000000" stroke-width="70"/>
+<line data-layer="A-TTLB" x1="60000" y1="53400" x2="82000" y2="53400" fill="none" stroke="#000000" stroke-width="70"/>
+<line data-layer="A-TTLB" x1="60000" y1="51400" x2="82000" y2="51400" fill="none" stroke="#000000" stroke-width="70"/>
+<text data-layer="A-TTLB" x="60400" y="50650" font-family="NanumGothic" font-size="600" fill="#000000">도면명: 면적 산정도</text>
+<text data-layer="A-TTLB" x="60400" y="52650" font-family="NanumGothic" font-size="600" fill="#000000">사업명: 연남동 다가구주택 신축</text>
+<text data-layer="A-TTLB" x="60400" y="54650" font-family="NanumGothic" font-size="600" fill="#000000">축척: 1/200  단위: mm</text>
+<text data-layer="A-TTLB" x="60400" y="56650" font-family="NanumGothic" font-size="600" fill="#000000">대지면적 581.00㎡ / 건축면적 144.00㎡ / 건폐율 24.78%</text>
+</svg>

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="420mm" height="297mm" viewBox="0 0 84000 59400">
+<rect x="0" y="0" width="84000" height="59400" fill="#ffffff"/>
+<polygon data-layer="A-SITE-BNDY" points="16000,35400 36000,35400 36000,10400 16000,10400" fill="none" stroke="#ff0000" stroke-width="40" stroke-dasharray="600 200 50 200"/>
+<line data-layer="A-SITE-ROAD" x1="12000" y1="41400" x2="42000" y2="41400" fill="none" stroke="#808080" stroke-width="40"/>
+<line data-layer="A-SITE-ROAD" x1="12000" y1="38400" x2="42000" y2="38400" fill="none" stroke="#808080" stroke-width="40"/>
+<text data-layer="A-ANNO-TEXT" x="16500" y="40600" font-family="NanumGothic" font-size="720" fill="#000000">도로 폭 6m</text>
+<polygon data-layer="A-SITE-SETB" points="17500,33900 34500,33900 34500,11900 17500,11900" fill="none" stroke="#00a000" stroke-width="40" stroke-dasharray="600 300"/>
+<polygon data-layer="A-MASS" points="19000,32400 31000,32400 31000,17900 19000,17900" fill="none" stroke="#000000" stroke-width="40"/>
+<line data-layer="A-DOOR" x1="21000" y1="32400" x2="21000" y2="31500" fill="none" stroke="#c8a000" stroke-width="40"/>
+<path data-layer="A-DOOR" d="M 21900 32400 A 900 900 0 0 0 21000 31500" fill="none" stroke="#c8a000" stroke-width="40"/>
+<polygon data-layer="A-GLAZ" points="24000,32500 25200,32500 25200,32300 24000,32300" fill="none" stroke="#0000ff" stroke-width="40"/>
+<line data-layer="A-GLAZ" x1="24000" y1="32400" x2="25200" y2="32400" fill="none" stroke="#0000ff" stroke-width="40"/>
+<text data-layer="A-ANNO-TEXT" x="16500" y="9200" font-family="NanumGothic" font-size="720" fill="#000000">서울특별시 마포구 합정동 123-4 대지</text>
+<line data-layer="A-ANNO-DIMS" x1="16000" y1="36900" x2="36000" y2="36900" fill="none" stroke="#ff0000" stroke-width="40"/>
+<line data-layer="A-ANNO-DIMS" x1="16000" y1="35600" x2="16000" y2="37200" fill="none" stroke="#ff0000" stroke-width="40"/>
+<line data-layer="A-ANNO-DIMS" x1="36000" y1="35600" x2="36000" y2="37200" fill="none" stroke="#ff0000" stroke-width="40"/>
+<text data-layer="A-ANNO-DIMS" x="26000" y="36700" font-family="NanumGothic" font-size="600" fill="#ff0000" text-anchor="middle">20000</text>
+<line data-layer="A-ANNO-DIMS" x1="37500" y1="35400" x2="37500" y2="10400" fill="none" stroke="#ff0000" stroke-width="40"/>
+<text data-layer="A-ANNO-DIMS" x="37700" y="22900" font-family="NanumGothic" font-size="600" fill="#ff0000">25000</text>
+<circle data-layer="A-ANNO-NRTH" cx="41000" cy="15400" r="1200" fill="none" stroke="#000000" stroke-width="40"/>
+<line data-layer="A-ANNO-NRTH" x1="41000" y1="16600" x2="41000" y2="14200" fill="none" stroke="#000000" stroke-width="40"/>
+<polygon data-layer="A-ANNO-NRTH" points="41000,14200 40650,15100 41350,15100" fill="none" stroke="#000000" stroke-width="40"/>
+<text data-layer="A-ANNO-NRTH" x="41000" y="13900" font-family="NanumGothic" font-size="720" fill="#000000" text-anchor="middle">N</text>
+<polygon data-layer="A-TTLB" points="0,59400 84000,59400 84000,0 0,0" fill="none" stroke="#000000" stroke-width="70"/>
+<polygon data-layer="A-TTLB" points="2000,57400 82000,57400 82000,2000 2000,2000" fill="none" stroke="#000000" stroke-width="70"/>
+<polygon data-layer="A-TTLB" points="60000,57400 82000,57400 82000,49400 60000,49400" fill="none" stroke="#000000" stroke-width="70"/>
+<line data-layer="A-TTLB" x1="60000" y1="55400" x2="82000" y2="55400" fill="none" stroke="#000000" stroke-width="70"/>
+<line data-layer="A-TTLB" x1="60000" y1="53400" x2="82000" y2="53400" fill="none" stroke="#000000" stroke-width="70"/>
+<line data-layer="A-TTLB" x1="60000" y1="51400" x2="82000" y2="51400" fill="none" stroke="#000000" stroke-width="70"/>
+<text data-layer="A-TTLB" x="60400" y="50650" font-family="NanumGothic" font-size="600" fill="#000000">도면명: 배치도</text>
+<text data-layer="A-TTLB" x="60400" y="52650" font-family="NanumGothic" font-size="600" fill="#000000">사업명: 합정동 근린생활시설 신축</text>
+<text data-layer="A-TTLB" x="60400" y="54650" font-family="NanumGothic" font-size="600" fill="#000000">축척: 1/200  단위: mm</text>
+<text data-layer="A-TTLB" x="60400" y="56650" font-family="NanumGothic" font-size="600" fill="#000000">대지면적 500.00㎡ / 건축면적 174.00㎡ / 건폐율 34.80%</text>
+</svg>
