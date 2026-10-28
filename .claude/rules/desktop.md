@@ -1,5 +1,6 @@
 ---
 paths:
+  - "packages/shell-bridge/**"
   - "apps/desktop/**"
 ---
 # 데스크톱 영역 규칙 (apps/desktop/** 작업 때만 로드)

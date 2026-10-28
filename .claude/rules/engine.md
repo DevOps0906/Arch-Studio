@@ -1,5 +1,6 @@
 ---
 paths:
+  - "packages/io/**"
   - "packages/drafting/**"
   - "packages/domain/**"
   - "packages/geometry/**"
