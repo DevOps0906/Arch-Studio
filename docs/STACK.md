@@ -28,6 +28,8 @@
 | 문서 | 내용 |
 |---|---|
 | `docs/file/_index.md` | 근거 산출물 26개 목차 |
+| `docs/file/03-설계/ADR-001_DELIVERY_AND_LICENSING.md` | 웹·설치형 하이브리드 제공·라이선스 3종(정본) |
+| `docs/source/develop/arch-studio/arch-studio_develop.md` | 개발서(원본) |
 | `docs/file/02-요구사항/01_PRD.md` | 기능 AR-F-001~038, 도면 9장, 린 검증 9.10절 |
 | `docs/file/03-설계/02~05_*.md` | 구조 · 화면 · API · 데이터 |
 | `docs/file/03-설계/공용코어/` · `디자인/` | 공용 코어 규약 · 디자인 원칙(HERO_3D, LANDING_PERSUASION) |

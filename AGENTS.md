@@ -4,7 +4,7 @@
 
 ## 1. 무엇인가
 소규모 건축사사무소·전원주택 시공사용 설치형 AI 설계실무 앱(Windows, Tauri) + 클라우드 웹. 대지 → 법규 엔벨로프 3D → 매스 실시간 판정 → 도면(DXF/SVG/PDF) 자동 작도.
-기획 정본 `docs/file/02-요구사항/01_PRD.md` · 구조 `docs/file/03-설계/02_ARCHITECTURE.md` · 개발서 `docs/source/develop/arch-studio/arch-studio_develop.md`.
+웹(SaaS)·설치형 기능 동등, 라이선스 3종(ADR-001). 문서 지도는 `docs/STACK.md` 3장.
 
 ## 2. 스택 · 명령 (상세 `docs/STACK.md`)
 `apps/desktop` Tauri 2 + Rust · `apps/web` Next.js 16 + Tailwind CSS v4 · `packages/*` 순수 TS 엔진·`drafting` 도면 · `supabase/` · `apps/api` FastAPI.
@@ -24,14 +24,7 @@
 ## 4. 작업 방식
 `tasks/README.md` 웨이브 순서대로 하나씩(W0 첫 작업 AR-06-019 도면 스파이크). 근거·완료 조건은 `docs/file/01-관리/06_AGENT_PLAN.md`의 해당 행. 완료 조건을 실행으로 확인한 뒤 커밋: `[AR-06-NNN] 요약` + 본문(무엇을 · 확인 방법). 사람 판정 작업(011, 019, G1·G2)은 결과를 기다린다.
 
-## 5. 영역 규칙 (파일을 고치기 **전에** 읽는다. Claude Code는 paths로 자동 로드)
-| 경로 | 규칙 |
-|---|---|
-| `apps/web/**` · `packages/{ui,features}/**` | `.claude/rules/web.md` |
-| `apps/desktop/**` | `.claude/rules/desktop.md` |
-| `packages/drafting/**` · 엔진 패키지 | `.claude/rules/engine.md` |
-| `apps/api/**` · `workers/**` | `.claude/rules/api.md` |
-| `supabase/**` | `.claude/rules/db.md` |
-| `docs/**` · `DESIGN.md` | `.claude/rules/docs.md` |
+## 5. 영역 규칙
+파일을 고치기 **전에** 해당 영역 규칙을 읽는다: `.claude/rules/{web,desktop,engine,api,db,docs}.md` (각 파일 머리의 `paths:`가 적용 경로. Claude Code는 자동 로드).
 - 읽지 않는 파일: `.env*` · lock 파일 · `node_modules/` · `.next/` · `dist/` · `build/` · `coverage/` · `target/`.
-- 도구별 설정: Claude `CLAUDE.md`·`.claude/` · Codex `.codex/config.toml` · Gemini `.gemini/`·`.geminiignore`. 새 규칙 파일은 이 표에 한 줄 추가.
+- 도구별 설정: Claude `CLAUDE.md`·`.claude/` · Codex `.codex/config.toml` · Gemini `.gemini/`·`.geminiignore`.
