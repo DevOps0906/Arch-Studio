@@ -1,0 +1,64 @@
+%% 제품 구조도(컴포넌트). 근거: ADR-001 2·3·5장, 02_ARCHITECTURE 1~2장. 모듈 import 그래프는 deps2mmd로 따로 생성 가능.
+flowchart LR
+  user["사용자<br/>브라우저 / Windows PC"]
+
+  subgraph client["클라이언트 영역 (신뢰 경계 1: 비밀 0, 판정은 서버 권한 참조)"]
+    direction TB
+    landing["랜딩·/download<br/>apps/web (marketing)"]
+    studio["웹 스튜디오 셸 B<br/>apps/web src/app/(studio), app. 서브도메인"]
+    desktop["설치형 셸 A<br/>apps/desktop (Tauri 2 + Rust 코어)<br/>키체인 · 로컬 SQLite · 라이선스 서명 검증 · updater · deep-link"]
+    shared["공유 packages (UI·OS 비의존)<br/>packages/{domain, geometry, rules, program, massing, layout, drafting, io, features, ui}"]
+    subgraph adapters["플랫폼 어댑터 packages/shell-bridge (src/tauri · src/web)"]
+      direction TB
+      ad_proj["ProjectStore<br/>tauri: 로컬 SQLite · web: CloudProjectClient"]
+      ad_file["FileGateway<br/>tauri: fs.rs 대화상자 · web: input / Blob"]
+      ad_sec["SecureStore<br/>tauri: OS 키체인 · web: 메모리 + httpOnly 쿠키"]
+      ad_ent["EntitlementClient<br/>tauri: license.rs + 서버 · web: 서버 판정"]
+      ad_upd["Updater<br/>tauri: 서명 업데이트 · web: 없음"]
+    end
+  end
+
+  subgraph server["서버 영역 (신뢰 경계 2: service_role·키 보관)"]
+    direction TB
+    route["apps/web 서버 Route Handler<br/>apps/web/src/server/**, app/api/**"]
+    api["apps/api FastAPI + LangGraph<br/>그래프 · LLM 라우팅 · ai_runtime"]
+    workers["workers/arch-jobs<br/>core.jobs 단일 소비자 (claim_jobs)"]
+    db[("Supabase Postgres · RLS · Auth · Storage<br/>스키마 arch")]
+    packs["규칙 팩 데이터<br/>Storage arch-releases/rule-packs, 서명 URL"]
+  end
+
+  subgraph ext["외부 서비스"]
+    direction TB
+    toss["결제 Toss Payments<br/>webhooks/toss"]
+    kyc["본인인증<br/>휴대폰 1회 크레딧 조건"]
+    llm["LLM 제공자<br/>Dify arch-chat / 모델 API"]
+  end
+
+  user -->|"HTTPS"| landing
+  user -->|"HTTPS app. 서브도메인"| studio
+  user -->|"설치 · 실행"| desktop
+  landing -.->|"웹에서 바로 시작"| studio
+
+  studio -->|"web/ 구현"| adapters
+  desktop -->|"tauri/ 구현 (invoke)"| adapters
+  studio --> shared
+  desktop --> shared
+  shared -->|"어댑터 인터페이스 주입"| adapters
+
+  ad_proj -->|"supabase-js, RLS"| db
+  ad_ent -->|"클라우드 기능 판정"| route
+  ad_upd -->|"업데이트 매니페스트"| route
+  desktop -->|"Bearer, 셸 출처만 CORS"| route
+  studio -->|"Bearer 또는 쿠키 + CSRF (택 1)"| route
+
+  route -->|"서명 토큰 iss=arch"| api
+  workers -->|"잡 토큰 sub=job:id"| api
+  route -->|"service RPC (start_ai_run 등)"| db
+  workers -->|"claim_jobs"| db
+  api -->|"LLM 호출"| llm
+  route -->|"자격 확인 후 서명 URL 발급"| packs
+  packs -.->|"서명 URL 다운로드 (데스크톱)"| desktop
+  packs -.->|"서명 URL 다운로드 (웹)"| studio
+  route -->|"결제 주문 · confirm"| toss
+  toss -->|"webhook (원시 본문 서명)"| route
+  route -->|"본인인증 요청"| kyc

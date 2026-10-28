@@ -1,0 +1,40 @@
+flowchart TD
+  start(["/next 작업 선택"]) --> kind{"기획 문서 작업?"}
+
+  subgraph plan["기획 단계"]
+    pl["planner 기획 섹션 작성"] --> ds{"토큰·화면 필요?"}
+    ds -->|"예"| dz["designer 토큰·DESIGN.md"]
+    ds -->|"아니오"| dg["diagrammer Mermaid<br/>ERD는 sql2erd"]
+    dz --> dg
+    dg --> rd["reviewer doc"]
+  end
+
+  kind -->|"예"| pl
+  rd --> commit
+
+  kind -->|"아니오 (구현)"| risk{"위험도 판정"}
+
+  risk -->|"낮음"| low["builder 구현 + 자가 검증 q"]
+  risk -->|"보통"| mid["builder 구현"]
+  risk -->|"높음"| ch["challenger 착수 전 공격"]
+  ch --> hi["builder 구현"]
+
+  low --> ui{"화면 변경?"}
+  ui -->|"예"| rdes["reviewer design"]
+  ui -->|"아니오"| ok
+  rdes --> ok
+
+  mid --> rcode["reviewer code"]
+  hi --> rsec["reviewer code + security/contract"]
+  rcode --> tneed{"테스트 필요?"}
+  rsec --> tneed
+  tneed -->|"예"| tst["tester 실행"]
+  tneed -->|"아니오"| ok
+  tst --> ok
+
+  ok{"검증 통과?"} -->|"예"| commit["팀장 커밋·push"]
+  ok -->|"실패"| fails{"같은 문제 2회 실패?"}
+  fails -->|"아니오"| fix["builder 수정 후 재검증"]
+  fails -->|"예"| adv["advisor 고문 Fable"]
+  fix --> ok
+  adv --> fix

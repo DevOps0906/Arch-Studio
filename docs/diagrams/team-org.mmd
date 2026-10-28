@@ -1,0 +1,36 @@
+flowchart TB
+  lead["팀장<br/>Opus 5.5<br/>판단·위임·커밋/push만"]
+
+  subgraph exec["실행 팀원"]
+    builder["builder · Sonnet · 구현<br/>담당 열 50 + 복합 2"]
+    designer["designer · Sonnet · 토큰·DESIGN.md·preview<br/>담당 열 9"]
+    planner["planner · Sonnet · 기획 문서<br/>담당 열 0 (작업 표·ADR 작성)"]
+    diagrammer["diagrammer · Haiku · Mermaid<br/>담당 열 0 (구조도·흐름도)"]
+    scout["scout · Haiku · 탐색<br/>담당 열 0 (미사용)"]
+    intern["intern · Haiku · 반복 변환<br/>담당 열 0 (미사용)"]
+  end
+
+  subgraph verify["검증"]
+    reviewer["reviewer · Sonnet · code·contract·security·doc·design<br/>담당 열 1 (security)"]
+    tester["tester · Sonnet · 테스트 작성·실행<br/>담당 열 5"]
+    challenger["challenger · Opus · 위험 작업 착수 전 공격<br/>담당 열 16 (challenger→builder)"]
+  end
+
+  subgraph expert["고문"]
+    advisor["advisor · Fable · 2회 실패 후만<br/>담당 열 0"]
+  end
+
+  human["사람 (대표님 판정)<br/>담당 열 1 (+ 복합 2)"]
+
+  lead -->|"구현"| builder
+  lead -->|"디자인"| designer
+  lead -->|"기획 문서"| planner
+  lead -->|"Mermaid"| diagrammer
+  lead -->|"탐색"| scout
+  lead -->|"반복 변환"| intern
+  lead -->|"리뷰"| reviewer
+  lead -->|"테스트"| tester
+  lead -->|"착수 전 공격"| challenger
+  lead -->|"2회 실패"| advisor
+  lead -->|"판정 요청"| human
+  challenger -->|"통과 후"| builder

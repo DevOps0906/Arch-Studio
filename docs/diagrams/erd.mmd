@@ -1,0 +1,826 @@
+erDiagram
+  %% 현재 적용 마이그레이션 기준(sql2erd 기계 생성). 신규 테이블은 마이그레이션 작성 후 이 명령으로 갱신한다.
+  profiles {
+    uuid id PK,FK
+    text email
+    text display_name
+    text avatar_url
+    text locale
+    text platform_role
+    text status
+    timestamptz last_seen_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  organizations {
+    uuid id PK
+    uuid owner_id FK
+    text name
+    text slug
+    boolean is_personal
+    jsonb settings
+    timestamptz deleted_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  org_members {
+    uuid org_id PK,FK
+    uuid user_id PK,FK
+    uuid invited_by FK
+    text role
+    text status
+    timestamptz joined_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  audit_log {
+    bigint id PK
+    uuid org_id
+    uuid actor_id
+    text actor_role
+    text action
+    text target_type
+    text target_id
+    jsonb before
+    jsonb after
+    jsonb metadata
+    inet ip
+    text user_agent
+    text request_id
+    timestamptz created_at
+  }
+  apps {
+    text id PK
+    text name
+    text schema_name
+    text signup_policy
+    text status
+    timestamptz created_at
+  }
+  plans {
+    uuid id PK
+    text app_id FK
+    text code
+    text name
+    text description
+    integer price_krw
+    text billing_interval
+    integer monthly_credits
+    integer signup_credits
+    boolean carry_over
+    jsonb features
+    boolean is_default
+    boolean is_active
+    integer sort_order
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  credit_packs {
+    uuid id PK
+    text app_id FK
+    text code
+    text name
+    integer credits
+    integer price_krw
+    boolean is_active
+    integer sort_order
+    timestamptz created_at
+  }
+  subscriptions {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    uuid plan_id FK
+    text status
+    uuid billing_key_id
+    timestamptz current_period_start
+    timestamptz current_period_end
+    timestamptz next_charge_at
+    boolean cancel_at_period_end
+    timestamptz canceled_at
+    integer failed_charge_count
+    text last_credit_grant_key
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  app_entitlements {
+    uuid org_id PK,FK
+    text app_id PK,FK
+    uuid plan_id FK
+    text status
+    text source
+    timestamptz expires_at
+    uuid granted_by
+    text note
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  billing_keys {
+    uuid id PK
+    uuid org_id FK
+    text customer_key
+    text billing_key_ciphertext
+    integer key_version
+    text card_company
+    text card_number_masked
+    text status
+    uuid created_by
+    timestamptz created_at
+    timestamptz revoked_at
+  }
+  payment_orders {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    uuid plan_id FK
+    uuid credit_pack_id FK
+    text order_id
+    text kind
+    integer credits
+    integer amount_krw
+    text currency
+    text status
+    text customer_key
+    uuid created_by
+    timestamptz expires_at
+    timestamptz confirmed_at
+    jsonb metadata
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  payments {
+    uuid id PK
+    text order_id FK
+    uuid org_id FK
+    text payment_key
+    text method
+    integer amount_krw
+    integer canceled_amount_krw
+    text status
+    timestamptz approved_at
+    text receipt_url
+    jsonb raw
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  webhook_events {
+    uuid id PK
+    text provider
+    text event_id
+    text event_type
+    boolean signature_valid
+    jsonb payload
+    text status
+    integer attempts
+    text error
+    timestamptz received_at
+    timestamptz processed_at
+  }
+  wallets {
+    uuid org_id PK,FK
+    integer plan_balance
+    integer pack_balance
+    timestamptz updated_at
+  }
+  credit_ledger {
+    bigint id PK
+    uuid org_id FK
+    text app_id FK
+    bigint refund_of FK
+    text entry_type
+    integer amount
+    integer plan_delta
+    integer pack_delta
+    integer balance_after
+    text reason
+    text ref_type
+    text ref_id
+    text idempotency_key
+    uuid actor_id
+    jsonb metadata
+    timestamptz created_at
+  }
+  ai_usage {
+    bigint id PK
+    uuid org_id FK
+    text app_id FK
+    text provider
+    text model
+    text purpose
+    integer input_tokens
+    integer output_tokens
+    bigint cost_usd_micros
+    integer credits
+    bigint ledger_id
+    integer latency_ms
+    text status
+    text error_code
+    text request_id
+    timestamptz created_at
+  }
+  rate_limit_buckets {
+    text key PK
+    timestamptz window_start
+    integer count
+    timestamptz updated_at
+  }
+  jobs {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    bigint credit_ledger_id FK
+    uuid parent_job_id FK
+    text queue
+    text job_type
+    jsonb payload
+    jsonb result
+    text status
+    integer priority
+    integer attempts
+    integer max_attempts
+    timestamptz run_after
+    timestamptz locked_at
+    text locked_by
+    timestamptz heartbeat_at
+    integer progress
+    text progress_message
+    text last_error
+    boolean refund_on_failure
+    text idempotency_key
+    uuid created_by
+    timestamptz created_at
+    timestamptz started_at
+    timestamptz finished_at
+    timestamptz updated_at
+  }
+  ai_providers {
+    text id PK
+    text name
+    text source
+    text__ kinds
+    boolean cross_border
+    boolean is_active
+    text notes
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  ai_model_prices {
+    uuid id PK
+    text provider_id FK
+    text model
+    text kind
+    text unit
+    numeric credits_per_unit
+    text license
+    boolean is_active
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  ai_routing_settings {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    text feature
+    text kind
+    text mode
+    jsonb chain
+    boolean force_open_source
+    uuid updated_by
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  ai_org_settings {
+    uuid org_id PK,FK
+    timestamptz cross_border_ack_at
+    text cross_border_notice
+    uuid ack_by
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  ai_collections {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    text embedding_provider FK
+    text kind
+    text name
+    text embedding_model
+    integer embedding_dim
+    text status
+    uuid created_by
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  ai_documents {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    uuid collection_id
+    text source_type
+    text title
+    text storage_path
+    text source_url
+    text content_hash
+    text mime
+    bigint byte_size
+    text status
+    boolean contains_pii
+    text error
+    uuid created_by
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  ai_chunks {
+    bigint id PK
+    uuid org_id FK
+    text app_id FK
+    uuid document_id
+    uuid collection_id
+    integer chunk_index
+    text content
+    integer token_count
+    vector embedding
+    jsonb metadata
+    timestamptz created_at
+  }
+  wiki_pages {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    uuid collection_id FK
+    text slug
+    text title
+    text summary
+    text body_md
+    text page_type
+    integer version
+    text status
+    text last_editor
+    uuid last_edited_by
+    uuid__ source_document_ids
+    boolean derived_from_pii
+    timestamptz stale_since
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  wiki_links {
+    uuid org_id FK
+    uuid from_page_id PK
+    uuid to_page_id PK
+    timestamptz created_at
+  }
+  wiki_revisions {
+    bigint id PK
+    uuid org_id FK
+    uuid page_id
+    integer version
+    text body_md
+    text editor_kind
+    uuid edited_by
+    text reason
+    uuid__ source_document_ids
+    timestamptz created_at
+  }
+  ai_conversations {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    uuid user_id
+    text visitor_key
+    text dify_user
+    text dify_conversation_id
+    text channel
+    text status
+    text title
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  ai_messages {
+    bigint id PK
+    uuid org_id FK
+    text provider_id FK
+    uuid conversation_id
+    text role
+    text content
+    jsonb citations
+    text model
+    integer input_tokens
+    integer output_tokens
+    integer credits
+    bigint credit_ledger_id
+    timestamptz created_at
+  }
+  ai_runs {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    text provider_id FK
+    text graph
+    text status
+    jsonb input
+    jsonb output
+    text error
+    text model
+    integer input_tokens
+    integer output_tokens
+    integer credits
+    bigint credit_ledger_id
+    uuid job_id
+    text trace_id
+    text thread_id
+    uuid created_by
+    timestamptz created_at
+    timestamptz started_at
+    timestamptz finished_at
+    timestamptz updated_at
+  }
+  ai_run_steps {
+    bigint id PK
+    uuid org_id FK
+    text provider_id FK
+    uuid run_id
+    text node
+    text status
+    text model
+    integer tokens
+    jsonb detail
+    timestamptz started_at
+    timestamptz finished_at
+  }
+  voice_sessions {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    text stt_provider_id FK
+    text tts_provider_id FK
+    uuid user_id
+    uuid conversation_id
+    text visitor_key
+    numeric total_seconds
+    text status
+    timestamptz started_at
+    timestamptz ended_at
+    timestamptz updated_at
+  }
+  voice_jobs {
+    uuid id PK
+    uuid org_id FK
+    text app_id FK
+    text provider_id FK
+    uuid user_id
+    uuid session_id
+    text feature
+    text kind
+    text model
+    text voice_id
+    text status
+    numeric duration_seconds
+    integer characters
+    boolean store_audio
+    timestamptz consent_at
+    text consent_kind
+    text notice_version
+    text storage_path
+    timestamptz expires_at
+    text fallback_from
+    integer credits
+    bigint credit_ledger_id
+    text error
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  runtime_config {
+    text key PK
+    integer value_int
+    text note
+    timestamptz updated_at
+  }
+  license_skus {
+    text code PK
+    text name
+    integer price_krw
+    integer includes_updates_months
+    integer bonus_credits
+    integer max_activations
+    integer max_quantity
+    jsonb fallback_features
+    boolean is_active
+    integer sort_order
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  builds {
+    uuid id PK
+    text version
+    text platform
+    text channel
+    text status
+    date build_date
+    text storage_path
+    text signature
+    text sha256
+    bigint bytes
+    text notes
+    timestamptz published_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  rule_packs {
+    uuid id PK
+    text version
+    text status
+    date basis_date
+    text summary
+    text storage_path
+    text sha256
+    text signature
+    text kid
+    bigint bytes
+    timestamptz published_at
+    timestamptz withdrawn_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  rule_pack_changes {
+    uuid id PK
+    uuid rule_pack_id FK
+    text title
+    text kind
+    date effective_from
+    text law_ref
+    timestamptz created_at
+  }
+  cost_catalogs {
+    uuid id PK
+    text version
+    text status
+    date basis_date
+    jsonb items
+    text source_note
+    text sha256
+    timestamptz published_at
+    timestamptz withdrawn_at
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  licenses {
+    uuid id PK
+    uuid org_id FK
+    text sku_code FK
+    uuid order_id FK
+    text serial_hash
+    text serial_last5
+    text status
+    timestamptz purchased_at
+    date updates_until
+    integer max_activations
+    uuid__ extension_order_ids
+    timestamptz status_changed_at
+    text status_reason
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  license_activations {
+    uuid id PK
+    uuid org_id FK
+    uuid license_id
+    text source
+    text device_hash
+    text device_label
+    uuid activated_by
+    timestamptz activated_at
+    timestamptz last_seen_at
+    timestamptz deactivated_at
+    uuid deactivated_by
+    text deactivation_kind
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  drafting_profiles {
+    uuid org_id PK,FK
+    text office_name
+    text architect_name
+    text contact
+    text logo_storage_path
+    jsonb layer_map
+    text default_paper
+    numeric default_text_height_mm
+    text font_family
+    uuid updated_by
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  cloud_projects {
+    uuid id PK
+    uuid org_id FK
+    uuid local_id
+    text name
+    text storage_path
+    integer version
+    uuid created_by
+    uuid updated_by
+    timestamptz created_at
+    timestamptz updated_at
+  }
+  renders {
+    uuid id PK
+    uuid org_id FK
+    bigint credit_ledger_id FK
+    uuid job_id FK
+    uuid project_ref
+    uuid request_id
+    text variant
+    text status
+    integer credits
+    jsonb options
+    uuid source_render_id
+    text output_path
+    integer width
+    integer height
+    bigint bytes
+    text provider
+    text model
+    bigint seed
+    boolean ai_label
+    timestamptz expires_at
+    timestamptz purged_at
+    text error
+    uuid created_by
+    timestamptz created_at
+    timestamptz started_at
+    timestamptz finished_at
+    timestamptz updated_at
+  }
+  reviews {
+    uuid id PK
+    uuid org_id FK
+    bigint credit_ledger_id FK
+    uuid job_id FK
+    uuid project_ref
+    uuid request_id
+    text variant
+    text status
+    integer credits
+    text rule_pack_version
+    date application_date
+    text municipality_code
+    jsonb judgment
+    jsonb model_summary
+    jsonb result
+    text disclaimer_version
+    text error
+    uuid created_by
+    timestamptz created_at
+    timestamptz started_at
+    timestamptz finished_at
+    timestamptz updated_at
+  }
+  intake_runs {
+    uuid id PK
+    uuid org_id FK
+    bigint credit_ledger_id FK
+    uuid job_id FK
+    uuid stt_job_id FK
+    uuid project_ref
+    uuid request_id
+    text variant
+    text source
+    text input_kind
+    text status
+    integer credits
+    text input_text
+    text notice_version
+    jsonb result
+    timestamptz expires_at
+    text error
+    uuid created_by
+    timestamptz created_at
+    timestamptz started_at
+    timestamptz finished_at
+    timestamptz updated_at
+  }
+  proposals {
+    uuid id PK
+    uuid org_id FK
+    bigint credit_ledger_id FK
+    uuid job_id FK
+    uuid project_ref
+    uuid request_id
+    text variant
+    text doc_kind
+    text status
+    integer credits
+    text template_version
+    text content_path
+    text content_sha256
+    uuid__ render_ids
+    text__ sheet_paths
+    text pdf_path
+    integer pages
+    bigint bytes
+    jsonb narrative
+    text error
+    uuid created_by
+    timestamptz created_at
+    timestamptz started_at
+    timestamptz finished_at
+    timestamptz updated_at
+  }
+  site_lookups {
+    bigint id PK
+    uuid org_id FK
+    date lookup_date
+    text pnu_hash
+    timestamptz created_at
+  }
+  organizations ||--o{ org_members : "org_id"
+  apps ||--o{ plans : "app_id"
+  apps ||--o{ credit_packs : "app_id"
+  organizations ||--o{ subscriptions : "org_id"
+  apps ||--o{ subscriptions : "app_id"
+  plans ||--o{ subscriptions : "plan_id"
+  organizations ||--o{ app_entitlements : "org_id"
+  apps ||--o{ app_entitlements : "app_id"
+  plans ||--o{ app_entitlements : "plan_id"
+  organizations ||--o{ billing_keys : "org_id"
+  organizations ||--o{ payment_orders : "org_id"
+  apps ||--o{ payment_orders : "app_id"
+  plans ||--o{ payment_orders : "plan_id"
+  credit_packs ||--o{ payment_orders : "credit_pack_id"
+  payment_orders ||--o{ payments : "order_id"
+  organizations ||--o{ payments : "org_id"
+  organizations ||--o{ wallets : "org_id"
+  organizations ||--o{ credit_ledger : "org_id"
+  apps ||--o{ credit_ledger : "app_id"
+  credit_ledger ||--o{ credit_ledger : "refund_of"
+  organizations ||--o{ ai_usage : "org_id"
+  apps ||--o{ ai_usage : "app_id"
+  credit_ledger ||--o{ ai_usage : "ledger_id"
+  organizations ||--o{ jobs : "org_id"
+  apps ||--o{ jobs : "app_id"
+  credit_ledger ||--o{ jobs : "credit_ledger_id"
+  jobs ||--o{ jobs : "parent_job_id"
+  ai_providers ||--o{ ai_model_prices : "provider_id"
+  organizations ||--o{ ai_routing_settings : "org_id"
+  apps ||--o{ ai_routing_settings : "app_id"
+  organizations ||--o{ ai_org_settings : "org_id"
+  organizations ||--o{ ai_collections : "org_id"
+  apps ||--o{ ai_collections : "app_id"
+  ai_providers ||--o{ ai_collections : "embedding_provider"
+  organizations ||--o{ ai_documents : "org_id"
+  apps ||--o{ ai_documents : "app_id"
+  ai_collections ||--o{ ai_documents : "collection_id"
+  organizations ||--o{ ai_chunks : "org_id"
+  apps ||--o{ ai_chunks : "app_id"
+  ai_documents ||--o{ ai_chunks : "document_id"
+  organizations ||--o{ wiki_pages : "org_id"
+  apps ||--o{ wiki_pages : "app_id"
+  ai_collections ||--o{ wiki_pages : "collection_id"
+  organizations ||--o{ wiki_links : "org_id"
+  wiki_pages ||--o{ wiki_links : "from_page_id"
+  wiki_pages ||--o{ wiki_links : "to_page_id"
+  organizations ||--o{ wiki_revisions : "org_id"
+  wiki_pages ||--o{ wiki_revisions : "page_id"
+  organizations ||--o{ ai_conversations : "org_id"
+  apps ||--o{ ai_conversations : "app_id"
+  organizations ||--o{ ai_messages : "org_id"
+  ai_providers ||--o{ ai_messages : "provider_id"
+  ai_conversations ||--o{ ai_messages : "conversation_id"
+  organizations ||--o{ ai_runs : "org_id"
+  apps ||--o{ ai_runs : "app_id"
+  ai_providers ||--o{ ai_runs : "provider_id"
+  organizations ||--o{ ai_run_steps : "org_id"
+  ai_providers ||--o{ ai_run_steps : "provider_id"
+  ai_runs ||--o{ ai_run_steps : "run_id"
+  organizations ||--o{ voice_sessions : "org_id"
+  apps ||--o{ voice_sessions : "app_id"
+  ai_providers ||--o{ voice_sessions : "stt_provider_id"
+  ai_providers ||--o{ voice_sessions : "tts_provider_id"
+  ai_conversations ||--o{ voice_sessions : "conversation_id"
+  organizations ||--o{ voice_jobs : "org_id"
+  apps ||--o{ voice_jobs : "app_id"
+  ai_providers ||--o{ voice_jobs : "provider_id"
+  voice_sessions ||--o{ voice_jobs : "session_id"
+  rule_packs ||--o{ rule_pack_changes : "rule_pack_id"
+  organizations ||--o{ licenses : "org_id"
+  license_skus ||--o{ licenses : "sku_code"
+  payment_orders ||--o{ licenses : "order_id"
+  organizations ||--o{ license_activations : "org_id"
+  licenses ||--o{ license_activations : "license_id"
+  organizations ||--o{ drafting_profiles : "org_id"
+  organizations ||--o{ cloud_projects : "org_id"
+  organizations ||--o{ renders : "org_id"
+  credit_ledger ||--o{ renders : "credit_ledger_id"
+  jobs ||--o{ renders : "job_id"
+  renders ||--o{ renders : "source_render_id"
+  organizations ||--o{ reviews : "org_id"
+  credit_ledger ||--o{ reviews : "credit_ledger_id"
+  jobs ||--o{ reviews : "job_id"
+  organizations ||--o{ intake_runs : "org_id"
+  credit_ledger ||--o{ intake_runs : "credit_ledger_id"
+  jobs ||--o{ intake_runs : "job_id"
+  jobs ||--o{ intake_runs : "stt_job_id"
+  organizations ||--o{ proposals : "org_id"
+  credit_ledger ||--o{ proposals : "credit_ledger_id"
+  jobs ||--o{ proposals : "job_id"
+  organizations ||--o{ site_lookups : "org_id"

@@ -1,0 +1,46 @@
+sequenceDiagram
+  autonumber
+  participant 팀장
+  participant designer
+  participant planner
+  participant 리서치
+  participant reviewer
+  participant challenger
+  participant diagrammer
+
+  Note over 팀장: 대표님 요청 시작
+  팀장->>designer: 토큰·DESIGN.md·preview
+  designer-->>팀장: 결과 보고
+  팀장->>planner: 작업 표 71개·보안 계획 09·00_LEAN·추적 열
+  planner-->>팀장: 결과 보고
+  팀장->>planner: PRD 정비
+  planner-->>팀장: 결과 보고
+  팀장->>planner: ADR-001 작성·수정
+  planner-->>팀장: 결과 보고
+
+  par ADR 반영 4건 병렬
+    팀장->>planner: PRD·보안 반영
+    planner-->>팀장: 보고
+  and
+    팀장->>planner: 구조·API·데이터 반영
+    planner-->>팀장: 보고
+  and
+    팀장->>planner: 화면·랜딩 반영
+    planner-->>팀장: 보고
+  and
+    팀장->>planner: 작업 계획 반영
+    planner-->>팀장: 보고
+  end
+
+  팀장->>reviewer: mode doc 기획 문서 갭 리뷰
+  reviewer-->>팀장: 🔴5 🟡10
+  팀장->>리서치: 경쟁사 15곳 벤치마킹·하이브리드 제공 구조
+  리서치-->>팀장: 결과 보고
+  팀장->>challenger: ADR-001 공격
+  challenger-->>팀장: REVISE (🔴2)
+  Note over 팀장: 사용자 결정 질의 후 ADR 수정
+  팀장->>diagrammer: 구조도
+  diagrammer-->>팀장: Mermaid 결과
+  Note over 팀장: nomad-os init · AGENTS.md·규칙 파일 · token-audit
+  Note over 팀장: 줄 번호 인용 155곳 스크립트 교체
+  Note over 팀장: git main 커밋·push

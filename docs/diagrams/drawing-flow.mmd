@@ -1,0 +1,36 @@
+%% 대지 → 도면 흐름. 근거: AGENTS.md 3장("LLM은 좌표를 만들지 않는다"), 02_ARCHITECTURE 2.1·2.3·2.4절.
+flowchart TB
+  site["대지 입력<br/>주소 조회(VWorld) 또는 DXF 경계 가져오기"]
+
+  subgraph det["결정적 순수 함수 영역 (좌표 · 판정 · 도면)"]
+    direction TB
+    env["법규 엔벨로프<br/>engine.worker · rules (규칙 팩 버전)"]
+    mass["매스 편집<br/>features/modeler · massing 후보 3안"]
+    judge["실시간 판정 (p95 200ms)<br/>rules.evaluate → JudgmentResult"]
+    basis["판정 행 근거<br/>근거 조항 · 시행일 · 팩 버전"]
+    layout["실 배치 편집<br/>layout · 겹침·외곽 검사 AR051"]
+    sheet["시트 모델 조립<br/>drafting: sheet · views · annotate · titleblock"]
+    writers["결정적 도면 작성기<br/>DXF · SVG · PDF · PNG (같은 입력 → 같은 바이트)"]
+    export["내보내기 / 제안서<br/>shell-bridge Exporter → 사용자가 고른 경로"]
+  end
+
+  subgraph llm["LLM 경계: 좌표를 만들지 않는다"]
+    direction TB
+    ai_param["AI: 파라미터 제안<br/>JSON 후보만, 사용자가 항목별 채택"]
+    ai_render["AI: 렌더 (fal)<br/>이미지만, 도면 수치에 쓰지 않음"]
+    ai_chat["AI: 채팅 · 설명<br/>수치는 JudgmentResult를 인용만"]
+  end
+
+  site --> env
+  env --> mass
+  mass <-->|"편집마다 실시간 판정"| judge
+  judge --> basis
+  mass --> layout
+  layout -->|"통과분만 (AR051 실패 시 시트 거부)"| sheet
+  judge -->|"치수 근거 점 · 판정값"| sheet
+  sheet --> writers
+  writers --> export
+
+  ai_param -.->|"파라미터 제안"| mass
+  mass -.->|"렌더 요청 (모델 입력)"| ai_render
+  ai_chat -.->|"설명 요청"| judge

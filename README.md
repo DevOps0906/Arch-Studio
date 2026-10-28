@@ -17,7 +17,7 @@
 | 환경·멀티에이전트 구성 | 약 95% | NOMAD Agent OS를 적용해 팀원 10명·훅·영역 규칙이 동작합니다. 점검 결과 ❌는 0개입니다 |
 | 기획 | 약 92% | 재정비를 마쳤고, 하이브리드 구조(ADR-001)도 확정해 반영했습니다. 남은 일은 결정 항목과 문서 길이 정리입니다 |
 | 디자인 | 약 40% | 토큰과 DESIGN.md 초안을 만들었고 다크 랜딩을 확정했습니다. `/download`·체험 가입·좌석 관리 화면 명세도 썼습니다. 비주얼 판정(AR-06-011)과 화면 구현은 남았습니다 |
-| 다이어그램 | 0% | 컴포넌트도·ERD·도면 생성 흐름 모두 아직 없습니다 |
+| 다이어그램 | 약 70% | 구조도·도면 생성 흐름·ERD·팀 다이어그램 3종을 만들었습니다(아래). 새 테이블을 반영한 ERD 갱신과 시퀀스도 추가가 남았습니다 |
 | 개발 | 0% | 작업 84개(기존 71 + 하이브리드 13)가 모두 대기 중입니다. W0의 첫 작업은 AR-06-019 도면 스파이크와 AR-06-071a 웹·설치형 공유 스파이크입니다 |
 
 진행률은 결과물이 있는지와 확정이 남았는지를 보고 추정한 값입니다. 측정한 수치가 아닙니다.
@@ -48,8 +48,30 @@
   - 웹 스튜디오 인증 방식(Bearer 또는 쿠키+CSRF)
   - DB 수정 규칙 예외
 - [ ] 새 마이그레이션을 작성합니다(좌석·기간제·본인인증·`cloud_projects` 키 변경).
-- [ ] 다이어그램: 컴포넌트도(공유 코어·셸 2개·어댑터 5종·서버), ERD(`sql2erd`), 도면 생성 흐름
+- [ ] ERD 갱신: 새 마이그레이션을 작성한 뒤 `sql2erd`로 다시 생성합니다.
 - [ ] 개발 착수: W0 스파이크 2건부터 시작합니다(`/next`).
+
+## 다이어그램
+
+Mermaid 원본(`.mmd`)과 렌더링한 그림(`.svg`)을 `docs/diagrams/`에 둡니다. 6개 모두 `mmd-check` 문법 검사를 통과했습니다.
+
+### 제품 구조
+| 다이어그램 | 내용 |
+|---|---|
+| [구성도](docs/diagrams/architecture.svg) ([원본](docs/diagrams/architecture.mmd)) | 랜딩·웹 스튜디오·설치형 셸 → 공유 엔진 패키지 → 플랫폼 어댑터 5종 → 서버·외부 서비스. 신뢰 경계도 표시합니다 |
+| [도면 생성 흐름](docs/diagrams/drawing-flow.svg) ([원본](docs/diagrams/drawing-flow.mmd)) | 대지 → 법규 엔벨로프 → 매스·실시간 판정 → 도면 엔진 → 내보내기. "LLM은 좌표를 만들지 않는다"는 경계도 표시합니다 |
+| [ERD](docs/diagrams/erd.svg) ([원본](docs/diagrams/erd.mmd)) | 현재 마이그레이션 기준 테이블 49개를 `sql2erd`로 자동 생성했습니다. 좌석·기간제·본인인증 테이블은 새 마이그레이션 작성 후 갱신합니다 |
+
+![구성도](docs/diagrams/architecture.svg)
+
+### 팀(멀티에이전트) 업무
+| 다이어그램 | 내용 |
+|---|---|
+| [팀 조직도](docs/diagrams/team-org.svg) ([원본](docs/diagrams/team-org.mmd)) | 팀장(Opus)과 팀원 10명의 모델·역할, 작업 표 84개의 담당 분포(builder 50, challenger→builder 16, designer 9, tester 5 등) |
+| [작업 흐름](docs/diagrams/team-workflow.svg) ([원본](docs/diagrams/team-workflow.mmd)) | `/next` → 위험도 판정 → challenger(고위험) → builder → reviewer → tester → advisor(2회 실패 시) → 팀장 커밋. 기획 단계 흐름도 함께 그렸습니다 |
+| [2026-10-28 세션](docs/diagrams/team-session-2026-10-28.svg) ([원본](docs/diagrams/team-session-2026-10-28.mmd)) | 오늘 팀원들이 실제로 한 일의 순서이고, 병렬 위임은 par 블록으로 표시했습니다. 순서는 위임 기록 기준이며 호출 시각으로 확인한 것은 아닙니다 |
+
+![팀 작업 흐름](docs/diagrams/team-workflow.svg)
 
 ## 폴더 구조
 
@@ -60,6 +82,7 @@
 | `docs/source/` | platform-docs 원본 사본입니다. 읽기만 합니다 |
 | `docs/wiki/` · `docs/reference/` | LLM 위키 · 이관 분석·리뷰 |
 | `docs/STACK.md` | 스택·명령·문서 지도 |
+| `docs/diagrams/` | 구조도·흐름도·ERD·팀 다이어그램(Mermaid + SVG) |
 | `design/` | 확정 시안 원본과 토큰 미리보기 |
 | `packages/ui/src/tokens.css` · `DESIGN.md` | 디자인 토큰(정답) · 디자인 설명 |
 | `supabase/` | 마이그레이션·시드·RLS 스모크 테스트 |
