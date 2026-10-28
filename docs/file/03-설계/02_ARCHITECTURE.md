@@ -113,13 +113,13 @@ interface LicenseFilePayload {
   updates_until: string | null       // 'YYYY-MM-DD'
   activation_id: string; device_hash: string
   features: { drafting_watermark: boolean; rule_pack_updates: boolean; cloud_review: boolean; ai_render: boolean }   // 표시용, 클라우드 판정은 서버
-  offline_valid_until: string | null // 제안: 체험·월 구독은 발급 시각 + 7일. 영구는 null(D-7 무기한)
+  offline_valid_until: string | null // 제안: 체험·월 구독은 발급 시각 + 7일. 영구는 null(구독 등과 합성 시 clamp). 영구 편집 권리의 오프라인 한도는 `rights_expiry`(발급 + 30일, D-H5 ②가 D-7(a) 대체, 변경 2026-10-29)
   issued_at: string; kid: string
 }
 // 파일 = { payload: base64url(JSON), sig: base64url(Ed25519(payload)) }
 ```
 
-`offline_valid_until`은 이 문서가 더한 필드다(제안). 이유: PRD는 영구 라이선스의 오프라인 무기한(D-7)만 정하고 체험·월 구독의 오프라인 허용 기간을 정하지 않았으며, Tauri 가이드는 이를 제품 PRD가 정하게 한다(`D:/WorkSpace/platform/docs/Tauri/README.md:199`). 제안값은 발급 후 7일(이유: 상담 출장 1주를 버티되 해지 후 장기 사용을 막는다). 체험·월 구독의 기기 활성화는 `arch.activate_plan_device(p_org, p_user, p_device_hash)`(service_role, 한도 `org_features.max_activations` = 1)가 `arch.license_activations`에 `license_id` null, `source='plan'`, `org_id` 행을 만들고 같은 형식의 파일을 받는다(04장 2.1절, 05장).
+`offline_valid_until`은 이 문서가 더한 필드다(제안). 이유: PRD는 영구 라이선스의 오프라인 무기한(D-7, 2026-10-29 D-H5 ②로 30일 재확인으로 대체)만 정하고 체험·월 구독의 오프라인 허용 기간을 정하지 않았으며, Tauri 가이드는 이를 제품 PRD가 정하게 한다(`D:/WorkSpace/platform/docs/Tauri/README.md:199`). 제안값은 발급 후 7일(이유: 상담 출장 1주를 버티되 해지 후 장기 사용을 막는다). 체험·월 구독의 기기 활성화는 `arch.activate_plan_device(p_org, p_user, p_device_hash)`(service_role, 한도 `org_features.max_activations` = 1)가 `arch.license_activations`에 `license_id` null, `source='plan'`, `org_id` 행을 만들고 같은 형식의 파일을 받는다(04장 2.1절, 05장).
 
 ### 2.3 도면 엔진(packages/drafting) 설계
 

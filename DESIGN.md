@@ -31,6 +31,8 @@
 - 색 시맨틱: bg · surface · raised · nav · fg · fg-2 · fg-3 · line · input · accent(+fg) · info · ok · warn · danger · envelope (각 `-fg` 짝), concrete(앱, 글자 금지), 랜딩 전용 bg-deep · line-2 · nav-sub · accent-strong · mint · violet.
 - 대비 짝: 글자 `fg/fg-2/fg-3` on `bg/surface/nav`, 상태색 `X-fg` on `X`, 입력 경계 `input` 3:1. 장식선 `line`은 기준 없음.
 - 반경: 앱 control 6 / panel 10, 랜딩 control 10 / card 14.
+- 랜딩 전용 색(bg-deep · panel-2 · nav-sub · line-2 · accent-strong · mint · violet)은 `@theme`에 등록돼 유틸리티가 생성되고, landing 블록이 값을 재정의한다. 포커스: `--color-focus` · `--focus-ring-width` 2 · `--focus-ring-offset` 3.
+- 브레이크포인트: `--breakpoint-md` 768 · `--breakpoint-xl` 1200(Tailwind 기본 1280을 1200으로 맞춤). 폰트 @media도 768/1200. 행간은 `--text-<name>--line-height` 무단위 비율(body 1.43≈14/20, num 1.38≈13/18 근거, 나머지 승인(2026-10-28)).
 - 레이아웃: `--layout-max` 1240, `--gnb-h` 64, `--sidebar-w` 248, `--sidebar-w-collapsed` 64.
 
 ### 반응형 3구간 폰트 크기 (px)
@@ -80,7 +82,8 @@
 - 앱: 엔벨로프 청록을 셸에 사용 금지(한 화면 한 곳). 콘크리트색 글자 금지. 상태색(ok·warn·danger)은 항상 아이콘 + 글자와 함께, 색만으로 의미 전달 금지.
 - 거의 검정(#0B0B0B·#111) 바탕 금지(앱 다크는 흑판 #20262A).
 - 버튼에 '→' 화살표, 헤드라인 한 단어 강조(랜딩 시안의 `w2` 강조는 기획서 4.4 7번과 충돌: 확정 필요), 섹션 페이드업 금지. 연출은 히어로 한 순간.
-- 포커스 링은 항상 보이게(랜딩 시안: accent 2px, offset 3px). `prefers-reduced-motion` 존중.
+- 포커스 링은 항상 보이게(`--color-focus` · `--focus-ring-width` · `--focus-ring-offset`, 랜딩 시안: accent 2px, offset 3px). `prefers-reduced-motion` 존중.
+- 입력창·체크박스 경계는 `--color-input`만 쓴다(`--color-line`은 장식 전용).
 - 시안에 없는 색을 새로 만들지 않는다. 필요하면 "제안"으로 표시해 사람 확정을 받는다.
 
 ## 7. 사람 확인 필요

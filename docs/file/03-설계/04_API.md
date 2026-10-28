@@ -7,6 +7,7 @@
 | 항목 | 규칙 | 근거 |
 |---|---|---|
 | 인증 | 모든 Route Handler 첫 줄 `const ctx = await requireSession('arch', { roles? })`. 웹은 쿠키, 데스크톱은 `Authorization: Bearer <Supabase access_token>`. Bearer 검증은 코어 요청 T-C1(같은 `SessionContext` 반환)이 반영된 뒤에 열고, 그 전까지 데스크톱은 Supabase 직접 조회 범위(RLS)만 쓴다. 미로그인 401, pending/suspended 403, `entitled=false` 402. 조직은 세션에서만 얻고 본문의 `org_id`는 받지 않는다(zod에 없음) | `docs/file/03-설계/공용코어/SHARED_MODULES.md:80`, `D:/WorkSpace/platform/docs/Tauri/README.md:136`, `D:/WorkSpace/platform/docs/Tauri/README.md:372` |
+| `entitled=false` 402의 예외 (추가 2026-10-28) | 만료·좌석 미배정·회수 사용자도 **데이터 회수 경로는 열어 둔다**. 허용(402 아님): `GET /api/entitlement`, `GET /api/cloud-projects`, `GET /api/cloud-projects/{project_uuid}/blob`(서명 URL 발급), 전체 프로젝트 일괄 내려받기 `GET /api/cloud-projects/export.zip`(MVP 포함 승인 2026-10-28, 2.1절), 로컬 내보내기. 차단(402): `POST /api/cloud-projects`, `POST /api/uploads/sign`, AI·검토·규칙 팩·좌석 외 쓰기. 402 본문은 `details: { reason: 'expired' \| 'seat_unassigned' \| 'seat_revoked' \| 'no_product' \| 'fallback', can_download: true }`(크레딧 402의 `required/balance`와 구분). `fallback` = 영구 업데이트 만료 폴백 상태에서 해당 권리가 없을 때(예: 웹 편집·클라우드 검토). 판정은 아래 "라우트별 필요 권리" 표의 right 하나만 본다(고정 순위 없음, `ADR-001` 4.7절 합성값). 구현은 해당 GET에서 `requireSession`이 `entitled=false`를 거절하지 않는 옵션이 필요하며 코어 요청 필요 여부 `미확인`. 쓰기 RPC의 DB 권리 검사 실패는 `AR044`(7.1절)로 올라오며 Route Handler가 이 402로 매핑한다. 보존 기한이 지난 사본은 404. 영구 폴백 조직(`fallback`)은 보존 기한이 없어 사본을 계속 열람·내려받는다(확정 D-H5 ①) | `ADR-001` 3.1·3.3·4.7 |
 | 공개 예외 | `POST /api/webhooks/toss`(서명), `POST /api/samples/download-event`(익명, 레이트 리밋), `GET /auth/callback`, `POST /api/dev/login`(Stage A 로컬 전용) | `docs/file/03-설계/공용코어/AUTH_ROADMAP.md:364` |
 | 순서 | 인증 → zod → 레이트 리밋(`core.rate_limit_hit`) → 기능 판정(`arch.org_features`) → 서버 variant 결정(단가 표는 `apps/web/src/server/ai/pricing.ts` 상수와 seed가 같은 값) → service_role RPC(검사·선차감·enqueue 한 트랜잭션) → 202 | `docs/file/03-설계/공용코어/CORE_SPEC.md:181-188` |
 | 금액·크레딧 | 데스크톱은 금액·크레딧 수를 보내지 않는다. 요청은 "작업 종류 + 입력"뿐이고 단가는 서버 상수(PRD 4.5절, 9.4절)에서 정한다. 결제 금액도 서버가 `license_skus`·`plans`·`credit_packs`에서 읽는다 | `D:/WorkSpace/platform/docs/Tauri/README.md:173`, `docs/file/02-요구사항/01_PRD.md 4.9절` |
@@ -20,6 +21,20 @@
 | 업로드 | 큰 파일(클라우드 사본, 렌더 입력, 제안서 도면 SVG, 상담 녹음)은 `POST /api/uploads/sign`으로 서명 업로드 URL을 받아 Rust가 스트리밍 업로드한다. 경로는 서버가 만들고(`<org_id>/arch/<purpose>/<uuid>.<ext>`), 사용 시점에 서버가 크기·MIME·매직바이트·조직 폴더를 다시 검사한다 | `D:/WorkSpace/platform/docs/Tauri/README.md:175` |
 | 웹 스튜디오 인증 (추가 2026-10-28) | `app.` 서브도메인의 스튜디오 호출자 = S. 방식은 하나만 고르고 섞지 않는다: (a) `Authorization: Bearer`(메모리 보관, CSRF 불필요) 또는 (b) httpOnly 쿠키 세션 + CSRF 토큰 필수(변경 메서드마다 검사, 불일치 403). 기본값 `팀장 결정 필요`. 어느 쪽이든 조직은 세션에서만 얻고, CORS는 스튜디오 출처 1개만 허용 목록에 추가(쿠키 방식이면 `Allow-Credentials` 이 출처에만). 업로드 MIME·크기는 데스크톱과 동일 상한 | `ADR-001_DELIVERY_AND_LICENSING.md` 5장 |
 | 로그 | 시리얼 원문, 라이선스 파일, 토큰, 도면·모델 좌표, 렌더 입력, 녹음, 프롬프트 전문을 로그에 남기지 않는다 | `docs/file/02-요구사항/01_PRD.md 5절`, `docs/file/02-요구사항/01_PRD.md 9.5절` |
+| DB 강제 (추가 2026-10-28) | Route Handler의 권리 검사는 1차 방어일 뿐이다. 쓰기 RPC(`save_cloud_project`·`upsert_drafting_profile` 등)는 호출 사용자·대상 조직 단위 `rights.web_edit`를 DB 함수 안에서 다시 검사한다(세션 클라이언트로 RPC를 직접 호출해도 우회 불가). 정본은 `05_DATA_MODEL.md` 2.9·2.18절 | `ADR-001` 4.7절 |
+
+**라우트별 필요 권리와 402 reason** (추가 2026-10-28, 제안). 권리 키는 `rights`(`ADR-001` 4.7절). 권리가 없을 때 reason: 상품 전혀 없음 `no_product`, 만료 `expired`, 좌석 `seat_unassigned`·`seat_revoked`, 영구 폴백 `fallback`.
+
+| 라우트 | 필요 right | 폴백(영구 업데이트 만료) | 비고 |
+|---|---|---|---|
+| `POST /api/cloud-projects`, `POST /api/uploads/sign`(`project_snapshot`) | `web_edit` | 402 `fallback` | 업로드 목적이 `render_input`·`proposal_sheet`면 아래 AI 행 right를 따름 |
+| `PUT /api/drafting-profile`, `POST .../logo-upload-url` | `web_edit` 또는 `desktop_edit` | 허용(`desktop_edit` O) | `oa` 역할도 함께 필요 |
+| `POST /api/ai/render`, `POST /api/ai/proposal` | `ai_render` | **허용**(폴백 웹 AI 렌더 허용, `ADR-001` 4.1·`01_PRD.md` 4.3절) | 크레딧은 별도 |
+| `POST /api/ai/review`, `GET /api/rule-packs`·`/download` | `cloud_review` | 402 `fallback`(`AR012` 매핑) | 폴백은 마지막 자격 팩만 |
+| `POST /api/ai/intake`, `POST /api/ai/chat` | 기능 키 `ai_intake`·`ai_chat_turns_per_day`>0(권리 키 매핑 `미확인`) | 기능 키가 0이면 402 `fallback` | 폴백 chat 0(05 9장 seed) |
+| `POST /api/license/activate`·`refresh`, `GET /api/updates/*`, `POST /api/site/lookup`, `GET /api/cost-catalogs/latest` | `desktop_edit` | 허용(마지막 자격 빌드·팩) | 활성화는 좌석 필요 |
+| `GET /api/entitlement`, `GET /api/cloud-projects`, `GET .../blob`, `GET /api/cloud-projects/export.zip` | `view_export` | 허용 | 402 없음(위 예외) |
+| `POST /api/seats/assign`·`unassign`, `POST /api/checkout` | 역할 `oa` | 해당 없음 | 권리와 무관 |
 
 ## 2. Route Handler
 
@@ -29,7 +44,7 @@
 
 | 메서드 경로 | 기능 ID | 역할/플랜 | 입력(zod 요약) | 출력 | 크레딧 | 호출하는 코어/제품 RPC | 오류 |
 |---|---|---|---|---|---|---|---|
-| `POST /api/license/activate` | AR-F-018, 021 | D, member+, 로그인 필수(D-16) | `{ serial: string(ARCH-XXXXX-XXXXX-XXXXX-XXXXX, Crockford Base32 정규화), device_hash: hex64, device_label?: string≤60 }` 또는 체험·월 구독 `{ mode: 'plan', device_hash, device_label? }`(시리얼 없음) | `{ license_file: SignedLicenseFile, license: { id, sku, serial_last5, updates_until, status } \| null, activation: { id, activated_at } }` | 0 | 시리얼: 정규화 → SHA-256 → `arch.activate_license(p_serial_hash, p_device_hash, p_user=ctx.user_id)`. 플랜: `arch.activate_plan_device(p_org=ctx.org.id, p_user=ctx.user_id, p_device_hash)`(한도 `max_activations` 1). 다음 2.4절 파일 서명(`source` `license`·`plan`), `write_audit` | `AR001` 409(해제 화면 안내), `AR002` 404, `AR003` 403, `AR006` 403, 402(플랜 모드인데 체험·구독 만료), 429(IP 10회/시간) |
+| `POST /api/license/activate` | AR-F-018, 021 | D, member+, 로그인 필수(D-16) | `{ serial: string(ARCH-XXXXX-XXXXX-XXXXX-XXXXX, Crockford Base32 정규화), device_hash: hex64, device_label?: string≤60 }` 또는 체험·월 구독 `{ mode: 'plan', device_hash, device_label? }`(시리얼 없음) | `{ license_file: SignedLicenseFile, license: { id, sku, serial_last5, updates_until, status } \| null, activation: { id, activated_at } }` | 0 | 시리얼: 정규화 → SHA-256 → `arch.activate_license(p_serial_hash, p_device_hash, p_user=ctx.user_id)`. 플랜: `arch.activate_plan_device(p_org=ctx.org.id, p_user=ctx.user_id, p_device_hash)`(기기 한도는 조직별 사용자당 2대, 좌석 여러 개여도 합산 안 함, 체험만 1대, 확정 D-H5 ③, `ADR-001` 4.3절. 초과 `AR001`. 활성화 행에 `seat_id` 기록, 05장 2.7). 다음 2.4절 파일 서명(`source` `license`·`plan`), `write_audit` | `AR001` 409(해제 화면 안내), `AR002` 404, `AR003` 403, `AR006` 403, 402(플랜 모드인데 체험·구독 만료), 429(IP 10회/시간) |
 | `POST /api/license/deactivate` | AR-F-018 | W·D, oa | `{ activation_id: uuid }` | `{ activation: { id, deactivated_at }, self_deactivations_30d }` | 0 | `arch.deactivate_activation`(세션 클라이언트, authenticated) | `AR004` 429(고객지원 안내), 42501 403, P0002 404 |
 | `POST /api/license/refresh` | AR-F-019 | D, member+ | `{ activation_id: uuid, device_hash: hex64 }` | `{ license_file }`(현재 `updates_until`·`features`로 재서명) | 0 | 활성화 행 조직·기기 일치 확인(admin 클라이언트) → `arch.org_features` → 재서명 | `AR003` 403, P0002 404(해제됨·기기 불일치), 429(IP 10회/시간, 활성화와 같은 버킷) |
 | `GET /api/license/list` | AR-F-017, 018, 019 | W·D, member+ | - | `{ licenses: [{ id, sku, serial_last5, status, purchased_at, updates_until, activations: [{ id, device_label, activated_at, last_seen_at }] }], plan_activations: [{ id, device_label, activated_at, last_seen_at }], features: OrgFeatures, last_eligible_build: { version, build_date } \| null }`(시리얼은 끝 5자만, 전체 시리얼은 발급 메일에만) | 0 | SELECT(RLS) + `arch.org_features(ctx.org.id)` | - |
@@ -41,11 +56,12 @@
 | `GET /api/drafting-profile` | AR-F-028 | D·W, member+ | - | `DraftingProfile`(4.7.3절) + `logo_url`(서명 10분) | 0 | SELECT `arch.drafting_profiles`(RLS) | - |
 | `PUT /api/drafting-profile` | AR-F-028 | D, oa | `DraftingProfile`(키 허용 목록, `layer_map` 키는 9.6절 표준 이름만, 값 `^[A-Za-z0-9_\-$]{1,64}$`, 제안) | `DraftingProfile` | 0 | `arch.upsert_drafting_profile(p jsonb, p_org=ctx.org.id)`(세션 클라이언트) | `AR042` 403, 22023 422 |
 | `POST /api/drafting-profile/logo-upload-url` | AR-F-028 | D, oa | `{ ext: 'png', bytes ≤ 1MB }`(제안: SVG 로고는 스크립트 위험 때문에 받지 않음) | `{ signed_upload_url, path, expires_at }` | 0 | Storage 서명 업로드(버킷 `arch-user`, `<org_id>/arch/drafting-logo/<uuid>.png`) | `AR031` 413, 415 |
-| `GET /api/cloud-projects` (변경 2026-10-28: 정본 키 `project_uuid`) | -(전용 ID 없음, 작업 AR-06-073) | D·W·S, member+ | `?cursor` | `{ items: [{ project_uuid, local_id \| null, name, version, bytes, updated_at }], next, max }` | 0 | SELECT `arch.cloud_projects`(RLS) + `cloud_projects_max` | - |
-| `POST /api/cloud-projects` (변경 2026-10-28: 업서트 계약) | -(전용 ID 없음, 작업 AR-06-073·077) | D·W·S, member+ | `{ project_uuid: uuid, local_id?: uuid(설치형 업로드 때만), name: string 1..120, storage_path, expected_version: int ≥ 0 }`. 업서트 기준 `(org_id, project_uuid)`, 새 프로젝트는 `expected_version=0`, 일치하면 `version+1`로 blob 교체. 로컬→클라우드 최초 업로드는 새 `project_uuid`를 발급(사본), 이후 같은 `local_id`는 같은 행에 업서트. blob 저장 순서 = `POST /api/uploads/sign`(`project_snapshot`) → 본 요청 | `{ project_uuid, version }` | 0 | 업로드 객체 재검사 → `arch.save_cloud_project(...)`(세션 클라이언트, 3장) | `AR040` 403, `AR041` 409(`details.current_version`, 앱은 "내 변경을 사본으로 저장" / "서버 최신 열기"만 제시), `AR031` 413, 23514 422(경로) |
-| `GET /api/cloud-projects/{project_uuid}/blob` (추가 2026-10-28) | -(전용 ID 없음, 작업 AR-06-072) | D·W·S, member+ (만료 후에도 허용: 열람·내려받기) | 경로 `project_uuid` | `{ url(서명 10분, 제안), version, bytes, sha256?, schema_version }` | 0 | SELECT `arch.cloud_projects`(RLS, 다른 조직은 404) → Storage 서명 다운로드 URL | P0002 404 |
-| `GET /api/entitlement` (추가 2026-10-28) | AR-F-017, 018, 019 | S·W, member+ (세션 시작·주기 조회, 캐시 TTL `미확정`) | - | `OrgFeatures`(3장) + `{ products: [{ kind: 'perpetual' \| 'term' \| 'sub' \| 'trial', term_ends_at \| null, updates_until \| null }], seat: { assigned: boolean, seats_total, seats_used } }` | 0 | `arch.org_features(ctx.org.id)` + 좌석 조회(RLS). 동시 보유 우선순위 영구 > 구독 > 기간제 > 체험, 만료일은 상품별(`ADR-001` 4.5) | 402(`entitled=false`) |
-| `POST /api/seats/assign` · `POST /api/seats/unassign` (추가 2026-10-28) | AR-F-017, 018 | W·S, oa | `{ user_id: uuid }`(대상은 같은 조직 멤버) | `{ seat: { user_id, license_id, assigned_at } }` | 0 | `arch.assign_seat(...)` · `arch.unassign_seat(...)`(신규 RPC, 05장 2.18, service 경유). 좌석 수 초과 시 거부, 감사 `seat.assign` | `AR043` 409(좌석 부족, 신규 코드 제안, 7.1절 반영 필요), 42501 403, P0002 404 |
+| `GET /api/cloud-projects` (변경 2026-10-28: 정본 키 `project_uuid`) | -(전용 ID 없음, 작업 AR-06-073) | D·W·S, member+ (`entitled=false`여도 허용, 1장 예외) | `?cursor` | `{ items: [{ project_uuid, local_id \| null, name, version, bytes, updated_at }], next, max, retention_until \| null }` | 0 | SELECT `arch.cloud_projects`(RLS) + `cloud_projects_max` | - |
+| `POST /api/cloud-projects` (변경 2026-10-28: 업서트 계약) | -(전용 ID 없음, 작업 AR-06-073·077) | D·W·S, member+ | `{ project_uuid: uuid, local_id?: uuid(설치형 업로드 때만), name: string 1..120, storage_path, expected_version: int ≥ 0 }`. 업서트 기준 `(org_id, project_uuid)`, 새 프로젝트는 `expected_version=0`, 일치하면 `version+1`로 blob 교체. 로컬→클라우드 최초 업로드는 새 `project_uuid`를 발급(사본), 이후 같은 `local_id`는 같은 행에 업서트. blob 저장 순서 = `POST /api/uploads/sign`(`project_snapshot`) → 본 요청 | `{ project_uuid, version }` | 0 | 업로드 객체 재검사 → `arch.save_cloud_project(...)`(세션 클라이언트, 3장) | `AR040` 403, `AR041` 409(`details.current_version`, 앱은 "내 변경을 사본으로 저장" / "서버 최신 열기"만 제시), `AR031` 413, 23514 422(경로), 402(`web_edit` 없음: 만료·미배정·회수·`fallback`, 1장 "라우트별 필요 권리" 표). `arch.save_cloud_project`가 `rights.web_edit`를 DB 안에서 재검사하므로 Route Handler를 거치지 않는 RPC 호출도 거부 |
+| `GET /api/cloud-projects/{project_uuid}/blob` (추가 2026-10-28) | -(전용 ID 없음, 작업 AR-06-072) | D·W·S, member+ (**`entitled=false`여도 허용**: 만료·미배정·회수 후 열람·내려받기, 1장 예외. 보존 기한 지나면 404) | 경로 `project_uuid` | `{ url(서명 10분, 제안), version, bytes, sha256?, schema_version }` | 0 | SELECT `arch.cloud_projects`(RLS: 조직 멤버면 읽기, 엔타이틀먼트와 분리, 05장 2.9절. 다른 조직은 404) → Storage 서명 다운로드 URL | P0002 404 |
+| `GET /api/cloud-projects/export.zip` (추가 2026-10-29) | -(전용 ID 없음, 작업 AR-06-077) | D·W·S, member+ (**`entitled=false`여도 허용**, 1장 예외. 만료·`fallback`·미배정·회수 사용자 포함, MVP 승인 2026-10-28) | - | 조직의 전체 클라우드 프로젝트 `.arch` zip(스트리밍 또는 서명 URL, 방식은 구현 때 확정). 진행률은 실제 처리 건수, 실패 항목만 재시도 | 0 | SELECT `arch.cloud_projects`(RLS) → Storage 다운로드. 보존 기한 지난 사본은 제외 | 429(레이트 리밋 수치 `미확정`), P0002 404(사본 0건) |
+| `GET /api/entitlement` (추가 2026-10-28) | AR-F-017, 018, 019 | S·W, member+ (세션 시작·주기 조회, 캐시 TTL `미확정`) | - | `OrgFeatures`(3장) + `{ products: [{ kind: 'perpetual' \| 'term' \| 'sub' \| 'trial', term_ends_at \| null, updates_until \| null }], seat: { state: 'assigned' \| 'unassigned' \| 'revoked' \| 'shortage', seats_total, seats_used }, rights: { web_edit, desktop_edit, view_export, ai_render, cloud_review, devices_max }, retention_until \| null }` | 0 | `arch.org_features(ctx.org.id, 호출 사용자)` + 좌석 조회(RLS). 권리는 상품별 OR·최대값 합성(고정 순위 없음, `ADR-001` 4.7), 만료일은 상품별 | 만료·미배정이어도 **200**으로 `rights`를 돌려준다(402 아님, 화면이 잠금 사유를 그리려면 필요) |
+| `POST /api/seats/assign` · `POST /api/seats/unassign` (추가 2026-10-28) | AR-F-017, 018 | W·S, oa | `{ user_id: uuid }`(대상은 같은 조직 멤버) | `{ seat: { user_id, license_id, seat_no, assigned_at } }` | 0 | `arch.assign_seat(...)` · `arch.unassign_seat(...)`(신규 RPC, 05장 2.18, service 경유). 좌석 수 초과·재배정 제한(자리 `seat_no`당 회수 후 7일 냉각, 온라인 해제 확인 시 즉시, 30일 2회, 확정 D-H5 ②) 시 거부, 감사 `seat.assign` | `AR043` 409(좌석 부족), `AR045` 409(재배정 제한, `details: { reason, available_at }`), 42501 403, P0002 404 |
 | `POST /api/identity/callback` (추가 2026-10-28) | -(전용 ID 없음, 가입 크레딧 30: PRD 4.5절 확인 필요) | S·W, 로그인 사용자. 제공자 서버가 호출하면 서명 검증(방식 `미확인`) | 제공자 결과 토큰(본문 최소화). 응답 후 휴대폰 번호 원문은 저장하지 않고 제공자 식별 해시(`ci_hash`)만 | `{ verified: true, credits_granted: 30 \| 0 }` | 0 (가입 크레딧 30은 1회 지급, 중복이면 0) | `arch.grant_identity_credit(p_user, p_ci_hash)`(신규 RPC, 05장 2.19): 유니크 키로 중복 방지 후 `core.grant_credits`(멱등 키 `identity:<ci_hash>`) | 이미 지급된 인증은 오류 없이 200 `credits_granted: 0`, 422(검증 실패), 429. 본인인증 제공자는 `팀장 결정 필요`(`미확인`) |
 | `POST /api/uploads/sign` | AR-F-013, 014, 015 | D, member+ | `{ purpose: 'project_snapshot' \| 'render_input' \| 'proposal_sheet' \| 'consult_audio', project_ref?: uuid(로컬 프로젝트 id), ext, bytes, sha256 }` | `{ signed_upload_url, path, expires_at }` | 0 | 목적별 상한 검사 후 서명 업로드 URL. 경로 `<org_id>/arch/<purpose>/<uuid>.<ext>` 서버 생성. 버킷 `arch-user`, `consult_audio`만 코어 `voice-audio`. `POST /api/cloud-projects/{id}/upload-url`은 이 경로의 `project_snapshot` 별칭(제안: 클라우드 사본 화면 호환) | `AR031` 413, `AR040` 403(`project_snapshot`이고 새 사본이 상한을 넘을 때), 415 |
 | `POST /api/checkout` | AR-F-017, 020, 021 | W, oa(시스템 브라우저의 웹 결제 화면에서만 호출. 데스크톱은 웹 `/pricing`을 연다) | `{ kind: 'license_sku', code: 'perpetual_early' \| 'perpetual_standard' } \| { kind: 'plan', code: 'updates_yearly' \| 'sub_monthly' } \| { kind: 'credit_pack', code: 'pack_100' \| 'pack_550' \| 'pack_1200' }`(금액 필드 없음) | `{ orderId, amountKrw, orderName, customerKey, successUrl, failUrl }` | 0 | 코어 `toss.createOrder`(금액은 서버가 읽음). `license_sku`는 코어 요청 C-1 반영 후에만(그 전에는 `arch.issue_license`가 `kind='one_time'`이 아닌 주문을 22023으로 거부하므로 영구 라이선스 주문을 만들지 않는다) | `AR005` 403, `checkout_unavailable` 409(C-1 전, 품절), `license_required` 409(`updates_yearly`인데 유효 라이선스 없음), 42501 403 |
@@ -109,7 +125,13 @@ interface LicensePayloadV1 {
   activation_id: string       // uuid
   device_hash: string         // hex64, 앱별 솔트로 해시한 기기 식별값
   issued_at: string           // RFC 3339
-  kid: string; offline_valid_until: string | null   // 영구 null, 체험·월 구독은 발급 시각 + 7일(제안, 02장 2.2절)
+  seat_id: string             // uuid, 활성화한 좌석(05장 2.7·2.18)
+  rights: {                   // 사용자별 합성 결과(ADR-001 4.7). 오프라인 표시·로컬 판정용, 정본은 서버
+    web_edit: boolean; desktop_edit: boolean; view_export: boolean
+    ai_render: boolean; cloud_review: boolean; devices_max: number
+  }
+  rights_expiry: Partial<Record<'web_edit' | 'desktop_edit' | 'ai_render' | 'cloud_review', string | null>>   // 권리별 종료 시각(RFC 3339). 기간제·구독·체험이 주는 권리 = 그 상품 종료 시각, 영구가 주는 권리 = issued_at + 30일(온라인 재확인, 확정 D-H5 ②, 변경 2026-10-29). view_export는 키에 없음(항상 허용). 종료 후 로컬은 refresh 전까지 그 권리를 false로 본다
+  kid: string; offline_valid_until: string | null   // 설치형 편집을 주는 상품 중 가장 늦은 값, 영구 null, 기간제·구독·체험은 min(발급 + 7일, 상품 종료일)로 clamp(D-H3, 제안, 02장 2.2절)
   features: {                 // PRD 9.4절: 오프라인에서도 같은 값을 쓰는 키만(제안)
     drafting_watermark: boolean   // true 면 시트 표제란 "체험판"
     rule_pack_updates: boolean; cloud_review: boolean; ai_render: boolean   // 발급 시점 값, 표시용(판정은 서버)
@@ -129,10 +151,12 @@ type LicenseStatus =
 
 | 규칙 | 내용 |
 |---|---|
-| 오프라인 | 활성화 후 로컬 기능은 온라인 확인 없이 동작한다(D-7). 클라우드 기능은 호출마다 서버가 라이선스·플랜을 다시 판정한다(`docs/file/02-요구사항/01_PRD.md 4.4절`) |
+| 오프라인 | 활성화 후 로컬 기능은 동작하되 영구도 `rights_expiry`(발급 + 30일)가 지나면 refresh 전까지 열람·내보내기만(D-7(a)를 D-H5 ②로 대체, 변경 2026-10-29). 클라우드 기능은 호출마다 서버가 라이선스·플랜을 다시 판정한다(`docs/file/02-요구사항/01_PRD.md 4.4절`) |
 | 체험·월 구독 | `POST /api/license/activate`(플랜 모드) → `arch.activate_plan_device`로 `source='plan'` 파일을 받는다. 로컬 권한은 이 파일로만 판정하고 `offline_valid_until`(제안 7일)이 지나면 온라인 재발급(`POST /api/license/refresh`) 전까지 "열람·내보내기만"으로 내린다 |
 | 저장 | 파일 원문은 로컬 `license_store`. 로그·오류 보고에 넣지 않는다 |
 | 재발급 | `updates_yearly` 결제·플랜 변경 후 앱이 `POST /api/license/refresh`를 부른다(앱 시작 시 하루 1회, 제안) |
+| 복수 상품 보유 (추가 2026-10-28, 제안) | 파일은 사용자·기기당 1개(`ADR-001` 4.7절). 위 `LicensePayloadV1`에 사용자별 합성 결과를 더한다: `seat_id`(uuid, 활성화한 좌석), `rights{ web_edit, desktop_edit, view_export, ai_render, cloud_review, devices_max }`(`ADR-001` 4.7 합성값, 05장 2.18 `org_features.rights`와 같은 키), `rights_expiry`(권리별 종료 시각, 위 스키마, 영구도 30일), `offline_valid_until`(설치형 편집을 주는 상품 중 가장 늦은 값, 영구 null, 그 상품 종료일로 clamp, D-H3), `issued_at`. 합성 입력은 파일 발급 대상 조직의 좌석뿐(개인↔팀 조직 교차 금지, `ADR-001` 4.7절). `sku`·`source`·`license_id`는 설치형 편집을 주는 대표 상품 1개를 표시용으로만 담는다. 배포된 파일이 아직 없으므로 버전을 올리지 않고 `v: 1` 정의에 새 필드를 직접 넣었다(팀장 결정) |
+| 서버 정본 우선 | 파일의 `rights`·`features`는 오프라인 로컬 판정과 표시용이다. 온라인이면 `GET /api/entitlement`(2.1절)가 정본이며 다르면 서버 값을 쓰고 `POST /api/license/refresh`로 재서명한다. 클라우드·AI·저장은 파일 값과 무관하게 서버가 매 호출 판정한다. 좌석 회수·상품 만료는 다음 refresh 또는 `offline_valid_until`·`rights_expiry`(영구 최대 30일)까지 로컬에 남을 수 있다(D-H3 위험 수용). 회수된 활성화가 refresh로 해제를 받으면 서버가 `release_confirmed_at`을 기록한다(05장 2.7, 좌석 냉각 조기 종료) |
 
 ## 3. RPC (SECURITY DEFINER)
 
@@ -516,7 +540,7 @@ Route Handler가 `drawing_sheets`(`POST /api/uploads/sign` purpose `proposal_she
 
 | 코드 | 의미 | HTTP | 발생 위치 |
 |---|---|---|---|
-| `AR001` | 활성화 한도 초과 | 409 | `activate_license`, `activate_plan_device` |
+| `AR001` | 활성화 한도 초과(사용자당 2대, 체험 1대, 확정 D-H5 ③) | 409 | `activate_license`, `activate_plan_device` |
 | `AR002` | 시리얼 무효 | 404 | `activate_license` |
 | `AR003` | 라이선스 정지·환불·회수 | 403 | `activate_license`, `extend_updates`, 클라우드 기능 판정 |
 | `AR004` | 셀프 해제 한도 초과(30일 3회) | 429 | `deactivate_activation` |
@@ -534,6 +558,9 @@ Route Handler가 `drawing_sheets`(`POST /api/uploads/sign` purpose `proposal_she
 | `AR040` | 클라우드 사본 상한 | 403 | `save_cloud_project`, `POST /api/uploads/sign`(`project_snapshot`) |
 | `AR041` | 버전 충돌 | 409 | `save_cloud_project` |
 | `AR042` | 표제란 설정 권한 없음 | 403 | `upsert_drafting_profile` |
+| `AR043` (채택 2026-10-28) | 좌석 부족(활성 배정 수가 구매 수 초과). `entitled=false` 402와는 다른 코드: 배정 시도 거부이며 기존 배정자는 영향 없음 | 409 | `assign_seat`, `POST /api/seats/assign`. `details.reason`(402)은 1장 `entitled=false` 예외 행의 값 목록(`expired`·`seat_unassigned`·`seat_revoked`·`no_product`·`fallback`)을 따르며 `AR043`은 그 값에 넣지 않는다 |
+| `AR044` (채택 2026-10-28) | 권리 없음: 쓰기 RPC가 호출 사용자·대상 조직의 필요 권리(`rights.web_edit` 등, `ADR-001` 4.7절)가 false라 거부. `AR043`(좌석 부족, 배정 거부)과 다르다: 이미 좌석·상품 상태가 정해진 사용자의 편집·저장 거부 | 402 `entitled=false`, `details: { reason, can_download: true }`(1장) | `save_cloud_project`, `upsert_drafting_profile` 등 쓰기 RPC(`05_DATA_MODEL.md` 2.18절 "쓰기 RPC의 권리 검사") |
+| `AR045` (채택 2026-10-28) | 좌석 재배정 제한: 회수 후 7일 냉각 중(회수 기기 온라인 해제 미확인) 또는 좌석당 재배정 30일 2회 초과(확정 D-H5 ②) | 409 | `assign_seat`, `POST /api/seats/assign`. `details: { reason: 'cooldown' \| 'reassign_limit', available_at }` |
 
 ### 7.2 코어·공통 코드 매핑 (`docs/file/03-설계/공용코어/CORE_SPEC.md:426`)
 

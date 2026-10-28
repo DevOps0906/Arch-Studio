@@ -18,7 +18,11 @@
       "Read(./**/coverage/**)",
       "Read(./**/*.lock)",
       "Read(./**/pnpm-lock.yaml)",
-      "Read(./**/package-lock.json)"
+      "Read(./**/package-lock.json)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Read(./**/target/**)",
+      "Read(./**/.venv/**)"
     ]
   }
 }

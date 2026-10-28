@@ -152,11 +152,15 @@ anon·authenticated는 `fallback_features`를 뺀 컬럼만 읽는다(가격 화
 | `license_id` | uuid | 예 | `source='license'`일 때만 값(CHECK `license_activations_source_ref_check`) |
 | `source` | text | 아니오 | `license`(영구) / `plan`(체험·월 구독) |
 | `device_hash` | text | 아니오 | 앱별 솔트로 해시한 기기 식별값 hex64(`01_PRD.md 4.4절`). 사용자 SELECT 컬럼에서 뺀다 |
+| `seat_id` (추가 예정 2026-10-28) | uuid FK `license_seats(id)` | 아니오 | 활성화의 발급 근거 좌석(회수 시 해제 대상 식별, 사용자 집계의 조인 키). NOT NULL: 미출시라 운영 중인 행이 없어 기존 행 이행 없음, seed와 신규 활성화에서 필수(`activate_*` RPC가 채움). 좌석 해제 시 이 값으로 묶인 활성화를 `deactivation_kind='revoke'`로 해제(2.18) |
 | `device_label` | text | 예 | 사용자 표시명 60자 |
 | `activated_by`, `activated_at`, `last_seen_at` | | | `last_seen_at`은 같은 기기 재활성화·refresh 때 갱신 |
 | `deactivated_at`, `deactivated_by`, `deactivation_kind` | | 예 | `self`, `support`, `refund`, `revoke`. 둘이 짝(CHECK). 한 번 해제하면 되살리지 않고 새 행을 만든다 |
+| `release_confirmed_at` (추가 예정 2026-10-28) | timestamptz | 예 | `revoke` 해제 후 그 기기가 온라인 refresh로 해제를 받아 간 시각. 좌석 7일 냉각 조기 종료 판정에 쓴다(2.18, D-H5 ②) |
 
-활성 유일: 영구는 `(license_id, device_hash)`, 플랜은 `(org_id, device_hash)` 부분 유일 인덱스(2400:187-190).
+활성 유일: 영구는 `(license_id, device_hash)`, 플랜은 `(org_id, device_hash)` 부분 유일 인덱스(2400:187-190). 기기 한도 집계 단위(확정 D-H5 ③): **사용자당**. 대상 조직에서 그 사용자의 활성 좌석(`license_seats.user_id`, `unassigned_at is null`)에 묶인 활성 기기 수 ≤ 합성 `rights.devices_max`(2대, 체험만이면 1대). 좌석이 여러 개여도 합산하지 않는다(D-H1 일치). 초과 `AR001`. 조직별로 센다(팀장 결정 2026-10-29): 좌석은 조직마다 따로 구매·배정되고 합성 범위도 대상 조직(2.18)이므로, 개인 조직·팀 조직 기기는 각각 2대. 동시성: `activate_*`는 `(org_id, user_id)` 단위 `pg_advisory_xact_lock`과 해당 좌석 행 `FOR UPDATE`를 건 뒤 센다(2.18절).
+
+RLS(정책 문장, `seat_id` 추가분): 기존 SELECT 정책 그대로 두고 사용자 SELECT 컬럼에 `seat_id`를 포함한다(`device_hash`만 제외). 사용자 GRANT·쓰기 정책은 없으며 `seat_id`는 `activate_license`·`activate_plan_device`가 호출 사용자의 활성 좌석(`license_seats`, `user_id = p_user`, `unassigned_at is null`)에서만 채운다. 다른 사용자의 좌석 id는 존재를 숨긴다(P0002).
 
 라이선스 파일(계약 14 #5) 필드는 DB에 파일로 저장하지 않고 Route Handler가 아래에서 조립해 서명한다.
 
@@ -164,8 +168,11 @@ anon·authenticated는 `fallback_features`를 뺀 컬럼만 읽는다(가격 화
 |---|---|
 | `license_id`, `sku`, `updates_until` | `licenses`(플랜 기기면 `license_id` null, `sku`는 플랜 코드) |
 | `org_id`, `activation_id`, `device_hash`, `source` | `license_activations` |
-| `features{drafting_watermark, rule_pack_updates, cloud_review, ai_render}` | `arch.org_features(org_id)` 발급 시점 값 |
-| `offline_valid_until` | 영구 null, 플랜 기기는 `issued_at + 7일`(제안, `02_ARCHITECTURE.md:117`) |
+| `seat_id` | `license_activations.seat_id` |
+| `rights{web_edit, desktop_edit, view_export, ai_render, cloud_review, devices_max}` | `arch.org_features(org_id, 사용자)`의 사용자 합성값(`ADR-001` 4.7절). 합성 대상은 대상 조직의 좌석만(2.18절) |
+| `rights_expiry{권리: 시각 \| null}` | 권리별로 그 권리를 주는 유효 상품 중 가장 늦은 종료 시각. 영구가 주는 권리는 `issued_at + 30일`(온라인 재확인, 확정 D-H5 ②), `view_export`는 null. 영구 상품의 `offline_valid_until=null` 때문에 구독 권리나 회수된 영구 좌석이 오프라인에서 무기한 남지 않게 한다 |
+| `features{drafting_watermark, rule_pack_updates, cloud_review, ai_render}` | `rights`에서 파생한 발급 시점 값(표시용) |
+| `offline_valid_until` | 설치형 편집을 주는 상품 중 가장 늦은 값. 영구가 하나라도 있으면 null이되, 각 `rights_expiry`는 별도로 적용. 기간제·구독·체험은 `min(issued_at + 7일, 상품 종료일)`로 clamp(D-H3) |
 | `v`, `app_id`, `issued_at`, `kid` | 서버 상수·시각 |
 
 ### 2.8 drafting_profiles (2400:199)
@@ -183,9 +190,17 @@ anon·authenticated는 `fallback_features`를 뺀 컬럼만 읽는다(가격 화
 | `version` | 1부터, 저장마다 +1. 줄어들지 않는다(트리거). 기대 버전과 다르면 `AR041` |
 | `blob_bytes`, `schema_version` (추가 예정) | 프로젝트 전체 단일 blob(관계형 복제는 Phase 2)의 크기와 `DesignModel` `schema_version`. 본문 크기 상한 검사는 서명·사용 시점 |
 
-RLS(정책 문장): SELECT는 `is_org_member(org_id) and has_entitlement(org_id,'arch')`(4장 그대로, 만료 후에도 열람·내려받기 유지). INSERT·UPDATE·DELETE는 사용자 GRANT 없음이고 `save_cloud_project`(member+, 경로 첫 폴더 = 자기 조직, `expected_version` 검사)로만 쓴다. 다른 조직의 `project_uuid`는 존재를 숨겨 P0002.
+RLS(정책 문장, 변경 2026-10-28): SELECT는 `is_org_member(org_id)`이고 **`has_entitlement` 의존을 제거**한다(보존 상태가 `deleted`가 아닐 때만). 이유: `has_entitlement`는 엔타이틀먼트가 끊기면 false라 만료·폴백 조직의 열람·내려받기("열람·내보내기만", `01_PRD.md` 4.3절)까지 RLS가 막기 때문이다. 읽기는 멤버십 + 보존 상태, 쓰기는 권리로 분리한다. INSERT·UPDATE·DELETE는 사용자 GRANT 없음이고 `save_cloud_project`(member+, 경로 첫 폴더 = 자기 조직, `expected_version` 검사)로만 쓴다. **DB 강제**: `save_cloud_project`는 Route Handler를 믿지 않고 함수 안에서 호출 사용자(`auth.uid()`)·대상 조직 단위의 `rights.web_edit`(`org_features` 합성, 2.18절)를 검사해 없으면 거부한다(오류 코드는 신규 SQLSTATE 제안, `04_API.md` 7.1절 반영 필요. Route Handler는 이를 402 `reason`으로 매핑). RPC 직접 호출 우회 차단. 다른 조직의 `project_uuid`는 존재를 숨겨 P0002.
 
-보존: 계정이 있는 동안(`01_PRD.md 5절`). 조직 삭제 시 cascade.
+보존: 활성 상품이 있는 동안 유지. 만료 후 보존·삭제 기한과 통지는 `ADR-001` 3.3절 제안(90일은 `제안`·약관 검토 `미확인`, 사용자 승인 필요 Q5)을 따르며 값을 복제하지 않는다. 시계 시작 조건은 "`web_edit` 권리를 줄 수 있는 유효 상품 0개"(좌석 수 아님)이고, 시작 시각을 조직당 1행으로 영속 저장한다:
+
+| 컬럼(제안 테이블 `arch.cloud_retention`, PK `org_id`) | 설명 |
+|---|---|
+| `cloud_retention_started_at` | timestamptz null. 유효 상품 0개가 된 시각(정리 잡·`org_features` 계산이 세팅). 유효 상품이 생기면 null로 리셋, 이때 삭제 예약도 취소 |
+| `state` | `active`·`grace`·`purge_scheduled`·`deleted`(3장 클라우드 보존 행). 읽기 RLS는 `deleted` 전까지 허용 |
+| `purge_at`, `notified_30d_at`, `notified_7d_at` | 삭제 예정 시각·통지 기록(통지 저장소는 `ADR-001` 3.3절 `미확인`) |
+
+RLS: SELECT `is_org_member(org_id)`, 쓰기 GRANT 없음·service 정리 잡만. 조직 삭제 시 cascade. 계정 삭제·파기 요청·조직 삭제는 보존 시계와 무관하게 즉시 삭제(`ADR-001` 3.3절).
 
 ### 2.10 renders (2400:239) — 서버 기록
 
@@ -285,16 +300,27 @@ RLS(정책 문장): SELECT는 `is_org_member(org_id) and has_entitlement(org_id,
 | 컬럼 | 타입 | NULL | 설명 |
 |---|---|---|---|
 | `id` | uuid PK | 아니오 | |
-| `org_id`, `license_id` | uuid | 아니오 | `(license_id, org_id)` 복합 FK(같은 조직만, 1장 경계 규칙) |
+| `org_id` | uuid | 아니오 | 좌석을 쓰는 조직 |
+| `entitlement_source` | text | 아니오 | **모든 상품 공통 소유 주체 종류**. CHECK `in ('license','plan','trial')`: `license`=영구·기간제(`licenses`), `plan`=구독(`core.app_entitlements`), `trial`=체험(`core.app_entitlements`). `license_activations.source`(`license`/`plan`)와 같은 어휘에 `trial`만 더함 |
+| `source_id` | uuid | 아니오 | 위 종류가 가리키는 행 id. 다형 참조라 FK 대신 `assign_seat` RPC와 트리거 `enforce_seat_source`가 존재·같은 조직·활성 상태를 검사 |
+| `seat_no` (추가 2026-10-29) | smallint | 아니오 | 구매 좌석 자리 번호 1..N(N = 2.18 좌석 수 상한). 재배정 제한의 단위. CHECK `seat_no >= 1`, 상한은 `assign_seat`가 검사 |
 | `user_id` | uuid | 아니오 | 조직 멤버(`org_members`)여야 함(RPC 검사) |
-| `assigned_by`, `assigned_at` | | 아니오 | 배정자(owner/admin)·시각 |
-| `unassigned_at` | timestamptz | 예 | 해제 시각. 해제 후 새 행으로 재배정(되살리기 금지) |
+| `assigned_by`, `assigned_at` | | 아니오 | 배정자(owner/admin, 체험은 자동 배정이라 service)·시각 |
+| `unassigned_at`, `unassigned_reason` | | 예 | 해제 시각·사유(`admin`, `reassigned`, `refund`, `seat_reduction`). 해제 후 새 행으로 재배정(되살리기 금지) |
 
-활성 유일: `(license_id, user_id) where unassigned_at is null`. 활성 행 수 ≤ `licenses.seats`는 `assign_seat` RPC가 검사(초과 `AR043`, 신규 코드 제안). 기간제·구독·체험의 좌석 소유 주체는 `licenses`가 아니라 `org_features`가 계산한다(영구 > 구독 > 기간제 > 체험 우선, `ADR-001` 4.5절).
+**합성 범위**: `org_features` 합성은 `license_seats.org_id = 대상 조직`인 좌석만 입력으로 쓴다(개인 조직↔팀 조직 교차 금지, `ADR-001` 4.7절). `assign_seat`는 `source_id` 상품의 조직과 `org_id`가 같은지 검사한다.
+
+**동시성**: `assign_seat`는 `(entitlement_source, source_id)` 단위 `pg_advisory_xact_lock`(또는 상품 행 `SELECT … FOR UPDATE`)을 건 뒤 활성 좌석 수를 세어 상한과 비교한다(잠금 없이 세면 동시 배정으로 초과). `activate_*`와 `unassign_seat` 경합은 두 함수 모두 해당 `license_seats` 행을 `FOR UPDATE`로 잠근 뒤 `unassigned_at`과 활성 기기 수를 확인한다(해제된 좌석에 새 활성화가 붙지 않게). 마이그레이션 테스트에 동시 배정·경합 케이스 포함.
+
+**쓰기 RPC의 권리 검사**: `save_cloud_project`·`upsert_drafting_profile` 등 쓰기 RPC는 함수 안에서 호출 사용자·대상 조직 단위 `rights.web_edit`(해당 기능에 맞는 권리)를 검사한다(2.9절).
+
+활성 유일: `(entitlement_source, source_id, user_id) where unassigned_at is null`. 한 사용자가 여러 소유 주체의 좌석을 동시에 가질 수 있다(권리는 `ADR-001` 4.7절 합성). 좌석 수 상한: `license`는 `licenses.seats`, `trial`은 1(개인 조직 owner 자동 배정, 제안), `plan`은 구독 수량이며 수량 저장 위치(`app_entitlements` 수량 컬럼 유무)는 `미확인`·`팀장 결정 필요`. 활성 행 수가 상한을 넘으면 `assign_seat`가 거부(`AR043`). 해제(회수·재배정) 시 그 좌석에 묶인 `license_activations`를 `deactivation_kind='revoke'`로 함께 해제한다. 기기 한도 2대는 사용자 단위(확정 D-H5 ③, 2.7절)이며 `license_activations.seat_id`(NOT NULL FK)는 회수 대상 식별용이다.
+
+**재배정 제한 (확정 D-H5 ②)**: 단위는 좌석 자리 `(entitlement_source, source_id, seat_no)`(팀장 결정 2026-10-29). 활성 유일 인덱스 `(entitlement_source, source_id, seat_no) where unassigned_at is null`을 더한다. `assign_seat`는 같은 잠금 안에서 검사한다. ① 냉각: 그 자리의 직전 행이 회수(`unassigned_at`)된 뒤 7일이 지나야 재배정 가능, 직전 행에 묶인 `revoke` 활성화가 모두 `release_confirmed_at`을 가지면(묶인 활성화가 없으면 포함) 즉시 가능 ② 횟수: 그 자리의 재배정(최초 배정 제외) 30일 2회. 위반 시 거부(`04_API.md` 7.1 `AR045`).
 
 RLS(정책 문장): SELECT는 `is_org_member(org_id)`(같은 조직 멤버는 누가 좌석을 가졌는지 열람, 자기 행은 항상 가능). INSERT·UPDATE·DELETE 정책·GRANT 없음. 쓰기는 `arch.assign_seat`·`arch.unassign_seat`(owner/admin 또는 service)만이며 감사 `seat.assign`·`seat.unassign`. 비멤버는 존재를 숨긴다(P0002).
 
-`arch.org_features` 확장(함수라 테이블 변경 없음): 반환에 `seats`(구매 수), `seats_used`, `seat_assigned`(호출 사용자 기준), `term_ends_at`을 더하고, 좌석 미배정 사용자는 `entitled=false` 취급(클라우드 기능 402)이다. 정확한 반환 키는 신규 마이그레이션에서 확정.
+`arch.org_features` 확장(함수라 테이블 변경 없음): 호출 사용자 기준으로 반환에 `seats`(구매 수), `seats_used`, `seat_state`(`assigned`·`unassigned`·`revoked`·`shortage`), `term_ends_at`, `rights`(`web_edit`·`desktop_edit`·`view_export`·`ai_render`·`cloud_review`·`devices_max`, `ADR-001` 4.7절 합성 결과)를 더한다. 좌석 미배정·회수 사용자와 만료 사용자는 `entitled=false` 취급(편집·저장·AI 402)이되, 열람·내려받기는 허용하는 예외다(`04_API.md` 1장). 사용자 인자 추가 방식(`p_user` 오버로드)과 정확한 반환 키는 신규 마이그레이션에서 확정.
 
 ### 2.19 identity_credit_grants (추가 예정 2026-10-28) — 본인인증 1회 크레딧 지급 기록
 
@@ -313,13 +339,13 @@ RLS(정책 문장): RLS ON, 사용자 GRANT와 정책 없음(식별 해시는 �
 
 ### 2.20 신규 마이그레이션 메모 (SQL 파일 없음)
 
-적용된 마이그레이션 `2400_arch.sql`과 모놀리스 `0002_arch_domain.sql`은 수정하지 않는다. 위 2.2·2.6·2.9·2.18·2.19 변경은 **신규 마이그레이션 `2026102800000x`로 추가 예정**(번호 `x`는 착수 때 확정, 작업 AR-06-073·074). 내용 요약: `cloud_projects` 키 교체(`project_uuid` 백필 후 PK 전환, `local_id` nullable, `save_cloud_project` 시그니처 교체), `licenses.seats`·`term_ends_at`, `license_skus.term_months`, `license_seats`, `identity_credit_grants`, `org_features` 반환 확장. 이 문서에서는 SQL을 쓰지 않는다. 기존 행 이행 방식(기존 `cloud_projects` 행의 `project_uuid` 부여)은 `팀장 결정 필요`.
+적용된 마이그레이션 `2400_arch.sql`과 모놀리스 `0002_arch_domain.sql`은 수정하지 않는다. 위 2.2·2.6·2.7·2.9·2.18·2.19 변경은 **신규 마이그레이션 `2026102800000x`로 추가 예정**(번호 `x`는 착수 때 확정, 작업 AR-06-073·074). 내용 요약: `cloud_projects` 키 교체(`project_uuid` 백필 후 PK 전환, `local_id` nullable, `save_cloud_project` 시그니처 교체), `licenses.seats`·`term_ends_at`, `license_skus.term_months`, `license_seats`(`entitlement_source` CHECK `license`/`plan`/`trial`, `source_id` 다형 참조 + `enforce_seat_source` 트리거, 활성 유일 인덱스), `license_activations.seat_id`(NOT NULL FK `license_seats`, 기존 행 이행 없음, seed·신규 활성화에서 필수), `identity_credit_grants`, `org_features` 반환 확장(`seats`·`seats_used`·`seat_state`·`term_ends_at`·`rights`, 사용자 인자 방식 확정), `assign_seat`·`unassign_seat` RPC와 `activate_*` RPC의 좌석별 기기 수 검사. 추가 반영(challenger 2차): `arch.cloud_retention`(2.9절), `cloud_projects` SELECT 정책에서 `has_entitlement` 제거(`is_org_member`만), `save_cloud_project`·`upsert_drafting_profile`의 `rights` 검사, `assign_seat`의 잠금·조직 일치 검사, `activate_*`·`unassign_seat`의 좌석 행 잠금, `org_features` 합성의 `org_id` 필터와 `rights_expiry` 반환. 신규 SQLSTATE(좌석 부족 `AR043`, 권리 없음 코드)는 `04_API.md` 7.1절에 같이 추가. 이 문서에서는 SQL을 쓰지 않는다. 기존 행 이행 방식(기존 `cloud_projects` 행의 `project_uuid` 부여)은 `팀장 결정 필요`.
 
 ## 3. 상태 전이
 
 | 대상 | 현재 → 허용 | 누가 | 부수 효과 | 구현 |
 |---|---|---|---|---|
-| `licenses.status` | active → suspended / refunded / revoked, suspended → active / refunded / revoked. refunded·revoked는 종료 | service(웹훅 환불, 운영) | `status_changed_at`. refunded·revoked면 활성 기기 전부 해제(`deactivation_kind` refund·revoke). suspended는 기기를 남기고 활성화·refresh·클라우드 기능에서 `AR003` | `enforce_license_transition`(2400:645), `after_license_status`(2400:667) |
+| `licenses.status` | active → suspended / refunded / revoked, suspended → active / refunded / revoked. refunded·revoked는 종료. 합성 입력 제외 상태: suspended·refunded·revoked(그 상품 권리 0, `ADR-001` 4.7절). 구독 `past_due`는 `core.app_entitlements` 쪽 상태로 유예 7일(제안)이며 이 표 밖 | service(웹훅 환불, 운영) | `status_changed_at`. refunded·revoked면 활성 기기 전부 해제(`deactivation_kind` refund·revoke). suspended는 기기를 남기고 활성화·refresh·클라우드 기능에서 `AR003` | `enforce_license_transition`(2400:645), `after_license_status`(2400:667) |
 | `licenses.updates_until` | 증가만(연장 RPC) | service | 주문 id를 `extension_order_ids`에 추가(멱등) | `extend_updates`(2400:952) |
 | `license_activations` | 활성(deactivated_at null) → 해제(종료). 되살리기 금지(22023), 다시 쓰려면 새 행 | 셀프 해제 owner/admin, 고객지원 service, 환불 트리거 | 셀프 해제는 조직당 30일 3회(`AR004`), service 해제는 세지 않음. 감사 `license.deactivate` | `enforce_activation_rules`(2400:683), `deactivate_activation`(2400:1498) |
 | `builds`·`rule_packs`·`cost_catalogs`.`status` | draft → published / withdrawn, published → withdrawn. 게시 뒤 `version`·`sha256` 불변 | service(CI 게시, 운영) | withdrawn 팩은 자격 목록에서 빠진다(이미 받은 로컬 캐시는 다음 확인 때 비활성화, 제안) | `enforce_release_transition`(2400:702) |
@@ -327,8 +353,12 @@ RLS(정책 문장): RLS ON, 사용자 GRANT와 정책 없음(식별 해시는 �
 | `cloud_projects.version` | n → n+1(저장마다), 감소 금지 | member+(`save_cloud_project`) | 기대 버전 불일치 `AR041`(조용한 덮어쓰기 금지, `D:/WorkSpace/platform/docs/Tauri/README.md:101`) | `enforce_cloud_project_version`(2400:722), `save_cloud_project`(2400:1671) |
 | `proposals` | AI 실행과 같음 | service | 같은 내용·버전 템플릿 문서 재요청은 0크레딧 새 행 | 위와 같음 |
 | 조직 기능 상태(`org_features.state`, 저장 안 함) | trial → trial_expired / licensed / subscribed, licensed → licensed_fallback(날짜 경과) → licensed(연장), subscribed → subscription_expired | 계산 | 4.3절 표의 기능 집합 선택 | `org_features`(2400:493) |
+| `license_seats` (추가 예정) | 배정(`unassigned_at` null) → 해제, 해제 후 새 행으로 재배정(되살리기 금지) | `assign_seat`·`unassign_seat`(owner/admin, 환불 트리거는 service) | 해제 시 그 좌석의 활성화 해제(`revoke`). 감사 `seat.assign`·`seat.unassign`. 효력은 서버 즉시, 웹은 캐시 TTL(Q6), 설치형 오프라인 파일은 `offline_valid_until`까지 | 2.18절 |
+| 클라우드 보존(`arch.cloud_retention.state`, 영속 저장, 변경 2026-10-28, 제안) | active → grace(`web_edit`를 줄 수 있는 유효 상품 0개, `cloud_retention_started_at` 기록, 읽기·내려받기만) → purge_scheduled → deleted. 유효 상품 복귀 시 grace·purge_scheduled → active, `started_at` null 리셋. 계정·조직 삭제·파기 요청은 상태와 무관하게 즉시 deleted | 계산 + 정리 잡(service) | 보존 일수는 `runtime_config`(제안 키 `cloud_retention_days`, 기본 90, 사용자 승인 필요, `ADR-001` 3.3절). 통지 30·7일 전. 삭제 시 blob·행 제거, 감사 | `org_features`, 정리 잡 |
 
-`org_features` 판정 순서: (1) 활성 라이선스의 최대 `updates_until`이 KST 오늘 이후면 `licensed`(updates_yearly 플랜 features), (2) 활성 `sub_monthly` 엔타이틀먼트면 `subscribed`, (3) 활성 라이선스가 있으면 `licensed_fallback`(SKU `fallback_features`), (4) `trial` 엔타이틀먼트 생성 후 `trial_days` 안이면 `trial`, (5) 그 밖은 만료(`v_expired`: 열람·내보내기만, 대지 조회·채팅·플랜 기기 0). 결과는 PRD 4.8·9.4절 키 전부 + `state`, `updates_until`, `license_ids`, `trial_ends_at`, `plan_code`(`04_API.md:153-164`). 체험 만료를 `app_entitlements.expires_at`으로 끊지 않고 이 함수가 판정한다. 이유: 엔타이틀먼트가 끊기면 RLS가 계정 화면·클라우드 사본까지 숨겨 "열람·내보내기만"(`01_PRD.md 4.3절`)을 지킬 수 없다(제안, PRD 4.2절 `expires_at` 표기와 다름).
+**`org_features` 판정(변경 2026-10-28, `ADR-001` 4.7절)**: 아래 (1)~(5)는 **상품별 상태 판정**이고 "첫 일치를 고르는 순위"가 아니다. 사용자 권리는 유효한 상품 전부의 값을 합성한다(불리언 OR, 수치 최대값). `state`는 화면 표시용 대표 상태(저장 안 함)일 뿐 권한에 쓰지 않는다. 예: 업데이트 만료 영구 + 활성 구독이면 `state='subscribed'`이고 웹 편집이 허용된다.
+
+`org_features` 상품별 판정(기존 순서, 대표 `state` 결정용): (1) 활성 라이선스의 최대 `updates_until`이 KST 오늘 이후면 `licensed`(updates_yearly 플랜 features), (2) 활성 `sub_monthly` 엔타이틀먼트면 `subscribed`, (3) 활성 라이선스가 있으면 `licensed_fallback`(SKU `fallback_features`), (4) `trial` 엔타이틀먼트 생성 후 `trial_days` 안이면 `trial`, (5) 그 밖은 만료(`v_expired`: 열람·내보내기만, 대지 조회·채팅·플랜 기기 0). 결과는 PRD 4.8·9.4절 키 전부 + `state`, `updates_until`, `license_ids`, `trial_ends_at`, `plan_code`(`04_API.md:153-164`). 체험 만료를 `app_entitlements.expires_at`으로 끊지 않고 이 함수가 판정한다. 이유: 엔타이틀먼트가 끊기면 RLS가 계정 화면·클라우드 사본까지 숨겨 "열람·내보내기만"(`01_PRD.md 4.3절`)을 지킬 수 없다(제안, PRD 4.2절 `expires_at` 표기와 다름).
 
 ## 4. RLS 정책
 
