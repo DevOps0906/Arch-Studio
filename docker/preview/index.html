@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arch Studio 미리보기</title>
+<link rel="stylesheet" href="/tokens/tokens.css">
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-fg); font-family: var(--font-sans, system-ui, sans-serif); }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: var(--text-h1, 28px); margin: 0 0 8px; }
+  p.lead { color: var(--color-fg-2); margin: 0 0 24px; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  @media (min-width: 768px) { ul { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  a.card { display: block; padding: 16px; border: 1px solid var(--color-line); border-radius: var(--radius-card);
+           background: var(--color-surface); color: inherit; text-decoration: none; }
+  a.card:hover, a.card:focus-visible { border-color: var(--color-info); outline: none; }
+  a.card b { display: block; margin-bottom: 4px; }
+  a.card span { color: var(--color-fg-2); font-size: var(--text-caption, 13px); }
+  .note { margin-top: 24px; color: var(--color-fg-3); font-size: var(--text-caption, 13px); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Arch Studio 미리보기</h1>
+  <p class="lead">앱 코드 착수 전 단계의 결과물 모음입니다. 웹 앱·API·DB는 W0 작업(AR-06-003·001) 이후 추가됩니다.</p>
+  <ul>
+    <li><a class="card" href="/design/reference/landing/landing.html"><b>랜딩 시안 (다크)</b><span>확정 시안 원본 · design/reference/landing</span></a></li>
+    <li><a class="card" href="/design/preview.html"><b>디자인 토큰 미리보기</b><span>색·서체·반응형 3구간 · packages/ui/src/tokens.css</span></a></li>
+    <li><a class="card" href="/diagrams/architecture.svg"><b>구성도</b><span>셸 2개·공유 엔진·어댑터·서버</span></a></li>
+    <li><a class="card" href="/diagrams/web-first-journey.svg"><b>웹 첫 여정</b><span>가입 → 판정 → 저장 → 출력 시퀀스</span></a></li>
+    <li><a class="card" href="/diagrams/drawing-flow.svg"><b>도면 생성 흐름</b><span>대지 → 엔벨로프 → 판정 → 도면</span></a></li>
+    <li><a class="card" href="/diagrams/erd.svg"><b>ERD</b><span>현재 마이그레이션 기준 테이블 49개</span></a></li>
+    <li><a class="card" href="/diagrams/team-workflow.svg"><b>팀 작업 흐름</b><span>NOMAD v3.0 · SDLC 9단계</span></a></li>
+    <li><a class="card" href="/drafting/"><b>도면 스파이크 결과 (AR-06-019)</b><span>DXF·SVG·PDF 파일 목록</span></a></li>
+  </ul>
+  <p class="note">대시보드 시안은 Claude Design 캔버스 형식이라 이 서버에서 바로 열리지 않습니다. 원본은 design/reference/dashboard에 있습니다.</p>
+</main>
+</body>
+</html>

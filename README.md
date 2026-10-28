@@ -83,6 +83,28 @@ Mermaid 원본(`.mmd`)과 렌더링한 그림(`.svg`)을 `docs/diagrams/`에 둡
 
 ![팀 작업 흐름](docs/diagrams/team-workflow.svg)
 
+## 로컬 실행 (Docker)
+
+앱 코드를 착수하기 전 단계라, 지금은 결과물을 보는 **미리보기 사이트** 하나만 실행됩니다. 웹 앱·API·Supabase 서비스는 W0 작업(AR-06-003·AR-06-001) 이후 `compose.yaml`에 추가합니다.
+
+```bash
+docker compose up -d      # 시작
+docker compose ps         # 상태 확인
+docker compose down       # 중지
+```
+
+| 서비스 | 접속 주소 | 내용 |
+|---|---|---|
+| 미리보기 홈 | http://localhost:8088 | 아래 항목으로 가는 목록 |
+| 랜딩 시안(다크) | http://localhost:8088/design/reference/landing/landing.html | 확정 랜딩 시안 원본 |
+| 디자인 토큰 미리보기 | http://localhost:8088/design/preview.html | 색·서체·반응형 3구간 |
+| 다이어그램 | http://localhost:8088/diagrams/ | 구성도·웹 첫 여정·도면 흐름·ERD·팀 다이어그램(SVG) |
+| 도면 스파이크 결과 | http://localhost:8088/drafting/ | AR-06-019 DXF·SVG·PDF |
+
+- 포트는 **8088**입니다. 8080은 이 PC에서 다른 프로그램이 쓰고 있습니다. 외부에 열리지 않도록 `127.0.0.1`에만 바인딩했습니다.
+- 파일은 읽기 전용으로 마운트됩니다. 문서·시안을 고치면 새로고침만 하면 반영됩니다.
+- 대시보드 시안은 Claude Design 캔버스 형식이라 이 서버에서는 열리지 않습니다(원본: `design/reference/dashboard/`).
+
 ## 폴더 구조
 
 | 경로 | 내용 |
@@ -98,6 +120,7 @@ Mermaid 원본(`.mmd`)과 렌더링한 그림(`.svg`)을 `docs/diagrams/`에 둡
 | `supabase/` | 마이그레이션·시드·RLS 스모크 테스트 |
 | `infra/dify/` | 법규 채팅(Dify) 메모 |
 | `tasks/` | 작업 표(`README.md`) · 현재 상태(`NOW.md`) |
+| `compose.yaml` · `docker/` | 로컬 미리보기(nginx) 실행 설정 |
 
 ## 스택
 
