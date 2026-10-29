@@ -25,7 +25,7 @@
 | AR-06-014 | 지오메트리 2D(합집합·오프셋·면적) | W1 | 013 | 높음 | builder | 완료 |
 | AR-06-018 | 프로그램·개략 공사비 엔진 | W1 | 013 | 보통 | builder | 완료 |
 | AR-06-046 | AI 서비스 설치·arch 스키마 동치 테스트 | W1 | 001, 013 | 높음 | builder | 대기 |
-| AR-06-048 | 워커 골격(claim_jobs·실패·크론) | W1 | 001 | 보통 | builder | 진행 |
+| AR-06-048 | 워커 골격(claim_jobs·실패·크론) | W1 | 001 | 보통 | builder | 완료 |
 | AR-06-007 | 클라우드 API 클라이언트(재시도·오류 매핑) | W1 | 005 | 보통 | builder | 대기 |
 | AR-06-008 | 인증 Stage A: Mock 로그인·온보딩 | W1 | 001, 003, 005 | 높음 | builder | 대기 |
 | AR-06-070 | 플랫폼 어댑터 5종 인터페이스·설치형 구현 이전 | W1 | 005, 006 | 보통 | builder | 대기 |
@@ -108,5 +108,7 @@
 | 2026-10-29 | `~/.claude/nomad/bin/design-preview` | 글자 크기 표의 태블릿·데스크톱 열이 `[data-surface="landing"]` 미디어 블록 값으로 덮임. 컴팩트 밀도·`--line-dash-*`·`--chat-bubble-max`도 표에 없음 | NOMAD 도구 수정(저장소 밖). 앱 값 정본은 tokens.css, DESIGN.md 3.1에 주의 문구 |
 | 2026-10-29 | ADR-001 2장 · 06_AGENT_PLAN AR-06-071·072 | D-071a(Vite SPA+정적 호스팅, Bearer) 채택으로 쓰기 경로·세션·CSP 서술이 낡음 | AR-06-071 착수 전 planner로 문서 정정(`tasks/logs/AR-06-071a.md`) |
 | 2026-10-29 | AR-06-002 완료 조건 "두 대상, CI 잡" | 모놀리스만 통과(129건), 모듈러는 platform 코어 0000~0009 필요로 미검증, `.github/workflows` 없음 | 첫 CI는 보안 S-7(`/secure setup --ci`)과 함께 신설해 test:rls·test:db·db:check 포함 |
+| 2026-10-29 | `reconcile_runs`(0002) | 최종 실패에서 fail_job 후 fail_ai_run 전에 워커가 죽으면 원장 환불은 끝났는데 실행이 failed로만 남아 refunded 전이 누락(이중 환불은 아님, codex 리뷰) | 새 마이그레이션으로 reconcile이 잡 원장 환불 여부를 보고 refunded 전이(2401 조각 방식) |
+| 2026-10-29 | AR-06-048 워커 ↔ 04_API.md | 워커가 부르는 `POST /api/internal/ai-settle`·`/api/internal/ai-token`(Bearer 워커 키, `{job_id, scope}`→`{token}`)과 잡 타임아웃(intake·proposal_pdf 5분, stt 30분)은 builder가 정한 값 | AR-06-047 AI 게이트에서 04_API에 확정 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
