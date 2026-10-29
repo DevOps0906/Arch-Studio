@@ -8,6 +8,14 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test \"src/**/*.test.ts\"",
+    "bench": "node src/bench.mjs",
+    "golden:update": "node src/update-golden.mjs"
+  },
+  "dependencies": {
+    "@arch-studio/domain": "workspace:*",
+    "@arch-studio/geometry": "workspace:*",
+    "@arch-studio/rules": "workspace:*"
   }
 }
