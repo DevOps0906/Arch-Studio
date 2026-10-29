@@ -8,6 +8,11 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@arch-studio/domain": "workspace:*",
+    "@arch-studio/geometry": "workspace:*"
   }
 }

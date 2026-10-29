@@ -144,7 +144,14 @@ importers:
         specifier: 4.10.2
         version: 4.10.2
 
-  packages/io: {}
+  packages/io:
+    dependencies:
+      '@arch-studio/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@arch-studio/geometry':
+        specifier: workspace:*
+        version: link:../geometry
 
   packages/layout:
     dependencies:
