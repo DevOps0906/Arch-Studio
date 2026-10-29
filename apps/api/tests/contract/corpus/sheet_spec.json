@@ -1,0 +1,401 @@
+{
+ "schema": "SheetSpec",
+ "cases": [
+  {
+   "name": "base",
+   "expect": "accept",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "scale_auto",
+   "expect": "accept",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": "auto",
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "scale_integral_float",
+   "expect": "accept",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 100.0,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "section_line",
+   "expect": "accept",
+   "value": {
+    "id": "s1",
+    "kind": "sunlight_section",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true,
+    "section_line": {
+     "a": [
+      0,
+      0
+     ],
+     "b": [
+      1000,
+      0
+     ]
+    }
+   }
+  },
+  {
+   "name": "optional_omitted",
+   "expect": "accept",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "t"
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "floor_plan_floor_id",
+   "expect": "accept",
+   "value": {
+    "id": "s1",
+    "kind": "floor_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true,
+    "floor_id": "f1"
+   }
+  },
+  {
+   "name": "scale_150",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 150,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "scale_true",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": true,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "scale_string_number",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": "100",
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "section_line_extra",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true,
+    "section_line": {
+     "a": [
+      0,
+      0
+     ],
+     "b": [
+      1,
+      1
+     ],
+     "c": [
+      2,
+      2
+     ]
+    }
+   }
+  },
+  {
+   "name": "section_point_fractional",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true,
+    "section_line": {
+     "a": [
+      0.5,
+      0
+     ],
+     "b": [
+      1,
+      1
+     ]
+    }
+   }
+  },
+  {
+   "name": "floor_id_null",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true,
+    "floor_id": null
+   }
+  },
+  {
+   "name": "kind_unknown",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "roof_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "paper_a4",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A4",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "override_extra_geometry",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false,
+      "polygon": [
+       [
+        0,
+        0
+       ]
+      ]
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "override_dx_string",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": "1",
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true
+   }
+  },
+  {
+   "name": "extra_top_level",
+   "expect": "reject",
+   "value": {
+    "id": "s1",
+    "kind": "site_plan",
+    "paper": "A3",
+    "orientation": "landscape",
+    "scale": 200,
+    "annotation_overrides": [
+     {
+      "target": "dim:1",
+      "dx_mm": 1.5,
+      "dy_mm": -2,
+      "text": "메모",
+      "hidden": false
+     }
+    ],
+    "include_in_proposal": true,
+    "geometry": {}
+   }
+  }
+ ]
+}

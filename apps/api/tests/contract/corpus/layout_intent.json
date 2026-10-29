@@ -1,0 +1,1376 @@
+{
+ "schema": "LayoutIntentV1",
+ "cases": [
+  {
+   "name": "base",
+   "expect": "accept",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "weight_integral_float",
+   "expect": "accept",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 2.0
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "two_variants",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "four_variants",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_zone_polygon",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S",
+        "polygon": [
+         [
+          0,
+          0
+         ],
+         [
+          1,
+          0
+         ],
+         [
+          1,
+          1
+         ]
+        ]
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_zone_xy",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S",
+        "x": 0,
+        "y": 0
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_room_rects",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ],
+      "rooms": [
+       {
+        "id": "r1",
+        "x": 0,
+        "y": 0,
+        "w": 3000,
+        "h": 4000
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_area",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S",
+        "area_m2": 20
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_distance_mm",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3,
+        "distance_mm": 1200
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "weight_4",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 4
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "weight_true",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": true
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "relation_unknown",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "above",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "zone_kind_unknown",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "garden",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "preferred_side_null",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": null
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}
