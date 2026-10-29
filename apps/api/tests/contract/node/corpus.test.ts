@@ -10,7 +10,7 @@ for (const file of loadCorpus()) {
   test(`${file.schema}: zod 판정 = 코퍼스 기대`, { skip: schema ? false : "zod 정의 없음(packages/domain 추가 대기)" }, () => {
     for (const c of file.cases) {
       const ok = schema!.safeParse(c.value).success;
-      assert.equal(ok, c.expect === "accept", `${file.schema}/${c.name}`);
+      assert.equal(ok, (c.zod ?? c.expect) === "accept", `${file.schema}/${c.name}`);
     }
   });
 }

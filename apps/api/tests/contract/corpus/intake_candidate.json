@@ -807,6 +807,1942 @@
      }
     ]
    }
+  },
+  {
+   "name": "area_zero",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 0,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "area_negative",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": -5,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "area_max",
+   "expect": "accept",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 1000000,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "area_over_max",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 1000000.5,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "area_evidence_121",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "area_evidence_120",
+   "expect": "accept",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "rooms_51",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "rooms_50",
+   "expect": "accept",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "memo_21",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     },
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "checklist_101",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     },
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "question_id_129",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "answer_string_301",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "answer_string_300",
+   "expect": "accept",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "answer_list_21",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": [
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a",
+       "a"
+      ],
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "use_65",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
   }
  ]
 }

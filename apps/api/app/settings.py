@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     # 비밀이 아닌 운영 상한(기본값 허용).
     max_body_bytes: int = Field(default=64 * 1024, ge=1024, le=1024 * 1024, validation_alias="AI_API_MAX_BODY_BYTES")
     token_leeway_s: int = Field(default=30, ge=0, le=120, validation_alias="AI_TOKEN_LEEWAY_S")
+    # URL 모드 JWKS 주기 갱신(초). 유출 키를 JWKS에서 뺐을 때 반영되는 최대 지연.
+    jwks_refresh_s: int = Field(default=600, ge=60, le=86400, validation_alias="AI_TOKEN_JWKS_REFRESH_S")
 
     @model_validator(mode="after")
     def _exactly_one_key_source(self) -> Settings:

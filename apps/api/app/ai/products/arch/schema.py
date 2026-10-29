@@ -39,11 +39,27 @@ def _int_like(value: Any) -> Any:
     return value
 
 
-Int = Annotated[int, BeforeValidator(_int_like)]
-NonNegInt = Annotated[int, Field(ge=0), BeforeValidator(_int_like)]
+# 안전 정수 범위(±(2^53−1)). JS `JSON.parse`는 이보다 큰 정수를 정밀도 손실로 바꾸므로 양쪽이 같은 값을 보게 제한한다.
+# 주의: zod `z.number().int()`는 이 범위를 강제하지 않는다(packages/domain 수정 금지 → 후속: zod에도 `.safe()` 필요).
+# 동치 코퍼스의 `unsafe_*` 사례가 이 차이를 `zod` 키로 기록한다.
+SAFE_INT = 2**53 - 1
+
+Int = Annotated[int, Field(ge=-SAFE_INT, le=SAFE_INT), BeforeValidator(_int_like)]
+NonNegInt = Annotated[int, Field(ge=0, le=SAFE_INT), BeforeValidator(_int_like)]
 Mm = Annotated[int, Field(ge=-MM_COORD_LIMIT, le=MM_COORD_LIMIT), BeforeValidator(_int_like)]
 NonNegMm = Annotated[int, Field(ge=0, le=MM_COORD_LIMIT), BeforeValidator(_int_like)]
 Point = tuple[Mm, Mm]
+
+
+def _max_len(limit: int) -> Any:
+    """zod `.max(n)`은 UTF-16 코드 단위로 센다. 같은 기준으로 맞춘다(한글은 1, 이모지는 2)."""
+
+    def check(value: str) -> str:
+        if len(value.encode("utf-16-le")) // 2 > limit:
+            raise ValueError(f"{limit}자 이하여야 합니다")
+        return value
+
+    return AfterValidator(check)
 
 
 class Strict(BaseModel):
@@ -296,46 +312,65 @@ class DraftingProfile(Strict):
 # ---------------------------------------------------------------------------
 
 
+# 길이·개수 상한(LLM 출력 DoS·저장/렌더 폭주 방어). 04_API.md 4.2·4.6절에는 상한이 없다 → 보수적 제안값이며
+# 04_API.md 4.3절의 값(evidence 120, name 40, memo 300, count 1..20)만 문서 근거다. 근거는 tasks/logs/AR-06-046.md.
+# zod 정의가 생기면 같은 상한을 넣어야 한다(PENDING_ZOD).
+ID_MAX = 128  # source id·질문 id·실 id·zone id
+KEY_MAX = 64
+SENTENCE_MAX = 1000  # 판정 설명 한 문장
+LABEL_MAX = 40
+SHORT_MAX = 200  # 법령명·조문 등
+VERSION_MAX = 64
+T_SENTENCE_MAX = Annotated[str, Field(max_length=SENTENCE_MAX), _max_len(SENTENCE_MAX)]
+T_SHORT_MAX = Annotated[str, Field(max_length=SHORT_MAX), _max_len(SHORT_MAX)]
+T_VERSION_MAX = Annotated[str, Field(max_length=VERSION_MAX), _max_len(VERSION_MAX)]
+T_LABEL_MAX = Annotated[str, Field(max_length=LABEL_MAX), _max_len(LABEL_MAX)]
+T_KEY_MAX = Annotated[str, Field(max_length=KEY_MAX), _max_len(KEY_MAX)]
+T_32 = Annotated[str, Field(max_length=32), _max_len(32)]
+IdStr = Annotated[str, Field(max_length=ID_MAX), _max_len(ID_MAX)]
+SourceIds = Annotated[list[IdStr], Field(max_length=20)]
+
+
 class ReviewEngineValue(Strict):
     """엔진 값을 그대로 복사한다. LLM이 만든 숫자를 넣지 않는다(그래프 resolve_refs가 채운다)."""
 
     value: float
     limit: float
-    unit: str
+    unit: Annotated[str, Field(max_length=16), _max_len(16)]
 
 
 class ReviewSentence(Strict):
-    text: str
-    source_ids: Annotated[list[str], Field(min_length=1)]  # 빈 문장 출처 = AR033
+    text: T_SENTENCE_MAX
+    source_ids: Annotated[list[IdStr], Field(min_length=1, max_length=20)]  # 빈 문장 출처 = AR033
 
 
 class ReviewNeedsCheck(Strict):
-    text: str
-    source_ids: list[str]
+    text: T_SENTENCE_MAX
+    source_ids: SourceIds
 
 
 class ReviewSource(Strict):
-    id: str
-    law: str
-    article: str
-    effective_from: str
+    id: IdStr
+    law: T_SHORT_MAX
+    article: T_SHORT_MAX
+    effective_from: T_32
     kind: Literal["law", "ordinance", "interpretation", "district_plan"]
 
 
 class ReviewItem(Strict):
-    key: str  # JudgmentResult.items[].key 또는 RAG 전용 항목('district_plan' 등)
+    key: T_KEY_MAX  # JudgmentResult.items[].key 또는 RAG 전용 항목('district_plan' 등)
     verdict: Literal["PASS", "FAIL", "WARN", "CHECK"]
     engine_value: ReviewEngineValue | None = None
-    sentences: list[ReviewSentence]
+    sentences: Annotated[list[ReviewSentence], Field(max_length=20)]
 
 
 class ReviewResultV1(Strict):
     schema_version: Literal["review.v1"]
-    rule_pack_version: str
-    items: list[ReviewItem]
-    needs_check: list[ReviewNeedsCheck]
-    sources: list[ReviewSource]
-    disclaimer_version: str
+    rule_pack_version: T_VERSION_MAX
+    items: Annotated[list[ReviewItem], Field(max_length=50)]
+    needs_check: Annotated[list[ReviewNeedsCheck], Field(max_length=50)]
+    sources: Annotated[list[ReviewSource], Field(max_length=100)]
+    disclaimer_version: T_VERSION_MAX
 
     @model_validator(mode="after")
     def _sources_resolve(self) -> ReviewResultV1:
@@ -350,30 +385,29 @@ class ReviewResultV1(Strict):
         return self
 
 
-def _max_len(limit: int) -> Any:
-    """zod `.max(n)`은 UTF-16 코드 단위로 센다. 같은 기준으로 맞춘다(한글은 1, 이모지는 2)."""
-
-    def check(value: str) -> str:
-        if len(value.encode("utf-16-le")) // 2 > limit:
-            raise ValueError(f"{limit}자 이하여야 합니다")
-        return value
-
-    return AfterValidator(check)
+AREA_M2_MAX = 1_000_000  # 1km² : 소형 건축 면적 입력으로는 충분히 큰 보수적 상한(제안)
+IntakeAnswer = (
+    Annotated[str, Field(max_length=300), _max_len(300)] | float | bool | Annotated[list[IdStr], Field(max_length=20)]
+)
 
 
 class IntakeChecklistAnswer(Strict):
-    question_id: Annotated[str, Field(min_length=1)]  # packages/program 체크리스트 문항 id(허용 목록은 normalize 노드)
-    answer: ChecklistAnswer
+    question_id: Annotated[
+        str, Field(min_length=1, max_length=ID_MAX), _max_len(ID_MAX)
+    ]  # packages/program 체크리스트 문항 id(허용 목록은 normalize 노드)
+    answer: IntakeAnswer
     confidence: Literal["high", "medium", "low"]
     evidence: Annotated[str, Field(max_length=120), _max_len(120)]  # 원문 인용(원문 포함 검사는 validate 노드)
 
 
 class IntakeRoom(Strict):
     name: Annotated[str, Field(max_length=40), _max_len(40)]
-    use: str  # 규칙 팩 용도 코드(허용 목록은 normalize 노드)
+    use: T_KEY_MAX  # 규칙 팩 용도 코드(허용 목록은 normalize 노드)
     count: Annotated[int, Field(ge=1, le=20), BeforeValidator(_int_like)]
-    target_area_m2: float | None  # 사용자가 말한 값만. 말하지 않았으면 null(면적은 packages/program이 계산)
-    area_evidence: str | None
+    target_area_m2: (
+        Annotated[float, Field(gt=0, le=AREA_M2_MAX)] | None
+    )  # 사용자가 말한 값만. 말하지 않았으면 null(면적은 packages/program이 계산)
+    area_evidence: Annotated[str, Field(max_length=120), _max_len(120)] | None  # evidence와 같은 120자
 
     @model_validator(mode="after")
     def _area_needs_evidence(self) -> IntakeRoom:
@@ -389,29 +423,29 @@ class IntakeMemo(Strict):
 
 class IntakeCandidateV1(Strict):
     schema_version: Literal["intake.v1"]
-    checklist_answers: list[IntakeChecklistAnswer]
-    rooms: list[IntakeRoom]
-    memo: list[IntakeMemo]
+    checklist_answers: Annotated[list[IntakeChecklistAnswer], Field(max_length=100)]
+    rooms: Annotated[list[IntakeRoom], Field(max_length=50)]
+    memo: Annotated[list[IntakeMemo], Field(max_length=20)]
 
 
 class LayoutZone(Strict):
-    id: str
+    id: IdStr
     kind: Literal["public", "private", "service", "wet"]
-    rooms: list[str]
+    rooms: Annotated[list[IdStr], Field(max_length=50)]
     preferred_side: Literal["N", "S", "E", "W", "entrance"] | None = None
 
 
 class LayoutAdjacency(Strict):
-    a: str
-    b: str
+    a: IdStr
+    b: IdStr
     relation: Literal["adjacent", "near", "apart", "door"]
     weight: Annotated[Literal[1, 2, 3], BeforeValidator(_no_bool)]
 
 
 class LayoutVariant(Strict):
-    label: str
-    zones: list[LayoutZone]
-    adjacency: list[LayoutAdjacency]
+    label: T_LABEL_MAX
+    zones: Annotated[list[LayoutZone], Field(max_length=20)]
+    adjacency: Annotated[list[LayoutAdjacency], Field(max_length=200)]
 
 
 class LayoutIntentV1(Strict):

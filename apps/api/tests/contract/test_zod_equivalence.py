@@ -67,7 +67,14 @@ def corpus_cases() -> list[Any]:
         for case in doc["cases"]:
             raw = json.dumps(case["value"], ensure_ascii=False)
             out.append(
-                pytest.param(doc["schema"], case["name"], case["expect"], raw, id=f"{doc['schema']}-{case['name']}")
+                pytest.param(
+                    doc["schema"],
+                    case["name"],
+                    case["expect"],
+                    raw,
+                    case.get("zod", case["expect"]),
+                    id=f"{doc['schema']}-{case['name']}",
+                )
             )
     return out
 
@@ -92,6 +99,13 @@ def normalize(node: Any, defs: dict[str, Any]) -> Any:
         if key in _DROP_KEYS or key == "$defs":
             continue
         out[key] = normalize(value, defs)
+
+    # 안전 정수 범위 제한은 pydantic 쪽에만 있다(알려진 차이, 코퍼스 `unsafe_*` 사례가 동작 차이를 고정한다).
+    if out.get("type") == "integer":
+        if out.get("maximum") == S.SAFE_INT:
+            out.pop("maximum")
+        if out.get("minimum") == -S.SAFE_INT:
+            out.pop("minimum")
 
     if "const" in out:
         out["enum"] = [out.pop("const")]
@@ -172,8 +186,8 @@ def test_every_model_has_corpus() -> None:
     assert {doc["schema"] for doc in load_corpus()} == set(MODELS)
 
 
-@pytest.mark.parametrize(("schema", "case", "expect", "raw"), corpus_cases())
-def test_corpus_pydantic_matches_expectation(schema: str, case: str, expect: str, raw: str) -> None:
+@pytest.mark.parametrize(("schema", "case", "expect", "raw", "zod_expect"), corpus_cases())
+def test_corpus_pydantic_matches_expectation(schema: str, case: str, expect: str, raw: str, zod_expect: str) -> None:
     model = MODELS[schema]
     try:
         model.model_validate_json(raw)
@@ -183,8 +197,8 @@ def test_corpus_pydantic_matches_expectation(schema: str, case: str, expect: str
     assert accepted == (expect == "accept"), f"{schema}/{case}"
 
 
-@pytest.mark.parametrize(("schema", "case", "expect", "raw"), corpus_cases())
-def test_corpus_zod_and_pydantic_agree(schema: str, case: str, expect: str, raw: str) -> None:
+@pytest.mark.parametrize(("schema", "case", "expect", "raw", "zod_expect"), corpus_cases())
+def test_corpus_zod_and_pydantic_agree(schema: str, case: str, expect: str, raw: str, zod_expect: str) -> None:
     if schema in PENDING_ZOD:
         pytest.skip("zod 정의 없음")
     zod_ok = zod_dump()["verdicts"][schema][case]
@@ -193,8 +207,12 @@ def test_corpus_zod_and_pydantic_agree(schema: str, case: str, expect: str, raw:
         py_ok = True
     except ValidationError:
         py_ok = False
-    assert zod_ok == py_ok, f"{schema}/{case}: zod={zod_ok} pydantic={py_ok}"
-    assert zod_ok == (expect == "accept"), f"{schema}/{case}: 기대와 다름(zod 쪽 결함 후보)"
+    # 알려진 차이(코퍼스의 `zod` 키)가 없는 사례는 양쪽이 같아야 한다. 차이가 있는 사례는 차이 자체를 고정한다:
+    # zod가 고쳐지면(차이가 사라지면) 이 단언이 깨져 코퍼스의 `zod` 키를 지우게 한다.
+    assert zod_ok == (zod_expect == "accept"), f"{schema}/{case}: zod 판정이 코퍼스 기록과 다름"
+    assert py_ok == (expect == "accept"), f"{schema}/{case}: pydantic 판정이 기대와 다름"
+    if zod_expect == expect:
+        assert zod_ok == py_ok, f"{schema}/{case}: zod={zod_ok} pydantic={py_ok}"
 
 
 def test_all_models_forbid_extra_fields_everywhere() -> None:

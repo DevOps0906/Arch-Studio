@@ -471,6 +471,3234 @@
     ],
     "disclaimer_version": "2026-10"
    }
+  },
+  {
+   "name": "sentence_1000",
+   "expect": "accept",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "sentence_1001",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "sentence_emoji_utf16_overflow",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "needs_check_text_1001",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "sentence_source_ids_21",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1",
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "item_key_65",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "sentences_21",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       },
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "items_51",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     },
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "needs_check_51",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     },
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "sources_100",
+   "expect": "accept",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s0",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s2",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s3",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s4",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s5",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s6",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s7",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s8",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s9",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s10",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s11",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s12",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s13",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s14",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s15",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s16",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s17",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s18",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s19",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s20",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s21",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s22",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s23",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s24",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s25",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s26",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s27",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s28",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s29",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s30",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s31",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s32",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s33",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s34",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s35",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s36",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s37",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s38",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s39",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s40",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s41",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s42",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s43",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s44",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s45",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s46",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s47",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s48",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s49",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s50",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s51",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s52",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s53",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s54",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s55",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s56",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s57",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s58",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s59",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s60",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s61",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s62",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s63",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s64",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s65",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s66",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s67",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s68",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s69",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s70",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s71",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s72",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s73",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s74",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s75",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s76",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s77",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s78",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s79",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s80",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s81",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s82",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s83",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s84",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s85",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s86",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s87",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s88",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s89",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s90",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s91",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s92",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s93",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s94",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s95",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s96",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s97",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s98",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s99",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "sources_101",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s0",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s2",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s3",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s4",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s5",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s6",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s7",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s8",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s9",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s10",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s11",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s12",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s13",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s14",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s15",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s16",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s17",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s18",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s19",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s20",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s21",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s22",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s23",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s24",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s25",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s26",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s27",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s28",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s29",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s30",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s31",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s32",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s33",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s34",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s35",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s36",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s37",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s38",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s39",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s40",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s41",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s42",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s43",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s44",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s45",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s46",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s47",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s48",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s49",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s50",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s51",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s52",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s53",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s54",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s55",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s56",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s57",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s58",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s59",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s60",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s61",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s62",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s63",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s64",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s65",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s66",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s67",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s68",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s69",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s70",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s71",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s72",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s73",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s74",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s75",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s76",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s77",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s78",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s79",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s80",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s81",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s82",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s83",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s84",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s85",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s86",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s87",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s88",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s89",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s90",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s91",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s92",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s93",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s94",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s95",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s96",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s97",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s98",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s99",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s100",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "source_id_129",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "source_law_201",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "engine_unit_17",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "uuuuuuuuuuuuuuuuu"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "disclaimer_version_65",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv"
+   }
   }
  ]
 }

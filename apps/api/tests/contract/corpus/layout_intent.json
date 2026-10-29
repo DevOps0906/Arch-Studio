@@ -1371,6 +1371,2100 @@
      }
     ]
    }
+  },
+  {
+   "name": "label_41",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "label_40",
+   "expect": "accept",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "zone_id_129",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "zone_rooms_51",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r0",
+         "r1",
+         "r2",
+         "r3",
+         "r4",
+         "r5",
+         "r6",
+         "r7",
+         "r8",
+         "r9",
+         "r10",
+         "r11",
+         "r12",
+         "r13",
+         "r14",
+         "r15",
+         "r16",
+         "r17",
+         "r18",
+         "r19",
+         "r20",
+         "r21",
+         "r22",
+         "r23",
+         "r24",
+         "r25",
+         "r26",
+         "r27",
+         "r28",
+         "r29",
+         "r30",
+         "r31",
+         "r32",
+         "r33",
+         "r34",
+         "r35",
+         "r36",
+         "r37",
+         "r38",
+         "r39",
+         "r40",
+         "r41",
+         "r42",
+         "r43",
+         "r44",
+         "r45",
+         "r46",
+         "r47",
+         "r48",
+         "r49",
+         "r50"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "zones_21",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z0",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z3",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z4",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z5",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z6",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z7",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z8",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z9",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z10",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z11",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z12",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z13",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z14",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z15",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z16",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z17",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z18",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z19",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z20",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "adjacency_201",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       },
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "name": "adjacency_id_129",
+   "expect": "reject",
+   "value": {
+    "schema_version": "layout_intent.v1",
+    "variants": [
+     {
+      "label": "A",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "B",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     },
+     {
+      "label": "C",
+      "zones": [
+       {
+        "id": "z1",
+        "kind": "public",
+        "rooms": [
+         "r1",
+         "r2"
+        ],
+        "preferred_side": "S"
+       },
+       {
+        "id": "z2",
+        "kind": "private",
+        "rooms": [
+         "r3"
+        ]
+       }
+      ],
+      "adjacency": [
+       {
+        "a": "r1",
+        "b": "r2",
+        "relation": "adjacent",
+        "weight": 3
+       }
+      ]
+     }
+    ]
+   }
   }
  ]
 }

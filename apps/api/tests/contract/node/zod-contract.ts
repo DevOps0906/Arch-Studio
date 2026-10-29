@@ -25,6 +25,8 @@ export const ZOD_SCHEMAS: Record<string, SafeParser> = {
 export interface CorpusCase {
   name: string;
   expect: "accept" | "reject";
+  /** zod가 pydantic과 다르게 판정하는 알려진 차이(예: 안전 정수 범위). 없으면 expect와 같다. 후속으로 zod를 고치면 지운다. */
+  zod?: "accept" | "reject";
   value: unknown;
 }
 export interface CorpusFile {

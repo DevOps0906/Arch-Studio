@@ -90,5 +90,7 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def _unhandled(_: Request, exc: Exception) -> JSONResponse:
         # 예외 종류만 기록한다(메시지·스택에 토큰·프롬프트가 섞일 수 있다).
+        # 주의: Starlette ServerErrorMiddleware는 이 핸들러 뒤에도 예외를 다시 던지고 uvicorn이 exc_info
+        # 트레이스백을 기록한다. 그 경로는 app.log의 레코드 팩토리(예외 메시지 제거)가 막는다.
         logger.error("unhandled error: %s", type(exc).__name__)
         return error_response(500, "INTERNAL", "내부 오류가 발생했습니다")
