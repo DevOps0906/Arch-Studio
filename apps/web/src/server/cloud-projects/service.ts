@@ -257,6 +257,7 @@ export async function handleCloudUploadUrl(req: Request, id: string, deps: Cloud
     const existing = await db(() => repo.find(session.orgId, id));
     if (!existing) {
       const usage = await db(() => repo.usage(session.orgId));
+      if (!Number.isSafeInteger(usage.max) || !Number.isSafeInteger(usage.count)) throw new CloudApiError("internal");
       if (usage.count >= usage.max) throw new CloudApiError("AR040", { max: usage.max });
     }
     const headers = new Headers({ "content-type": "application/json" });
