@@ -8,6 +8,10 @@
   },
   "scripts": {
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "zod": "3.25.76"
   }
 }

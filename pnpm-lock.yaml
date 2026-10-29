@@ -64,7 +64,11 @@ importers:
         specifier: 4.3.3
         version: 4.3.3
 
-  packages/domain: {}
+  packages/domain:
+    dependencies:
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
 
   packages/drafting: {}
 
