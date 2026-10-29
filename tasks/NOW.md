@@ -35,3 +35,7 @@
 - 운영 전 차단 추가: 080 래스터화는 시간 초과 후에도 작업이 계속됨(sidecar 프로세스 전환 후속), 031 DB(RPC 직접 호출·로고 버킷), 035 F1 제공자 쿼터, 034→073 계약(upload-url 폴더 키), 공용 레이트리밋 저장소.
 - 실기 필요: 036 GPU fps 측정(spikes/modeler-perf/README.md).
 - 다음: 036 본 구현 병합 → 030(080 완료로 해제), 028, 039, 056, 027.
+
+## 갱신 (036 완료)
+- 036 본 구현 병합·완료. 사람 몫: 실기 GPU fps 측정. 결정 필요: 02_ARCHITECTURE 2.4절·04_API 4.7.5절에 mesh/preview 레인·mass_meshes/mass_excess op 추가(제안 문안은 tasks/logs/AR-06-036.md).
+- 높음: 앱에 규칙 팩 공급 경로 없음 → 판정·엔벨로프가 AR050으로 끝남(042/RulePackProvider 필요). 037 문구에서 AR050이 원인과 다르게 읽힘 → 오류 코드 세분화 필요.
