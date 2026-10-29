@@ -33,3 +33,26 @@
   magic-string 0.30.21(MIT), fast-xml-parser 5.11.2(MIT), convert-source-map 2.0.0(MIT), @jridgewell/*(MIT), ndarray 계열(MIT),
   semver 7.8.5(ISC), detect-libc 2.1.2(Apache-2.0), sharp 0.35.5(Apache-2.0) + @img/sharp-* 네이티브 바이너리(Apache-2.0 AND **LGPL-3.0-or-later**, libvips).
   설치형(Tauri) 패키징에 node_modules를 넣지 않으면 배포물에 포함되지 않는다 — 포함 여부는 패키징 단계에서 확인한다.
+
+## @arch-studio/drafting — 번들 글꼴 (AR-06-022)
+- **Noto Sans KR Regular(400) 부분 집합** `packages/drafting/fonts/NotoSansKR-Regular.subset.ttf` — SIL Open Font License 1.1.
+  Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. 라이선스 전문 `packages/drafting/fonts/OFL.txt`(글꼴 파일과 함께 배포물에 넣는다).
+  출처: npm `@expo-google-fonts/noto-sans-kr@0.4.4`(Google Fonts notosanskr v40, 원본 sha256 `b4a747e78805bc25b610dcfc3003cb5fb2e2ec034763774b24216ed15889eef4`).
+  수정: fonttools `pyftsubset`으로 현대 한글 음절 11,172자 + 기호만 남김(글리프 이름·이름 표는 원본 그대로; 예약 이름 'Source'는 글꼴 이름에 쓰이지 않음 — `fonts/README.md`). 수정본도 OFL로 배포한다. 글꼴 단독 판매 금지.
+  jsPDF가 PDF에 글꼴을 임베드(쓴 글자만 부분 집합)하는 것도 OFL이 허용한다.
+
+## @arch-studio/drafting — PDF (jsPDF, AR-06-022 갱신)
+- jspdf 4.2.1 — MIT License, Copyright (c) 2010-2025 James Hall, yWorks GmbH 외. https://github.com/parallax/jsPDF
+- 함께 설치되는 전이 의존성(drafting 런타임 트리, `pnpm licenses list --prod` 2026-10-29): fflate 0.8.3(MIT), fast-png(MIT)·pako(MIT AND Zlib)·iobuffer(MIT),
+  @babel/runtime(MIT), 선택 의존성 canvg·core-js·html2canvas(MIT) 및 그 하위(raf, rgbcolor, stackblur-canvas, svg-pathdata, text-segmentation, utrie, css-line-break, base64-arraybuffer, performance-now, regenerator-runtime: MIT),
+  dompurify(MPL-2.0 OR Apache-2.0 — Apache-2.0 선택). 엔진은 jsPDF의 html·canvas 기능을 쓰지 않는다.
+
+## @arch-studio/drafting — PNG (resvg, AR-06-022)
+- `@resvg/resvg-js` 2.6.2 + 플랫폼 네이티브 바이너리(`@resvg/resvg-js-<플랫폼>` 12종, 설치 때 현재 플랫폼 것만) — **MPL-2.0**(Mozilla Public License 2.0).
+  Copyright (c) yisibl 외 resvg-js 기여자. 내부 Rust 렌더러 resvg 0.34.0(MPL-2.0, Copyright (c) Yevhenii Reizner)·tiny-skia 0.10.0(BSD-3-Clause)·fontdb 0.14.1(MIT)·rustybuzz 0.7.0(MIT)·ttf-parser 0.18.1(MIT OR Apache-2.0) 등을 정적 링크한 바이너리다.
+- **MPL-2.0 고지·소스 위치**: 우리는 resvg·resvg-js를 수정하지 않고 npm 배포 바이너리를 그대로 쓴다. MPL-2.0은 파일 단위 카피레프트라 수정하지 않은 바이너리 배포는 라이선스 고지와 소스 위치 안내로 충족한다(법률 자문 아님).
+  소스: https://github.com/yisibl/resvg-js (태그 v2.6.2) · resvg 원본 https://github.com/RazrFalcon/resvg (0.34.0; resvg-js는 `zimond/resvg` rev 3495d870 포크를 [patch.crates-io]로 사용) · MPL-2.0 전문 https://www.mozilla.org/MPL/2.0/ .
+  우리가 resvg 소스를 수정하게 되면(후속 Rust 작업 포함) 수정한 MPL 파일의 소스를 같은 라이선스로 공개해야 한다.
+- 배포 위치: **웹 서버·작업 워커·CI·샘플 생성만**(Node). 설치형(Tauri)에는 npm 바이너리가 들어가지 않는다 — 설치형은 후속 AR-06-080(Rust resvg 크레이트 직접 사용)에서 별도 고지한다.
+- Rust 전이 크레이트 전체의 라이선스 목록(`cargo about` 등)은 이번에 만들지 않았다 — 설치형 Rust 작업(AR-06-080)에서 만든다. npm 쪽 조사: `pnpm licenses list --prod`에서 GPL·AGPL·LGPL 없음.
+- 참고: 앞서 검토한 sharp(libvips LGPL-3.0)는 대표 결정으로 PNG에 쓰지 않는다. `@arch-studio/geometry`의 manifold-3d 전이 의존성으로만 설치되어 있다(위 항목).

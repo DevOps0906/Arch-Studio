@@ -1,7 +1,7 @@
 // PDF 작성기·TTF 파서·글꼴 폭 표·PNG 자리 테스트(AR-06-022).
 // PDF는 바이트 골든을 두지 않는다: jsPDF 버전이 바뀌면 같은 그림이어도 바이트가 바뀐다(객체 번호·정밀도·Producer).
 // 대신 구조(쪽 수·쪽 크기·문자열·메타데이터)와 결정성(같은 입력 2회·별개 프로세스·다른 TZ에서 바이트 동일, 압축 켬/끔)을 본다.
-// 한글 글꼴: 저장소에 글꼴 파일을 넣지 않는다. ARCH_TEST_KR_FONT(TTF 경로) 또는 시스템 NanumGothic이 있으면 시험하고 없으면 건너뛴다.
+// 한글 글꼴: 번들 Noto Sans KR 부분 집합(fonts/, OFL-1.1)을 loadBundledFont()로 읽어 시험한다(건너뛰지 않는다). 시스템 글꼴은 파서 교차 확인에만 쓴다.
 // eslint-disable-next-line no-restricted-imports -- 테스트는 Node 테스트 러너만 쓴다
 import assert from "node:assert/strict";
 // eslint-disable-next-line no-restricted-imports -- 별개 프로세스 결정성 시험
@@ -17,7 +17,6 @@ import { test } from "node:test";
 import fc from "fast-check";
 import { CASES } from "../../../golden/_harness/cases.ts";
 import { DISCLAIMER, DraftingError, type SheetModel } from "../../index.ts";
-import { writePng } from "../png/index.ts";
 import {
   advanceOf,
   base64,
@@ -32,6 +31,8 @@ import {
   type FontMetrics,
   type TtfInfo,
 } from "./index.ts";
+import { BUNDLED_FONT_FAMILY } from "./bundled.ts";
+import { loadBundledFont, loadBundledMetrics } from "./node.ts";
 import { buildTestTtf } from "./test-ttf.ts";
 
 const sheet = (id: string): SheetModel => (CASES.find((c) => c.id === id) as (typeof CASES)[number]).build().sheet;
@@ -42,14 +43,8 @@ function firstExisting(paths: Array<string | undefined>): Uint8Array | null {
   for (const p of paths) if (p !== undefined && p !== "" && existsSync(p)) return new Uint8Array(readFileSync(p));
   return null;
 }
-const KR = firstExisting([
-  // eslint-disable-next-line no-restricted-properties -- 테스트는 한글 글꼴 경로를 환경 변수로 받는다
-  process.env.ARCH_TEST_KR_FONT,
-  "/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
-  "/usr/share/fonts/truetype/nanum/NanumGothic-Regular.ttf",
-  "/Library/Fonts/NanumGothic.ttf",
-  "C:/Windows/Fonts/NanumGothic.ttf",
-]);
+const BUNDLED = loadBundledFont();
+const KR: Uint8Array = BUNDLED.ttf;
 const LATIN = firstExisting([
   "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
   "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
@@ -179,16 +174,42 @@ test("라틴 TTF 주입(시스템 글꼴이 있을 때): 임베드(FontFile2·Id
   assert.equal(sha(writePdf([sheet("writer-site-a3-basic")], { font: { family: "TestLatin", ttf } }).bytes), sha(writePdf([sheet("writer-site-a3-basic")], { font: { family: "TestLatin", ttf } }).bytes));
 });
 
-test("한글 TTF 주입(ARCH_TEST_KR_FONT 또는 시스템 NanumGothic이 있을 때): 경고 0, 임베드, 결정적", { skip: KR === null && "한글 TTF 없음" }, () => {
-  const ttf = KR as Uint8Array;
+test("번들 한글 글꼴(Noto Sans KR 부분 집합) 주입: 경고 0, 임베드, 결정적, 폭 표와 일치", () => {
+  const ttf = KR;
+  const family = BUNDLED_FONT_FAMILY;
   const sheets = [sheet("writer-korean-long-names"), sheet("writer-mtext-escapes"), sheet("writer-site-a3-watermark-fallback")];
-  const r = writePdf(sheets, { font: { family: "NanumGothic", ttf } });
-  assert.deepEqual(r.font, { family: "NanumGothic", embedded: true });
+  const metrics = loadBundledMetrics();
+  const r = writePdf(sheets, { font: { family, ttf }, metrics });
+  assert.deepEqual(r.font, { family, embedded: true });
   assert.deepEqual(r.warnings, []);
   assert.equal(r.page_count, 3);
-  assert.equal(sha(writePdf(structuredClone(sheets), { font: { family: "NanumGothic", ttf } }).bytes), sha(r.bytes));
-  // 부분 집합 임베드: 원본 글꼴보다 훨씬 작다.
+  assert.equal(sha(writePdf(structuredClone(sheets), { font: { family, ttf }, metrics }).bytes), sha(r.bytes));
+  // PDF 글꼴 객체와 한글 글리프가 들어갔다(압축 끔으로 구조 확인).
+  const t = latin1(writePdf(sheets, { compress: false, font: { family, ttf }, metrics }).bytes);
+  assert.ok(t.includes("/FontFile2") && t.includes("/Identity-H") && t.includes("NotoSansKR"));
+  // 부분 집합 임베드: 번들 파일(약 2.7MB)보다 훨씬 작다.
   assert.ok(r.bytes.length < ttf.length / 4, `${r.bytes.length} / ${ttf.length}`);
+  // 폭 표 = 글꼴 파일(글꼴만 바꾸고 표를 안 만든 경우 감지).
+  assert.equal(metrics.source.bytes, ttf.byteLength);
+  assert.equal(metrics.source.sha256, createHash("sha256").update(ttf).digest("hex"));
+});
+
+test("번들 글꼴: 한글 음절 11,172자·㎡·×·±가 모두 있고, 부분 집합 밖 글자(한자)는 없는 글자 경고(AR057)", () => {
+  const p = parseTtf(KR);
+  assert.ok(p.ok);
+  const f = (p as { ok: true; font: TtfInfo }).font;
+  assert.equal(f.family, "Noto Sans KR");
+  for (let cp = 0xac00; cp <= 0xd7a3; cp++) assert.ok(f.glyph(cp) !== 0, `U+${cp.toString(16)}`);
+  for (const ch of "㎡×±²°→㎥") assert.ok(f.glyph(ch.codePointAt(0) as number) !== 0, ch);
+  assert.equal(f.glyph(0x4e00), 0, "한자는 부분 집합 밖");
+  const s = structuredClone(sheet("writer-site-a3-basic"));
+  s.paper_prims.push({ layer: "A-ANNO-TEXT", key: "t:hanja", t: "text", at: [1000, 1000], h: 250, s: "一", align: "l" });
+  const r = writePdf([s], { font: { family: BUNDLED_FONT_FAMILY, ttf: KR } });
+  assert.ok(r.warnings.some((w) => w.code === "AR057" && w.detail.includes("1종")), JSON.stringify(r.warnings));
+});
+
+test("loadBundledFont: 폭 표와 크기가 다르면 font_unavailable", () => {
+  assert.throws(() => loadBundledFont(new URL("../../../golden/", import.meta.url)), (e: unknown) => e instanceof OutputError && e.failure === "font_unavailable");
 });
 
 test("base64 = Buffer base64(임의 바이트)", () => {
@@ -217,7 +238,7 @@ test("TTF 파서: head·hhea·maxp·hmtx·cmap(형식 4·12)·name", () => {
   assert.equal(parseTtf(buildTestTtf({ tag: 0x74746366 })).ok, false);
 });
 
-test("시스템 TTF 파서 교차 확인(있을 때): 'A' 글리프·폭이 0이 아니고 한글 글꼴은 '가'가 있다", { skip: LATIN === null && KR === null && "시스템 TTF 없음" }, () => {
+test("시스템 TTF 파서 교차 확인(있을 때): 'A' 글리프·폭이 0이 아니고 한글 글꼴은 '가'가 있다", { skip: LATIN === null && "시스템 라틴 TTF 없음" }, () => {
   for (const ttf of [LATIN, KR]) {
     if (ttf === null) continue;
     const p = parseTtf(ttf);
@@ -245,18 +266,12 @@ test("글꼴 폭 표: 같은 폭 구간 병합, 없는 글자 제외, JSON 결�
   assert.throws(() => buildFontMetrics(f, src, [[5, 1]]), DraftingError);
 });
 
-test("PNG: 미구현 → OutputError(AR056, png_not_implemented)", () => {
-  assert.throws(
-    () => writePng(sheet("writer-site-a3-basic")),
-    (e: unknown) => e instanceof OutputError && e.user_code === "AR056" && e.failure === "png_not_implemented",
-  );
-});
-
-test("fonts/*.metrics.json: 형식·정렬·겹침 없음, 한글 음절·ASCII 포함, 글꼴 파일은 없다", () => {
+test("fonts/: 번들 글꼴 1개(Noto Sans KR 부분 집합)·OFL.txt·폭 표, 폭 표 형식·정렬·겹침 없음, 한글 음절·ASCII 포함", () => {
   const dir = new URL("../../../fonts/", import.meta.url);
   const files = readdirSync(dir);
-  assert.ok(!files.some((f) => /\.(ttf|otf|ttc|woff2?)$/i.test(f)), "글꼴 파일 커밋 금지");
-  assert.ok(files.includes("README.md"));
+  assert.deepEqual(files.filter((f) => /\.(ttf|otf|ttc|woff2?)$/i.test(f)), ["NotoSansKR-Regular.subset.ttf"], "번들 글꼴은 이 파일 하나");
+  assert.ok(files.includes("README.md") && files.includes("OFL.txt"));
+  assert.match(readFileSync(new URL("OFL.txt", dir), "utf8"), /SIL OPEN FONT LICENSE Version 1\.1/);
   for (const f of files.filter((n) => n.endsWith(".metrics.json"))) {
     const text = readFileSync(new URL(f, dir), "utf8");
     const m = JSON.parse(text) as FontMetrics;

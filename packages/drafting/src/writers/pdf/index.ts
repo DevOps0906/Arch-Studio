@@ -21,3 +21,10 @@ export {
   measureText,
   type FontMetrics,
 } from "./metrics.ts";
+export {
+  BUNDLED_FONT_FAMILY,
+  BUNDLED_FONT_FILE,
+  BUNDLED_FONT_LICENSE_FILE,
+  BUNDLED_FONT_NAME,
+  BUNDLED_METRICS_FILE,
+} from "./bundled.ts";

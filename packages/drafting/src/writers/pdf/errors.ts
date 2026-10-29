@@ -3,7 +3,8 @@
 // (후속: sheet 소유자가 "OUTPUT_FAILED"를 추가하면 바꾼다).
 import { DraftingError } from "../../sheet/errors.ts";
 
-export type OutputFailure = "pdf_failed" | "png_not_implemented";
+/** pdf_failed·png_failed = 작성기가 파일을 만들지 못함, font_unavailable = 번들 글꼴·폭 표를 읽지 못하거나 서로 맞지 않음. */
+export type OutputFailure = "pdf_failed" | "png_failed" | "font_unavailable";
 
 export class OutputError extends DraftingError {
   /** 사용자 안내 코드(PRD 오류 표). */

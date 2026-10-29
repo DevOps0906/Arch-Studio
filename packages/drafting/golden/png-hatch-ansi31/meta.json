@@ -1,0 +1,31 @@
+{
+  "case_id": "png-hatch-ansi31",
+  "source_case": "writer-hatch-ansi31",
+  "note": "ANSI31·SOLID 해치(채움·불투명도·가는 선 안티앨리어싱)",
+  "writer_version": "png-1.0.0",
+  "renderer": {
+    "npm": "@resvg/resvg-js@2.6.2",
+    "resvg": "0.34.0",
+    "resvg_fork": "github.com/zimond/resvg rev 3495d870 (resvg-js 2.6.2 Cargo.toml [patch.crates-io])",
+    "tiny_skia": "0.10.0",
+    "fontdb": "0.14.1",
+    "rustybuzz": "0.7.0",
+    "ttf_parser": "0.18.1"
+  },
+  "options": {
+    "width_px": 600,
+    "dpi": 150,
+    "fit_to": "width",
+    "font_file": "fonts/NotoSansKR-Regular.subset.ttf",
+    "font_family": "'Noto Sans KR', sans-serif",
+    "background": "#ffffff",
+    "shapeRendering": 2,
+    "textRendering": 2,
+    "imageRendering": 0,
+    "loadSystemFonts": false
+  },
+  "width_px": 600,
+  "height_px": 424,
+  "png_sha256": "3a0a2c0d2269de47ab263d4b557bb853bf7b4ee2e42b78591bba1b55446f483e",
+  "pixels_sha256": "c0dfd514591a17f990d481ddbd2bdd8c65f9b79a7bb7c04ee283ad427ef550d0"
+}

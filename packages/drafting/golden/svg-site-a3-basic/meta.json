@@ -2,7 +2,7 @@
   "case_id": "svg-site-a3-basic",
   "source_case": "writer-site-a3-basic",
   "note": "배치도 A3 가로 자동 축척, 대지·매스·실·치수·라벨",
-  "writer_version": "svg-1.0.0",
+  "writer_version": "svg-1.1.0",
   "engine_version": "0.0.0",
   "features": [
     "AR-F-028",

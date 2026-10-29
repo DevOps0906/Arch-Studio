@@ -2,7 +2,7 @@
   "case_id": "svg-many-masses",
   "source_case": "writer-many-masses",
   "note": "매스 9·실 20",
-  "writer_version": "svg-1.0.0",
+  "writer_version": "svg-1.1.0",
   "engine_version": "0.0.0",
   "features": [
     "AR-F-028",

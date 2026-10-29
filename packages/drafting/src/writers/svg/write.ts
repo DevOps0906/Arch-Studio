@@ -1,7 +1,7 @@
 // SVG 작성기(AR-F-038 "SVG(화면 미리보기와 같은 결과)", 02_ARCHITECTURE.md 2.3절). 결정적 순수 함수: 같은 입력 → 같은 바이트.
 // 화면 미리보기와 내보내기는 이 함수 하나를 쓴다(따로 그리는 경로 없음). 표준 레이어마다 <g id="레이어명">(16개 전부, 빈 그룹 포함),
 // layer_map은 적용하지 않는다(DXF 전용, 2.3절 "레이어"). 단위: viewBox 1 = 모델 mm(scene.ts 좌표 규약), width·height는 용지 mm.
-// 한글 글꼴은 font-family 이름만 참조하고 글꼴 파일은 넣지 않는다. 줄 끝 \n, XML 선언 없음(HTML 인라인 삽입과 파일이 같은 바이트).
+// 한글 글꼴은 font-family 이름만 참조하고 글꼴 파일은 넣지 않는다(번들 Noto Sans KR). 줄 끝 \n, XML 선언 없음(HTML 인라인 삽입과 파일이 같은 바이트).
 import { assertDisclaimer } from "../../titleblock/index.ts";
 import { DraftingError } from "../../sheet/errors.ts";
 import type { SheetModel } from "../../sheet/types.ts";
@@ -11,13 +11,12 @@ import { buildScene, MTEXT_LINE_PITCH, type Pt, type SceneItem } from "./scene.t
 import { HATCH_LINE_WIDTH, layerStyle, rgbHex, SOLID_OPACITY, TEXT_EM_PER_HEIGHT } from "./style.ts";
 
 /** 출력 형식 버전. SVG 골든(golden/svg-*)은 이 값을 올릴 때만 갱신한다(골든 테스트가 강제). */
-export const SVG_WRITER_VERSION = "svg-1.0.0";
+export const SVG_WRITER_VERSION = "svg-1.1.0";
 
 /**
- * 기본 font-family(이름만). 제품 번들 글꼴은 사람 확인 대기(fonts/README.md)라 OFL 후보 이름 + 일반 sans-serif.
- * 화면은 앱에 넣은 글꼴을 이 이름으로 등록해 쓴다.
+ * 기본 font-family(이름만). 번들 글꼴 = Noto Sans KR(SIL OFL 1.1, fonts/README.md). 화면은 앱에 넣은 같은 글꼴 파일을 이 이름으로 등록해 쓴다.
  */
-export const DEFAULT_SVG_FONT_FAMILY = "NanumGothic, 'Noto Sans KR', sans-serif";
+export const DEFAULT_SVG_FONT_FAMILY = "'Noto Sans KR', sans-serif";
 
 /** 용지 바탕(흰색). 출력 상수이고 UI 토큰이 아니다. */
 const PAPER_FILL = "#ffffff";

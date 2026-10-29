@@ -1,6 +1,9 @@
 // 글꼴 폭 표 생성(AR-06-022, 빌드 시 실행). TTF → packages/drafting/fonts/<이름>.metrics.json(결정적: 같은 글꼴 → 같은 바이트).
 // 파서·표 형식은 packages/drafting/src/writers/pdf/{ttf,metrics}.ts(외부 의존성 없음, hmtx·cmap 직접 해석).
-// 글꼴 파일 자체는 저장소에 넣지 않는다(packages/drafting/fonts/README.md). 표만 커밋하고, CI는 --check로 표가 글꼴과 맞는지 본다.
+// 번들 글꼴(Noto Sans KR 부분 집합, OFL-1.1)과 표를 함께 커밋한다(packages/drafting/fonts/README.md). CI는 --check로 표가 글꼴과 맞는지 본다.
+//
+// 번들 표 재생성·확인(저장소 루트에서):
+//   node scripts/font-metrics/generate.ts packages/drafting/fonts/NotoSansKR-Regular.subset.ttf --name NotoSansKR [--check]
 //
 // 사용(저장소 루트에서, Node 22.18+ TS 직접 실행):
 //   node scripts/font-metrics/generate.ts <글꼴.ttf> [--out <경로>] [--name <표 이름>]
