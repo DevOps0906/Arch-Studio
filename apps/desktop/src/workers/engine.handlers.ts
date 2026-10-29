@@ -21,6 +21,10 @@ export function createEngineHandlers(store: RulePackStore): Pick<RuntimeOptions,
   return {
     handlers: { judge: judgeHandler, suggest_mass: notImplemented, validate_layout: notImplemented },
     control: (req) => {
+      if (req.unavailable !== undefined) {
+        store.markUnavailable(req.unavailable);
+        return { engine_version: ENGINE_VERSION, result: { unavailable: req.unavailable } };
+      }
       const { reused } = store.load(req.version, req.sha256, req.pack);
       return { engine_version: ENGINE_VERSION, result: { version: req.version, reused } };
     },

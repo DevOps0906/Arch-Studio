@@ -19,7 +19,26 @@ export function isLatestOnly(lane: Lane): boolean {
   return LATEST_ONLY_LANES.includes(lane);
 }
 
-export type LocalErrorCode = "AR050" | "AR051" | "AR052" | "AR053" | "AR054" | "AR055" | "AR056" | "AR057" | "AR058" | "AR059";
+/**
+ * 로컬 오류 코드(04_API.md 7.3절). AR063~065는 AR-06-042에서 AR050(모델 무효)과 갈라낸 규칙 팩 공급 상태:
+ * AR063 설치된 팩 없음, AR064 팩 검증 실패(서명·해시·형식, 디스크 변조 포함), AR065 팩 자격 없음(라이선스 만료·자격 밖).
+ * AR062는 029 제안(DXF 파싱 실패)에 남겨 둔다.
+ */
+export type LocalErrorCode =
+  | "AR050"
+  | "AR051"
+  | "AR052"
+  | "AR053"
+  | "AR054"
+  | "AR055"
+  | "AR056"
+  | "AR057"
+  | "AR058"
+  | "AR059"
+  | RulePackUnavailableCode;
+
+export const RULE_PACK_UNAVAILABLE_CODES = ["AR063", "AR064", "AR065"] as const;
+export type RulePackUnavailableCode = (typeof RULE_PACK_UNAVAILABLE_CODES)[number];
 
 /** op → 레인. load_rule_pack·cancel 은 레인이 없는 제어 메시지다. */
 export const OP_LANE = {
@@ -42,7 +61,9 @@ export interface Envelope {
 }
 
 export type EngineRequest =
-  | { op: "load_rule_pack"; req_id: string; version: string; sha256: string; pack: unknown }
+  // 팩 공급(AR-06-042): 셸이 Rust `rule_pack_load`로 서명·자격을 확인한 팩을 넣거나, 못 넣는 이유(`unavailable`)를 알린다.
+  // `unavailable`이 있으면 워커는 받은 팩을 모두 비우고 판정·엔벨로프 요청에 그 코드로 답한다.
+  | { op: "load_rule_pack"; req_id: string; version: string; sha256: string; pack: unknown; unavailable?: RulePackUnavailableCode }
   | { op: "judge"; req_id: string; lane: "judge"; seq: number; model_rev: string; model: DesignModelV1; pending_changes?: number }
   | { op: "suggest_mass"; req_id: string; lane: "suggest"; seq: number; model: DesignModelV1; targets: unknown }
   | { op: "validate_layout"; req_id: string; lane: "layout"; seq: number; model: DesignModelV1; floor_id: string }
@@ -95,6 +116,10 @@ export function parseRequest(raw: unknown): ParseResult {
   const op = r.op;
   if (op === "cancel") return { ok: true, request: { op: "cancel", req_id } };
   if (op === "load_rule_pack") {
+    if (r.unavailable !== undefined) {
+      if (!(RULE_PACK_UNAVAILABLE_CODES as readonly unknown[]).includes(r.unavailable)) return { ok: false, req_id, detail: "load_rule_pack: unavailable 코드가 올바르지 않습니다" };
+      return { ok: true, request: { op: "load_rule_pack", req_id, version: "", sha256: "", pack: null, unavailable: r.unavailable as RulePackUnavailableCode } };
+    }
     if (typeof r.version !== "string" || typeof r.sha256 !== "string") return { ok: false, req_id, detail: "load_rule_pack: version·sha256 가 필요합니다" };
     return { ok: true, request: { op: "load_rule_pack", req_id, version: r.version, sha256: r.sha256, pack: r.pack } };
   }

@@ -80,6 +80,25 @@ export {
   type RasterizeOptions,
   type Rasterizer,
 } from "./adapters/rasterizer.ts";
+export {
+  assertRulePackUrl,
+  downloadAndInstallRulePack,
+  fetchRulePackText,
+  RULE_PACK_INSTALL_STATES,
+  RULE_PACK_LIMITS,
+  RULE_PACK_LOAD_STATES,
+  RulePackDownloadFailure,
+  rulePacksOf,
+  type LoadedRulePack,
+  type RulePackDownloadError,
+  type RulePackDownloadTicket,
+  type RulePackFetch,
+  type RulePackInstallResult,
+  type RulePackInstallState,
+  type RulePackLoadResult,
+  type RulePackLoadState,
+  type RulePackStore,
+} from "./adapters/rule-packs.ts";
 export type { UpdateInfo, Updater } from "./adapters/updater.ts";
 export type { LicenseClient, LicenseState, LicenseStatus } from "./adapters/license-client.ts";
 export {

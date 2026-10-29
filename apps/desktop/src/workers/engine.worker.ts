@@ -13,7 +13,7 @@ interface WorkerScope {
 }
 const scope = self as unknown as WorkerScope;
 
-// RulePackProvider 구현은 후속 작업. 지금은 load_rule_pack 메시지로 받은 팩만 쓴다.
+// 팩은 셸 RulePackProvider(src/shell/rule-packs.ts)가 load_rule_pack 메시지로 넣는다(서명·자격 확인은 Rust, AR-06-042).
 const store = new RulePackStore();
 const engine = createEngineHandlers(store);
 const modeler = createModelerHandlers({ store, loadKernel: () => loadSolidKernel({ locateFile: () => wasmUrl }) });

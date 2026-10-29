@@ -2,18 +2,19 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { exportFileName } from "./fileName.ts";
 import { parseRequest, type EngineResponse, type LaneRequest } from "./protocol.ts";
-import { WorkerRuntime, type Handler, type LogEntry } from "./runtime.ts";
+import { WorkerRuntime, type Handler, type LogEntry, type RuntimeOptions } from "./runtime.ts";
 
 const SECRET = "비밀-주소-12345";
 const tick = () => new Promise<void>((r) => setImmediate(r));
 
-function setup(handlers: Partial<Record<LaneRequest["op"], Handler>>) {
+function setup(handlers: Partial<Record<LaneRequest["op"], Handler>>, control?: RuntimeOptions["control"]) {
   const posted: EngineResponse[] = [];
   const logs: LogEntry[] = [];
   let t = 0;
   const rt = new WorkerRuntime({
     lanes: ["judge", "suggest", "layout", "sheet", "export", "import"],
     handlers,
+    ...(control ? { control } : {}),
     post: (m) => void posted.push(m),
     now: () => (t += 5),
     yieldFn: () => Promise.resolve(),
@@ -120,7 +121,45 @@ test("내보내기 파일 이름: 규칙·금지 문자·길이", () => {
   assert.ok([...exportFileName("가".repeat(300), "site_plan", 0, 200, "2026-10-16", "dxf")].length <= 120);
 });
 
-test("실제 핸들러 연결: 규칙 팩 없이 judge 는 AR050, pdf 쓰기는 AR056, 잘못된 시트 입력은 AR050", async () => {
+test("규칙 팩 공급 상태 코드(AR-06-042): 없음 AR063, 이유 코드 그대로, 공급 실패는 받은 팩을 비운다, 잘못된 팩 AR064", async () => {
+  const { createEngineHandlers } = await import("./engine.handlers.ts");
+  const { RulePackStore } = await import("./rulePacks.ts");
+  const { loadRulePack } = await import("@arch-studio/rules");
+  const { readFileSync } = await import("node:fs");
+  const raw = JSON.parse(readFileSync(new URL("../../../../packages/rules/packs/2026.10.0/pack.json", import.meta.url), "utf8"));
+  loadRulePack(structuredClone(raw)); // 개발용 팩이 유효한지
+  const store = new RulePackStore();
+  const eng = createEngineHandlers(store);
+  const e = setup(eng.handlers, eng.control);
+  const judgeOnce = async (seq: number) => {
+    e.posted.length = 0;
+    e.rt.receive({ op: "judge", req_id: `j${seq}`, lane: "judge", seq, model_rev: "r", model: { rule_context: { rule_pack_version: "x" } } });
+    await tick();
+    await tick();
+    return e.posted.map((p) => ("code" in p ? p.code : "ok"));
+  };
+  assert.deepEqual(await judgeOnce(1), ["AR063"]);
+  for (const code of ["AR064", "AR065"] as const) {
+    e.rt.receive({ op: "load_rule_pack", req_id: `u-${code}`, version: "", sha256: "", pack: null, unavailable: code });
+    await tick();
+    assert.deepEqual(await judgeOnce(code === "AR064" ? 2 : 3), [code]);
+  }
+  // 팩을 넣으면 선택은 된다(모델이 엉터리라 판정 자체는 다른 오류).
+  e.rt.receive({ op: "load_rule_pack", req_id: "p", version: "2026.10.0", sha256: "s", pack: raw });
+  await tick();
+  assert.ok(!(await judgeOnce(4)).some((c) => c === "AR063" || c === "AR065"));
+  await assert.rejects(store.select("2026.10.0").then(() => store.markUnavailable("AR065")).then(() => store.select("2026.10.0")), (err: { code?: string }) => err.code === "AR065");
+  // 형식이 틀린 팩·버전 불일치 → AR064(검증 실패), 모르는 이유 코드는 봉투 오류(AR050).
+  e.posted.length = 0;
+  e.rt.receive({ op: "load_rule_pack", req_id: "bad", version: "2026.10.0", sha256: "t", pack: { nope: 1 } });
+  e.rt.receive({ op: "load_rule_pack", req_id: "ver", version: "2026.11.0", sha256: "v", pack: raw });
+  e.rt.receive({ op: "load_rule_pack", req_id: "weird", version: "", sha256: "", pack: null, unavailable: "AR099" });
+  await tick();
+  await tick();
+  assert.deepEqual(Object.fromEntries(e.posted.map((p) => [p.req_id, "code" in p ? p.code : "ok"])), { bad: "AR064", ver: "AR064", weird: "AR050" });
+});
+
+test("실제 핸들러 연결: 규칙 팩 없이 judge 는 AR063(AR050과 구분), pdf 쓰기는 AR056, 잘못된 시트 입력은 AR050", async () => {
   const { createEngineHandlers } = await import("./engine.handlers.ts");
   const { createDraftingHandlers } = await import("./drafting.handlers.ts");
   const { RulePackStore } = await import("./rulePacks.ts");
@@ -129,7 +168,7 @@ test("실제 핸들러 연결: 규칙 팩 없이 judge 는 AR050, pdf 쓰기는 
   e.rt.receive({ op: "judge", req_id: "j", lane: "judge", seq: 1, model_rev: "r", model: { rule_context: { rule_pack_version: "x" } } });
   await tick();
   await tick();
-  assert.deepEqual(e.posted.map((p) => ("code" in p ? p.code : "?")), ["AR050"]);
+  assert.deepEqual(e.posted.map((p) => ("code" in p ? p.code : "?")), ["AR063"]);
   const d = setup(createDraftingHandlers().handlers);
   d.rt.receive({ op: "write", req_id: "w", lane: "export", format: "pdf", sheets: [], layer_map: {}, bundle: false, project_name: "p", date: "2026-10-29" });
   d.rt.receive({ op: "build_sheet", req_id: "b", lane: "sheet", seq: 1, input: { bad: 1 } });

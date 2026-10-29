@@ -57,15 +57,20 @@ test("봉투가 틀리면 throw, 규칙 팩은 engine 워커만, dispose 뒤 다
   });
   assert.throws(() => host.send({ op: "judge", req_id: "x" }), /봉투/);
   assert.throws(() => host.send({ op: "nope", req_id: "x" }), /봉투/);
+  // 규칙 팩 공급만으로는 워커를 만들지 않는다(앱 시작 비용 0, AR-06-042). 첫 판정 때 팩이 먼저 간다.
   host.send({ op: "load_rule_pack", req_id: "p", version: "2026.10.0", sha256: "0".repeat(64), pack: {} } as never);
+  assert.equal(count, 0);
+  host.send({ op: "judge", req_id: "j1", lane: "judge", seq: 1 } as never);
   assert.equal(count, 1);
+  // 워커가 있으면 새 공급(이유 코드 포함)은 바로 간다.
+  host.send({ op: "load_rule_pack", req_id: "u", version: "", sha256: "", pack: null, unavailable: "AR065" } as never);
   host.dispose();
   assert.equal(workers[0]!.terminated, true);
   host.send({ op: "judge", req_id: "j2", lane: "judge", seq: 2 } as never);
   assert.equal(count, 2);
-  // 다시 만든 워커에도 마지막 규칙 팩이 판정보다 먼저 간다.
+  // 다시 만든 워커에도 마지막 공급 메시지가 판정보다 먼저 간다.
   assert.deepEqual(
     log.map((m) => (m as { req_id: string }).req_id),
-    ["p", "p", "j2"],
+    ["p", "j1", "u", "u", "j2"],
   );
 });
