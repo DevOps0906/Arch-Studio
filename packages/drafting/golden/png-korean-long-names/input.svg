@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="420mm" height="297mm" viewBox="0 0 42000 29700" font-family="&apos;Noto Sans KR&apos;, sans-serif" data-sheet-id="s1" data-kind="site_plan" data-scale="100" data-engine-version="0.0.0" data-input-hash="807aa2548ac4e12f0558e2a995e3410947b9196402c0857386fd0009fd0a49d3" data-writer-version="svg-1.1.0">
+<title>배치도 — 서울특별시 종로구 세종대로 일원 근린생활시설 및 다세대주택 신축 기획설계 검토</title>
+<rect x="0" y="0" width="42000" height="29700" fill="#ffffff"/>
+<g id="A-SITE-BNDY" fill="none" stroke="#ff0000" stroke-width="35" stroke-dasharray="300 100 20 100">
+<polygon points="7750,20350 27750,20350 27750,5350 7750,5350"/>
+</g>
+<g id="A-SITE-ROAD" fill="none" stroke="#808080" stroke-width="18"/>
+<g id="A-SITE-SETB" fill="none" stroke="#00a000" stroke-width="18" stroke-dasharray="300 150"/>
+<g id="A-ENVL" fill="none" stroke="#00a0c8" stroke-width="18" stroke-dasharray="300 150"/>
+<g id="A-MASS" fill="none" stroke="#000000" stroke-width="50">
+<polygon points="8950,19150 26550,19150 26550,6550 8950,6550"/>
+</g>
+<g id="A-WALL" fill="none" stroke="#000000" stroke-width="35"/>
+<g id="A-DOOR" fill="none" stroke="#c8a000" stroke-width="18"/>
+<g id="A-GLAZ" fill="none" stroke="#0000ff" stroke-width="18"/>
+<g id="A-AREA" fill="none" stroke="#c000c0" stroke-width="18">
+<polygon points="8950,19150 17750,19150 17750,12850 8950,12850"/>
+<polygon points="17750,19150 26550,19150 26550,12850 17750,12850"/>
+<polygon points="8950,12850 17750,12850 17750,6550 8950,6550"/>
+<polygon points="17750,12850 26550,12850 26550,6550 17750,6550"/>
+</g>
+<g id="A-AREA-IDEN" fill="none" stroke="#000000" stroke-width="18">
+<text x="9050" y="19050" font-size="312.5" fill="#000000" stroke="none" text-anchor="middle">가족실 겸 거실 및 주방 식당 통합 공간</text>
+<text x="9050" y="19425" font-size="312.5" fill="#000000" stroke="none" text-anchor="middle">12.00㎡</text>
+<text x="17850" y="19050" font-size="312.5" fill="#000000" stroke="none" text-anchor="middle">안방(부부 침실)·드레스룸</text>
+<text x="17850" y="19425" font-size="312.5" fill="#000000" stroke="none" text-anchor="middle">12.00㎡</text>
+<text x="9050" y="12750" font-size="312.5" fill="#000000" stroke="none" text-anchor="middle">자녀방 1 × 2 — 남향 ㎡</text>
+<text x="9050" y="13125" font-size="312.5" fill="#000000" stroke="none" text-anchor="middle">12.00㎡</text>
+<text x="17850" y="12750" font-size="312.5" fill="#000000" stroke="none" text-anchor="middle">다용도실 세탁 50%</text>
+<text x="17850" y="13125" font-size="312.5" fill="#000000" stroke="none" text-anchor="middle">12.00㎡</text>
+</g>
+<g id="A-PARK" fill="none" stroke="#00a000" stroke-width="18"/>
+<g id="A-ANNO-DIMS" fill="none" stroke="#ff0000" stroke-width="13">
+<line x1="9050" y1="20350" x2="9650" y2="20350"/>
+<line x1="9050" y1="19150" x2="9650" y2="19150"/>
+<line x1="9450" y1="20350" x2="9450" y2="19150"/>
+<line x1="9556" y1="20456" x2="9344" y2="20244"/>
+<line x1="9556" y1="19256" x2="9344" y2="19044"/>
+<text x="9550" y="19750" font-size="312.5" fill="#ff0000" stroke="none" text-anchor="middle">1200</text>
+</g>
+<g id="A-ANNO-TEXT" fill="none" stroke="#000000" stroke-width="18"/>
+<g id="A-ANNO-NRTH" fill="none" stroke="#000000" stroke-width="18"/>
+<g id="A-TTLB" fill="none" stroke="#000000" stroke-width="35">
+<line x1="2500" y1="24700" x2="41000" y2="24700"/>
+<line x1="8916" y1="27700" x2="8916" y2="24700"/>
+<line x1="15332" y1="27700" x2="15332" y2="24700"/>
+<line x1="21748" y1="27700" x2="21748" y2="24700"/>
+<line x1="28164" y1="27700" x2="28164" y2="24700"/>
+<line x1="34580" y1="27700" x2="34580" y2="24700"/>
+<line x1="2500" y1="27700" x2="41000" y2="27700"/>
+<polygon points="2500,28700 41000,28700 41000,1000 2500,1000"/>
+<text x="2650" y="28400" font-size="312.5" fill="#000000" stroke="none">기획설계 검토용 자료이며 인허가 설계도서가 아닙니다</text>
+<text x="2650" y="25050" font-size="250" fill="#000000" stroke="none">사무소</text>
+<text x="2650" y="27200" font-size="312.5" fill="#000000" stroke="none">가나다라마바사아자차카타파하 종합건축사사무소 부설 도시건축연구소</text>
+<text x="9066" y="25050" font-size="250" fill="#000000" stroke="none">프로젝트</text>
+<text x="9066" y="27200" font-size="312.5" fill="#000000" stroke="none">서울특별시 종로구 세종대로 일원 근린생활시설 및 다세대주택 신축 기획설계 검토</text>
+<text x="15482" y="25050" font-size="250" fill="#000000" stroke="none">도면명</text>
+<text x="15482" y="27200" font-size="312.5" fill="#000000" stroke="none">배치도</text>
+<text x="21898" y="25050" font-size="250" fill="#000000" stroke="none">축척</text>
+<text x="21898" y="27200" font-size="312.5" fill="#000000" stroke="none">1/100</text>
+<text x="28314" y="25050" font-size="250" fill="#000000" stroke="none">작성일</text>
+<text x="28314" y="27200" font-size="312.5" fill="#000000" stroke="none">2026-10-29</text>
+<text x="34730" y="25050" font-size="250" fill="#000000" stroke="none">규칙 팩</text>
+<text x="34730" y="27200" font-size="312.5" fill="#000000" stroke="none">2026.10.0</text>
+</g>
+<g id="A-REFR" fill="none" stroke="#b0b0b0" stroke-width="13"/>
+</svg>

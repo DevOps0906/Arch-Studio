@@ -1,0 +1,31 @@
+{
+  "case_id": "png-korean-long-names",
+  "source_case": "writer-korean-long-names",
+  "note": "한글 긴 이름·MTEXT 줄바꿈: 한글이 두부(□)가 아님을 확인",
+  "writer_version": "png-1.0.0",
+  "renderer": {
+    "npm": "@resvg/resvg-js@2.6.2",
+    "resvg": "0.34.0",
+    "resvg_fork": "github.com/zimond/resvg rev 3495d870 (resvg-js 2.6.2 Cargo.toml [patch.crates-io])",
+    "tiny_skia": "0.10.0",
+    "fontdb": "0.14.1",
+    "rustybuzz": "0.7.0",
+    "ttf_parser": "0.18.1"
+  },
+  "options": {
+    "width_px": 840,
+    "dpi": 150,
+    "fit_to": "width",
+    "font_file": "fonts/NotoSansKR-Regular.subset.ttf",
+    "font_family": "'Noto Sans KR', sans-serif",
+    "background": "#ffffff",
+    "shapeRendering": 2,
+    "textRendering": 2,
+    "imageRendering": 0,
+    "loadSystemFonts": false
+  },
+  "width_px": 840,
+  "height_px": 594,
+  "png_sha256": "a9e3336dbc8fc8c49ceb1cef288a94bc6571b2107e9f156dbebd76941f82efd4",
+  "pixels_sha256": "083e5ea9ca99c432d056bf1a2eb9eb08e5c35c4e58b34d4cf0974796e24ca09f"
+}

@@ -54,6 +54,7 @@ export {
   type SunlightEnvelopeInput,
   type SunlightSectionOptions,
 } from "./views/sunlight_section/index.ts";
-// AR-06-022: SVG·PDF 작성기는 하위 경로(./writers/svg, ./writers/pdf — PDF는 jsPDF를 끌어와 루트에서 내보내지 않는다). PNG는 시그니처만.
+// AR-06-022: SVG·PDF·PNG 작성기는 하위 경로(./writers/svg, ./writers/pdf — jsPDF, ./writers/png — resvg 네이티브는 루트에서 내보내지 않는다).
 export { OutputError, type OutputFailure } from "./writers/pdf/errors.ts";
-export { writePng, type PngOptions, type PngResult } from "./writers/png/index.ts";
+// PNG는 resvg(네이티브)를 끌어오므로 타입만 루트에서 내보내고 writePng는 ./writers/png 하위 경로로만 쓴다.
+export type { PngOptions, PngResult } from "./writers/png/types.ts";

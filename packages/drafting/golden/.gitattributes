@@ -1,0 +1,2 @@
+# PNG 골든은 바이너리다: 상위 .gitattributes의 packages/drafting/golden/** text eol=lf가 PNG 바이트를 바꾸지 않게 한다(AR-06-022).
+png-*/*.png binary

@@ -34,3 +34,13 @@
 - 함께 설치되는 전이 의존성(drafting 런타임 트리, `pnpm licenses list --prod` 2026-10-29): fflate 0.8.3(MIT), fast-png(MIT)·pako(MIT AND Zlib)·iobuffer(MIT),
   @babel/runtime(MIT), 선택 의존성 canvg·core-js·html2canvas(MIT) 및 그 하위(raf, rgbcolor, stackblur-canvas, svg-pathdata, text-segmentation, utrie, css-line-break, base64-arraybuffer, performance-now, regenerator-runtime: MIT),
   dompurify(MPL-2.0 OR Apache-2.0 — Apache-2.0 선택). 엔진은 jsPDF의 html·canvas 기능을 쓰지 않는다.
+
+## @arch-studio/drafting — PNG (resvg, AR-06-022)
+- `@resvg/resvg-js` 2.6.2 + 플랫폼 네이티브 바이너리(`@resvg/resvg-js-<플랫폼>` 12종, 설치 때 현재 플랫폼 것만) — **MPL-2.0**(Mozilla Public License 2.0).
+  Copyright (c) yisibl 외 resvg-js 기여자. 내부 Rust 렌더러 resvg 0.34.0(MPL-2.0, Copyright (c) Yevhenii Reizner)·tiny-skia 0.10.0(BSD-3-Clause)·fontdb 0.14.1(MIT)·rustybuzz 0.7.0(MIT)·ttf-parser 0.18.1(MIT OR Apache-2.0) 등을 정적 링크한 바이너리다.
+- **MPL-2.0 고지·소스 위치**: 우리는 resvg·resvg-js를 수정하지 않고 npm 배포 바이너리를 그대로 쓴다. MPL-2.0은 파일 단위 카피레프트라 수정하지 않은 바이너리 배포는 라이선스 고지와 소스 위치 안내로 충족한다(법률 자문 아님).
+  소스: https://github.com/yisibl/resvg-js (태그 v2.6.2) · resvg 원본 https://github.com/RazrFalcon/resvg (0.34.0; resvg-js는 `zimond/resvg` rev 3495d870 포크를 [patch.crates-io]로 사용) · MPL-2.0 전문 https://www.mozilla.org/MPL/2.0/ .
+  우리가 resvg 소스를 수정하게 되면(후속 Rust 작업 포함) 수정한 MPL 파일의 소스를 같은 라이선스로 공개해야 한다.
+- 배포 위치: **웹 서버·작업 워커·CI·샘플 생성만**(Node). 설치형(Tauri)에는 npm 바이너리가 들어가지 않는다 — 설치형은 후속 AR-06-080(Rust resvg 크레이트 직접 사용)에서 별도 고지한다.
+- Rust 전이 크레이트 전체의 라이선스 목록(`cargo about` 등)은 이번에 만들지 않았다 — 설치형 Rust 작업(AR-06-080)에서 만든다. npm 쪽 조사: `pnpm licenses list --prod`에서 GPL·AGPL·LGPL 없음.
+- 참고: 앞서 검토한 sharp(libvips LGPL-3.0)는 대표 결정으로 PNG에 쓰지 않는다. `@arch-studio/geometry`의 manifold-3d 전이 의존성으로만 설치되어 있다(위 항목).

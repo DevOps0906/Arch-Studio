@@ -1,0 +1,31 @@
+{
+  "case_id": "png-site-a3-basic",
+  "source_case": "writer-site-a3-basic",
+  "note": "배치도 A3 기본: 선·해치·치수·한글 표제란(기본 흐름)",
+  "writer_version": "png-1.0.0",
+  "renderer": {
+    "npm": "@resvg/resvg-js@2.6.2",
+    "resvg": "0.34.0",
+    "resvg_fork": "github.com/zimond/resvg rev 3495d870 (resvg-js 2.6.2 Cargo.toml [patch.crates-io])",
+    "tiny_skia": "0.10.0",
+    "fontdb": "0.14.1",
+    "rustybuzz": "0.7.0",
+    "ttf_parser": "0.18.1"
+  },
+  "options": {
+    "width_px": 840,
+    "dpi": 150,
+    "fit_to": "width",
+    "font_file": "fonts/NotoSansKR-Regular.subset.ttf",
+    "font_family": "'Noto Sans KR', sans-serif",
+    "background": "#ffffff",
+    "shapeRendering": 2,
+    "textRendering": 2,
+    "imageRendering": 0,
+    "loadSystemFonts": false
+  },
+  "width_px": 840,
+  "height_px": 594,
+  "png_sha256": "0c533d081ccd6c9843427fa0d16fcba8c634697a7ff95f611fd0cec6374f6689",
+  "pixels_sha256": "23caada9d604a34b2620a3aecc1455ccce1b751bc6679e85cc8d129e3a377dcd"
+}
