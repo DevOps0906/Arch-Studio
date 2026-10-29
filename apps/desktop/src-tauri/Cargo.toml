@@ -1,0 +1,20 @@
+[package]
+name = "arch-studio-desktop"
+version = "0.0.0"
+description = "Arch Studio 데스크톱 셸"
+edition = "2021"
+rust-version = "1.90"
+publish = false
+
+[lib]
+name = "arch_studio_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.7.4", features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.5", features = [] }
+
+[dev-dependencies]
+tauri = { version = "=2.12.5", features = ["test"] }
