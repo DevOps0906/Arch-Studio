@@ -1,0 +1,1 @@
+{"case_id":"floor_plan-rejected-overlap","engine_version":"0.0.0","features":["AR-F-032"],"note":"AR051 거부: 실 겹침 + 외곽 이탈 + 변 범위 밖 창 → 시트 생성 거부(위반 목록 골든)"}

@@ -115,6 +115,9 @@ importers:
       '@arch-studio/geometry':
         specifier: workspace:*
         version: link:../geometry
+      '@arch-studio/layout':
+        specifier: workspace:*
+        version: link:../layout
       '@resvg/resvg-js':
         specifier: 2.6.2
         version: 2.6.2
@@ -143,7 +146,14 @@ importers:
 
   packages/io: {}
 
-  packages/layout: {}
+  packages/layout:
+    dependencies:
+      '@arch-studio/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@arch-studio/geometry':
+        specifier: workspace:*
+        version: link:../geometry
 
   packages/massing: {}
 

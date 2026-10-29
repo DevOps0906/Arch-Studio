@@ -58,3 +58,13 @@ export {
 export { OutputError, type OutputFailure } from "./writers/pdf/errors.ts";
 // PNG는 resvg(네이티브)를 끌어오므로 타입만 루트에서 내보내고 writePng는 ./writers/png 하위 경로로만 쓴다.
 export type { PngOptions, PngResult } from "./writers/png/types.ts";
+// AR-06-026: 평면 개략도(floor_plan). AR051 위반 모델은 FloorPlanError로 시트 생성 거부.
+export {
+  buildFloorPlanView,
+  FLOOR_PLAN_VIEW_ID,
+  FloorPlanError,
+  floorPlanBlockName,
+  tryBuildFloorPlanView,
+  type FloorPlanOptions,
+  type FloorPlanResult,
+} from "./views/floor_plan/index.ts";

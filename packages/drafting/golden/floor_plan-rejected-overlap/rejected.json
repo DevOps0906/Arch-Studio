@@ -1,0 +1,1 @@
+{"code":"AR051","issues":[{"code":"AR051","detail":"실 b이(가) 층 외곽 밖에 있습니다","kind":"outside","room_ids":["b"]},{"code":"AR051","detail":"실 a과(와) b이(가) 겹칩니다","kind":"overlap","room_ids":["a","b"]},{"code":"AR051","detail":"문·창 w1이(가) 실 a의 0번 변 범위를 벗어납니다","kind":"opening","opening_ids":["w1"],"room_ids":["a"]}]}
