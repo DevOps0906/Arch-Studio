@@ -1,0 +1,36 @@
+{
+  "name": "spike-modeler-perf",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "AR-06-036 착수 스파이크(버리는 코드): R3F + Manifold WASM 성능 측정·실기 측정 하니스. 워크스페이스 밖.",
+  "scripts": {
+    "bench:geom": "node --expose-gc scripts/bench-geom.ts",
+    "bench:build": "node scripts/bench-build.ts",
+    "bench:crop": "node scripts/bench-crop.ts",
+    "bench:undo": "node --expose-gc scripts/bench-undo.ts",
+    "bench:transfer": "node scripts/bench-transfer.ts",
+    "build": "vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "measure": "node scripts/measure-browser.ts",
+    "audit": "node scripts/audit-bundle.ts",
+    "licenses": "node scripts/licenses.ts"
+  },
+  "dependencies": {
+    "@react-three/drei": "10.7.9",
+    "@react-three/fiber": "9.8.2",
+    "manifold-3d": "3.5.4",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "three": "0.186.1",
+    "three-mesh-bvh": "0.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "@types/three": "0.186.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  }
+}
