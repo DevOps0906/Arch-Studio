@@ -1,7 +1,7 @@
 // 설치형 SecureStore: Rust `secret_get/secret_set/secret_delete`(OS 키체인).
 // 비동기 Tauri 명령은 스레드 풀에서 실행돼 보낸 순서와 적용 순서가 어긋날 수 있으므로 한 줄 대기열로 직렬화한다.
-import { secretErrorFrom } from "../errors.ts";
-import { assertSecretKey, assertSecretValue, type SecretKey, type SecureStore } from "../secure-store.ts";
+import { secretErrorFrom } from "../adapters/errors.ts";
+import { assertSecretKey, assertSecretValue, type SecretKey, type SecureStore } from "../adapters/secure-store.ts";
 import type { InvokeFn } from "./invoke.ts";
 
 export class TauriSecureStore implements SecureStore {
