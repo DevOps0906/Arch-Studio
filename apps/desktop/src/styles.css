@@ -1,0 +1,19 @@
+/* 데스크톱 전역 스타일. 토큰 정본(packages/ui/src/tokens.css)이 tailwindcss를 함께 불러온다(웹 globals.css와 같은 방식). */
+@import "@arch-studio/ui/tokens.css";
+/* 화면 코드(packages/features)의 클래스 스캔: 이 파일 기준 상대 경로. ui 컴포넌트는 tokens.css의 @source가 맡는다. */
+@source "../../../packages/features/src";
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+  }
+}
