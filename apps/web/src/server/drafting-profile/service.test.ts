@@ -294,9 +294,82 @@ test("P5 PUT 로고: 다른 조직·형식 밖 경로 23514, 객체 없음 23514
   assert.equal(ok.status, 200);
   assert.equal(w.upserts[0]?.payload.logo_storage_path, LOGO);
   assert.match(ok.json.data.logo_url, /^https:\/\/proj\.supabase\.co\/storage\/v1\/object\/sign\//);
-  // 같은 경로로 다시 저장하면 객체를 다시 받지 않는다(이미 저장된 값)
+  // 같은 경로로 다시 저장해도 매번 객체를 다시 받아 검사한다(저장된 경로라고 생략하지 않는다)
   delete w.objects[LOGO];
-  assert.equal((await put(w, { ...good, logo_storage_path: LOGO })).status, 200);
+  assert.equal((await put(w, { ...good, logo_storage_path: LOGO })).json.error.code, "23514");
+  w.objects[LOGO] = new TextEncoder().encode("<svg/>"); // 저장 뒤 객체가 바뀐 경우
+  const swapped = await put(w, { ...good, logo_storage_path: LOGO });
+  assert.equal(swapped.status, 415);
+  assert.equal(w.upserts.length, 1);
+});
+
+test("GET 로고 URL: 서명 전에 경로 소유 재확인 - 저장 행의 경로가 다른 조직이면 서명 0회, logo_url null", async (t) => {
+  spy(t);
+  const signedPaths: string[] = [];
+  const row = (path: string) => ({ ...good, org_id: ORG, updated_by: USER, logo_storage_path: path, updated_at: "2026-10-29T03:00:00Z" });
+  const call = async (path: string) => {
+    const w = world({ row: row(path) });
+    const base = deps(w);
+    const d: DraftingProfileDeps = {
+      ...base,
+      logos: () => ({
+        ...base.logos(),
+        async createSignedReadUrl(p) {
+          signedPaths.push(p);
+          return `https://x/${p}`;
+        },
+      }),
+    };
+    const res = await handleGetProfile(new Request("https://web.example/api/drafting-profile"), d);
+    return ((await res.json()) as Json).data;
+  };
+  assert.equal((await call(`${OTHER_ORG}/arch/drafting-logo/${OBJ}.png`)).logo_url, null);
+  assert.equal((await call(`${ORG}/arch/drafting-logo/../${OTHER_ORG}/x.png`)).logo_url, null);
+  assert.equal(signedPaths.length, 0);
+  assert.notEqual((await call(LOGO)).logo_url, null);
+  assert.deepEqual(signedPaths, [LOGO]);
+});
+
+test("GET도 조직당 레이트 리밋: 61번째 429 + retry-after, 다른 조직은 영향 없음", async (t) => {
+  spy(t);
+  const rate = new MemoryRateLimitStore();
+  const call = async (w: World) => handleGetProfile(new Request("https://web.example/api/drafting-profile"), deps(w, rate));
+  const w = world();
+  let last: Response | undefined;
+  for (let i = 0; i <= PROFILE_RATE.limit; i++) last = await call(w);
+  assert.equal(last?.status, 429);
+  assert.ok(last?.headers.get("retry-after"));
+  const other = world({ session: { ...role("owner"), orgId: OTHER_ORG } });
+  assert.equal((await call(other)).status, 200);
+});
+
+test("PUT 사용자당 동시 처리 1건: 느린 로고 읽기 중 두 번째 PUT은 429, 끝나면 다시 허용", async (t) => {
+  spy(t);
+  const w = world();
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((r) => (release = r));
+  let reads = 0;
+  const base = deps(w);
+  const slow: DraftingProfileDeps = {
+    ...base,
+    logos: () => ({
+      ...base.logos(),
+      async read() {
+        reads++;
+        await gate;
+        return pngBytes();
+      },
+    }),
+  };
+  const send = () => handlePutProfile(new Request("https://web.example/api/drafting-profile", { method: "PUT", body: JSON.stringify({ ...good, logo_storage_path: LOGO }) }), slow);
+  const first = send();
+  await new Promise((r) => setTimeout(r, 10));
+  const second = await send();
+  assert.equal(second.status, 429);
+  assert.equal(reads, 1);
+  release();
+  assert.equal((await first).status, 200);
+  assert.equal((await send()).status, 200);
 });
 
 test("GET: 없으면 profile null, member는 can_edit false, viewer 403, 저장된 충돌 경고 포함", async (t) => {

@@ -13,7 +13,13 @@ const SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a] as const;
 /** 허용 청크: 필수(IHDR·PLTE·IDAT·IEND) + 색 표현 보조(tRNS·gAMA·cHRM·sRGB·iCCP·pHYs·sBIT·bKGD). */
 export const ALLOWED_CHUNKS: ReadonlySet<string> = new Set(["IHDR", "PLTE", "IDAT", "IEND", "tRNS", "gAMA", "cHRM", "sRGB", "iCCP", "pHYs", "sBIT", "bKGD"]);
 
-export type PngFailure = "too_large" | "empty" | "signature" | "structure" | "chunk" | "dimensions";
+/** iCCP(색 프로필) 청크 길이 상한. 압축된 프로필이 커질수록 디코더 부담·은닉 데이터 공간이 커진다. */
+export const ICCP_MAX_BYTES = 64 * 1024;
+
+/** IHDR 색 유형별 허용 비트 깊이(PNG 사양 표 11.1). */
+const COLOR_DEPTHS: Readonly<Record<number, readonly number[]>> = { 0: [1, 2, 4, 8, 16], 2: [8, 16], 3: [1, 2, 4, 8], 4: [8, 16], 6: [8, 16] };
+
+export type PngFailure = "too_large" | "empty" | "signature" | "structure" | "chunk" | "dimensions" | "header";
 
 export function inspectPng(bytes: Uint8Array): { ok: true; width: number; height: number } | { ok: false; reason: PngFailure } {
   if (bytes.byteLength === 0) return { ok: false, reason: "empty" };
@@ -33,11 +39,17 @@ export function inspectPng(bytes: Uint8Array): { ok: true; width: number; height
     const end = off + 12 + len;
     if (len > 0x7fffffff || end > bytes.byteLength) return { ok: false, reason: "structure" };
     if (!ALLOWED_CHUNKS.has(type)) return { ok: false, reason: "chunk" };
+    if (type === "iCCP" && len > ICCP_MAX_BYTES) return { ok: false, reason: "chunk" };
     if (index === 0) {
       if (type !== "IHDR" || len !== 13) return { ok: false, reason: "structure" };
       width = view.getUint32(off + 8);
       height = view.getUint32(off + 12);
       if (width === 0 || height === 0 || width > LOGO_MAX_SIDE || height > LOGO_MAX_SIDE) return { ok: false, reason: "dimensions" };
+      const depth = bytes[off + 16] as number;
+      const colorType = bytes[off + 17] as number;
+      // 압축·필터 방법은 0뿐, 인터레이스는 0(없음)·1(Adam7)뿐. 색 유형과 비트 깊이는 사양 조합만.
+      if (bytes[off + 18] !== 0 || bytes[off + 19] !== 0 || (bytes[off + 20] !== 0 && bytes[off + 20] !== 1)) return { ok: false, reason: "header" };
+      if (!(COLOR_DEPTHS[colorType] ?? []).includes(depth)) return { ok: false, reason: "header" };
     } else if (type === "IHDR") return { ok: false, reason: "structure" };
     if (type === "IDAT") sawIdat = true;
     off = end;

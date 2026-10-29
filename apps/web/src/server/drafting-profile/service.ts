@@ -13,7 +13,7 @@ import type { RateLimitStore } from "../licenses/rate-limit.ts";
 import { tokenExpiry } from "../uploads/service.ts";
 import { resolveLayerMap } from "./layers.ts";
 import { profileLog } from "./log.ts";
-import { buildLogoPath, inspectPng, LOGO_MAX_BYTES } from "./png.ts";
+import { buildLogoPath, inspectPng, isOwnLogoPath, LOGO_MAX_BYTES } from "./png.ts";
 import { fromRow, parseProfileInput, toRpcPayload, type DraftingProfileOut } from "./schema.ts";
 
 /** 사용자 JWT(RLS) 저장소. 조직 인자는 항상 세션 조직. */
@@ -50,6 +50,9 @@ export const PROFILE_RATE = { limit: 60, windowS: 60 } as const;
 /** GET 응답의 로고 읽기 URL 수명(04_API.md `:57` 서명 10분). */
 export const LOGO_READ_TTL_S = 600;
 const FALLBACK_UPLOAD_TTL_S = 2 * 3600;
+
+/** 처리 중인 PUT(조직:사용자). 인스턴스 메모리라 다중 인스턴스에서는 레이트 리밋 저장소와 함께 교체한다. */
+const IN_FLIGHT_PUTS = new Set<string>();
 
 const OWNER_ADMIN = new Set(["owner", "admin"]);
 const MEMBER_PLUS = new Set(["owner", "admin", "member"]);
@@ -115,8 +118,10 @@ function storedWarnings(p: DraftingProfileOut) {
   return resolveLayerMap(p.layer_map as Record<string, string>).warnings.filter((w) => w.kind === "name_conflict");
 }
 
-async function logoUrl(deps: DraftingProfileDeps, p: DraftingProfileOut | null): Promise<string | null> {
+async function logoUrl(deps: DraftingProfileDeps, orgId: string, p: DraftingProfileOut | null): Promise<string | null> {
   if (!p?.logo_storage_path) return null;
+  // service_role로 서명하기 전에 경로가 세션 조직 소유인지 다시 확인한다(DB 값이 오염돼도 다른 조직 객체를 서명하지 않는다).
+  if (!isOwnLogoPath(orgId, p.logo_storage_path)) return null;
   try {
     return await deps.logos().createSignedReadUrl(p.logo_storage_path, LOGO_READ_TTL_S);
   } catch {
@@ -128,6 +133,7 @@ export async function handleGetProfile(req: Request, deps: DraftingProfileDeps):
   try {
     const session = await deps.session.resolve(req);
     if (!MEMBER_PLUS.has(session.role)) throw new ProfileError("42501");
+    await rate(deps, "drafting_profile_get", session.orgId);
     let row: unknown;
     try {
       row = await deps.repo(session).get(session.orgId);
@@ -140,7 +146,7 @@ export async function handleGetProfile(req: Request, deps: DraftingProfileDeps):
     return okResponse({
       profile,
       updated_at: parsed?.updated_at ?? null,
-      logo_url: await logoUrl(deps, profile),
+      logo_url: await logoUrl(deps, session.orgId, profile),
       can_edit: OWNER_ADMIN.has(session.role),
       layer_warnings: profile ? storedWarnings(profile) : [],
     });
@@ -152,11 +158,17 @@ export async function handleGetProfile(req: Request, deps: DraftingProfileDeps):
 
 export async function handlePutProfile(req: Request, deps: DraftingProfileDeps): Promise<Response> {
   let field: string | undefined;
+  let inflightKey: string | undefined;
   try {
     const session = await deps.session.resolve(req);
     if (!OWNER_ADMIN.has(session.role)) throw new ProfileError("AR042");
     if (!session.entitled) throw new ProfileError("entitlement_expired", { can_download: true });
     await rate(deps, "drafting_profile_put", session.orgId);
+    // 사용자당 동시 처리 1건: 느린 PUT을 겹쳐 보내 로고 다운로드·메모리를 쌓는 것을 막는다.
+    const key = `${session.orgId}:${session.userId}`;
+    if (IN_FLIGHT_PUTS.has(key)) throw new ProfileError("rate_limited", undefined, { "retry-after": "1" });
+    IN_FLIGHT_PUTS.add(key);
+    inflightKey = key;
     const parsed = parseProfileInput(await readJsonLimited(req, PROFILE_MAX_BODY), session.orgId);
     if (!parsed.ok) {
       field = parsed.field;
@@ -165,27 +177,18 @@ export async function handlePutProfile(req: Request, deps: DraftingProfileDeps):
     const repo = deps.repo(session);
     const next = parsed.profile;
     if (next.logo_storage_path) {
-      // 저장된 로고와 같으면 다시 받지 않는다(이미 검사를 통과해 저장된 값).
-      let current: DraftingProfileOut | null = null;
+      // 저장된 경로와 같아도 매번 다시 받아 검사한다(같은 경로 객체는 서명 업로드 URL로 바뀔 수 있다).
+      let bytes: Uint8Array | null;
       try {
-        const row = await repo.get(session.orgId);
-        current = row === null ? null : (fromRow(row)?.profile ?? null);
-      } catch (e) {
-        throw new ProfileError(mapDbCode(dbCode(e)));
+        bytes = await deps.logos().read(next.logo_storage_path, LOGO_MAX_BYTES);
+      } catch {
+        throw new ProfileError("storage_unavailable");
       }
-      if (current?.logo_storage_path !== next.logo_storage_path) {
-        let bytes: Uint8Array | null;
-        try {
-          bytes = await deps.logos().read(next.logo_storage_path, LOGO_MAX_BYTES);
-        } catch {
-          throw new ProfileError("storage_unavailable");
-        }
-        field = "logo_storage_path";
-        if (bytes === null) throw new ProfileError("23514");
-        const png = inspectPng(bytes);
-        if (!png.ok) throw new ProfileError(png.reason === "too_large" ? "AR031" : "unsupported_media_type", png.reason === "too_large" ? { max_bytes: LOGO_MAX_BYTES } : undefined);
-        field = undefined;
-      }
+      field = "logo_storage_path";
+      if (bytes === null) throw new ProfileError("23514");
+      const png = inspectPng(bytes);
+      if (!png.ok) throw new ProfileError(png.reason === "too_large" ? "AR031" : "unsupported_media_type", png.reason === "too_large" ? { max_bytes: LOGO_MAX_BYTES } : undefined);
+      field = undefined;
     }
     let row: unknown;
     try {
@@ -199,7 +202,7 @@ export async function handlePutProfile(req: Request, deps: DraftingProfileDeps):
     return okResponse({
       profile: saved.profile,
       updated_at: saved.updated_at,
-      logo_url: await logoUrl(deps, saved.profile),
+      logo_url: await logoUrl(deps, session.orgId, saved.profile),
       can_edit: true,
       layer_warnings: [...parsed.warnings.filter((w) => w.kind !== "name_conflict"), ...storedWarnings(saved.profile)],
     });
@@ -207,6 +210,8 @@ export async function handlePutProfile(req: Request, deps: DraftingProfileDeps):
     const code = error instanceof ProfileError || error instanceof GatewayError ? error.code : "internal";
     profileLog.warn("drafting_profile.put_rejected", { route: "drafting_profile_put", code, ...(field ? { field } : {}) });
     return toResponse(error);
+  } finally {
+    if (inflightKey) IN_FLIGHT_PUTS.delete(inflightKey);
   }
 }
 

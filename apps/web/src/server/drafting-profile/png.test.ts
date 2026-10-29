@@ -1,7 +1,7 @@
 // 로고 PNG 검사·경로 규칙(계획 공격 P5).
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { buildLogoPath, inspectPng, isOwnLogoPath, LOGO_MAX_BYTES } from "./png.ts";
+import { buildLogoPath, ICCP_MAX_BYTES, inspectPng, isOwnLogoPath, LOGO_MAX_BYTES } from "./png.ts";
 import { chunk, ihdr, pngBytes, SIG } from "./test-helpers.ts";
 
 const ORG = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -61,4 +61,23 @@ test("경로: 자기 조직 drafting-logo/<uuid>.png만", () => {
   }
   assert.equal(buildLogoPath(ORG, "../../x"), null);
   assert.equal(buildLogoPath("not-a-uuid", OBJ), null);
+});
+
+test("IHDR: 색 유형·비트 깊이 조합, 압축·필터·인터레이스 값 검증", () => {
+  const withIhdr = (depth: number, color: number, comp = 0, filter = 0, inter = 0) =>
+    Uint8Array.from([...SIG, ...chunk("IHDR", [0, 0, 0, 16, 0, 0, 0, 16, depth, color, comp, filter, inter]), ...chunk("IDAT", [1]), ...chunk("IEND")]);
+  for (const [d, c] of [[1, 0], [16, 0], [8, 2], [16, 2], [1, 3], [8, 3], [8, 4], [16, 6]] as const) assert.equal(inspectPng(withIhdr(d, c)).ok, true, `${d}/${c}`);
+  assert.equal(inspectPng(withIhdr(8, 0, 0, 0, 1)).ok, true); // Adam7
+  for (const [d, c] of [[0, 6], [3, 0], [4, 2], [16, 3], [1, 4], [8, 1], [8, 5], [8, 7], [255, 255]] as const) {
+    assert.deepEqual(inspectPng(withIhdr(d, c)), { ok: false, reason: "header" }, `${d}/${c}`);
+  }
+  assert.deepEqual(inspectPng(withIhdr(8, 6, 1)), { ok: false, reason: "header" });
+  assert.deepEqual(inspectPng(withIhdr(8, 6, 0, 1)), { ok: false, reason: "header" });
+  assert.deepEqual(inspectPng(withIhdr(8, 6, 0, 0, 2)), { ok: false, reason: "header" });
+});
+
+test("iCCP 길이 상한 64KB", () => {
+  const prof = (n: number) => chunk("iCCP", new Array<number>(n).fill(1));
+  assert.equal(inspectPng(pngBytes([prof(ICCP_MAX_BYTES)])).ok, true);
+  assert.deepEqual(inspectPng(pngBytes([prof(ICCP_MAX_BYTES + 1)])), { ok: false, reason: "chunk" });
 });
