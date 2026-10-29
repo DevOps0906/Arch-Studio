@@ -1,0 +1,167 @@
+{
+ "schema": "DraftingProfile",
+ "cases": [
+  {
+   "name": "base",
+   "expect": "accept",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": "홍길동",
+    "layer_map": {
+     "A-WALL": "벽",
+     "A-DOOR": "문"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": 2.5,
+    "font_family": "Noto Sans KR"
+   }
+  },
+  {
+   "name": "layer_map_empty",
+   "expect": "accept",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": "홍길동",
+    "layer_map": {},
+    "default_paper": "A3",
+    "default_text_height_mm": 2.5,
+    "font_family": "Noto Sans KR"
+   }
+  },
+  {
+   "name": "optional_omitted",
+   "expect": "accept",
+   "value": {
+    "office_name": "오에이치 건축",
+    "layer_map": {
+     "A-WALL": "벽",
+     "A-DOOR": "문"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": 2.5,
+    "font_family": "Noto Sans KR"
+   }
+  },
+  {
+   "name": "text_height_integer",
+   "expect": "accept",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": "홍길동",
+    "layer_map": {
+     "A-WALL": "벽",
+     "A-DOOR": "문"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": 3,
+    "font_family": "Noto Sans KR"
+   }
+  },
+  {
+   "name": "layer_map_unknown_key",
+   "expect": "reject",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": "홍길동",
+    "layer_map": {
+     "A-WALL": "벽",
+     "A-DOOR": "문",
+     "A-FURN": "가구"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": 2.5,
+    "font_family": "Noto Sans KR"
+   }
+  },
+  {
+   "name": "layer_map_number_value",
+   "expect": "reject",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": "홍길동",
+    "layer_map": {
+     "A-WALL": 1,
+     "A-DOOR": "문"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": 2.5,
+    "font_family": "Noto Sans KR"
+   }
+  },
+  {
+   "name": "text_height_zero",
+   "expect": "reject",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": "홍길동",
+    "layer_map": {
+     "A-WALL": "벽",
+     "A-DOOR": "문"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": 0,
+    "font_family": "Noto Sans KR"
+   }
+  },
+  {
+   "name": "text_height_negative",
+   "expect": "reject",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": "홍길동",
+    "layer_map": {
+     "A-WALL": "벽",
+     "A-DOOR": "문"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": -1,
+    "font_family": "Noto Sans KR"
+   }
+  },
+  {
+   "name": "architect_name_null",
+   "expect": "reject",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": null,
+    "layer_map": {
+     "A-WALL": "벽",
+     "A-DOOR": "문"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": 2.5,
+    "font_family": "Noto Sans KR"
+   }
+  },
+  {
+   "name": "extra_signing_key",
+   "expect": "reject",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": "홍길동",
+    "layer_map": {
+     "A-WALL": "벽",
+     "A-DOOR": "문"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": 2.5,
+    "font_family": "Noto Sans KR",
+    "license_key": "x"
+   }
+  },
+  {
+   "name": "missing_font_family",
+   "expect": "reject",
+   "value": {
+    "office_name": "오에이치 건축",
+    "architect_name": "홍길동",
+    "layer_map": {
+     "A-WALL": "벽",
+     "A-DOOR": "문"
+    },
+    "default_paper": "A3",
+    "default_text_height_mm": 2.5
+   }
+  }
+ ]
+}

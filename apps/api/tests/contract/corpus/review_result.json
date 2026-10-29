@@ -1,0 +1,476 @@
+{
+ "schema": "ReviewResultV1",
+ "cases": [
+  {
+   "name": "base",
+   "expect": "accept",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "no_engine_value",
+   "expect": "accept",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "check_verdict",
+   "expect": "accept",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "CHECK",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "sentence_without_source",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": []
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "unknown_source_id",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s9"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "duplicate_source_id",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     },
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "engine_value_null",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": null,
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "verdict_na",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "NA",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "source_kind_unknown",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "blog"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  },
+  {
+   "name": "injected_permit_guarantee_field",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ]
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10",
+    "permit_ok": true
+   }
+  },
+  {
+   "name": "injected_sentence_number",
+   "expect": "reject",
+   "value": {
+    "schema_version": "review.v1",
+    "rule_pack_version": "2026.10.0",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "engine_value": {
+       "value": 52.3,
+       "limit": 60,
+       "unit": "pct"
+      },
+      "sentences": [
+       {
+        "text": "건폐율은 {ref:items.coverage.value}%로 한도 이내입니다.",
+        "source_ids": [
+         "s1"
+        ],
+        "value": 52.3
+       }
+      ]
+     }
+    ],
+    "needs_check": [
+     {
+      "text": "조례 확인 필요",
+      "source_ids": []
+     }
+    ],
+    "sources": [
+     {
+      "id": "s1",
+      "law": "건축법",
+      "article": "제55조",
+      "effective_from": "2024-01-01",
+      "kind": "law"
+     }
+    ],
+    "disclaimer_version": "2026-10"
+   }
+  }
+ ]
+}

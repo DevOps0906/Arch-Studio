@@ -1,0 +1,6080 @@
+{
+ "schema": "DesignModelV1",
+ "cases": [
+  {
+   "name": "base",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "holes_present",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ],
+      "holes": [
+       [
+        [
+         100,
+         100
+        ],
+        [
+         100,
+         200
+        ],
+        [
+         200,
+         200
+        ]
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "integral_float_mm",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000.0
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "optional_keys_omitted",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {}
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "roof_pitch_present",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "gable",
+       "pitch": 30.5
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "basement_level",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       },
+       {
+        "id": "b1",
+        "level": -1,
+        "height_mm": 2800,
+        "use": "주차장"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "mm_at_limit",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        10000000,
+        -10000000
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "checklist_union_values",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "a": "x",
+      "b": 2.5,
+      "c": false,
+      "d": [
+       "p",
+       "q"
+      ]
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "building_line_present",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": [],
+      "building_line": [
+       [
+        0,
+        1000
+       ],
+       [
+        20000,
+        1000
+       ]
+      ]
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "empty_collections",
+   "expect": "accept",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [],
+    "floor_layouts": [],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "extra_top_level_org_id",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    },
+    "org_id": "00000000-0000-4000-8000-000000000000"
+   }
+  },
+  {
+   "name": "extra_room_coordinate_x",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        },
+        "x": 100
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "extra_polygon_area_mm2",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ],
+      "area_mm2": 300000000
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "mm_fractional",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0.5,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "mm_string",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        "100",
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "mm_boolean",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        true,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "mm_over_limit",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        10000001,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "polygon_two_points",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        1,
+        1
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "point_three_elements",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "hole_two_points",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ],
+      "holes": [
+       [
+        [
+         0,
+         0
+        ],
+        [
+         1,
+         1
+        ]
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "schema_version_2",
+   "expect": "reject",
+   "value": {
+    "schema_version": 2,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "schema_version_true",
+   "expect": "reject",
+   "value": {
+    "schema_version": true,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "schema_version_string",
+   "expect": "reject",
+   "value": {
+    "schema_version": "1",
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "units_m",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "m",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "roof_pitch_null",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat",
+       "pitch": null
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "roof_type_unknown",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "dome"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "swing_null",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": null
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "opening_kind_unknown",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "skylight",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "parcel_pnu_null",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": null
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "use_district_empty",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "edge_index_negative",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": -1,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "road_width_negative",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": -1
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "missing_north_angle",
+   "expect": "reject",
+   "value": 0
+  },
+  {
+   "name": "north_angle_string",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": "0",
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "north_angle_boolean",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": false,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "level_fractional",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1.5,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "checklist_object_value",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true,
+      "x": {
+       "a": 1
+      }
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "checklist_null_value",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true,
+      "x": null
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "checklist_number_array",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true,
+      "x": [
+       1,
+       2
+      ]
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "target_extra_polygon",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24,
+       "polygon": {
+        "outer": [
+         [
+          0,
+          0
+         ],
+         [
+          1,
+          0
+         ],
+         [
+          1,
+          1
+         ]
+        ]
+       }
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "masses_null",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": true
+    },
+    "masses": null,
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "ordinance_applied_string",
+   "expect": "reject",
+   "value": {
+    "schema_version": 1,
+    "units": "mm",
+    "site": {
+     "boundary": {
+      "outer": [
+       [
+        0,
+        0
+       ],
+       [
+        20000,
+        0
+       ],
+       [
+        20000,
+        15000
+       ],
+       [
+        0,
+        15000
+       ]
+      ]
+     },
+     "north_angle_deg": 0,
+     "roads": [
+      {
+       "edge_index": 0,
+       "width_mm": 6000
+      }
+     ],
+     "zoning": {
+      "use_district": "제2종일반주거지역",
+      "districts": []
+     },
+     "parcel": {
+      "pnu": "1100000000000000000"
+     }
+    },
+    "rule_context": {
+     "rule_pack_version": "2026.10.0",
+     "application_date": "2026-11-01",
+     "municipality_code": "11000",
+     "ordinance_applied": "true"
+    },
+    "masses": [
+     {
+      "id": "m1",
+      "footprint": {
+       "outer": [
+        [
+         2000,
+         2000
+        ],
+        [
+         12000,
+         2000
+        ],
+        [
+         12000,
+         10000
+        ],
+        [
+         2000,
+         10000
+        ]
+       ]
+      },
+      "base_level_mm": 0,
+      "floors": [
+       {
+        "id": "f1",
+        "level": 1,
+        "height_mm": 3000,
+        "use": "단독주택"
+       }
+      ],
+      "roof": {
+       "type": "flat"
+      }
+     }
+    ],
+    "floor_layouts": [
+     {
+      "floor_id": "f1",
+      "rooms": [
+       {
+        "id": "r1",
+        "name": "거실",
+        "use": "거실",
+        "polygon": {
+         "outer": [
+          [
+           2000,
+           2000
+          ],
+          [
+           8000,
+           2000
+          ],
+          [
+           8000,
+           6000
+          ],
+          [
+           2000,
+           6000
+          ]
+         ]
+        }
+       }
+      ],
+      "openings": [
+       {
+        "id": "o1",
+        "kind": "door",
+        "host": {
+         "room_id": "r1",
+         "edge_index": 0
+        },
+        "offset_mm": 500,
+        "width_mm": 900,
+        "swing": "left"
+       }
+      ]
+     }
+    ],
+    "program": {
+     "checklist_answers": {
+      "households": 1,
+      "garage": true
+     },
+     "targets": [
+      {
+       "name": "거실",
+       "use": "거실",
+       "target_area_m2": 24
+      }
+     ],
+     "user_locked_rows": []
+    },
+    "meta": {
+     "created_by_engine_version": "0.0.0"
+    }
+   }
+  },
+  {
+   "name": "not_an_object",
+   "expect": "reject",
+   "value": [
+    1,
+    2
+   ]
+  }
+ ]
+}

@@ -1,0 +1,812 @@
+{
+ "schema": "IntakeCandidateV1",
+ "cases": [
+  {
+   "name": "base",
+   "expect": "accept",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "answer_list",
+   "expect": "accept",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": [
+       "주차",
+       "창고"
+      ],
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "evidence_120",
+   "expect": "accept",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "name_40_hangul",
+   "expect": "accept",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_room_polygon",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도",
+      "polygon": {
+       "outer": [
+        [
+         0,
+         0
+        ],
+        [
+         3000,
+         0
+        ],
+        [
+         3000,
+         3000
+        ]
+       ]
+      }
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_room_xy",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도",
+      "x": 0,
+      "y": 0
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_area_mm2",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도",
+      "area_mm2": 30000000
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_top_level_layout",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ],
+    "layout": [
+     {
+      "room": "거실",
+      "x": 0
+     }
+    ]
+   }
+  },
+  {
+   "name": "injected_org_id",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ],
+    "org_id": "00000000-0000-4000-8000-000000000000"
+   }
+  },
+  {
+   "name": "count_zero",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 0,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "count_21",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 21,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "count_fractional",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1.5,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "area_without_evidence",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": null
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "target_area_missing_key",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "evidence_121",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "name_41",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방방",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "name_emoji_utf16_over",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "memo_301",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가가"
+     }
+    ]
+   }
+  },
+  {
+   "name": "confidence_unknown",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "certain",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "schema_version_wrong",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v2",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": 2,
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  },
+  {
+   "name": "answer_object",
+   "expect": "reject",
+   "value": {
+    "schema_version": "intake.v1",
+    "checklist_answers": [
+     {
+      "question_id": "households",
+      "answer": {
+       "x": 1
+      },
+      "confidence": "high",
+      "evidence": "두 세대가 살 집"
+     }
+    ],
+    "rooms": [
+     {
+      "name": "거실",
+      "use": "거실",
+      "count": 1,
+      "target_area_m2": 30,
+      "area_evidence": "거실은 30제곱미터 정도"
+     },
+     {
+      "name": "침실",
+      "use": "침실",
+      "count": 3,
+      "target_area_m2": null,
+      "area_evidence": null
+     }
+    ],
+    "memo": [
+     {
+      "kind": "budget",
+      "text": "예산은 5억 이내"
+     }
+    ]
+   }
+  }
+ ]
+}

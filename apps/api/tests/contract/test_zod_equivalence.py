@@ -1,0 +1,214 @@
+"""zod(packages/domain) ↔ pydantic(app.ai.products.arch.schema) 동치 테스트.
+
+1. 구조: zod → JSON Schema(Node `tests/contract/node/dump.ts`, 테스트 시 생성)와 pydantic `model_json_schema()`를
+   정규화해 비교한다(필드명·필수·타입·정수·범위·길이·추가 필드 금지·열거값).
+2. 동작: 공유 코퍼스(`tests/contract/corpus/*.json`)를 양쪽에 돌려 수락/거부가 같은지, 그리고 기대와 같은지 본다.
+
+Node가 없으면 zod 쪽 비교는 건너뛰고(이유 표시) pydantic 코퍼스 기대 검사만 돈다.
+"""
+
+from __future__ import annotations
+
+import json
+import shutil
+import subprocess
+from functools import cache
+from pathlib import Path
+from typing import Any
+
+import pytest
+from pydantic import BaseModel, ValidationError
+
+from app.ai.products.arch import schema as S
+
+HERE = Path(__file__).parent
+REPO_ROOT = HERE.parents[3]
+CORPUS_DIR = HERE / "corpus"
+
+# pydantic 모델 이름 = zod 계약 이름(node/zod-contract.ts ZOD_SCHEMAS).
+MODELS: dict[str, type[BaseModel]] = {
+    "DesignModelV1": S.DesignModelV1,
+    "JudgmentResult": S.JudgmentResult,
+    "SheetSpec": S.SheetSpec,
+    "DraftingProfile": S.DraftingProfile,
+    "IntakeCandidateV1": S.IntakeCandidateV1,
+    "ReviewResultV1": S.ReviewResultV1,
+    "LayoutIntentV1": S.LayoutIntentV1,
+}
+# zod 정의가 아직 packages/domain에 없는 모델(04_API.md 4.2·4.3·4.6절 문서 기준 구현).
+# zod가 추가되면 이 집합에서 빼야 test_pending_set_is_exact가 통과한다 → 그때부터 자동으로 구조·코퍼스 비교 대상.
+PENDING_ZOD = {"IntakeCandidateV1", "ReviewResultV1", "LayoutIntentV1"}
+
+_DROP_KEYS = {"title", "description", "default", "examples", "$schema"}
+
+
+@cache
+def zod_dump() -> dict[str, Any]:
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node 없음: zod 쪽 비교 생략")
+    script = HERE / "node" / "dump.ts"
+    out = subprocess.run([node, str(script)], cwd=REPO_ROOT, capture_output=True, text=True, timeout=60, check=False)
+    if out.returncode != 0:
+        pytest.fail(f"zod 덤프 실패:\n{out.stderr[-2000:]}")
+    result: dict[str, Any] = json.loads(out.stdout)
+    return result
+
+
+def load_corpus() -> list[dict[str, Any]]:
+    return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(CORPUS_DIR.glob("*.json"))]
+
+
+def corpus_cases() -> list[Any]:
+    """(schema, case name, expect, raw JSON) — raw는 파일의 원래 표기(1.0 등)를 보존한다."""
+    out = []
+    for path in sorted(CORPUS_DIR.glob("*.json")):
+        doc = json.loads(path.read_text(encoding="utf-8"))
+        for case in doc["cases"]:
+            raw = json.dumps(case["value"], ensure_ascii=False)
+            out.append(
+                pytest.param(doc["schema"], case["name"], case["expect"], raw, id=f"{doc['schema']}-{case['name']}")
+            )
+    return out
+
+
+# --- 정규화 ------------------------------------------------------------------
+
+
+def _sort_key(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, ensure_ascii=False)
+
+
+def normalize(node: Any, defs: dict[str, Any]) -> Any:
+    if isinstance(node, list):
+        return [normalize(n, defs) for n in node]
+    if not isinstance(node, dict):
+        return node
+    if "$ref" in node:
+        name = node["$ref"].rsplit("/", 1)[-1]
+        return normalize(defs[name], defs)
+    out: dict[str, Any] = {}
+    for key, value in node.items():
+        if key in _DROP_KEYS or key == "$defs":
+            continue
+        out[key] = normalize(value, defs)
+
+    if "const" in out:
+        out["enum"] = [out.pop("const")]
+    if "enum" in out:
+        out.pop("type", None)
+        out["enum"] = sorted(out["enum"], key=_sort_key)
+    if "anyOf" in out:
+        members = out["anyOf"]
+        if all(set(m) == {"enum"} for m in members):
+            out.pop("anyOf")
+            out["enum"] = sorted({_sort_key(v): v for m in members for v in m["enum"]}.values(), key=_sort_key)
+        else:
+            out["anyOf"] = sorted(members, key=_sort_key)
+    if out.get("type") == "object" and "properties" in out:
+        required = set(out.get("required", []))
+        props = {}
+        for name, prop in out["properties"].items():
+            if name not in required:
+                prop = _strip_null(prop)  # 선택 필드의 null 허용 표기는 pydantic 표현 방식(실제로는 _NotNull로 거부)
+            props[name] = prop
+        out["properties"] = props
+        out["required"] = sorted(required)
+        out.setdefault("additionalProperties", True)
+    if out.get("type") == "array" and "prefixItems" in out and out.get("items") is False:
+        out.pop("items")
+    return out
+
+
+def _strip_null(prop: dict[str, Any]) -> dict[str, Any]:
+    members = prop.get("anyOf")
+    if not members:
+        return prop
+    kept = [m for m in members if m != {"type": "null"}]
+    if len(kept) == 1:
+        rest = {k: v for k, v in prop.items() if k != "anyOf"}
+        return {**kept[0], **rest}
+    return {**prop, "anyOf": kept}
+
+
+def diff(a: Any, b: Any, path: str = "$") -> list[str]:
+    if isinstance(a, dict) and isinstance(b, dict):
+        out: list[str] = []
+        for key in sorted(set(a) | set(b)):
+            if key not in a:
+                out.append(f"{path}.{key}: pydantic에만 있음 = {_sort_key(b[key])[:120]}")
+            elif key not in b:
+                out.append(f"{path}.{key}: zod에만 있음 = {_sort_key(a[key])[:120]}")
+            else:
+                out.extend(diff(a[key], b[key], f"{path}.{key}"))
+        return out
+    if isinstance(a, list) and isinstance(b, list) and len(a) == len(b):
+        return [d for i, (x, y) in enumerate(zip(a, b, strict=True)) for d in diff(x, y, f"{path}[{i}]")]
+    return [] if a == b else [f"{path}: zod={_sort_key(a)[:120]} pydantic={_sort_key(b)[:120]}"]
+
+
+def pydantic_schema(model: type[BaseModel]) -> Any:
+    raw = model.model_json_schema()
+    return normalize(raw, raw.get("$defs", {}))
+
+
+# --- 테스트 ------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("name", sorted(set(MODELS) - PENDING_ZOD))
+def test_structure_matches_zod(name: str) -> None:
+    zod = normalize(zod_dump()["schemas"][name], {})
+    py = pydantic_schema(MODELS[name])
+    problems = diff(zod, py)
+    assert not problems, f"{name} zod↔pydantic 구조 불일치:\n" + "\n".join(problems)
+
+
+def test_pending_set_is_exact() -> None:
+    zod_names = set(zod_dump()["schemas"])
+    assert zod_names == set(MODELS) - PENDING_ZOD, "zod 계약 목록이 바뀌었다: PENDING_ZOD·MODELS를 맞춘다"
+
+
+def test_every_model_has_corpus() -> None:
+    assert {doc["schema"] for doc in load_corpus()} == set(MODELS)
+
+
+@pytest.mark.parametrize(("schema", "case", "expect", "raw"), corpus_cases())
+def test_corpus_pydantic_matches_expectation(schema: str, case: str, expect: str, raw: str) -> None:
+    model = MODELS[schema]
+    try:
+        model.model_validate_json(raw)
+        accepted = True
+    except ValidationError:
+        accepted = False
+    assert accepted == (expect == "accept"), f"{schema}/{case}"
+
+
+@pytest.mark.parametrize(("schema", "case", "expect", "raw"), corpus_cases())
+def test_corpus_zod_and_pydantic_agree(schema: str, case: str, expect: str, raw: str) -> None:
+    if schema in PENDING_ZOD:
+        pytest.skip("zod 정의 없음")
+    zod_ok = zod_dump()["verdicts"][schema][case]
+    try:
+        MODELS[schema].model_validate_json(raw)
+        py_ok = True
+    except ValidationError:
+        py_ok = False
+    assert zod_ok == py_ok, f"{schema}/{case}: zod={zod_ok} pydantic={py_ok}"
+    assert zod_ok == (expect == "accept"), f"{schema}/{case}: 기대와 다름(zod 쪽 결함 후보)"
+
+
+def test_all_models_forbid_extra_fields_everywhere() -> None:
+    def walk(node: Any, path: str) -> list[str]:
+        bad: list[str] = []
+        if isinstance(node, dict):
+            if node.get("type") == "object" and "properties" in node and node.get("additionalProperties") is not False:
+                bad.append(path)
+            for key, value in node.items():
+                bad += walk(value, f"{path}.{key}")
+        elif isinstance(node, list):
+            for i, value in enumerate(node):
+                bad += walk(value, f"{path}[{i}]")
+        return bad
+
+    for name, model in MODELS.items():
+        assert walk(pydantic_schema(model), name) == []

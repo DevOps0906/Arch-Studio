@@ -1,0 +1,495 @@
+{
+ "schema": "JudgmentResult",
+ "cases": [
+  {
+   "name": "base",
+   "expect": "accept",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0
+   }
+  },
+  {
+   "name": "value_limit_omitted",
+   "expect": "accept",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0
+   }
+  },
+  {
+   "name": "pending_integral_float",
+   "expect": "accept",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 3.0
+   }
+  },
+  {
+   "name": "all_keys",
+   "expect": "accept",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     },
+     {
+      "key": "far",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     },
+     {
+      "key": "height",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     },
+     {
+      "key": "sunlight",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     },
+     {
+      "key": "setback",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     },
+     {
+      "key": "parking",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     },
+     {
+      "key": "seismic",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     },
+     {
+      "key": "zero_energy",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     },
+     {
+      "key": "supervision",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0
+   }
+  },
+  {
+   "name": "key_unknown",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "daylight",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0
+   }
+  },
+  {
+   "name": "verdict_check",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "CHECK",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0
+   }
+  },
+  {
+   "name": "pending_negative",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": -1
+   }
+  },
+  {
+   "name": "pending_fractional",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 1.5
+   }
+  },
+  {
+   "name": "value_null",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": null,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0
+   }
+  },
+  {
+   "name": "value_string",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": "52.3",
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0
+   }
+  },
+  {
+   "name": "extra_top_level",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0,
+    "org_id": "x"
+   }
+  },
+  {
+   "name": "basis_extra",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false,
+        "url": "http://x"
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0
+   }
+  },
+  {
+   "name": "unit_unknown",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "m",
+      "basis": [
+       {
+        "law": "건축법",
+        "article": "제55조",
+        "effective_from": "2024-01-01",
+        "ordinance": false
+       }
+      ]
+     }
+    ],
+    "pending_changes": 0
+   }
+  },
+  {
+   "name": "missing_basis",
+   "expect": "reject",
+   "value": {
+    "engine_version": "0.1.0",
+    "rule_pack_version": "2026.10.0",
+    "application_date": "2026-11-01",
+    "items": [
+     {
+      "key": "coverage",
+      "verdict": "PASS",
+      "value": 52.3,
+      "limit": 60,
+      "unit": "pct"
+     }
+    ],
+    "pending_changes": 0
+   }
+  }
+ ]
+}

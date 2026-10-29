@@ -1,0 +1,54 @@
+# apps/api — 공용 AI 서비스(FastAPI) + 제품 확장(arch). pnpm 워크스페이스 밖(Python).
+# 의존성은 정확한 버전으로 고정한다. 새 의존성은 라이선스 확인(GPL·AGPL 거부) 후 추가한다(AGENTS.md 3장).
+[project]
+name = "arch-studio-api"
+version = "0.0.0"
+description = "Arch Studio AI 서비스: 서명·잡 토큰 검증, 그래프 실행 골격, 계약 스키마(pydantic)"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi==0.162.0",            # MIT
+  "starlette==1.10.0",           # BSD-3-Clause
+  "pydantic==2.14.1",            # MIT
+  "pydantic-settings==2.16.2",   # MIT
+  "uvicorn==0.54.0",             # BSD-3-Clause
+  "PyJWT==2.15.1",               # MIT (EdDSA 검증)
+  "cryptography==50.0.2",        # Apache-2.0 OR BSD-3-Clause (Ed25519)
+  "httpx==0.28.1",               # BSD-3-Clause (JWKS 조회)
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.2.0",               # MIT
+  "ruff==0.17.3",                # MIT
+  "mypy==2.4.1",                 # MIT
+]
+
+[build-system]
+requires = ["setuptools==80.9.0"]  # MIT
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "BLE", "RUF"]
+ignore = ["RUF001", "RUF002", "RUF003"]  # 한국어 문서·주석의 전각 문자 허용
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S105", "S106", "S603", "S607"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["^\\.venv/"]
