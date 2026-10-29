@@ -6,6 +6,7 @@
 // - 열람(체험·구독 만료)·좁은 화면(~767)은 편집 잠금: 도구 막대 숨김 + 리듀서 거부(이중 차단).
 import type { ProjectRecord } from "@arch-studio/shell-bridge";
 import { Banner, Button, Tabs, Toast, ToastRegion } from "@arch-studio/ui";
+import { useSearchParams } from "react-router";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
 import { JudgmentPanel, StatusBadge, useJudgment } from "../judgment/index.ts";
 import {
@@ -33,6 +34,7 @@ import { useLayoutKind } from "./panels/layout.ts";
 import { modelerAccess } from "./state/access.ts";
 import { parseModelJson, sameModelJson } from "./state/load.ts";
 import { createModelerState, isDirty, massLabel, modelerReducer, previewModel, type Action, type Command } from "./state/store.ts";
+import { SuggestSection, suggestPreviewKind } from "./suggest/index.tsx";
 import { isTypingTarget, keyAction } from "./tools/keymap.ts";
 import { readSceneColors, type SceneColors } from "./viewport/colors.ts";
 import type { ViewportHandle } from "./viewport/Viewport.tsx";
@@ -98,6 +100,9 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
   const [webgl] = useState(hasWebGL2);
   const rootRef = useRef<HTMLDivElement>(null);
   const [colors, setColors] = useState<SceneColors | null>(null);
+  // 매스 자동 제안(AR-06-028, suggest/): 열고 닫는 상태만 여기 둔다. `?state=suggest-*`는 데모 미리보기(개발 서버).
+  const suggestKind = suggestPreviewKind(useSearchParams()[0].get("state"));
+  const [suggestOpen, setSuggestOpen] = useState(suggestKind !== null);
 
   useEffect(() => {
     dispatch({ type: "access", editable: access.editable, reason: access.reason });
@@ -287,6 +292,17 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
     />
   );
 
+  const suggest = suggestOpen ? (
+    <SuggestSection
+      model={present}
+      editable={s.editable}
+      lockReason={s.lockReason}
+      preview={suggestKind}
+      onApply={(masses) => dispatch({ type: "command", command: { type: "suggest", masses } })}
+      onClose={() => setSuggestOpen(false)}
+    />
+  ) : null;
+
   const view = (
     <section aria-labelledby="modeler-view-title" className="flex min-w-0 flex-col gap-2 rounded-panel border border-line bg-surface p-pad">
       <h2 id="modeler-view-title" className="sr-only">
@@ -348,6 +364,14 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
     </section>
   );
 
+  // 3D 보기 아래에 매스 제안 패널을 붙인다(3구간 모두 같은 자리).
+  const viewWithSuggest = (
+    <div className="flex min-w-0 flex-col gap-gap">
+      {view}
+      {suggest}
+    </div>
+  );
+
   const verdict = verdictSummary(judgment.data);
   // 권리 잠금 배너("열람 모드: …")는 ProjectShell이 이미 그린다. 여기서는 화면 폭 잠금(6.4절)만 알린다.
   const lockBanner =
@@ -363,11 +387,16 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
         title="모델·판정"
         description="엔벨로프 안에서 매스를 그리고 움직이며 판정을 봅니다. 판정은 참고 자료이며 최종 판단은 건축사와 허가권자가 합니다."
         actions={
-          s.editable ? (
-            <Button variant="primary" icon="check" onClick={() => void onSave()} loading={save.status === "saving"} disabled={!dirty} aria-keyshortcuts="Control+S">
-              저장
+          <>
+            <Button icon="sparkles" aria-expanded={suggestOpen} onClick={() => setSuggestOpen((v) => !v)}>
+              매스 제안
             </Button>
-          ) : undefined
+            {s.editable ? (
+              <Button variant="primary" icon="check" onClick={() => void onSave()} loading={save.status === "saving"} disabled={!dirty} aria-keyshortcuts="Control+S">
+                저장
+              </Button>
+            ) : null}
+          </>
         }
       />
       <p role="status" aria-live="polite" className="sr-only">
@@ -395,7 +424,7 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
       {layout === "wide" ? (
         <div className="grid min-w-0 grid-cols-[var(--sidebar-w)_minmax(0,1fr)_calc(var(--sidebar-w)*1.3)] items-start gap-gap">
           <div className="rounded-panel border border-line bg-surface p-pad">{layers}</div>
-          {view}
+          {viewWithSuggest}
           <div className="flex min-w-0 flex-col gap-gap">
             <div className="rounded-panel border border-line bg-surface p-pad">{inspector}</div>
             <div className="min-w-0">{judgmentPanel}</div>
@@ -403,7 +432,7 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
         </div>
       ) : layout === "medium" ? (
         <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_calc(var(--sidebar-w)*1.3)] items-start gap-gap">
-          {view}
+          {viewWithSuggest}
           <div className="min-w-0 rounded-panel border border-line bg-surface p-pad">
             <Tabs
               label="모델러 패널"
@@ -418,7 +447,7 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
         </div>
       ) : (
         <div className="flex min-w-0 flex-col gap-gap">
-          {view}
+          {viewWithSuggest}
           <details className="rounded-panel border border-line bg-surface" open={false}>
             <summary className="focus-ring flex cursor-pointer flex-wrap items-center gap-2 rounded-panel p-pad text-body font-medium text-fg">
               판정
