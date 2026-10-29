@@ -7,6 +7,11 @@ import { errorSurface, TOKEN } from "../test-helpers.ts";
 import { createTauriAdapters } from "./adapters.ts";
 import { RASTER_QUEUE_LIMIT } from "./rasterizer.ts";
 
+// 주의(AR-06-080 보안 리뷰): 여기서 계약 하네스는 실제 Rust가 아니라 JS 모킹(`testing/rust-invoke.ts`)을 상대로 돈다.
+// 그래서 rasterizer의 SVG 거부 케이스(깨진 SVG·image·use·style·href)는 JS 더블의 흉내 규칙을 검사할 뿐이고,
+// Rust `rasterize_svg`의 실제 방어(허용 요소·속성, DTD, 깊이·글자·tspan·대시 예산, 화소·PNG 상한)는
+// `apps/desktop/src-tauri`의 `cargo test`(raster.rs 단위·tests/ipc_commands.rs·tests/raster.rs)만 확인한다.
+// TS 쪽에서 실제로 막는 것은 IPC 전 입력 바이트·옵션 검사와 결과 PNG 서명·상한 검사(`adapters/rasterizer.ts`)뿐이다.
 runAdapterContract("tauri", () => {
   const rust = createRustInvoke();
   return { adapters: createTauriAdapters(rust.invoke), files: rust.files };

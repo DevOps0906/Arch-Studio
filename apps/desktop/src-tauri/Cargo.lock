@@ -64,6 +64,7 @@ name = "arch-studio-desktop"
 version = "0.0.0"
 dependencies = [
  "curve25519-dalek",
+ "deflate",
  "ed25519-dalek",
  "fontdb",
  "keyring",

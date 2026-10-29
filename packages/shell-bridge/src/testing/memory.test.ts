@@ -6,6 +6,8 @@ import { runAdapterContract } from "./contract.ts";
 import { createFileFixture } from "./files.ts";
 import { createMemoryAdapters, FakeEntitlementClient } from "./memory.ts";
 
+// 주의(AR-06-080 보안 리뷰): rasterizer 계약의 SVG 거부 케이스는 여기서 `FakeRasterizer`(JS 정규식 흉내)를 상대로 돈다.
+// 실제 Rust 방어는 `apps/desktop/src-tauri`의 `cargo test`만 확인한다(이 테스트가 통과해도 Rust 쪽 보장은 아니다).
 runAdapterContract("memory", () => {
   const files = createFileFixture();
   return { adapters: createMemoryAdapters({ files }), files };

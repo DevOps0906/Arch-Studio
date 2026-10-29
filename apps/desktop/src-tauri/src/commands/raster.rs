@@ -7,14 +7,23 @@
 //! - 허용 요소만(이미지·use·style·filter·mask·pattern 없음), 레이어를 만드는 속성·href·url() 거부, 파싱 후 트리 재검사.
 //! - 이미지 href 해석기는 둘 다 None(디스크·네트워크를 읽지 않는다). 글꼴은 바이너리에 포함한 번들 Noto Sans KR 하나뿐이고,
 //!   fontdb를 `fs` 기능 없이 써서 시스템 글꼴을 읽는 함수 자체가 없다.
-//! - 작업 스레드 + 제한 시간(AR056 `timeout`), 동시 1건(BUSY). 오류 detail은 고정 토큰만(SVG 원문·이름·위치 없음).
+//! - 요소 깊이 32(재귀 렌더의 스택 넘침 방지)·비용 예산(<text>당 글자·전체 글자·tspan 수·대시 조각 수) 사전 검사(AR055).
+//! - 작업 스레드(스택 64 MiB) + 제한 시간(AR056 `timeout`), 동시 1건(BUSY). 오류 detail은 고정 토큰만(SVG 원문·이름·위치 없음).
+//!
+//! 한계: resvg는 취소가 없어 **제한 시간이 지나도 작업 스레드는 끝까지 계산한다**(명령 응답만 먼저 돌아가고 슬롯은 계속 점유).
+//! 그래서 비용이 초선형으로 커지는 입력은 위 예산으로 렌더 전에 거부한다. 근본 대책(별도 sidecar 프로세스에서 렌더하고
+//! 시간 초과 시 프로세스를 끝내기)은 후속 작업이다(`tasks/logs/AR-06-080.md` 보안 리뷰 반영 절).
 
+use std::collections::HashMap;
+use std::io::{self, Write};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc, OnceLock};
 use std::time::Duration;
 
 use resvg::tiny_skia::{Color, Pixmap, Transform};
-use resvg::usvg::{self, fontdb, ImageHrefResolver, NodeKind, TreeParsing, TreeTextToPath};
+use resvg::usvg::{
+    self, fontdb, tiny_skia_path, ImageHrefResolver, NodeKind, TreeParsing, TreeTextToPath,
+};
 use serde::Deserialize;
 use tauri::ipc::Response;
 
@@ -32,7 +41,24 @@ pub const MAX_PNG_BYTES: usize = 100 * 1024 * 1024;
 pub const MIN_DPI: f32 = 10.0;
 pub const MAX_DPI: f32 = 1200.0;
 /// 제한 시간. 상한 근처(1억 화소) 릴리스 빌드 실측 4.3초의 약 7배.
+/// 시간이 지나면 명령은 AR056을 돌려주지만 작업 스레드는 멈추지 않는다(모듈 머리 '한계' 참고).
 pub const RENDER_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// 요소 중첩 깊이 상한(루트 `<svg>` = 1). usvg·resvg는 트리를 재귀로 돌아 깊은 중첩이면 스택이 넘쳐 앱 프로세스가 끝난다
+/// (보안 리뷰: `<g>` 600겹·`<tspan>` 1000겹, 기본 2 MiB 스택). 도면(writeSvg)은 svg > g > text 3단이라 32는 10배 여유.
+pub const MAX_ELEMENT_DEPTH: usize = 32;
+/// 작업 스레드 스택(깊이 상한과 2중 방어). 32단은 기본 스택으로도 충분하다.
+pub const RENDER_STACK_BYTES: usize = 64 << 20;
+/// `<text>` 하나의 글자 수 상한. 글자 배치 비용이 글자 수에 초선형(릴리스 실측: 4000자 41ms, 8000자 0.11s, 16000자 0.33s).
+pub const MAX_TEXT_CHARS: usize = 4_000;
+/// 문서 전체 `<text>` 글자 수 상한(선형: 4000자 × 50개 = 20만 자 1.7s). 도면 글자는 수천 자 수준.
+pub const MAX_TOTAL_TEXT_CHARS: usize = 200_000;
+/// 문서 전체 `<tspan>` 수 상한. 비용이 제곱으로 커진다(릴리스 실측: 2000개 0.77s, 4000개 2.7s, 8000개 11s). 도면은 0개.
+pub const MAX_TSPANS: usize = 2_000;
+/// 대시 조각 수 예산(경로마다 `경로 길이 × (배열 길이/2) / 주기`의 문서 합, 길이는 제어점 다각형 길이 = 상한).
+/// 릴리스 실측: 조각 90만 개 경로 1개 0.11s, 10개(900만) 0.99s → 500만은 약 0.5s. 골든 도면은 경로당 수백 개.
+/// tiny-skia는 경로마다 100만에서 대시를 포기하지만 경로 수를 늘리면 합은 끝이 없어 문서 합으로 막는다.
+pub const MAX_DASH_SEGMENTS: f64 = 5_000_000.0;
 
 /// 번들 글꼴 family 이름(022 `BUNDLED_FONT_NAME`). SVG의 어떤 family·generic family도 이 글꼴로 그린다.
 pub const FONT_FAMILY: &str = "Noto Sans KR";
@@ -133,18 +159,51 @@ pub fn usvg_options() -> usvg::Options {
     }
 }
 
-/// XML 단계 검사: SVG 루트, 허용 요소, 처리 명령 없음, 거부 속성·`url(` 값 없음.
+/// 가장 가까운 `<text>` 조상(자기 자신 제외). 조상은 이미 깊이 검사를 통과했으므로 32개 이하.
+fn text_ancestor<'a, 'i>(node: roxmltree::Node<'a, 'i>) -> Option<roxmltree::Node<'a, 'i>> {
+    node.ancestors()
+        .skip(1)
+        .find(|n| n.is_element() && n.tag_name().name() == "text")
+}
+
+/// XML 단계 검사: SVG 루트, 허용 요소, 처리 명령 없음, 거부 속성·`url(` 값 없음,
+/// 요소 깊이·글자 수·tspan 수 예산(AR055). 문서 순서(전위)로 돌므로 조상은 먼저 깊이 검사를 통과했다.
 fn check_document(doc: &roxmltree::Document) -> Result<(), AppError> {
     let root = doc.root_element();
     if root.tag_name().name() != "svg" || root.tag_name().namespace() != Some(SVG_NS) {
         return Err(err(code::INVALID_INPUT, "root"));
     }
+    let mut tspans = 0usize;
+    let mut total_chars = 0usize;
+    let mut text_chars: HashMap<roxmltree::NodeId, usize> = HashMap::new();
     for node in doc.root().descendants() {
         if node.is_pi() {
             return Err(err(code::INVALID_INPUT, "pi"));
         }
+        if node.is_text() {
+            // `<text>` 밖 글자(title·desc·요소 사이 공백)는 그리지 않는다.
+            if let Some(t) = text_ancestor(node) {
+                let n = node.text().map_or(0, |s| s.chars().count());
+                let per = text_chars.entry(t.id()).or_insert(0);
+                *per += n;
+                total_chars += n;
+                if *per > MAX_TEXT_CHARS || total_chars > MAX_TOTAL_TEXT_CHARS {
+                    return Err(err(code::TOO_LARGE, "text_chars"));
+                }
+            }
+            continue;
+        }
         if !node.is_element() {
             continue;
+        }
+        // 자신 포함 요소 조상 수. 상한+1에서 멈춰 노드당 최대 33단계.
+        let depth = node
+            .ancestors()
+            .filter(|n| n.is_element())
+            .take(MAX_ELEMENT_DEPTH + 1)
+            .count();
+        if depth > MAX_ELEMENT_DEPTH {
+            return Err(err(code::TOO_LARGE, "depth"));
         }
         let tag = node.tag_name();
         let allowed = tag.namespace() == Some(SVG_NS)
@@ -160,18 +219,81 @@ fn check_document(doc: &roxmltree::Document) -> Result<(), AppError> {
                 return Err(err(code::INVALID_INPUT, "attribute"));
             }
         }
+        if tag.name() == "tspan" {
+            tspans += 1;
+            if tspans > MAX_TSPANS {
+                return Err(err(code::TOO_LARGE, "tspans"));
+            }
+        }
     }
     Ok(())
 }
 
-/// 트리 단계 재검사: 레이어(전체 크기 Pixmap)를 만드는 그룹·이미지 노드가 없어야 한다.
+/// 경로 길이 상한: 직선은 정확히, 곡선은 제어점 다각형 길이(곡선 길이 이상). f64 합이 넘치면 무한대 → 예산에서 거부.
+fn path_length_bound(path: &tiny_skia_path::Path) -> f64 {
+    use tiny_skia_path::{PathSegment, Point};
+    let d = |a: Point, b: Point| {
+        (f64::from(b.x) - f64::from(a.x)).hypot(f64::from(b.y) - f64::from(a.y))
+    };
+    let origin = Point::zero();
+    let (mut cur, mut start, mut len) = (origin, origin, 0.0f64);
+    for seg in path.segments() {
+        match seg {
+            PathSegment::MoveTo(p) => {
+                cur = p;
+                start = p;
+            }
+            PathSegment::LineTo(p) => {
+                len += d(cur, p);
+                cur = p;
+            }
+            PathSegment::QuadTo(c, p) => {
+                len += d(cur, c) + d(c, p);
+                cur = p;
+            }
+            PathSegment::CubicTo(c1, c2, p) => {
+                len += d(cur, c1) + d(c1, c2) + d(c2, p);
+                cur = p;
+            }
+            PathSegment::Close => {
+                len += d(cur, start);
+                cur = start;
+            }
+        }
+    }
+    len
+}
+
+/// 경로 하나의 대시 조각 수(tiny-skia `dash_impl`과 같은 식: 길이 × (배열 길이/2) / 주기). 주기가 0 이하·비유한이거나
+/// 음수 항이 있으면 tiny-skia가 대시를 만들지 않으므로 0. 대시 배열과 경로 좌표는 같은 지역 좌표계라 변환(확대)과 무관하다.
+fn dash_segments(path: &usvg::Path) -> f64 {
+    let Some(arr) = path.stroke.as_ref().and_then(|s| s.dasharray.as_ref()) else {
+        return 0.0;
+    };
+    let period: f64 = arr.iter().map(|&v| f64::from(v)).sum();
+    if !period.is_finite() || period <= 0.0 || arr.iter().any(|&v| v < 0.0) {
+        return 0.0;
+    }
+    path_length_bound(&path.data) * (arr.len() / 2) as f64 / period
+}
+
+/// 트리 단계 재검사: 레이어(전체 크기 Pixmap)를 만드는 그룹·이미지 노드가 없어야 하고, 대시 조각 수 합이 예산 안이어야 한다.
+/// 글자를 경로로 바꾼 뒤(`convert_text`) 부르므로 글자 외곽선의 대시도 센다.
 fn check_tree(tree: &usvg::Tree) -> Result<(), AppError> {
+    let mut dashes = 0.0f64;
     for node in tree.root.descendants() {
         match &*node.borrow() {
             NodeKind::Group(g) if g.should_isolate() => {
                 return Err(err(code::INVALID_INPUT, "isolation"))
             }
             NodeKind::Image(_) => return Err(err(code::INVALID_INPUT, "image")),
+            NodeKind::Path(p) => {
+                dashes += dash_segments(p);
+                // NaN도 거부(NaN은 비교 불가 → 통과로 새지 않게).
+                if dashes.is_nan() || dashes > MAX_DASH_SEGMENTS {
+                    return Err(err(code::TOO_LARGE, "dash"));
+                }
+            }
             _ => {}
         }
     }
@@ -200,26 +322,97 @@ fn target_size(size: usvg::Size, target: Target) -> Result<(u32, u32, Transform)
     Ok((w, h, Transform::from_scale(w as f32 / sw, h as f32 / sh)))
 }
 
-/// RGBA 8비트 PNG(IHDR·IDAT·IEND, 022 resvg-js `asPng`와 같은 png 0.17.5 기본 설정).
-/// 흰 배경을 먼저 채워 모든 화소 알파가 255 → 사전 곱셈 값 = 원래 값이라 복사본 없이 그대로 인코딩한다.
+/// 상한이 있는 출력 버퍼. 상한을 넘기는 쓰기는 즉시 오류(압축을 끝까지 하지 않고 멈춘다).
+struct CappedVec {
+    buf: Vec<u8>,
+    cap: usize,
+    over: bool,
+}
+
+impl CappedVec {
+    fn new(cap: usize) -> Self {
+        Self {
+            buf: Vec::new(),
+            cap,
+            over: false,
+        }
+    }
+}
+
+impl Write for CappedVec {
+    fn write(&mut self, data: &[u8]) -> io::Result<usize> {
+        if self.buf.len().saturating_add(data.len()) > self.cap {
+            self.over = true;
+            return Err(io::Error::other("png_bytes"));
+        }
+        self.buf.extend_from_slice(data);
+        Ok(data.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+/// PNG 틀(서명 8 + IHDR 25 + IDAT 길이·이름·CRC 12 + IEND 12) 바이트.
+const PNG_FRAMING_BYTES: usize = 8 + 25 + 12 + 12;
+
+/// RGBA 8비트 PNG(IHDR·IDAT·IEND, 022 resvg-js `asPng`와 같은 png 0.17.5 기본 설정과 바이트 동일).
+/// png 0.17.5 `write_image_data`는 이미지 전체를 메모리에서 압축한 뒤에야 출력에 쓰므로 결과 상한을 끝에서만 볼 수 있다.
+/// 그래서 IDAT 압축만 같은 방식(행마다 필터 바이트 1 + Sub 필터, `deflate` 1.0.0 `fast()` zlib — png 0.17.5의 기본 `Compression::Fast`와 같다)으로 직접 하며
+/// 상한 버퍼에 흘려 넘는 순간 멈춘다(AR055 `png_bytes`). 틀(서명·IHDR·IEND)은 png 크레이트가 쓴다.
+/// 바이트 동일성은 골든 3건 비교(`tests/raster.rs`)가 지킨다.
+/// 흰 배경을 먼저 채워 모든 화소 알파가 255 → 사전 곱셈 값 = 원래 값이라 그대로 인코딩한다.
 fn encode_png(pixmap: &Pixmap) -> Result<Vec<u8>, AppError> {
+    encode_png_capped(pixmap, MAX_PNG_BYTES)
+}
+
+fn encode_png_capped(pixmap: &Pixmap, max_bytes: usize) -> Result<Vec<u8>, AppError> {
     if pixmap.data().chunks_exact(4).any(|p| p[3] != u8::MAX) {
         return Err(err(code::PNG_FAILED, "alpha"));
     }
-    let mut out = Vec::new();
-    {
+    let fail = |over: bool| {
+        if over {
+            err(code::TOO_LARGE, "png_bytes")
+        } else {
+            err(code::PNG_FAILED, "encode")
+        }
+    };
+    let mut idat = CappedVec::new(max_bytes.saturating_sub(PNG_FRAMING_BYTES));
+    let row = pixmap.width() as usize * 4;
+    let compressed = (|| -> io::Result<()> {
+        let mut z =
+            deflate::write::ZlibEncoder::new(&mut idat, deflate::CompressionOptions::fast());
+        let mut cur = vec![0u8; row];
+        for line in pixmap.data().chunks_exact(row) {
+            // png 0.17.5 Sub 필터(bpp 4): 첫 화소는 그대로, 나머지는 line[i] - line[i-4].
+            cur[..4].copy_from_slice(&line[..4]);
+            for i in 4..row {
+                cur[i] = line[i].wrapping_sub(line[i - 4]);
+            }
+            z.write_all(&[1])?;
+            z.write_all(&cur)?;
+        }
+        z.finish()?;
+        Ok(())
+    })();
+    if compressed.is_err() {
+        return Err(fail(idat.over));
+    }
+    let mut out = CappedVec::new(max_bytes);
+    let framed = (|| -> Result<(), png::EncodingError> {
         let mut encoder = png::Encoder::new(&mut out, pixmap.width(), pixmap.height());
         encoder.set_color(png::ColorType::Rgba);
         encoder.set_depth(png::BitDepth::Eight);
-        let mut writer = encoder
-            .write_header()
-            .map_err(|_| err(code::PNG_FAILED, "encode"))?;
-        writer
-            .write_image_data(pixmap.data())
-            .map_err(|_| err(code::PNG_FAILED, "encode"))?;
+        let mut writer = encoder.write_header()?;
+        writer.write_chunk(png::chunk::IDAT, &idat.buf)?;
+        writer.finish()
+    })();
+    if framed.is_err() {
+        return Err(fail(out.over));
     }
-    check_png_len(out.len())?;
-    Ok(out)
+    check_png_len(out.buf.len())?;
+    Ok(out.buf)
 }
 
 fn check_png_len(len: usize) -> Result<(), AppError> {
@@ -290,7 +483,8 @@ impl Drop for Slot {
 pub static GATE: RenderGate = RenderGate::new();
 
 /// 값싼 검사 → 관문 → 작업 스레드에서 `rasterize` → 제한 시간. 초과는 AR056 `timeout`, 진행 중이면 BUSY.
-/// 작업 스레드의 패닉은 AR056 `panic`(앱은 계속 돈다).
+/// 작업 스레드의 패닉은 AR056 `panic`(앱은 계속 돈다). 작업 스레드 스택은 `RENDER_STACK_BYTES`.
+/// 시간 초과는 응답만 끊는다: 작업 스레드는 끝까지 돌고 그동안 슬롯은 BUSY(비용 예산으로 그 시간을 묶는다).
 pub fn rasterize_guarded(
     gate: &'static RenderGate,
     svg: String,
@@ -310,6 +504,7 @@ pub fn rasterize_guarded(
     let (tx, rx) = mpsc::sync_channel(1);
     std::thread::Builder::new()
         .name("arch-raster".into())
+        .stack_size(RENDER_STACK_BYTES)
         .spawn(move || {
             let _slot = slot;
             let _ = tx.send(rasterize(&svg, options));
@@ -672,6 +867,203 @@ mod tests {
         }
     }
 
+    fn nested(open: &str, close: &str, inner: &str, depth: usize) -> String {
+        format!("{}{inner}{}", open.repeat(depth), close.repeat(depth))
+    }
+
+    fn doc_check(s: &str) -> Result<(), AppError> {
+        let xml = roxmltree::ParsingOptions {
+            allow_dtd: false,
+            nodes_limit: MAX_XML_NODES,
+        };
+        check_document(&roxmltree::Document::parse_with_options(s, xml).unwrap())
+    }
+
+    /// 슬롯은 작업 스레드가 결과를 보낸 직후(스레드 끝) 풀리므로 응답 직후에는 잠깐 바쁠 수 있다.
+    fn wait_idle(gate: &RenderGate) {
+        let start = std::time::Instant::now();
+        while gate.busy() {
+            assert!(
+                start.elapsed() < Duration::from_secs(10),
+                "슬롯이 풀리지 않음"
+            );
+            std::thread::sleep(Duration::from_millis(1));
+        }
+    }
+
+    static DEPTH_GATE: RenderGate = RenderGate::new();
+
+    /// 보안 리뷰 🟠1 회귀: 깊은 중첩이 작업 스레드 스택을 넘쳐 프로세스를 끝내지 않고 AR055 `depth`로 거부된다.
+    #[test]
+    fn deep_nesting_rejected_before_recursive_render() {
+        let rect = r#"<rect width="10" height="10"/>"#;
+        let g = |d: usize| {
+            svg(&nested(
+                r#"<g transform="translate(0.1 0)">"#,
+                "</g>",
+                rect,
+                d,
+            ))
+        };
+        let tspan = |d: usize| {
+            svg(&format!(
+                r#"<text x="10" y="100" font-size="20">{}</text>"#,
+                nested("<tspan>", "</tspan>", "가", d)
+            ))
+        };
+        // 명령 경로(작업 스레드)로: g 1024겹·tspan 1024겹·g 10만 겹(파서는 반복형이라 깊이 검사까지 온다).
+        for s in [g(1024), tspan(1024), g(100_000)] {
+            let e = rasterize_guarded(&DEPTH_GATE, s, w(100), RENDER_TIMEOUT).unwrap_err();
+            assert_eq!((e.code, e.detail.as_str()), (code::TOO_LARGE, "depth"));
+            assert_clean(&e);
+            wait_idle(&DEPTH_GATE);
+        }
+        // 경계: svg(1) + rect(1) + g 30겹 = 32는 통과·렌더, g 31겹 = 33은 거부.
+        assert!(rasterize_guarded(&DEPTH_GATE, g(30), w(100), RENDER_TIMEOUT).is_ok());
+        assert_eq!(rejects(&g(31), w(100), code::TOO_LARGE).detail, "depth");
+        // svg > text(2) + tspan 30겹 = 32는 통과, 31겹은 거부.
+        assert!(rasterize(&tspan(30), w(100)).is_ok());
+        assert_eq!(rejects(&tspan(31), w(100), code::TOO_LARGE).detail, "depth");
+    }
+
+    /// 보안 리뷰 🟠2: 초선형 비용 입력은 렌더 전에 고정 토큰으로 거부한다.
+    #[test]
+    fn text_and_tspan_budgets() {
+        let text = |n: usize| {
+            format!(
+                r#"<text x="0" y="100" font-size="10">{}</text>"#,
+                "가".repeat(n)
+            )
+        };
+        assert!(doc_check(&svg(&text(MAX_TEXT_CHARS))).is_ok());
+        assert_eq!(
+            rejects(&svg(&text(MAX_TEXT_CHARS + 1)), w(10), code::TOO_LARGE).detail,
+            "text_chars"
+        );
+        // tspan 안 글자도 바깥 <text> 몫으로 센다.
+        let split = format!(
+            r#"<text x="0" y="100">{}<tspan>{}</tspan></text>"#,
+            "가".repeat(MAX_TEXT_CHARS / 2),
+            "나".repeat(MAX_TEXT_CHARS / 2 + 1)
+        );
+        assert_eq!(
+            rejects(&svg(&split), w(10), code::TOO_LARGE).detail,
+            "text_chars"
+        );
+        // <text> 밖 글자(title)는 세지 않는다.
+        let title = format!("<title>{}</title>", "가".repeat(MAX_TEXT_CHARS * 2));
+        assert!(doc_check(&svg(&title)).is_ok());
+        // 문서 전체 글자 상한: 상한 안의 <text>를 여러 개.
+        let n = MAX_TOTAL_TEXT_CHARS / MAX_TEXT_CHARS;
+        assert!(doc_check(&svg(&text(MAX_TEXT_CHARS).repeat(n))).is_ok());
+        assert_eq!(
+            rejects(
+                &svg(&text(MAX_TEXT_CHARS).repeat(n + 1)),
+                w(10),
+                code::TOO_LARGE
+            )
+            .detail,
+            "text_chars"
+        );
+        let tspans = |n: usize| {
+            svg(&format!(
+                r#"<text x="0" y="100">{}</text>"#,
+                "<tspan>가</tspan>".repeat(n)
+            ))
+        };
+        assert!(doc_check(&tspans(MAX_TSPANS)).is_ok());
+        assert_eq!(
+            rejects(&tspans(MAX_TSPANS + 1), w(10), code::TOO_LARGE).detail,
+            "tspans"
+        );
+    }
+
+    #[test]
+    fn dash_segment_budget() {
+        let tree = |body: &str| {
+            let s = svg(body);
+            let doc = roxmltree::Document::parse(&s).unwrap();
+            let mut t = usvg::Tree::from_xmltree(&doc, &usvg_options()).unwrap();
+            t.convert_text(font_db());
+            t
+        };
+        // 길이 1000, 주기 0.0004 → 경로당 250만 조각.
+        let line = r##"<line x1="0" y1="0" x2="1000" y2="0" stroke="#000" stroke-dasharray="0.0002 0.0002"/>"##;
+        assert!(check_tree(&tree(line)).is_ok());
+        assert!(check_tree(&tree(&line.replace("0.0002", "0.00021").repeat(2))).is_ok());
+        assert_eq!(
+            check_tree(&tree(&line.repeat(3))).unwrap_err().detail,
+            "dash"
+        );
+        // 곡선은 제어점 다각형 길이(상한)로 센다: 제어점 경유 길이 3000 → 750만.
+        let curve = r##"<path d="M0 0 C0 1000 1000 1000 1000 0" stroke="#000" stroke-dasharray="0.0002 0.0002"/>"##;
+        assert_eq!(check_tree(&tree(curve)).unwrap_err().detail, "dash");
+        // 거대 좌표(주기는 평범해도 길이가 크다)도 거부.
+        let huge =
+            r##"<path d="M-1e30 0 L1e30 0 L-1e30 0" stroke="#000" stroke-dasharray="1 1"/>"##;
+        assert_eq!(check_tree(&tree(huge)).unwrap_err().detail, "dash");
+        // 글자 외곽선의 대시도 센다.
+        let text = r##"<text x="0" y="400" font-size="400" stroke="#000" stroke-dasharray="0.00001 0.00001">가</text>"##;
+        assert_eq!(check_tree(&tree(text)).unwrap_err().detail, "dash");
+        // 리뷰 재현(경로마다 tiny-skia 상한 100만 아래 × 40개) — 명령 경로에서 렌더 전 거부.
+        let rev = r##"<line x1="0" y1="0" x2="1000" y2="500" stroke="#000" stroke-width="1" stroke-dasharray="0.0012 0.0012"/>"##.repeat(40);
+        let e = rejects(&svg(&rev), w(1000), code::TOO_LARGE);
+        assert_eq!(e.detail, "dash");
+        // 대시 없음·도면 대시(300 100)는 0에 가깝다.
+        assert!(check_tree(&tree(
+            r##"<line x1="0" y1="0" x2="1000" y2="0" stroke="#000" stroke-dasharray="300 100"/>"##
+        ))
+        .is_ok());
+    }
+
+    fn noise(w: u32, h: u32) -> Pixmap {
+        let mut p = Pixmap::new(w, h).unwrap();
+        let mut x = 0x9e37_79b9u32;
+        for (i, b) in p.data_mut().iter_mut().enumerate() {
+            x ^= x << 13;
+            x ^= x >> 17;
+            x ^= x << 5;
+            *b = if i % 4 == 3 { 255 } else { x as u8 };
+        }
+        p
+    }
+
+    /// 직접 압축한 IDAT가 png 0.17.5 `write_image_data`와 바이트 동일(골든 3건 외 잡음 영상으로도).
+    #[test]
+    fn png_encoder_matches_png_crate_bytes() {
+        for (w, h) in [(1, 1), (7, 3), (64, 64), (333, 41)] {
+            let p = noise(w, h);
+            let mut legacy = Vec::new();
+            {
+                let mut e = png::Encoder::new(&mut legacy, w, h);
+                e.set_color(png::ColorType::Rgba);
+                e.set_depth(png::BitDepth::Eight);
+                e.write_header()
+                    .unwrap()
+                    .write_image_data(p.data())
+                    .unwrap();
+            }
+            assert_eq!(encode_png(&p).unwrap(), legacy, "{w}x{h}");
+        }
+    }
+
+    /// 보안 리뷰 🟡: 결과 상한을 넘으면 압축 중에 멈추고 AR055 `png_bytes`.
+    #[test]
+    fn png_byte_cap_stops_while_compressing() {
+        let p = noise(256, 256);
+        let full = encode_png(&p).unwrap();
+        assert_eq!(encode_png_capped(&p, full.len()).unwrap(), full);
+        let e = encode_png_capped(&p, full.len() - 1).unwrap_err();
+        assert_eq!((e.code, e.detail.as_str()), (code::TOO_LARGE, "png_bytes"));
+        // 상한 버퍼는 상한을 넘겨 자라지 않는다.
+        let mut c = CappedVec::new(10);
+        assert!(c.write_all(&[0; 8]).is_ok());
+        assert!(c.write_all(&[0; 3]).is_err());
+        assert!(c.over && c.buf.len() == 8);
+        let e = encode_png_capped(&p, 100).unwrap_err();
+        assert_eq!(e.detail, "png_bytes");
+    }
+
     static TEST_GATE: RenderGate = RenderGate::new();
 
     #[test]
@@ -703,9 +1095,9 @@ mod tests {
         }
         let png = rasterize_guarded(&TEST_GATE, svg(""), w(10), RENDER_TIMEOUT).unwrap();
         assert_eq!(&png[..4], b"\x89PNG");
-        assert!(!TEST_GATE.busy());
+        wait_idle(&TEST_GATE);
         // 실패(파싱 오류)도 슬롯을 푼다.
         assert!(rasterize_guarded(&TEST_GATE, "<x".into(), w(10), RENDER_TIMEOUT).is_err());
-        assert!(!TEST_GATE.busy());
+        wait_idle(&TEST_GATE);
     }
 }

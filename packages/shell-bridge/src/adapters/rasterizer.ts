@@ -1,6 +1,6 @@
 // Rasterizer(AR-06-080): 도면 SVG 문자열 → PNG 바이트. 설치형은 Rust `rasterize_svg`(resvg 0.34.0, 번들 Noto Sans KR만),
 // 웹은 서버·워커의 resvg-js 경로(072 소유)라 이 어댑터는 NOT_SUPPORTED. 입력은 SVG 문자열과 크기 옵션뿐(경로·URL 0).
-// 실패는 BridgeError(RasterErrorCode): AR055 상한 초과(입력·화소·결과), AR056 렌더 실패·시간 초과, INVALID_INPUT 옵션·SVG 형식·
+// 실패는 BridgeError(RasterErrorCode): AR055 상한 초과(입력·화소·결과, Rust 쪽 요소 깊이 32·<text> 글자·tspan·대시 조각 예산), AR056 렌더 실패·시간 초과, INVALID_INPUT 옵션·SVG 형식·
 // 허용 밖 요소, BUSY 진행 중. 오류에는 코드만 남긴다(SVG 원문·Rust detail 버림).
 import { BridgeError } from "./errors.ts";
 

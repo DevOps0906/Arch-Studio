@@ -322,6 +322,8 @@ export function runAdapterContract(name: string, factory: ContractFactory): void
     await rejectsWith(() => r.rasterize(5 as unknown as string, { widthPx: 10 }), "INVALID_INPUT");
   });
 
+  // 이 SVG 거부 케이스는 하네스가 도는 대상(JS 더블: FakeRasterizer·rust-invoke 모킹)의 규칙만 검사한다.
+  // 실제 Rust `rasterize_svg`의 방어는 src-tauri `cargo test`가 확인한다(AR-06-080 보안 리뷰).
   t("rasterizer: 깨진 SVG·외부 참조(image·use·style·href)는 INVALID_INPUT, 오류에 SVG 원문 없음", async ({ adapters }) => {
     if (!adapters.rasterizer) return;
     const r = adapters.rasterizer;
