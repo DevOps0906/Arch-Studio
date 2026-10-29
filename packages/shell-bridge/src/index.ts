@@ -1,5 +1,5 @@
 // @arch-studio/shell-bridge 공개 API(AR-06-005, 070에서 어댑터 5종 추가). 테스트 더블·계약 하네스는 `./testing` 하위 경로에만 있다.
-// 005 이름은 그대로 유지한다(008이 import). 새 이름은 추가만 한다.
+// 080에서 Rasterizer 추가(SVG→PNG). 005 이름은 그대로 유지한다(008이 import). 새 이름은 추가만 한다.
 export {
   createNativeBridge,
   createPlatformAdapters,
@@ -20,6 +20,7 @@ export {
   type FileErrorCode,
   type LicenseErrorCode,
   type ProjectErrorCode,
+  type RasterErrorCode,
   type SecretErrorCode,
   type UpdaterErrorCode,
 } from "./adapters/errors.ts";
@@ -70,6 +71,15 @@ export {
   type EntitlementFeature,
   type EntitlementStatus,
 } from "./adapters/entitlement.ts";
+export {
+  assertRasterizeOptions,
+  assertRasterSvg,
+  RASTER_LIMITS,
+  rasterizerOf,
+  UNSUPPORTED_RASTERIZER,
+  type RasterizeOptions,
+  type Rasterizer,
+} from "./adapters/rasterizer.ts";
 export type { UpdateInfo, Updater } from "./adapters/updater.ts";
 export type { LicenseClient, LicenseState, LicenseStatus } from "./adapters/license-client.ts";
 export {

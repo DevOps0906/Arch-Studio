@@ -66,5 +66,17 @@
   소스: https://github.com/yisibl/resvg-js (태그 v2.6.2) · resvg 원본 https://github.com/RazrFalcon/resvg (0.34.0; resvg-js는 `zimond/resvg` rev 3495d870 포크를 [patch.crates-io]로 사용) · MPL-2.0 전문 https://www.mozilla.org/MPL/2.0/ .
   우리가 resvg 소스를 수정하게 되면(후속 Rust 작업 포함) 수정한 MPL 파일의 소스를 같은 라이선스로 공개해야 한다.
 - 배포 위치: **웹 서버·작업 워커·CI·샘플 생성만**(Node). 설치형(Tauri)에는 npm 바이너리가 들어가지 않는다 — 설치형은 후속 AR-06-080(Rust resvg 크레이트 직접 사용)에서 별도 고지한다.
-- Rust 전이 크레이트 전체의 라이선스 목록(`cargo about` 등)은 이번에 만들지 않았다 — 설치형 Rust 작업(AR-06-080)에서 만든다. npm 쪽 조사: `pnpm licenses list --prod`에서 GPL·AGPL·LGPL 없음.
+- Rust 전이 크레이트 라이선스 목록은 아래 "apps/desktop — 설치형 PNG 래스터화(AR-06-080)" 절. npm 쪽 조사: `pnpm licenses list --prod`에서 GPL·AGPL·LGPL 없음.
 - 참고: 앞서 검토한 sharp(libvips LGPL-3.0)는 대표 결정으로 PNG에 쓰지 않는다. `@arch-studio/geometry`의 manifold-3d 전이 의존성으로만 설치되어 있다(위 항목).
+
+## apps/desktop (Tauri, Rust) — 설치형 PNG 래스터화 (AR-06-080)
+- **resvg 0.34.0 · usvg 0.34.1 · usvg-parser 0.34.0 · usvg-tree 0.34.0 · usvg-text-layout 0.34.0 — MPL-2.0**, Copyright (c) Yevhenii Reizner 외 resvg 기여자.
+  crates.io 업스트림 크레이트를 **수정 없이** 정적 링크한다(웹 경로가 쓰는 `zimond/resvg` 포크가 아님 — 골든 바이트 일치는 `tasks/logs/AR-06-080.md`).
+  MPL-2.0 고지·소스 위치: https://github.com/RazrFalcon/resvg (태그 0.34.0, usvg 0.34.1) · https://crates.io/crates/resvg/0.34.0 · MPL-2.0 전문 https://www.mozilla.org/MPL/2.0/ .
+  수정하게 되면 수정한 MPL 파일의 소스를 같은 라이선스로 공개해야 한다(법률 자문 아님).
+- 번들 글꼴: 위 **Noto Sans KR Regular 부분 집합**(SIL OFL 1.1)을 설치형 실행 파일에 `include_bytes!`로 포함한다. 설치 파일에 `OFL.txt`를 함께 넣고 앱 라이선스 화면에서 이 문서를 보여 준다(패키징 단계 확인).
+- 전이 크레이트(`cargo metadata`, 새로 들어온 것): tiny-skia 0.10.0·tiny-skia-path 0.10.0(BSD-3-Clause, Copyright Google·Yevhenii Reizner), arrayref 0.3.9(BSD-2-Clause),
+  fontdb 0.14.1·rustybuzz 0.7.0·rctree 0.5.0·rgb 0.8.53·float-cmp 0.9.0·strict-num 0.1.1·imagesize 0.12.0·pico-args 0.5.0·xmlwriter 0.1.0(MIT),
+  png 0.17.5·roxmltree 0.18.1·xmlparser 0.13.6·ttf-parser 0.18.1·0.19.2·kurbo 0.9.5·svgtypes 0.11.0·simplecss 0.2.2·data-url 0.2.0·deflate 1.0.0·arrayvec 0.7.8·unicode-bidi 0.3.18·unicode-script 0.5.8·unicode-bidi-mirroring 0.1.0·unicode-ccc 0.1.2·unicode-vo 0.1.0·siphasher 0.3.11(MIT OR Apache-2.0),
+  unicode-general-category 0.6.0(Apache-2.0), slotmap 1.1.1·adler32 1.2.0(Zlib), miniz_oxide 0.5.4(MIT OR Zlib OR Apache-2.0), adler 1.0.2(0BSD OR MIT OR Apache-2.0).
+  GPL·AGPL·LGPL 없음. 기능은 `text`만(시스템 글꼴·메모리 맵·래스터 이미지 디코더 끔).

@@ -83,6 +83,7 @@ fn capability_allows_app_commands() {
         "secret_delete",
         "license_verify",
         "device_hash_get",
+        "rasterize_svg",
     ] {
         if let Err(err) = invoke(cmd) {
             assert!(

@@ -220,3 +220,69 @@ fn no_command_takes_path_or_sql_argument() {
     // 이름 집합 일치는 tests/capabilities.rs의 command_names_match_across_build_handler_and_capability가 보증한다.
     assert!(commands >= 9, "명령 소스 파싱 실패: {commands}");
 }
+
+/// rasterize_svg(AR-06-080): SVG 문자열 → 원시 PNG, 상한·옵션·경로 인자, 오류에 SVG 원문 없음.
+/// 앱 전체 관문(동시 1건)을 쓰므로 한 테스트 안에서 순서대로 부른다.
+#[test]
+fn rasterize_svg_over_ipc() {
+    let dir = temp_dir("raster");
+    let w = app(None, &dir);
+    let leak = "SECRET-SVG-CONTENT";
+    let svg = format!(
+        r##"<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="50mm" viewBox="0 0 1000 500"><title>{leak}</title><rect width="1000" height="500" fill="#fff"/><line x1="0" y1="0" x2="1000" y2="500" stroke="#000" stroke-width="10"/></svg>"##
+    );
+    let res = call(
+        &w,
+        "rasterize_svg",
+        InvokeBody::Json(json!({"svg": svg, "options": {"widthPx": 200}})),
+        Default::default(),
+    )
+    .expect("래스터화");
+    let InvokeResponseBody::Raw(png) = res else {
+        panic!("원시 응답 기대");
+    };
+    assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");
+    assert!(!String::from_utf8_lossy(&png).contains(leak));
+
+    let reject = |args: Value| -> Value {
+        let e = call(
+            &w,
+            "rasterize_svg",
+            InvokeBody::Json(args),
+            Default::default(),
+        )
+        .expect_err("거부 기대");
+        assert!(!e.to_string().contains(leak), "오류에 SVG 원문: {e}");
+        e
+    };
+    let big = format!("{svg}{}", " ".repeat(8 * 1024 * 1024));
+    assert_eq!(
+        reject(json!({"svg": big, "options": {"widthPx": 10}}))["code"],
+        "AR055"
+    );
+    assert_eq!(
+        reject(json!({"svg": svg, "options": {"widthPx": 50000}}))["code"],
+        "AR055"
+    );
+    let img = svg.replace(
+        "</svg>",
+        &format!(r#"<image href="C:/{leak}.png" width="1" height="1"/></svg>"#),
+    );
+    let e = reject(json!({"svg": img, "options": {"widthPx": 10}}));
+    assert_eq!(e["code"], "INVALID_INPUT");
+    assert_eq!(e["detail"], "element");
+    assert_eq!(
+        reject(json!({"svg": format!("<svg>{leak}"), "options": {"widthPx": 10}}))["code"],
+        "INVALID_INPUT"
+    );
+    assert_eq!(
+        reject(json!({"svg": svg, "options": {"widthPx": 10, "dpi": 96}}))["code"],
+        "INVALID_INPUT"
+    );
+    // 경로·URL 인자는 받지 않는다: 알 수 없는 옵션 필드는 역직렬화 거부, svg 없이 path만 주면 거부.
+    assert!(
+        reject(json!({"svg": svg, "options": {"widthPx": 10, "path": "C:/x.png"}})).is_string()
+    );
+    assert!(reject(json!({"path": "C:/x.svg", "options": {"widthPx": 10}})).is_string());
+    assert!(!dir.join("x.png").exists());
+}

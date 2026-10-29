@@ -11,6 +11,7 @@ const APP_COMMANDS: &[&str] = &[
     "secret_delete",
     "license_verify",
     "device_hash_get",
+    "rasterize_svg",
 ];
 
 fn main() {

@@ -5,6 +5,7 @@ import type { PlatformCapabilities } from "./capabilities.ts";
 import type { EntitlementClient } from "./entitlement.ts";
 import type { FileGateway } from "./file-gateway.ts";
 import type { ProjectStore } from "./project-store.ts";
+import type { Rasterizer } from "./rasterizer.ts";
 import type { SecureStore } from "./secure-store.ts";
 import type { Updater } from "./updater.ts";
 
@@ -21,6 +22,11 @@ export interface PlatformAdapters extends NativeBridge {
   readonly entitlement: EntitlementClient;
   /** 설치형만. 웹·구현 전에는 null. */
   readonly updater: Updater | null;
+  /**
+   * SVG → PNG(AR-06-080, 080에서 추가 — 선택 필드라 기존 구현은 그대로 맞다). 설치형만 채운다.
+   * 없으면 NOT_SUPPORTED: 화면은 `rasterizerOf(adapters)`로 꺼낸다. 웹 PNG는 서버·워커 경로(072).
+   */
+  readonly rasterizer?: Rasterizer;
 }
 
 export * from "./capabilities.ts";
@@ -30,5 +36,6 @@ export * from "./exporter.ts";
 export * from "./file-gateway.ts";
 export * from "./license-client.ts";
 export * from "./project-store.ts";
+export * from "./rasterizer.ts";
 export * from "./secure-store.ts";
 export * from "./updater.ts";

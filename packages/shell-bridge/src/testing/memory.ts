@@ -36,6 +36,13 @@ import {
   type SaveProjectResult,
 } from "../adapters/project-store.ts";
 import { clearAllSecrets, MemorySecureStore } from "../adapters/secure-store.ts";
+import {
+  assertRasterizeOptions,
+  assertRasterSvg,
+  type RasterizeOptions,
+  type Rasterizer,
+} from "../adapters/rasterizer.ts";
+import type { RasterErrorCode } from "../adapters/errors.ts";
 import type { Updater } from "../adapters/updater.ts";
 import { createFileFixture, type FileFixture } from "./files.ts";
 
@@ -161,10 +168,37 @@ export class FakeEntitlementClient implements EntitlementClient {
   }
 }
 
+const FAKE_PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/x8AAwMCAO+ip1sAAAAASUVORK5CYII=";
+
+/** 1×1 PNG(테스트 더블 결과). 부를 때마다 새 사본. */
+export function fakePng(): Uint8Array {
+  return Uint8Array.from(atob(FAKE_PNG_BASE64), (c) => c.charCodeAt(0));
+}
+
+/**
+ * 가짜 Rasterizer: 실제와 같은 입력 검사(상한·옵션)와 Rust 허용 요소 규칙의 대표(`<image`·`<use`·`<style`·`href` 거부)를 흉내 내고
+ * 고정 PNG를 돌려준다. `failWith`가 있으면 그 코드로 실패. 호출 내역은 크기만 기록(SVG 원문은 남기지 않음).
+ */
+export class FakeRasterizer implements Rasterizer {
+  readonly calls: { svgBytes: number; opts: RasterizeOptions }[] = [];
+  failWith: RasterErrorCode | null = null;
+
+  async rasterize(svg: string, opts: RasterizeOptions): Promise<Uint8Array> {
+    assertRasterizeOptions(opts);
+    assertRasterSvg(svg);
+    if (this.failWith) throw new BridgeError(this.failWith);
+    if (!/^\s*(<\?xml[^>]*\?>\s*)?<svg[\s>]/.test(svg)) throw new BridgeError("INVALID_INPUT");
+    if (/<(image|use|style|foreignObject|filter|mask|pattern)\b|\bhref\s*=/i.test(svg)) throw new BridgeError("INVALID_INPUT");
+    this.calls.push({ svgBytes: svg.length, opts });
+    return fakePng();
+  }
+}
+
 export interface MemoryAdapters extends PlatformAdapters {
   readonly projects: MemoryProjectStore;
   readonly files: FakeFileGateway;
   readonly entitlement: FakeEntitlementClient;
+  readonly rasterizer: FakeRasterizer;
 }
 
 /** 메모리 어댑터 묶음. 기본 capabilities는 웹 값(덮어쓰기 가능, 단 불변식은 지켜야 계약 통과). */
@@ -174,6 +208,7 @@ export function createMemoryAdapters(
     entitlement?: FakeEntitlementClient;
     updater?: Updater | null;
     files?: FileFixture;
+    rasterizer?: FakeRasterizer;
   } = {},
 ): MemoryAdapters {
   const secrets = new MemorySecureStore();
@@ -184,6 +219,7 @@ export function createMemoryAdapters(
     secrets,
     entitlement: options.entitlement ?? new FakeEntitlementClient(),
     updater: options.updater ?? null,
+    rasterizer: options.rasterizer ?? new FakeRasterizer(),
     clearSecrets: () => clearAllSecrets(secrets),
   });
 }

@@ -12,8 +12,12 @@ export type ProjectCommand =
 /** FileGateway 명령(`commands/fs.rs`·`commands/export.rs`). */
 export type FileCommand = "fs_open_import" | "export_save_file";
 
-/** 이 패키지가 부르는 명령 이름(build.rs APP_COMMANDS 전부). */
-export type BridgeCommand = SecretCommand | ProjectCommand | FileCommand;
+/** Rasterizer 명령(`commands/raster.rs`, AR-06-080). */
+export const RASTERIZE_SVG_COMMAND = "rasterize_svg";
+export type RasterCommand = typeof RASTERIZE_SVG_COMMAND;
+
+/** 이 패키지가 부르는 명령 이름(build.rs APP_COMMANDS 중 화면용). */
+export type BridgeCommand = SecretCommand | ProjectCommand | FileCommand | RasterCommand;
 
 /** 명령 인자: JSON 객체 또는 원시 본문(`export_save_file`은 바이트 본문 + 헤더). */
 export type InvokeArgs = Record<string, unknown> | Uint8Array;

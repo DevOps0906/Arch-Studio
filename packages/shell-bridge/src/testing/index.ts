@@ -10,7 +10,9 @@ export { createFileFixture, type FileFixture, type OfferedFile, type SaveTarget 
 export {
   createMemoryAdapters,
   FakeEntitlementClient,
+  fakePng,
   FakeFileGateway,
+  FakeRasterizer,
   MemoryProjectStore,
   type MemoryAdapters,
 } from "./memory.ts";

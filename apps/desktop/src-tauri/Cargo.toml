@@ -27,6 +27,17 @@ keyring = { version = "=3.6.3", features = ["apple-native", "windows-native", "l
 # 라이선스·규칙 팩 서명 검증(AR-06-041, BSD-3-Clause). 검증만 쓴다(서명·난수 기능 없음). sha2 0.10은 위와 공유.
 ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std", "fast", "zeroize"] }
 
+# 설치형 PNG 래스터화(AR-06-080). 022 웹 경로(@resvg/resvg-js 2.6.2)가 내장한 버전과 같게 정확히 고정한다 — 골든 바이트 일치.
+# resvg·usvg MPL-2.0(수정 없이 사용), tiny-skia BSD-3-Clause, png·fontdb·roxmltree MIT OR Apache-2.0 계열.
+# 기능 최소화: text만(system-fonts·memmap-fonts·raster-images 끔). fontdb는 fs 기능 없이 → 시스템 글꼴·글꼴 파일 로드 함수가 없다.
+# png =0.17.5: resvg-js가 쓴 버전. 최신 0.17.x는 기본 필터·압축이 달라 PNG 바이트가 달라진다(픽셀은 같음).
+resvg = { version = "=0.34.0", default-features = false, features = ["text"] }
+usvg = { version = "=0.34.1", default-features = false, features = ["text"] }
+tiny-skia = "=0.10.0"
+fontdb = { version = "=0.14.1", default-features = false }
+png = "=0.17.5"
+roxmltree = "=0.18.1"
+
 # Windows 기기 ID(MachineGuid)는 레지스트리 API를 직접 부른다(AR-06-041 보안 리뷰: reg.exe 실행·환경 변수 경로 의존 제거).
 # MIT OR Apache-2.0. keyring(windows-native)이 이미 쓰는 같은 버전이라 새 크레이트가 아니다.
 [target.'cfg(windows)'.dependencies]
