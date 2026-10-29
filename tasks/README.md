@@ -29,9 +29,9 @@
 | AR-06-007 | 클라우드 API 클라이언트(재시도·오류 매핑) | W1 | 005 | 보통 | builder | 대기 |
 | AR-06-008 | 인증 Stage A: Mock 로그인·온보딩 | W1 | 001, 003, 005 | 높음 | builder | 대기 |
 | AR-06-070 | 플랫폼 어댑터 5종 인터페이스·설치형 구현 이전 | W1 | 005, 006 | 보통 | builder | 대기 |
-| AR-06-015 | 판정 엔진·규칙 팩·골든 | W2 | 013, 014 | 보통 | builder | 대기 |
+| AR-06-015 | 판정 엔진·규칙 팩·골든 | W2 | 013, 014 | 보통 | builder | 완료 |
 | AR-06-016 | 법규 엔벨로프(일조사선 신·구) | W2 | 014, 015 | 보통 | builder | 대기 |
-| AR-06-020 | 시트 모델·표제란·레이어·치수 | W2 | 013, 014, 019 | 보통 | builder | 대기 |
+| AR-06-020 | 시트 모델·표제란·레이어·치수 | W2 | 013, 014, 019 | 보통 | builder | 진행 |
 | AR-06-021 | DXF 작성기·골든 하네스·CI audit | W2 | 019, 020 | 보통 | builder | 대기 |
 | AR-06-040 | 라이선스 서버·서명 파일·기기 활성화 | W2 | 001, 003 | 높음 | challenger→builder | 대기 |
 | AR-06-041 | Rust 라이선스 검증·규칙 팩 서명 | W2 | 006, 040 | 높음 | challenger→builder | 대기 |
@@ -112,5 +112,6 @@
 | 2026-10-29 | AR-06-048 워커 ↔ 04_API.md | 워커가 부르는 `POST /api/internal/ai-settle`·`/api/internal/ai-token`(Bearer 워커 키, `{job_id, scope}`→`{token}`)과 잡 타임아웃(intake·proposal_pdf 5분, stt 30분)은 builder가 정한 값 | AR-06-047 AI 게이트에서 04_API에 확정 |
 | 2026-10-29 | AR-06-006 로컬 명령 | 내부 오류 코드 5개(CANCELLED·READ_FAILED·INVALID_INPUT·NOT_FOUND·VERSION_CONFLICT)가 04_API 7.3 AR 코드 밖, 저장 기본 파일명 export.<ext>(4.7.6 이름 규칙 미반영), 리비전 보존 정책 없음, 100MiB 내보내기 쓰기가 async 스레드를 잠시 점유, cargo audit 미설치 | 7.3 정식 코드화는 070 어댑터 때, 파일명은 030 ExportDialog, 보존 정책·cargo audit은 CI(S-7) |
 | 2026-10-29 | AR-06-006 사람 확인 | 실제 Windows 열기·저장·덮어쓰기 대화상자, OneDrive·junction·260자+ 경로 미검증(테스트는 picker 대체) | 대표님 확인 후 tasks/logs/AR-06-006.md에 기록 |
+| 2026-10-29 | 규칙 팩 2026.10.0 | 근거 문서에 조문이 붙은 법규 수치가 없어 10개 규칙 전부 `미확인`(판정 전부 WARN), 지원 지자체 0, 허가 도서 평가셋 30건 미측정 | 사용자: 법규 수치·조문·시행일 제공 또는 원문 표 작성 후 검수 → 팩 2026.10.1 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준

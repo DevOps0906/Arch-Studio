@@ -1,0 +1,231 @@
+{
+  "basis_date": "2026-10-14",
+  "format": 1,
+  "municipalities": [],
+  "rules": [
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "미확인",
+          "ordinance": false
+        }
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "id": "coverage.national",
+      "key": "coverage",
+      "municipalities": [
+        "*"
+      ],
+      "note": "근거 문서에 법령·조문·한도 수치 없음. 원문 대조 후 확정 규칙으로 바꾼다. 조례 관계 미확인.",
+      "ordinance_dependent": false,
+      "source": "docs/file/02-요구사항/01_PRD.md#3 AR-F-004",
+      "status": "unverified",
+      "title": "건폐율"
+    },
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "미확인",
+          "ordinance": false
+        }
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "id": "far.national",
+      "key": "far",
+      "municipalities": [
+        "*"
+      ],
+      "note": "근거 문서에 법령·조문·한도 수치 없음. 조례 관계 미확인.",
+      "ordinance_dependent": false,
+      "source": "docs/file/02-요구사항/01_PRD.md#3 AR-F-004",
+      "status": "unverified",
+      "title": "용적률"
+    },
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "미확인",
+          "ordinance": false
+        }
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "id": "height.national",
+      "key": "height",
+      "municipalities": [
+        "*"
+      ],
+      "note": "근거 문서에 법령·조문·한도 수치 없음.",
+      "ordinance_dependent": false,
+      "source": "docs/file/02-요구사항/01_PRD.md#3 AR-F-004",
+      "status": "unverified",
+      "title": "높이"
+    },
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "건축법",
+          "ordinance": false
+        }
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "id": "sunlight.building-act",
+      "key": "sunlight",
+      "municipalities": [
+        "*"
+      ],
+      "note": "PRD 6.2는 2차 자료(뉴스)만 있고 조문·공포일·시행일 미확인. 지자체별 조례 반영 시점 상이. 신·구 기준은 원문 대조 후 시행일과 함께 두 규칙으로 등록.",
+      "ordinance_dependent": true,
+      "source": "docs/file/02-요구사항/01_PRD.md#6.2 정북 일조사선; 11_LEGAL_RULE_REVIEW.md#2",
+      "status": "unverified",
+      "title": "정북 일조사선"
+    },
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "미확인",
+          "ordinance": false
+        }
+      ],
+      "edge_class": "road",
+      "effective_from": null,
+      "effective_to": null,
+      "id": "setback.road",
+      "key": "setback",
+      "municipalities": [
+        "*"
+      ],
+      "note": "대지안의 공지·이격 기준 수치·조문 근거 문서에 없음.",
+      "ordinance_dependent": false,
+      "source": "docs/file/02-요구사항/01_PRD.md#3 AR-F-002·AR-F-004",
+      "status": "unverified",
+      "title": "이격(도로 경계)"
+    },
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "미확인",
+          "ordinance": false
+        }
+      ],
+      "edge_class": "adjacent",
+      "effective_from": null,
+      "effective_to": null,
+      "id": "setback.adjacent",
+      "key": "setback",
+      "municipalities": [
+        "*"
+      ],
+      "note": "대지안의 공지·이격 기준 수치·조문 근거 문서에 없음.",
+      "ordinance_dependent": false,
+      "source": "docs/file/02-요구사항/01_PRD.md#3 AR-F-002·AR-F-004",
+      "status": "unverified",
+      "title": "이격(인접 대지 경계)"
+    },
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "주차장법 시행령",
+          "ordinance": false
+        }
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "id": "parking.national",
+      "key": "parking",
+      "municipalities": [
+        "*"
+      ],
+      "note": "법령명은 PRD AR-F-006, 조문·용도별 기준 미확인. 조례로 강화·완화 가능(PRD 6.2).",
+      "ordinance_dependent": true,
+      "source": "docs/file/02-요구사항/01_PRD.md#3 AR-F-006; docs/file/02-요구사항/01_PRD.md#6.2 부설주차장",
+      "status": "unverified",
+      "title": "부설주차장 주차대수"
+    },
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "미확인",
+          "ordinance": false
+        }
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "id": "seismic.national",
+      "key": "seismic",
+      "municipalities": [
+        "*"
+      ],
+      "note": "PRD 6.2 기준값은 2차 자료(뉴스 2017)뿐이고 조문 없음 — 수치 넣지 않음.",
+      "ordinance_dependent": false,
+      "source": "docs/file/02-요구사항/01_PRD.md#6.2 내진설계 대상",
+      "status": "unverified",
+      "title": "내진설계 대상"
+    },
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "미확인",
+          "ordinance": false
+        }
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "id": "zero-energy.national",
+      "key": "zero_energy",
+      "municipalities": [
+        "*"
+      ],
+      "note": "PRD 6.2 기준값은 2차 자료(뉴스)뿐이고 조문 없음 — 수치 넣지 않음. 민간·공공 구분 필요.",
+      "ordinance_dependent": false,
+      "source": "docs/file/02-요구사항/01_PRD.md#6.2 제로에너지건축물",
+      "status": "unverified",
+      "title": "제로에너지건축물 설계 기준 대상"
+    },
+    {
+      "basis": [
+        {
+          "article": "미확인",
+          "effective_from": "미확인",
+          "law": "미확인",
+          "ordinance": false
+        }
+      ],
+      "effective_from": null,
+      "effective_to": null,
+      "id": "supervision.national",
+      "key": "supervision",
+      "municipalities": [
+        "*"
+      ],
+      "note": "지자체별 상이(PRD 6.2). 대상 기준·조문 미확인.",
+      "ordinance_dependent": true,
+      "source": "docs/file/02-요구사항/01_PRD.md#6.2 허가권자 지정감리",
+      "status": "unverified",
+      "title": "허가권자 지정감리 대상"
+    }
+  ],
+  "title": "초기 규칙 팩(법규 원문 대조 전 — 전 항목 미확인)",
+  "version": "2026.10.0"
+}

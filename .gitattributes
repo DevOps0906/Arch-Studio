@@ -1,2 +1,4 @@
 supabase/** text eol=lf
 scripts/db/** text eol=lf
+packages/rules/packs/** text eol=lf
+packages/rules/golden/** text eol=lf

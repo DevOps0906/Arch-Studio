@@ -98,7 +98,18 @@ importers:
         specifier: 3.25.76
         version: 3.25.76
 
-  packages/drafting: {}
+  packages/drafting:
+    dependencies:
+      '@arch-studio/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@arch-studio/geometry':
+        specifier: workspace:*
+        version: link:../geometry
+    devDependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
 
   packages/features: {}
 
@@ -128,7 +139,21 @@ importers:
         specifier: 4.10.2
         version: 4.10.2
 
-  packages/rules: {}
+  packages/rules:
+    dependencies:
+      '@arch-studio/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@arch-studio/geometry':
+        specifier: workspace:*
+        version: link:../geometry
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
+    devDependencies:
+      fast-check:
+        specifier: 4.10.2
+        version: 4.10.2
 
   packages/shell-bridge: {}
 

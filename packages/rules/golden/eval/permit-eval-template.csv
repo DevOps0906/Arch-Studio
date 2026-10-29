@@ -1,0 +1,6 @@
+case_id,source_note,municipality_code,use_district,application_date,rule_pack_version,item_key,permit_value,permit_unit,engine_value,engine_verdict,match,false_pass,reviewer,checked_at
+EV-001,,,,,,coverage,,pct,,,,,,
+EV-001,,,,,,far,,pct,,,,,,
+EV-001,,,,,,height,,mm,,,,,,
+EV-001,,,,,,setback,,mm,,,,,,
+EV-001,,,,,,parking,,count,,,,,,

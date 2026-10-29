@@ -1,0 +1,247 @@
+{
+  "details": [
+    {
+      "key": "coverage",
+      "reasons": [
+        "UNVERIFIED_RULE"
+      ],
+      "rule_id": "coverage.national",
+      "status": "unverified",
+      "title": "건폐율"
+    },
+    {
+      "key": "far",
+      "reasons": [
+        "UNVERIFIED_RULE",
+        "FAR_EXCLUSIONS_UNVERIFIED"
+      ],
+      "rule_id": "far.national",
+      "status": "unverified",
+      "title": "용적률"
+    },
+    {
+      "key": "height",
+      "reasons": [
+        "UNVERIFIED_RULE"
+      ],
+      "rule_id": "height.national",
+      "status": "unverified",
+      "title": "높이"
+    },
+    {
+      "key": "sunlight",
+      "reasons": [
+        "UNVERIFIED_RULE",
+        "NOT_COMPUTED_HERE"
+      ],
+      "rule_id": "sunlight.building-act",
+      "status": "unverified",
+      "title": "정북 일조사선"
+    },
+    {
+      "edge_class": "road",
+      "key": "setback",
+      "reasons": [
+        "UNVERIFIED_RULE"
+      ],
+      "rule_id": "setback.road",
+      "status": "unverified",
+      "title": "이격(도로 경계)"
+    },
+    {
+      "edge_class": "adjacent",
+      "key": "setback",
+      "reasons": [
+        "UNVERIFIED_RULE"
+      ],
+      "rule_id": "setback.adjacent",
+      "status": "unverified",
+      "title": "이격(인접 대지 경계)"
+    },
+    {
+      "key": "parking",
+      "reasons": [
+        "UNVERIFIED_RULE"
+      ],
+      "rule_id": "parking.national",
+      "status": "unverified",
+      "title": "부설주차장 주차대수"
+    },
+    {
+      "key": "seismic",
+      "reasons": [
+        "UNVERIFIED_RULE"
+      ],
+      "rule_id": "seismic.national",
+      "status": "unverified",
+      "title": "내진설계 대상"
+    },
+    {
+      "key": "zero_energy",
+      "reasons": [
+        "UNVERIFIED_RULE"
+      ],
+      "rule_id": "zero-energy.national",
+      "status": "unverified",
+      "title": "제로에너지건축물 설계 기준 대상"
+    },
+    {
+      "key": "supervision",
+      "reasons": [
+        "UNVERIFIED_RULE"
+      ],
+      "rule_id": "supervision.national",
+      "status": "unverified",
+      "title": "허가권자 지정감리 대상"
+    }
+  ],
+  "result": {
+    "application_date": "2026-11-01",
+    "engine_version": "rules-0.1.0",
+    "items": [
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "미확인",
+            "ordinance": false
+          }
+        ],
+        "key": "coverage",
+        "unit": "pct",
+        "value": 26.67,
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "미확인",
+            "ordinance": false
+          }
+        ],
+        "key": "far",
+        "unit": "pct",
+        "value": 53.33,
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "미확인",
+            "ordinance": false
+          }
+        ],
+        "key": "height",
+        "unit": "mm",
+        "value": 6000,
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "건축법",
+            "ordinance": false
+          }
+        ],
+        "key": "sunlight",
+        "unit": "mm",
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "미확인",
+            "ordinance": false
+          }
+        ],
+        "key": "setback",
+        "unit": "mm",
+        "value": 2000,
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "미확인",
+            "ordinance": false
+          }
+        ],
+        "key": "setback",
+        "unit": "mm",
+        "value": 2000,
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "주차장법 시행령",
+            "ordinance": false
+          }
+        ],
+        "key": "parking",
+        "unit": "count",
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "미확인",
+            "ordinance": false
+          }
+        ],
+        "key": "seismic",
+        "unit": "bool",
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "미확인",
+            "ordinance": false
+          }
+        ],
+        "key": "zero_energy",
+        "unit": "bool",
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "미확인",
+            "ordinance": false
+          }
+        ],
+        "key": "supervision",
+        "unit": "bool",
+        "verdict": "WARN"
+      }
+    ],
+    "pending_changes": 0,
+    "rule_pack_version": "2026.10.0"
+  },
+  "warnings": [
+    {
+      "code": "MUNICIPALITY_NOT_IN_PACK",
+      "message": "조례 미확인 지자체(11000): 규칙 팩 지원 지역이 아니어서 합격·불합격을 표시하지 않습니다. 직접 확인하세요."
+    }
+  ]
+}

@@ -1,0 +1,224 @@
+{
+  "details": [
+    {
+      "key": "coverage",
+      "reasons": [],
+      "rule_id": "coverage.fake-local",
+      "status": "confirmed",
+      "title": "건폐율(가짜 조례)"
+    },
+    {
+      "key": "far",
+      "reasons": [],
+      "rule_id": "far.fake",
+      "status": "confirmed",
+      "title": "용적률(가짜)"
+    },
+    {
+      "key": "height",
+      "reasons": [],
+      "rule_id": "height.fake",
+      "status": "confirmed",
+      "title": "높이(가짜)"
+    },
+    {
+      "key": "sunlight",
+      "reasons": [
+        "NOT_COMPUTED_HERE"
+      ],
+      "rule_id": "sunlight.fake-old",
+      "status": "confirmed",
+      "title": "정북 일조사선(가짜 구 기준)"
+    },
+    {
+      "edge_class": "road",
+      "key": "setback",
+      "reasons": [],
+      "rule_id": "setback.fake-road",
+      "status": "confirmed",
+      "title": "이격 도로(가짜)"
+    },
+    {
+      "edge_class": "adjacent",
+      "key": "setback",
+      "reasons": [],
+      "rule_id": "setback.fake-adjacent",
+      "status": "confirmed",
+      "title": "이격 인접(가짜)"
+    },
+    {
+      "key": "parking",
+      "reasons": [
+        "CALCULATION_ONLY"
+      ],
+      "rule_id": "parking.fake",
+      "status": "confirmed",
+      "title": "주차(가짜)"
+    },
+    {
+      "key": "seismic",
+      "reasons": [
+        "NOT_TARGET"
+      ],
+      "rule_id": "seismic.fake",
+      "status": "confirmed",
+      "title": "대상(가짜)"
+    },
+    {
+      "key": "zero_energy",
+      "reasons": [
+        "UNVERIFIED_RULE"
+      ],
+      "rule_id": "zero-energy.fake-unverified",
+      "status": "unverified",
+      "title": "대상(가짜 미확인)"
+    }
+  ],
+  "result": {
+    "application_date": "2000-03-01",
+    "engine_version": "rules-0.1.0",
+    "items": [
+      {
+        "basis": [
+          {
+            "article": "가짜 조례 제1조",
+            "effective_from": "2000-01-01",
+            "law": "테스트법(가짜)",
+            "ordinance": true
+          }
+        ],
+        "key": "coverage",
+        "limit": 40,
+        "unit": "pct",
+        "value": 26.67,
+        "verdict": "PASS"
+      },
+      {
+        "basis": [
+          {
+            "article": "가짜 제2조",
+            "effective_from": "2000-01-01",
+            "law": "테스트법(가짜)",
+            "ordinance": false
+          }
+        ],
+        "key": "far",
+        "limit": 150,
+        "unit": "pct",
+        "value": 53.33,
+        "verdict": "PASS"
+      },
+      {
+        "basis": [
+          {
+            "article": "가짜 제3조",
+            "effective_from": "2000-01-01",
+            "law": "테스트법(가짜)",
+            "ordinance": false
+          }
+        ],
+        "key": "height",
+        "limit": 12000,
+        "unit": "mm",
+        "value": 6000,
+        "verdict": "PASS"
+      },
+      {
+        "basis": [
+          {
+            "article": "가짜 제4조(구)",
+            "effective_from": "2000-01-01",
+            "law": "테스트법(가짜)",
+            "ordinance": false
+          }
+        ],
+        "key": "sunlight",
+        "unit": "mm",
+        "verdict": "WARN"
+      },
+      {
+        "basis": [
+          {
+            "article": "가짜 제5조",
+            "effective_from": "2000-01-01",
+            "law": "테스트법(가짜)",
+            "ordinance": false
+          }
+        ],
+        "key": "setback",
+        "limit": 1500,
+        "unit": "mm",
+        "value": 2000,
+        "verdict": "PASS"
+      },
+      {
+        "basis": [
+          {
+            "article": "가짜 제6조",
+            "effective_from": "2000-01-01",
+            "law": "테스트법(가짜)",
+            "ordinance": false
+          }
+        ],
+        "key": "setback",
+        "limit": 1000,
+        "unit": "mm",
+        "value": 2000,
+        "verdict": "PASS"
+      },
+      {
+        "basis": [
+          {
+            "article": "가짜 제7조",
+            "effective_from": "2000-01-01",
+            "law": "테스트법(가짜)",
+            "ordinance": false
+          }
+        ],
+        "key": "parking",
+        "unit": "count",
+        "value": 2,
+        "verdict": "NA"
+      },
+      {
+        "basis": [
+          {
+            "article": "가짜 제8조",
+            "effective_from": "2000-01-01",
+            "law": "테스트법(가짜)",
+            "ordinance": false
+          }
+        ],
+        "key": "seismic",
+        "unit": "bool",
+        "value": 0,
+        "verdict": "NA"
+      },
+      {
+        "basis": [
+          {
+            "article": "미확인",
+            "effective_from": "미확인",
+            "law": "미확인",
+            "ordinance": false
+          }
+        ],
+        "key": "zero_energy",
+        "unit": "bool",
+        "verdict": "WARN"
+      }
+    ],
+    "pending_changes": 0,
+    "rule_pack_version": "2000.01.1"
+  },
+  "warnings": [
+    {
+      "code": "SCHEDULED_RULES",
+      "message": "신청 예정일(2000-03-01) 뒤에 시행되는 예정 규칙 2건이 있습니다(참고 표시만).",
+      "rule_ids": [
+        "far.fake-future",
+        "sunlight.fake-new"
+      ]
+    }
+  ]
+}

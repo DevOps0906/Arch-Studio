@@ -1,0 +1,25 @@
+{
+  "basis_date": "2026-10-14",
+  "bytes": 6873,
+  "format": 1,
+  "kid": null,
+  "municipality_count": 0,
+  "rule_count": 10,
+  "sha256": "1d19252e844053e81dc8a98085d16d976d606d9449e4fe9cf6f6df7263a12b7c",
+  "signature": null,
+  "signed": false,
+  "storage_path": "rule-packs/2026.10.0/pack.json",
+  "unverified_rule_ids": [
+    "coverage.national",
+    "far.national",
+    "height.national",
+    "parking.national",
+    "seismic.national",
+    "setback.adjacent",
+    "setback.road",
+    "sunlight.building-act",
+    "supervision.national",
+    "zero-energy.national"
+  ],
+  "version": "2026.10.0"
+}
