@@ -65,3 +65,16 @@ def consume_jti(request: Request, claims: TokenClaims) -> None:
     ctx: AuthContext = request.app.state.auth
     if not ctx.replay.consume(claims.app, claims.jti, claims.exp):
         raise _to_api_error(AuthError(401, "TOKEN_REPLAYED"))
+
+
+def require_run_binding(claims: TokenClaims, run_id: str) -> None:
+    """잡 토큰의 `run` 클레임이 요청 본문 run_id와 정확히 같아야 한다(다른 실행 시작·재개 차단). 아니면 403."""
+    if claims.job_id is None or claims.run is None or claims.run != run_id:
+        raise _to_api_error(AuthError(403, "RUN_MISMATCH"))
+
+
+def require_job_binding(claims: TokenClaims, run_job_id: str) -> None:
+    """조회 대상 실행의 job_id가 토큰 `job` 클레임과 같을 때만. 아니면 존재 여부를 숨기고 404(없는 실행과 같은 응답)."""
+    if claims.job is None or claims.job != run_job_id:
+        logger.info("auth rejected: %s", "JOB_MISMATCH")
+        raise ApiError(404, "NOT_FOUND", "찾을 수 없습니다")
