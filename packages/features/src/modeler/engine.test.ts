@@ -17,11 +17,11 @@ import {
   massOutline,
   meshKey,
   modelToWorld,
-  prismMesh,
   sceneBounds,
   siteLoop,
   worldToModel,
 } from "./viewport/geometry.ts";
+import { prismMesh } from "./viewport/prism.ts";
 
 const house = DEMO_PROJECTS[0]?.model as DesignModelV1;
 const mass = house.masses[0] as Model["masses"][number];
@@ -95,6 +95,10 @@ test("장면 상자·대지 선·그리기 선·닫힘 판정·카메라 자세"
   // 정북이 90°(모델 +X)면 동쪽은 모델 −Y = 월드 +Z
   const sec90 = cameraPose("section", b, 6300, 90);
   assert.ok(sec90.position[2] > sec90.target[2]);
+  // 세로로 긴 뷰포트는 더 멀리
+  const tall = cameraPose("perspective", b, 6300, 0, 0.5);
+  const wide = cameraPose("perspective", b, 6300, 0, 1.5);
+  assert.ok(Math.hypot(...tall.position) > Math.hypot(...wide.position));
 });
 
 test("응답 검사: 형식·번호 범위·NaN·상한 위반은 버린다", () => {
@@ -164,6 +168,7 @@ const mesh3 = () => ({ positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
 test("클라이언트 mass_meshes: 없는 기하 키만 요청, 응답을 키로 캐시, superseded 뒤 빠진 키 다시 요청, 기하 오류 키는 다시 묻지 않음", () => {
   const { host, sent, reply } = fakeHost();
   const c = new ModelerEngineClient(host);
+  c.connect();
   c.syncMeshes(house.masses);
   assert.equal(sent.length, 1);
   assert.equal(sent[0]?.op, "mass_meshes");
@@ -188,6 +193,7 @@ test("클라이언트 mass_meshes: 없는 기하 키만 요청, 응답을 키로
 test("클라이언트 mass_excess: 합치기, 엔벨로프는 대지·규칙이 바뀔 때만 요청, 부분은 병합·전체는 교체, 오류는 문구", () => {
   const { host, sent, reply } = fakeHost();
   const c = new ModelerEngineClient(host);
+  c.connect();
   let changes = 0;
   c.subscribe(() => changes++);
   c.requestExcess(house, null);
@@ -228,19 +234,27 @@ test("클라이언트 mass_excess: 합치기, 엔벨로프는 대지·규칙이 
   reply({ req_id: "other", ok: true, result: {} });
   assert.equal(c.getSnapshot(), s3);
   assert.ok(changes > 0);
-  c.dispose();
+  c.disconnect();
 });
 
-test("클라이언트: 엔진 호스트가 없으면 unavailable, 요청을 보내지 않는다. dispose는 대기 요청을 취소", () => {
+test("클라이언트: 엔진 호스트가 없으면 unavailable, 요청을 보내지 않는다. disconnect는 대기 요청을 취소, 다시 이을 수 있다", () => {
   const none = new ModelerEngineClient(null);
   none.syncMeshes(house.masses);
   none.requestExcess(house, null);
   assert.equal(none.getSnapshot().envelopeStatus, "unavailable");
   const { host, sent, listeners } = fakeHost();
   const c = new ModelerEngineClient(host);
+  c.connect();
   c.syncMeshes(house.masses);
   c.requestExcess(house, null);
-  c.dispose();
+  c.disconnect();
   assert.deepEqual(sent.slice(2).map((r) => r.op), ["cancel", "cancel"]);
   assert.equal(listeners.size, 0);
+  // 끊긴 동안에는 보내지 않고, 다시 이으면(StrictMode effect 재실행) 처음부터 다시 요청한다
+  c.requestExcess(house, null);
+  assert.equal(sent.length, 4);
+  c.connect();
+  c.requestExcess(house, null);
+  assert.equal(sent.length, 5);
+  assert.equal(sent[4]?.want_envelope, true);
 });

@@ -1,11 +1,10 @@
 // 뷰포트 표시용 기하(순수, 결정적). 좌표 원본은 DesignModel mm 정수(Z 위)이고, three 장면은 루트 그룹에서 m·Y 위로 바꾼다
 // (rotation.x = −π/2, scale 0.001 → 모델 +X = 월드 +X, 모델 +Y = 월드 −Z, 모델 +Z = 월드 +Y).
 // - 윤곽선은 EdgesGeometry를 쓰지 않고 DesignModel 데이터(바닥 변 × 층 경계 + 꼭짓점 세로선)로 만든다([DECISION] 1절).
-// - prismMesh는 엔진 워커 메시가 오기 전·워커가 없을 때의 폴백이다(같은 모양: 바닥 다각형 × 높이). 표시 전용, 판정·면적에 쓰지 않는다.
+// - three를 import하지 않는다(모델러 첫 청크에 three가 들어가지 않게). three가 필요한 폴백 메시는 prism.ts.
 // 여기 값은 화면 표시 전용이다. 판정·면적·도면은 엔진(정수 기하)이 따로 계산한다.
 import type { Point } from "@arch-studio/domain";
-import { ShapeUtils, Vector2 } from "three";
-import { massHeight, sortedFloors, type Mass, type Model } from "../state/commands.ts";
+import { sortedFloors, type Mass, type Model } from "../state/commands.ts";
 
 export interface MeshData {
   /** mm 좌표 xyz(모델 축, Z 위). */
@@ -99,47 +98,6 @@ export function massOutline(mass: Mass): Float32Array {
   return out;
 }
 
-/** 폴백 표시 메시(바닥 다각형 × 전체 높이). 삼각분할은 three ShapeUtils(earcut, 결정적). 층이 없거나 삼각분할이 실패하면 null. */
-export function prismMesh(mass: Mass): MeshData | null {
-  const h = massHeight(mass);
-  if (mass.floors.length === 0 || h <= 0) return null;
-  const outer = mass.footprint.outer;
-  const holes = mass.footprint.holes ?? [];
-  const contour = outer.map(([x, y]) => new Vector2(x, y));
-  const holeV = holes.map((r) => r.map(([x, y]) => new Vector2(x, y)));
-  if (ShapeUtils.isClockWise(contour)) contour.reverse();
-  for (const r of holeV) if (!ShapeUtils.isClockWise(r)) r.reverse();
-  const faces = ShapeUtils.triangulateShape(contour, holeV);
-  if (faces.length === 0) return null;
-  const flat = [...contour, ...holeV.flat()];
-  const z0 = mass.base_level_mm;
-  const z1 = z0 + h;
-  const nv = flat.length;
-  const positions = new Float32Array(nv * 2 * 3);
-  flat.forEach((p, i) => {
-    positions.set([p.x, p.y, z0], i * 3);
-    positions.set([p.x, p.y, z1], (nv + i) * 3);
-  });
-  const idx: number[] = [];
-  for (const face of faces) {
-    const [a, b, c] = face as [number, number, number];
-    idx.push(nv + a, nv + b, nv + c); // 윗면(반시계 = 위로 향함)
-    idx.push(c, b, a); // 아랫면
-  }
-  // 옆면: 고리마다 변 하나에 사각형 2개. 외곽 반시계·구멍 시계라 바깥을 향한다.
-  let start = 0;
-  for (const ring of [contour, ...holeV]) {
-    const len = ring.length;
-    for (let i = 0; i < len; i++) {
-      const a = start + i;
-      const b = start + ((i + 1) % len);
-      idx.push(a, b, nv + b, a, nv + b, nv + a);
-    }
-    start += len;
-  }
-  return { positions, index: Uint32Array.from(idx) };
-}
-
 /** 대지 경계 닫힌 선(mm xyz, z = 0). */
 export function siteLoop(model: Model): Float32Array {
   const r = model.site.boundary.outer;
@@ -168,10 +126,12 @@ export interface CameraPose {
  * 카메라 자세(월드 m). 투시 = 남동쪽 위, 평면 = 바로 위, 정북 단면 = 정북 방향과 직각인 동쪽에서 수평으로(일조사선 경사가 보이게).
  * northDeg: 모델 +Y축에서 정북까지 시계 방향 각도(DesignModel site.north_angle_deg). 표시 전용이라 Math.sin·cos를 쓴다.
  */
-export function cameraPose(mode: "perspective" | "plan" | "section", b: Bounds, topMm: number, northDeg: number): CameraPose {
+export function cameraPose(mode: "perspective" | "plan" | "section", b: Bounds, topMm: number, northDeg: number, aspect = 1): CameraPose {
   const cx = (b.minX + b.maxX) / 2;
   const cy = (b.minY + b.maxY) / 2;
-  const span = Math.max(b.maxX - b.minX, b.maxY - b.minY, topMm, 10_000);
+  // 세로로 긴 뷰포트(폭/높이 < 1)는 가로 시야가 좁아 그만큼 멀리서 본다.
+  const fit = 1 / Math.max(0.4, Math.min(1, aspect));
+  const span = Math.max(b.maxX - b.minX, b.maxY - b.minY, topMm, 10_000) * fit;
   const t = modelToWorld(cx, cy, Math.min(topMm, span) / 3);
   const d = (span * 1.6) / 1000;
   if (mode === "plan") {

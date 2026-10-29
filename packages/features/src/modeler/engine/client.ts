@@ -64,7 +64,15 @@ export class ModelerEngineClient {
       excess: new Map(),
       excessBusy: false,
     };
-    if (host) this.unsubscribe = host.subscribe((r) => this.onResponse(r));
+  }
+
+  /**
+   * 응답 구독을 시작한다. 반환 함수는 구독을 끊고 대기 요청을 취소한다(React effect 정리 — StrictMode에서 끊었다 다시 이어도 된다).
+   * 이어진 동안에만 요청을 보낸다.
+   */
+  connect(): () => void {
+    if (this.host && !this.unsubscribe) this.unsubscribe = this.host.subscribe((r) => this.onResponse(r));
+    return () => this.disconnect();
   }
 
   getSnapshot = (): EngineSnapshot => this.snap;
@@ -80,7 +88,7 @@ export class ModelerEngineClient {
   }
 
   private send(req: EngineRequestLike): boolean {
-    if (!this.host) return false;
+    if (!this.host || !this.unsubscribe) return false;
     try {
       this.host.send(req);
       return true;
@@ -91,6 +99,7 @@ export class ModelerEngineClient {
 
   /** 매스 메시 동기화: 캐시·대기·실패에 없는 기하 키만 요청한다. 캐시는 지금 키 + 여유분만 남긴다. */
   syncMeshes(masses: readonly Mass[]): void {
+    if (!this.unsubscribe && this.host) return;
     const current = new Map<string, string>();
     for (const m of masses) current.set(m.id, meshKey(m));
     const keys = new Set(current.values());
@@ -122,7 +131,7 @@ export class ModelerEngineClient {
 
   /** 초과분·엔벨로프 요청. ids = null이면 전체. 응답을 기다리는 중이면 마지막 요청만 남긴다. */
   requestExcess(model: Model, ids: readonly string[] | null): void {
-    if (!this.host) return;
+    if (!this.host || !this.unsubscribe) return;
     const r = offer(this.coalescer, { model, ids });
     this.coalescer = r.state;
     if (r.send) this.dispatchExcess(r.send);
@@ -205,13 +214,16 @@ export class ModelerEngineClient {
     this.requestExcess(model, null);
   }
 
-  dispose(): void {
+  /** 구독을 끊고 대기 요청을 취소한다. 받은 메시 캐시는 남긴다(다시 이으면 그대로 쓴다). */
+  disconnect(): void {
+    for (const id of [...this.meshReqs.keys(), ...(this.excessReq ? [this.excessReq.reqId] : [])]) this.send({ op: "cancel", req_id: id });
     this.unsubscribe?.();
     this.unsubscribe = null;
-    for (const id of [...this.meshReqs.keys(), ...(this.excessReq ? [this.excessReq.reqId] : [])]) this.send({ op: "cancel", req_id: id });
     this.meshReqs.clear();
     this.pendingKeys.clear();
     this.excessReq = null;
-    this.listeners.clear();
+    this.coalescer = idleCoalescer();
+    this.receivedEnvKey = null;
+    if (this.snap.excessBusy || this.snap.envelopeStatus === "loading") this.set({ excessBusy: false, envelopeStatus: this.snap.envelope ? "ready" : "idle" });
   }
 }

@@ -105,5 +105,6 @@ export function isTypingTarget(el: { tagName?: string; isContentEditable?: boole
   if (tag === "input" || tag === "textarea" || tag === "select") return true;
   if (el.isContentEditable) return true;
   const role = el.getAttribute?.("role");
-  return role === "spinbutton" || role === "textbox" || role === "combobox";
+  // 화살표 키를 자기가 쓰는 위젯(탭·슬라이더·목록 등)도 단축키를 받지 않는다.
+  return role !== null && role !== undefined && ["spinbutton", "textbox", "combobox", "tab", "slider", "listbox", "option", "menuitem", "radio"].includes(role);
 }

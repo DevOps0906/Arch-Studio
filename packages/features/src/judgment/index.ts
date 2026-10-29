@@ -3,6 +3,8 @@
 export { JudgmentPanel, StatusBadge, type JudgmentPanelProps, type RevisionCheck } from "./JudgmentPanel.tsx";
 export { useJudgment, type UseJudgment, type UseJudgmentArgs } from "./useJudgment.ts";
 export type { FallbackNotice } from "./fallback.ts";
+// 모델러(036) 좁은 화면 하단 시트 접힘 요약이 패널 머리 요약과 같은 수를 보이도록 공개(AR-06-036 추가).
+export { buildRows, countStatuses, type StatusCounts } from "./model.ts";
 export type { DisplayStatus, JudgmentData, JudgmentDetailLike, JudgmentWarningLike, RowView } from "./model.ts";
 export type { JudgeError, JudgePhase } from "./request.ts";
 export { DISCLAIMER } from "./messages.ts";
