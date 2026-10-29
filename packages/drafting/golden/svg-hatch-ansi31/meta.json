@@ -1,0 +1,11 @@
+{
+  "case_id": "svg-hatch-ansi31",
+  "source_case": "writer-hatch-ansi31",
+  "note": "HATCH ANSI31(패턴 배율 = 축척 분모)",
+  "writer_version": "svg-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

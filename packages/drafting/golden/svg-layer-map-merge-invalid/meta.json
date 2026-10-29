@@ -1,0 +1,11 @@
+{
+  "case_id": "svg-layer-map-merge-invalid",
+  "source_case": "writer-layer-map-merge-invalid",
+  "note": "layer_map: 두 레이어 합침(앞 레이어 색), 금지 문자·빈 이름은 표준 유지, 표준 밖 키 무시",
+  "writer_version": "svg-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

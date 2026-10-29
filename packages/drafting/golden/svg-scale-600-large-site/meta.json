@@ -1,0 +1,11 @@
+{
+  "case_id": "svg-scale-600-large-site",
+  "source_case": "writer-scale-600-large-site",
+  "note": "1/600 큰 대지(자동 축척 최대)",
+  "writer_version": "svg-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

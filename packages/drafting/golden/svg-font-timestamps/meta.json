@@ -1,0 +1,11 @@
+{
+  "case_id": "svg-font-timestamps",
+  "source_case": "writer-font-timestamps",
+  "note": "글꼴 옵션(파일·패밀리)과 시각 주입($TDCREATE·$TDUPDATE, 골든 비교에서 가림)",
+  "writer_version": "svg-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

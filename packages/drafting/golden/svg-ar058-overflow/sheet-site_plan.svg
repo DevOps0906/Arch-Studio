@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="420mm" height="297mm" viewBox="0 0 252000 178200" font-family="NanumGothic, &apos;Noto Sans KR&apos;, sans-serif" data-sheet-id="s1" data-kind="site_plan" data-scale="600" data-engine-version="0.0.0" data-input-hash="194072c93a6649aaac78b2edf79131bd8c07a6dc384b2de5cbeeff817f77bda8" data-writer-version="svg-1.0.0">
+<title>배치도 — 샘플 프로젝트</title>
+<rect x="0" y="0" width="252000" height="178200" fill="#ffffff"/>
+<g id="A-SITE-BNDY" fill="none" stroke="#ff0000" stroke-width="210" stroke-dasharray="1800 600 120 600">
+<polygon points="-93504,227100 306496,227100 306496,-72900 -93504,-72900"/>
+</g>
+<g id="A-SITE-ROAD" fill="none" stroke="#808080" stroke-width="108"/>
+<g id="A-SITE-SETB" fill="none" stroke="#00a000" stroke-width="108" stroke-dasharray="1800 900"/>
+<g id="A-ENVL" fill="none" stroke="#00a0c8" stroke-width="108" stroke-dasharray="1800 900"/>
+<g id="A-MASS" fill="none" stroke="#000000" stroke-width="300">
+<polygon points="-92304,225900 305296,225900 305296,-71700 -92304,-71700"/>
+</g>
+<g id="A-WALL" fill="none" stroke="#000000" stroke-width="210"/>
+<g id="A-DOOR" fill="none" stroke="#c8a000" stroke-width="108"/>
+<g id="A-GLAZ" fill="none" stroke="#0000ff" stroke-width="108"/>
+<g id="A-AREA" fill="none" stroke="#c000c0" stroke-width="108">
+<polygon points="-92304,225900 305296,225900 305296,-71700 -92304,-71700"/>
+</g>
+<g id="A-AREA-IDEN" fill="none" stroke="#000000" stroke-width="108">
+<text x="-92204" y="225800" font-size="1875" fill="#000000" stroke="none" text-anchor="middle">거실</text>
+<text x="-92204" y="228050" font-size="1875" fill="#000000" stroke="none" text-anchor="middle">12.00㎡</text>
+</g>
+<g id="A-PARK" fill="none" stroke="#00a000" stroke-width="108"/>
+<g id="A-ANNO-DIMS" fill="none" stroke="#ff0000" stroke-width="78">
+<line x1="-91804" y1="227100" x2="-91804" y2="225900"/>
+<line x1="-91168" y1="227736" x2="-92440" y2="226464"/>
+<line x1="-91168" y1="226536" x2="-92440" y2="225264"/>
+<text x="-91204" y="226500" font-size="1875" fill="#ff0000" stroke="none" text-anchor="middle">1200</text>
+</g>
+<g id="A-ANNO-TEXT" fill="none" stroke="#000000" stroke-width="108"/>
+<g id="A-ANNO-NRTH" fill="none" stroke="#000000" stroke-width="108"/>
+<g id="A-TTLB" fill="none" stroke="#000000" stroke-width="210">
+<line x1="15000" y1="148200" x2="246000" y2="148200"/>
+<line x1="53496" y1="166200" x2="53496" y2="148200"/>
+<line x1="91992" y1="166200" x2="91992" y2="148200"/>
+<line x1="130488" y1="166200" x2="130488" y2="148200"/>
+<line x1="168984" y1="166200" x2="168984" y2="148200"/>
+<line x1="207480" y1="166200" x2="207480" y2="148200"/>
+<line x1="15000" y1="166200" x2="246000" y2="166200"/>
+<polygon points="15000,172200 246000,172200 246000,6000 15000,6000"/>
+<text x="15900" y="170400" font-size="1875" fill="#000000" stroke="none">기획설계 검토용 자료이며 인허가 설계도서가 아닙니다</text>
+<text x="15900" y="150300" font-size="1500" fill="#000000" stroke="none">사무소</text>
+<text x="15900" y="163200" font-size="1875" fill="#000000" stroke="none">테스트건축</text>
+<text x="54396" y="150300" font-size="1500" fill="#000000" stroke="none">프로젝트</text>
+<text x="54396" y="163200" font-size="1875" fill="#000000" stroke="none">샘플 프로젝트</text>
+<text x="92892" y="150300" font-size="1500" fill="#000000" stroke="none">도면명</text>
+<text x="92892" y="163200" font-size="1875" fill="#000000" stroke="none">배치도</text>
+<text x="131388" y="150300" font-size="1500" fill="#000000" stroke="none">축척</text>
+<text x="131388" y="163200" font-size="1875" fill="#000000" stroke="none">1/600</text>
+<text x="169884" y="150300" font-size="1500" fill="#000000" stroke="none">작성일</text>
+<text x="169884" y="163200" font-size="1875" fill="#000000" stroke="none">2026-10-29</text>
+<text x="208380" y="150300" font-size="1500" fill="#000000" stroke="none">규칙 팩</text>
+<text x="208380" y="163200" font-size="1875" fill="#000000" stroke="none">2026.10.0</text>
+</g>
+<g id="A-REFR" fill="none" stroke="#b0b0b0" stroke-width="78"/>
+</svg>
