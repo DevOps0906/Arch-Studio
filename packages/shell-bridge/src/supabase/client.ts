@@ -2,8 +2,8 @@
 // 인증 옵션은 여기서 고정하고 호출자가 덮어쓰지 못한다: storage 누락 시 supabase-js가 영속 웹 스토리지로 떨어지기 때문.
 // 로그인 흐름(signInWithOAuth·딥링크 교환·Mock)은 008 `src/auth/**` 소유.
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { BridgeError } from "../errors.ts";
-import { AUTH_PKCE_KEY, AUTH_STORAGE_KEY, type SecureStore } from "../secure-store.ts";
+import { BridgeError } from "../adapters/errors.ts";
+import { AUTH_PKCE_KEY, AUTH_STORAGE_KEY, type SecureStore } from "../adapters/secure-store.ts";
 
 /** supabase-js `auth.storage` 계약(비동기 허용). */
 export interface AuthStorageAdapter {

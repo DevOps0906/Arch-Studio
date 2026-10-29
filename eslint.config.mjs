@@ -1,5 +1,6 @@
 // ESLint flat config (모노레포 공용). 경로별 import 제한은 02_ARCHITECTURE.md 2장 모듈 경계를 따른다.
 // no-restricted-imports·no-restricted-syntax는 뒤 설정이 앞 설정을 덮어쓰므로(옵션 병합 없음) 영역마다 허용 묶음을 계산해 한 번에 건다.
+// 묶음은 import 금지(group/regex + 동적 import()용 source)나 구문 금지(syntax 선택자 목록) 중 하나 또는 둘 다를 가진다.
 import path from "node:path";
 import nextPlugin from "@next/eslint-plugin-next";
 import tseslint from "typescript-eslint";
@@ -37,6 +38,29 @@ const RESTRICTIONS = {
     source: "/(^|\\u002F)(testing|test-helpers)($|\\u002F|\\.)/",
     message: "테스트 더블(testing·test-helpers)은 *.test.ts(x)에서만 import한다. 프로덕션 코드에서 쓰면 릴리스에 Mock이 남는다.",
   },
+  // 화면·기능 코드는 플랫폼 이름을 직접 검사하지 않고 capabilities로만 분기한다(ADR-001 2.1, AR-06-070).
+  // 플랫폼 판정은 shell-bridge 팩토리(createPlatformAdapters·createNativeBridge) 한 곳이라 shell-bridge 영역만 이 묶음을 뺀다.
+  // 잡는 모양: `platform|runtime|shell`(변수·속성) ==/!=/===/!== 'web|browser|tauri|desktop|native|installed'(양쪽 순서),
+  // 같은 값을 case로 가진 switch, Tauri 전역(`__TAURI__`·`__TAURI_INTERNALS__`·`isTauri`) 직접 참조.
+  platform: {
+    syntax: (() => {
+      const name = "/^(platform|runtime|shell)$/i";
+      const value = "/^(web|browser|tauri|desktop|native|installed)$/i";
+      const eq = "BinaryExpression[operator=/^[!=]==?$/]";
+      return [
+        `${eq}[left.name=${name}][right.value=${value}]`,
+        `${eq}[left.property.name=${name}][right.value=${value}]`,
+        `${eq}[right.name=${name}][left.value=${value}]`,
+        `${eq}[right.property.name=${name}][left.value=${value}]`,
+        `SwitchStatement[discriminant.name=${name}]:has(SwitchCase[test.value=${value}])`,
+        `SwitchStatement[discriminant.property.name=${name}]:has(SwitchCase[test.value=${value}])`,
+        "Identifier[name=/^__TAURI(_INTERNALS|_METADATA)?__$/]",
+        "Literal[value=/^__TAURI(_INTERNALS|_METADATA)?__$/]",
+        "MemberExpression[property.name='isTauri']",
+      ];
+    })(),
+    message: "플랫폼 이름을 직접 검사하지 않는다. @arch-studio/shell-bridge의 capabilities(hasCapability 등)로 분기한다(ADR-001 2.1).",
+  },
 };
 
 const TEST_FILES = ["**/*.test.ts", "**/*.test.tsx"];
@@ -53,17 +77,19 @@ function area(files, names, extraSyntax = [], extraRules = {}) {
   ];
 }
 
-/** 영역별 금지 묶음 → no-restricted-imports + 동적 import()용 no-restricted-syntax. */
+/** 영역별 금지 묶음 → no-restricted-imports + no-restricted-syntax(동적 import()·구문 금지). */
 function restrict(names, extraSyntax = []) {
   const picked = names.map((name) => RESTRICTIONS[name]);
+  const imports = picked.filter(({ group, regex }) => group || regex);
   return {
     "no-restricted-imports": [
       "error",
-      { patterns: picked.map(({ group, regex, message }) => (regex ? { regex, message } : { group, message })) },
+      { patterns: imports.map(({ group, regex, message }) => (regex ? { regex, message } : { group, message })) },
     ],
     "no-restricted-syntax": [
       "error",
-      ...picked.map(({ source, message }) => ({ selector: `ImportExpression[source.value=${source}]`, message })),
+      ...imports.map(({ source, message }) => ({ selector: `ImportExpression[source.value=${source}]`, message })),
+      ...picked.flatMap(({ syntax = [], message }) => syntax.map((selector) => ({ selector, message }))),
       ...extraSyntax,
     ],
   };
@@ -113,12 +139,13 @@ export default tseslint.config(
   },
   ...tseslint.configs.recommended,
   { plugins: { arch: { rules: { "no-service-client": serviceClientRule } } } },
-  ...area(undefined, ["tauri", "three", "spikes"], [], { "arch/no-service-client": "error" }),
-  ...area(WEB_SERVER, ["tauri", "three", "spikes"], NO_REEXPORT, { "arch/no-service-client": "off" }),
+  ...area(undefined, ["tauri", "three", "spikes", "platform"], [], { "arch/no-service-client": "error" }),
+  ...area(WEB_SERVER, ["tauri", "three", "spikes", "platform"], NO_REEXPORT, { "arch/no-service-client": "off" }),
+  // shell-bridge는 플랫폼 판정을 하는 유일한 곳이라 platform 묶음을 뺀다.
   ...area(SHELL_BRIDGE, ["three", "spikes"]),
-  ...area(THREE_ALLOWED, ["tauri", "spikes"]),
+  ...area(THREE_ALLOWED, ["tauri", "spikes", "platform"]),
   // 엔진은 결정적 순수 함수만: 시간·난수·네트워크·환경 변수·타이머·Node I/O 금지(.claude/rules/engine.md).
-  ...area(ENGINE, ["tauri", "three", "spikes", "node"]),
+  ...area(ENGINE, ["tauri", "three", "spikes", "node", "platform"]),
   {
     files: ENGINE,
     rules: {

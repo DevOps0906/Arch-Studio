@@ -1,9 +1,20 @@
 // 테스트 더블. `@arch-studio/shell-bridge/testing`로만 가져온다(루트 index는 내보내지 않음 → 릴리스 번들에 안 들어감).
-import { BridgeError, type ExportErrorCode, type LicenseErrorCode } from "../errors.ts";
-import type { ExportFormat, ExportResult, Exporter } from "../exporter.ts";
-import { EXPORT_MAX_BYTES } from "../exporter.ts";
-import type { LicenseClient, LicenseStatus } from "../license-client.ts";
+import { BridgeError, type ExportErrorCode, type LicenseErrorCode } from "../adapters/errors.ts";
+import type { ExportFormat, ExportResult, Exporter } from "../adapters/exporter.ts";
+import { EXPORT_MAX_BYTES } from "../adapters/exporter.ts";
+import type { LicenseClient, LicenseStatus } from "../adapters/license-client.ts";
 import type { BridgeCommand, InvokeFn } from "../tauri/invoke.ts";
+
+export { LEAK, runAdapterContract, testProjectId, type ContractFactory, type ContractSubject } from "./contract.ts";
+export { createFileFixture, type FileFixture, type OfferedFile, type SaveTarget } from "./files.ts";
+export {
+  createMemoryAdapters,
+  FakeEntitlementClient,
+  FakeFileGateway,
+  MemoryProjectStore,
+  type MemoryAdapters,
+} from "./memory.ts";
+export { createRustInvoke, type RustInvoke, type RustInvokeCall } from "./rust-invoke.ts";
 
 /** 가짜 Exporter: 저장 내역을 기록하고, `failWith`가 있으면 그 코드로 실패. 크기 상한은 실제와 같다. */
 export class FakeExporter implements Exporter {
@@ -61,7 +72,8 @@ export function createKeychainInvoke(
   delay: (call: InvokeCall) => number = () => 0,
 ): { invoke: InvokeFn; keychain: Map<string, string>; calls: InvokeCall[] } {
   const calls: InvokeCall[] = [];
-  const invoke: InvokeFn = async (cmd, args) => {
+  const invoke: InvokeFn = async (cmd, raw) => {
+    const args = raw as Record<string, unknown>;
     const call = { cmd, args };
     calls.push(call);
     const ms = delay(call);
@@ -76,6 +88,9 @@ export function createKeychainInvoke(
       case "secret_delete":
         keychain.delete(key);
         return null;
+      default:
+        // 비밀 명령만 흉내 낸다. 나머지 명령은 createRustInvoke를 쓴다.
+        throw { code: "NOT_MOCKED", detail: cmd };
     }
   };
   return { invoke, keychain, calls };
