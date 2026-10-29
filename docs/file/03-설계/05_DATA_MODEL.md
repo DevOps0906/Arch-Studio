@@ -463,7 +463,8 @@ viewer는 SELECT만 된다(모든 RPC가 member+ 또는 owner/admin을 요구). 
 |---|---|---|
 | 스키마 | `arch` | `public`. `core.apps.schema_name='public'`(seed) |
 | 함수·테이블 이름 | `arch.*`, `core.*` | `public.*`(이름·시그니처 동일). 앱은 `SUPABASE_DB_SCHEMA`로 전환 |
-| 큐·기능 키·감사 문자열 | `'arch.render'`, `'arch.' \|\| p_kind` 등 | 그대로(문자열 리터럴은 변환하지 않는다) |
+| 큐·기능 키·감사 문자열 | `'arch.render'`, `'arch.' \|\| p_kind` 등 | 그대로(작은따옴표 바로 뒤 이름은 변환하지 않는다) |
+| 문자열 안 SQL 식·주석 | 정책 문자열 `'core.is_org_member(…'`, 주석 속 `arch.jobs` | `public.`으로 바꾼다(작은따옴표 바로 뒤 `'core.x(`·`'arch.x(` 함수 호출 포함) |
 | 스키마 블록 | `create schema`, 기본 권한, apps 행(`@modular-only` 블록) | 제거 |
 | 권한 정리 | 테이블·함수 목록 반복(스키마 변수 `'arch' /*@schema*/`) | 같은 목록, 변수만 `'public'`. public의 코어 객체 권한을 건드리지 않는다 |
 | 플랜·팩·상품·라우팅 | 조각 13·14절(`@monolith-seed` 블록) | `seed.sql`로 이동 |
@@ -471,7 +472,7 @@ viewer는 SELECT만 된다(모든 RPC가 member+ 또는 owner/admin을 요구). 
 | 코어 | 0000~0009 | `0001_core_lite.sql`: SECTION 6-A(oauth_states), 6-B(encrypted_credentials), 9(affiliate) 제거(제3자 OAuth 연결·서버 보관 키·제휴 링크가 없음. 9는 6-B 의존). 3(Toss), 4(크레딧), 6-C(레이트 리밋), 7(잡), 8(Storage), 11(AI), 12(음성) 유지 |
 | 가입 | `signup_app='arch'` 메타데이터 | apps 1행이면 자동 부트스트랩 |
 
-변환 규칙은 `DB_CONVENTIONS.md:247-269`: `@modular-only`·`@monolith-seed` 블록 분리, 식별자 `core.`·`arch.` → `public.`(문자열 리터럴 제외), 스키마 변수 치환. 변환 스크립트는 AR-06-001 소유(`scripts/db/**`)이고 두 파일 본문은 변환 외에 같아야 한다(`--check` diff 0). 이 문서의 모놀리스 파일은 같은 규칙으로 만들었다.
+변환 규칙은 `DB_CONVENTIONS.md:247-269`: `@modular-only`·`@monolith-seed` 블록 분리, 식별자 `core.`·`arch.` → `public.`(작은따옴표 바로 뒤 잡·기능 이름만 제외, 문자열 안 SQL 식과 주석은 변환), 스키마 변수 치환. 정확한 규칙은 `scripts/db/convert.mjs` 머리 주석이 정본이다(적용된 0002를 바이트 단위로 재현). 변환 스크립트는 AR-06-001 소유(`scripts/db/**`)이고 두 파일 본문은 변환 외에 같아야 한다(`--check` diff 0). 이 문서의 모놀리스 파일은 같은 규칙으로 만들었다.
 
 ## 9. 마이그레이션 파일
 

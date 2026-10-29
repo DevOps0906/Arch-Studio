@@ -11,7 +11,7 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "test": "pnpm -r test && pnpm test:db",
     "db:convert": "node scripts/db/convert.mjs --write",
     "db:convert:check": "node scripts/db/convert.mjs",
     "db:check": "node scripts/db/check.mjs",

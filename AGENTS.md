@@ -7,7 +7,7 @@
 
 ## 2. 스택 · 명령
 `apps/desktop` Tauri 2 + Rust · `apps/web` Next.js 16 + Tailwind CSS v4 · `packages/*` 순수 TS 엔진·`drafting` 도면 · `supabase/` · `apps/api` FastAPI.
-검사: `pnpm -r lint` · `pnpm -r typecheck` · `pnpm -r test`. 긴 출력은 `~/.claude/nomad/bin/q <명령>`.
+검사: `pnpm -r lint` · `pnpm -r typecheck` · `pnpm test`(DB 변환 골든 포함). 긴 출력은 `~/.claude/nomad/bin/q <명령>`.
 
 ## 3. 절대 규칙 (위반 = 리뷰 🔴)
 - 비밀(API 키 · service_role · 결제 키 · 라이선스 서명 개인키 · 코드 서명 인증서)은 저장소·클라이언트 번들·로그에 넣지 않는다. `.env.example`에 이름만.
