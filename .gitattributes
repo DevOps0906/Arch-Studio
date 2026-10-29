@@ -4,3 +4,4 @@ packages/rules/packs/** text eol=lf
 packages/rules/golden/** text eol=lf
 packages/drafting/golden/** text eol=lf
 packages/drafting/golden/**/*.dxf -text
+apps/web/public/samples/** -text

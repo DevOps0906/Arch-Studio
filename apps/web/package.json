@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --test \"src/**/*.test.ts\""
+    "test": "node --test \"src/**/*.test.ts\"",
+    "samples:build": "node ../../scripts/samples/build.ts"
   },
   "dependencies": {
     "@arch-studio/ui": "workspace:*",
