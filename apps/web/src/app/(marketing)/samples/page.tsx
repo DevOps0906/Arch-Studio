@@ -76,9 +76,9 @@ export default async function SamplesPage() {
         )}
 
         <footer className="flex flex-col gap-2 border-t border-line pt-6 text-body text-fg-2">
-          <p>받아 보신 뒤 마음에 드셨다면 얼리버드 사전예약을 확인해 보세요.</p>
+          <p>받아 보신 뒤 궁금한 점이 있다면 사전예약 안내를 확인해 보세요.</p>
           <Link href="/pricing" className="focus-ring w-fit text-accent underline underline-offset-4">
-            가격 보기
+            요금 안내 보기
           </Link>
         </footer>
       </main>

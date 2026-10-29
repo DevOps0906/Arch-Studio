@@ -2,7 +2,7 @@
 
 - 갱신: 2026-10-29
 - 현재 작업: 없음 — 1단계(도면 뷰 023·024·025) 병합 완료(2026-10-29), 2단계 022·033 병합 완료, 다음 057 랜딩. 사람 확인: 번들 한글 글꼴(나눔고딕/Noto Sans KR), PNG 래스터화 방식(sharp=LGPL 여부), 샘플에 SVG·PDF 추가
-- 완료(push됨): W0 8, W0-D 3, W1 002·006·014·018·048, W2 015·016·017·020·021, W3 022·023·024·025, W4 033 → 85개 중 29개 (005·040·046 완료. 040은 운영 투입 불가 조건 있음)
+- 완료(push됨): W0 8, W0-D 3, W1 002·006·014·018·048, W2 015·016·017·020·021, W3 022·023·024·025, W4 033, W5 057(축소 범위) → 85개 중 30개 (005·040·046 완료. 040은 운영 투입 불가 조건 있음)
 - 다음 한 걸음: W1 나머지 005·007·008·046·070·V2-01, W2 017·040·041·043·047 등. 016 팀장 확인 필요(로그): 한 변 4면 허용, 산정 가정 ①~⑤, sharp LGPL(036·058에서 검사)
 - 결정됨(오늘): D-37 히어로=정지 이미지+CSS/SVG 연출 1회(3D 미채택, 킬 스위치 NEXT_PUBLIC_HERO3D_ENABLED 의미를 연출 on/off로), D-38 랜딩=단일 7섹션, D-39 landing.html 시안은 시각 참고용(문구·수치·가격·경쟁사·플랫폼 범위는 03장·PRD·ADR-001이 정본; DASHBOARD_VISUAL.md는 docs/.../디자인/에 가져옴), D-35 번들 글꼴 Noto Sans KR(OFL), D-36 PNG 래스터화 resvg 단일 렌더러(설치형 Rust 크레이트·웹 resvg-js, sharp 기각) → 신규 AR-06-080(85개로 증가), D-034 테마·밀도 사용자 선택형, D-071a Vite SPA+정적 호스팅·Bearer, AR-02-D1 정수 자체 구현, 형상 모든 엔진 바이트 동일·miter/square·압출은 016, S-5 평문 SQLite+OS 디스크 암호화, 스냅샷 실패 시 읽기 전용(AR061), AR060 DB 손상
 - 열린 결정: OH Architecture 확인, DB 예외(073·074 계열), 보안 L2(S-1), 기간제 가격, 본인인증 제공자, 법규 범위, 규칙 세트·단가표 정본 위치(018), 면적표 같은 이름 실 허용 여부
@@ -13,5 +13,6 @@
 - 040 코드 완료(독립 보안 리뷰 🟠 지적 수정 반영, 웹 테스트 75건). **운영 투입 불가 조건**: C-3 서명 키 규격 사람 승인, 레이트리밋 저장소 메모리→core.rate_limit_hit/Redis, T-C1 requireSession·좌석·권리(074/074a), 영구 파일 rights_expiry는 30일로 넣었으나 plan 출처·subscription_ends_at clamp는 074, Vercel은 TRUSTED_PROXY_HOPS=1 설정 필요, 로컬 Supabase 통합 시나리오 S1~S11 미실행. Rust 041과 합의: 서명 입력 접두 "arch-license-v1
 "+payload 바이트, rights_expiry 5키; 042·규칙 팩은 다른 접두 사용
 - 005 완료(독립 보안 리뷰 🟡 3건 수정, Rust 통합 테스트 Linux 통과). 005 후속: BroadcastChannel 토큰 전달(072 httpOnly 쿠키로 대체·클라이언트 차단 검토), tauri-plugin-single-instance(008), 실제 Windows 키체인 사람 확인. 046 완료(독립 보안 리뷰 🟡 로컬 수정 반영: 트레이스백 로그 가리기·수치/길이 상한·JWKS 주기 갱신). 046 후속: 잡 토큰 run_id·job_id 바인딩(047과 함께), LLM 출력 모델/최종 결과 모델 분리(engine_value 숫자), packages/domain zod에 안전 정수(.safe()) 상한 추가(Floor.level·Road.edge_index·pending_changes; 코퍼스에 zod:accept로 고정됨), env에 AI_TOKEN_JWKS_REFRESH_S 추가, zod에 intake·review·layout 결과 스키마 없음(pydantic만 PENDING_ZOD), 루트 pnpm test·CI api.yml 연결, jti/실행 저장소 메모리→공유, .env.example에 AI_TOKEN_JWKS_URL·AI_TOKEN_JWKS·AI_API_MAX_BODY_BYTES·AI_TOKEN_LEEWAY_S 추가 필요.
+- 057 후속(축소 범위로 완료): 375px에서 비교 표 3번째 열 잘림(수정 필요), 법무 확정 필요 항목은 content/legal/legal.ts의 "[확정 필요]", 가격은 pricing/page.tsx PRICE_NOTE·랜딩 #preorder·FAQ 자리, 푸터 회사명(D-1)·사전예약 문의 채널(contact.tsx CONTACT_EMAIL=null), 웹 스튜디오·다운로드 버튼은 '준비 중'(PendingButton, 071·076 때 교체), sitemap/robots/og 미작성, 3D 교체 지점 components/hero/HeroVisual.tsx·hero-mode.ts, 킬 스위치는 process.env.NEXT_PUBLIC_HERO3D_ENABLED 직접 읽음(publicEnv는 다른 필수 env 때문에 빌드가 막혀 불가). samples 페이지의 '얼리버드' 문구 제거·금지어 추가
 - 후속(작업 표 '발견한 문제'): reconcile refunded 전이 마이그레이션, CI 신설(S-7, test:rls·db:check 포함), ADR-001·071/072 문서 정정, 내부 API 경로·타임아웃(047), design-preview 랜딩 덮어쓰기 결함
 - 테스트 상태: pnpm -r lint·typecheck·test 통과, RLS 129+9, db check 6/6
