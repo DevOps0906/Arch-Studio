@@ -3,5 +3,8 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === "nodejs") {
     const { assertServerEnvOnBoot } = await import("./server/env");
     assertServerEnvOnBoot();
+    // Mock 인증이 원격·배포 환경에서 켜져 있으면 기동을 끝낸다(AR-06-008, 02_ARCHITECTURE.md 위험 #14).
+    const { assertAuthConfigOnBoot } = await import("./lib/auth/config");
+    assertAuthConfigOnBoot();
   }
 }

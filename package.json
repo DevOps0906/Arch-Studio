@@ -11,12 +11,14 @@
     "build": "pnpm -r build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test && pnpm test:db",
+    "test": "pnpm -r test && pnpm test:db && pnpm test:dev",
     "db:convert": "node scripts/db/convert.mjs --write",
     "db:convert:check": "node scripts/db/convert.mjs",
     "db:check": "node scripts/db/check.mjs",
     "db:types": "node scripts/db/gen-types.mjs",
     "test:db": "node --test scripts/db/convert.test.mjs",
+    "test:dev": "node --test scripts/dev/seed-lib.test.mjs",
+    "db:seed-users": "node scripts/dev/seed-users.mjs --app arch",
     "test:rls": "node scripts/test-rls/run.mjs --target mono"
   },
   "devDependencies": {
