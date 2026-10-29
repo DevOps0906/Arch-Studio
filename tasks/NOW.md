@@ -1,12 +1,11 @@
 # NOW — 재진입 스냅샷 (30줄 이내, 매 작업 끝에 덮어쓴다)
 
 - 갱신: 2026-10-29
-- 현재 작업: W0 — 001(d974e89)·003·009·010(db8697d)·013·066 완료. 004 Rust 미설치로 대기, 019 사람 확인 대기
-- 마지막으로 한 일: 001 DB 기준선·변환기 골든·렌더 조직 잠금(2401)·자체 검사·타입, 010 토큰 확장·컴포넌트 39종·/dev/components
-- 다음 한 걸음: Rust 설치 확인 → AR-06-004 데스크톱 셸 → 071a. W0-D 011(비주얼 검토, 사람 판정: /dev/components·.nomad/shots/ar010). W1 착수 가능: 002 RLS 스모크(높음), 014 지오메트리, 018 프로그램 엔진, 046, 048
-- 열린 결정: 변환 규칙 문서(05장 "문자열 리터럴 제외") 정정 여부, test:db를 pnpm test에 넣을지, 생성 타입 prettier, [DECISION] task log 경로, OH Architecture 확인, 웹 인증 방식, DB 예외(073·074 계열), 보안 L2, 기간제 가격, 본인인증 제공자, 법규 범위, 앱 다크 색·밀도 수치(D-34), lucide-react 정식 의존성 여부
-- 주의: 3000번 포트는 Windows 예약 범위 → dev는 `next dev -H 127.0.0.1 -p 3123` + 메모리 env(.env 없음, 파일 쓰기 금지). shot 도구 실패 → chrome --headless=new --screenshot 직접. 로컬 Supabase 포트 5532x, 컨테이너 supabase_db_Arch-Studio. DB 검사 `pnpm test:db`·`node scripts/db/check.mjs`. consume_credits 멱등 키는 코어 요청. 위임 기본 Opus, Codex astra 금지
-- SDLC 단계: 06 구현(W0 → W1)
-- 담당: 팀장 Opus 5.5 / builder·designer(Opus) → codex-reviewer, 고위험은 challenger + reviewer(security)
-- 테스트 상태: pnpm -r lint·typecheck·test·web build 통과, convert 3/3, check.mjs 6/6
-- 남은 작업: Rust 설치 → 004·071a, 사람 확인(DXF, 법규 대조, 011 비주얼 검토), W1
+- 현재 작업: W1 — AR-06-006 Rust 로컬 명령 구현 재개 중(작업 트리 미커밋: apps/desktop/src-tauri·migrations). 끝나면 codex-reviewer(code) + reviewer(security) 후 커밋
+- 완료(push됨): W0 8개 전부, W0-D 3개, W1 002·014·018·048 → 84개 중 15개
+- 다음 한 걸음: 006 마감 → W2 015 판정 엔진 → 016 엔벨로프(압출·solid 포함) → 020 시트 → 021 DXF. W1 나머지 005·008·046·070
+- 결정됨(오늘): D-034 테마·밀도 사용자 선택형, D-071a Vite SPA+정적 호스팅·Bearer, AR-02-D1 정수 자체 구현, 형상 모든 엔진 바이트 동일·miter/square·압출은 016, S-5 평문 SQLite+OS 디스크 암호화, 스냅샷 실패 시 읽기 전용(AR061), AR060 DB 손상
+- 열린 결정: OH Architecture 확인, DB 예외(073·074 계열), 보안 L2(S-1), 기간제 가격, 본인인증 제공자, 법규 범위, 규칙 세트·단가표 정본 위치(018), 면적표 같은 이름 실 허용 여부
+- 주의: 3000번 포트 Windows 예약 → dev는 `next dev -H 127.0.0.1 -p 3123` + 메모리 env. 로컬 Supabase 5532x(컨테이너 supabase_db_Arch-Studio). 검사: `pnpm test`(db 변환 골든 포함)·`pnpm test:rls`(db reset 먼저)·`node scripts/db/check.mjs`. 결정 기록은 tasks/logs/AR-06-NNN.md. bash에서 cargo는 `export PATH="$HOME/.cargo/bin:$PATH"`. 위임 기본 Opus, 고난도 검증 Fable, Codex astra 금지
+- 후속(작업 표 '발견한 문제'): reconcile refunded 전이 마이그레이션, CI 신설(S-7, test:rls·db:check 포함), ADR-001·071/072 문서 정정, 내부 API 경로·타임아웃(047), design-preview 랜딩 덮어쓰기 결함
+- 테스트 상태: pnpm -r lint·typecheck·test 통과, RLS 129+9, db check 6/6
