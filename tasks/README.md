@@ -37,7 +37,7 @@
 | AR-06-041 | Rust 라이선스 검증·규칙 팩 서명 | W2 | 006, 040 | 높음 | challenger→builder | 진행 |
 | AR-06-043 | 결제: 체크아웃·Toss 웹훅·시리얼 메일 | W2 | 001, 003, 040 | 높음 | challenger→builder | 대기 |
 | AR-06-017 | 엔진·도면 워커(레인·취소·재생성) | W2 | 004, 013 | 보통 | builder | 완료 |
-| AR-06-047 | AI 게이트: 토큰·pricing·업로드 서명 | W2 | 003, 046 | 높음 | challenger→builder | 진행 |
+| AR-06-047 | AI 게이트: 토큰·pricing·업로드 서명 | W2 | 003, 046 | 높음 | challenger→builder | 완료 |
 | AR-06-050 | RAG 색인·평가셋·위키 설정 | W2 | 046 | 보통 | builder | 대기 |
 | AR-06-058 | CI: 데스크톱 빌드·서명 릴리스·비밀 검사 | W2 | 001, 003, 004 | 높음 | builder | 대기 |
 | AR-06-073 | 클라우드 프로젝트 blob 저장·RLS·expected_version 충돌 | W2 | 001, 002, 003 | 높음 | challenger→builder | 대기 |
