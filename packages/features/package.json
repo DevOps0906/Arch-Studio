@@ -33,6 +33,8 @@
   },
   "dependencies": {
     "@arch-studio/domain": "workspace:*",
+    "@arch-studio/geometry": "workspace:*",
+    "@arch-studio/io": "workspace:*",
     "@arch-studio/ui": "workspace:*"
   },
   "peerDependencies": {
