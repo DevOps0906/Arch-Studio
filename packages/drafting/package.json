@@ -5,7 +5,9 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./writers/dxf": "./src/writers/dxf/index.ts"
+    "./writers/dxf": "./src/writers/dxf/index.ts",
+    "./writers/svg": "./src/writers/svg/index.ts",
+    "./writers/pdf": "./src/writers/pdf/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -18,7 +20,8 @@
   },
   "dependencies": {
     "@arch-studio/domain": "workspace:*",
-    "@arch-studio/geometry": "workspace:*"
+    "@arch-studio/geometry": "workspace:*",
+    "jspdf": "4.2.1"
   },
   "devDependencies": {
     "fast-check": "4.10.2"

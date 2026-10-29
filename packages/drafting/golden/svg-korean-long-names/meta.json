@@ -1,0 +1,11 @@
+{
+  "case_id": "svg-korean-long-names",
+  "source_case": "writer-korean-long-names",
+  "note": "한글 긴 사무소·프로젝트·실명, 특수문자 ㎡ × ° % 와 제어 문자",
+  "writer_version": "svg-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

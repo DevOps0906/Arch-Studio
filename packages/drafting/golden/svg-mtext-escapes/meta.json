@@ -1,0 +1,11 @@
+{
+  "case_id": "svg-mtext-escapes",
+  "source_case": "writer-mtext-escapes",
+  "note": "MTEXT 메모: 줄바꿈·\\ { } 이스케이프·제어 문자, 250자 넘는 문자열 분할",
+  "writer_version": "svg-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

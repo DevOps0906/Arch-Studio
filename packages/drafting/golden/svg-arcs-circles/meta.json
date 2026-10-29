@@ -1,0 +1,11 @@
+{
+  "case_id": "svg-arcs-circles",
+  "source_case": "writer-arcs-circles",
+  "note": "ARC(소수 각도)·CIRCLE",
+  "writer_version": "svg-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

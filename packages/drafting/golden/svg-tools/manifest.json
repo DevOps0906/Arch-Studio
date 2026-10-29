@@ -1,0 +1,30 @@
+{
+  "writer_version": "svg-1.0.0",
+  "sha256": {
+    "svg-ar058-overflow/sheet-site_plan.svg": "eedd3dcec69229861905dce0a4906f16231766f8706a69f0f50a4a57007e737b",
+    "svg-arcs-circles/sheet-site_plan.svg": "9e9f8e6c84a1d32f3cbf8b3a0c56817aad03b0d2b3f3e3c9859a5e3b857d6a07",
+    "svg-area-a2-landscape/sheet-area_plan.svg": "2ee46199f6b49c56ec90004011a8c53159035016efc9e573b5513a8847a54aef",
+    "svg-blocks-inserts/sheet-site_plan.svg": "4b1c9bebe2a24f20c117f418040cff68e5c931ba52d2d0a48dfa74e62ac4ccb8",
+    "svg-elevation-a3-portrait/sheet-elevation.svg": "51fe45298677806d714d2c285f5926de6de5218b416beb5360b7ea3d23c141f4",
+    "svg-fixed-scale-100/sheet-site_plan.svg": "3f9e846738bd051764cd8f48ed97c93ae93231654090943472117c257fc2c22f",
+    "svg-floor-a1-portrait/sheet-floor_plan.svg": "9b18b6c632c6d727bb31113b717a30deed24c155baa32096758f8a89c57a3bce",
+    "svg-font-timestamps/sheet-site_plan.svg": "4f769c23f8a88bd3d2b7e7cdeffd06a64c64c7b17c2ee80709ccaff730bc05c8",
+    "svg-hatch-ansi31/sheet-site_plan.svg": "ac5360821b123f4434de53c2809649c3087fcb8a847479bc0ef0f4ccf1b78b9e",
+    "svg-hatch-solid-holes/sheet-site_plan.svg": "b53d42067f305362a91679355cefb59050d1387ebeac5061e73b56e62b19a163",
+    "svg-korean-long-names/sheet-site_plan.svg": "33b711c17b6a9041aa72b8c5f44b271770ae4ddc887130184edd355845017e3d",
+    "svg-layer-map-control-chars/sheet-site_plan.svg": "4f769c23f8a88bd3d2b7e7cdeffd06a64c64c7b17c2ee80709ccaff730bc05c8",
+    "svg-layer-map-merge-invalid/sheet-site_plan.svg": "4f769c23f8a88bd3d2b7e7cdeffd06a64c64c7b17c2ee80709ccaff730bc05c8",
+    "svg-layer-map-rename/sheet-site_plan.svg": "4f769c23f8a88bd3d2b7e7cdeffd06a64c64c7b17c2ee80709ccaff730bc05c8",
+    "svg-many-masses/sheet-site_plan.svg": "2a57a913270fd0fe7da42112aa11e3cbd9655e50a68b701d03a9021f622a1476",
+    "svg-mtext-escapes/sheet-site_plan.svg": "95638c3afb6b036573a7e7454c59388d57d4bd8321cb55ecc2ea4b6d4de77405",
+    "svg-multi-view/sheet-site_plan.svg": "0e5ed10209a6c8fcbaf02c955986ef8d0f03ac1b03a5896e13cdc463dd678efb",
+    "svg-negative-coords/sheet-site_plan.svg": "6c5cb4df3f55f4d25410ce9441954c436c7af4aa0de354145a8b1d25fb32bbdd",
+    "svg-scale-600-large-site/sheet-site_plan.svg": "49641dfc8a22cd0bf9ef802eb78245b7bb23ca6dddd19583ad63797a63e37562",
+    "svg-site-a3-basic/sheet-site_plan.svg": "4f769c23f8a88bd3d2b7e7cdeffd06a64c64c7b17c2ee80709ccaff730bc05c8",
+    "svg-site-a3-fallback/sheet-site_plan.svg": "3026af0430c1ec2a19b62014a6afe0f5be69cd8ca2306da78d5dc3c113f2a792",
+    "svg-site-a3-watermark-fallback/sheet-site_plan.svg": "63f825ff406a683be28883a22058690f1de12e16c06664de43aecd07d2b0a5d3",
+    "svg-site-a3-watermark/sheet-site_plan.svg": "bf917fd7a38a7bf8f34410d30ea0547c17c698032dc2858b2053c9e011b94d68",
+    "svg-sunlight-a3/sheet-sunlight_section.svg": "f602e95c138b45f4840a0b0461206686852362d573ca9031c6e640209ff89202",
+    "svg-text-align/sheet-site_plan.svg": "c97e142d9af0e259109395bc05dbc7c8c6e8b547f6a628b7f5fff96eaaadd2f2"
+  }
+}
