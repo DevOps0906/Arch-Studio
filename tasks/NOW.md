@@ -10,5 +10,6 @@
 - 뷰 후속(023~025 보고): rules가 면적 분해(건축면적·연면적·층별·용도별 ㎡)·최단 이격 점 쌍·장애인 주차 대수·일조사선 초과 구간을 JudgmentResult/envelope로 내보내야 뷰가 값을 재계산하지 않음(현재 구조적 입력 extras/area_breakdown으로 대체)
 - 수정됨: geometry offset 안쪽 오프셋 바늘 꼭짓점 결함(014 잠복) — 판정을 정수 외적 부호로 교체, 회귀 테스트 추가(tasks/logs/AR-06-014.md [FIX])
 - 017 후속: 워커 호스트 연결(new Worker, src/routes)·실제 RulePackProvider·엔벨로프 op(솔리드 wasm)·suggest_mass/validate_layout/import_dxf는 해당 패키지 구현 후 연결. export·import 레인은 문서(마지막 1건만)와 달리 응답 못 받은 요청을 모두 순서대로 재전송(출력 유실 방지) — 04_API/02_ARCH 2.4절 정정 필요
+- 040 병합됨(상태=진행): 보안 리뷰 전·C-3(서명 키 규격) 미결이라 완료 처리 안 함. 운영 전 필수: 레이트리밋 저장소 메모리→DB/Redis, 세션 조직 불일치(RPC 변경)·기기 한도 단위(074a), TRUSTED_PROXY_HOPS를 deps.ts에 연결(env 스키마에는 추가됨), 로컬 Supabase 통합 테스트 S1~S9, canonicalJson ↔ Rust 041 규칙 일치
 - 후속(작업 표 '발견한 문제'): reconcile refunded 전이 마이그레이션, CI 신설(S-7, test:rls·db:check 포함), ADR-001·071/072 문서 정정, 내부 API 경로·타임아웃(047), design-preview 랜딩 덮어쓰기 결함
 - 테스트 상태: pnpm -r lint·typecheck·test 통과, RLS 129+9, db check 6/6

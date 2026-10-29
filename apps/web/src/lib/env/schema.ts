@@ -43,6 +43,7 @@ export const serverEnvSchema = publicEnvSchema
     RATE_LIMIT_IP_SALT: required,
     // 누락 시 정해진 대체 동작이 있는 변수
     DESKTOP_CORS_ORIGINS: optional,
+    TRUSTED_PROXY_HOPS: z.coerce.number().int().min(0).max(5).default(0),
     VWORLD_API_KEY: optional,
     AI_SERVICE_URL: optional,
     DIFY_API_URL: optional,
