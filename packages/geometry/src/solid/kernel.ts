@@ -16,24 +16,49 @@ import { roundHalfAway } from "../round.ts";
 import { COORD_LIMIT, normalizePolygon } from "../validate.ts";
 import { canonicalMesh, closeMesh, type IntMesh, type Point3 } from "./mesh.ts";
 
+/** extrude.divisions 상한(층 수 상한과 같은 자릿수). */
+const MAX_DIVISIONS = 200;
+
 /** 2D 영역 식(정수 다각형 입력). subtract는 base − ⋃minus. */
 export type RegionNode =
   | { op: "polygons"; polygons: readonly Polygon[] }
   | { op: "union" | "intersect"; children: readonly RegionNode[] }
   | { op: "subtract"; base: RegionNode; minus: readonly RegionNode[] };
 
-/** 3D 솔리드 식. extrude는 z0 < z1(정수 mm), hull은 점들의 볼록 껍질. */
+/**
+ * 3D 솔리드 식. extrude는 z0 < z1(정수 mm), hull은 점들의 볼록 껍질.
+ * - extrude.divisions(선택, AR-06-036): 옆면을 높이 방향으로 나누는 중간 단면 수(층 경계 꼭짓점 유지, Manifold nDivisions). 생략 = 0.
+ * - mesh(AR-06-036): 이미 만든 닫힌 정수 메시(예: 엔벨로프 solid)를 식 안에서 다시 쓴다.
+ * 같은 식 객체(참조 동일)는 한 번의 평가 안에서 한 번만 만든다(메모).
+ */
 export type SolidNode =
-  | { op: "extrude"; region: RegionNode; z0: number; z1: number }
+  | { op: "extrude"; region: RegionNode; z0: number; z1: number; divisions?: number }
   | { op: "hull"; points: readonly Point3[] }
+  | { op: "mesh"; mesh: IntMesh }
   | { op: "union" | "intersect"; children: readonly SolidNode[] }
   | { op: "subtract"; base: SolidNode; minus: readonly SolidNode[] };
+
+/**
+ * 화면 표시용 메시(AR-06-036): Manifold getMesh() 버퍼를 그대로(정수 정규화 없음) 꺼낸다. 좌표는 mm(Float32, |v| ≤ 2^24에서 정확).
+ * 같은 입력·같은 WASM 빌드면 같은 버퍼다. 결정적 바이트가 필요한 곳(도면·스냅샷·내보내기)은 solid()를 쓴다.
+ */
+export interface RenderMesh {
+  /** xyz 연속(꼭짓점 수 × 3). */
+  positions: Float32Array;
+  /** 삼각형 꼭짓점 번호(삼각형 수 × 3), 바깥에서 볼 때 반시계. */
+  index: Uint32Array;
+}
 
 export interface SolidKernel {
   /** 2D 식 평가 → 정수 다각형(외곽 반시계·구멍 시계, 정렬됨, 빈 배열 허용). */
   region(node: RegionNode): Polygon[];
   /** 3D 식 평가 → 정수 mm 삼각형 메시(정규화됨, 빈 메시 허용). */
   solid(node: SolidNode): IntMesh;
+  /**
+   * 3D 식 여러 개를 한 번에 평가 → 표시용 메시(정규화 없음, AR-06-036). 식들이 같은 하위 식 객체를 공유하면 한 번만 만든다
+   * (예: 매스마다 "매스 − 엔벨로프"를 만들 때 엔벨로프 메시를 한 번만 Manifold로 바꾼다).
+   */
+  renderMeshes(nodes: readonly SolidNode[]): RenderMesh[];
 }
 
 export interface LoadSolidOptions {
@@ -90,7 +115,47 @@ function createKernel(wasm: ManifoldToplevel): SolidKernel {
     }
   }
 
-  function evalSolid(node: SolidNode, owned: { delete(): void }[]): Manifold {
+  function evalSolid(node: SolidNode, owned: { delete(): void }[], memo?: Map<SolidNode, Manifold>): Manifold {
+    const hit = memo?.get(node);
+    if (hit) return hit;
+    const out = evalSolidUncached(node, owned, memo);
+    memo?.set(node, out);
+    return out;
+  }
+
+  function meshManifold(mesh: IntMesh, keep: <T extends { delete(): void }>(x: T) => T): Manifold {
+    const vp = new Float32Array(mesh.vertices.length * 3);
+    mesh.vertices.forEach(([x, y, z], i) => {
+      assertInt(x, `mesh ${i}.x`);
+      assertInt(y, `mesh ${i}.y`);
+      assertInt(z, `mesh ${i}.z`);
+      vp[i * 3] = x;
+      vp[i * 3 + 1] = y;
+      vp[i * 3 + 2] = z;
+    });
+    const tv = new Uint32Array(mesh.triangles.length * 3);
+    mesh.triangles.forEach(([a, b, c], i) => {
+      for (const v of [a, b, c]) {
+        if (!Number.isSafeInteger(v) || v < 0 || v >= mesh.vertices.length) throw new GeometryError("INVALID_ARGUMENT", `mesh 삼각형 ${i}: 꼭짓점 번호 범위 밖`);
+      }
+      tv[i * 3] = a;
+      tv[i * 3 + 1] = b;
+      tv[i * 3 + 2] = c;
+    });
+    if (tv.length === 0) return keep(M.union([]));
+    const m = new wasm.Mesh({ numProp: 3, vertProperties: vp, triVerts: tv });
+    m.merge();
+    let solid: Manifold;
+    try {
+      solid = keep(new M(m));
+    } catch {
+      throw new GeometryError("INVALID_ARGUMENT", "닫힌 메시가 아닙니다");
+    }
+    if (solid.status() !== "NoError") throw new GeometryError("INVALID_ARGUMENT", `닫힌 메시가 아닙니다: ${solid.status()}`);
+    return solid;
+  }
+
+  function evalSolidUncached(node: SolidNode, owned: { delete(): void }[], memo?: Map<SolidNode, Manifold>): Manifold {
     const keep = <T extends { delete(): void }>(x: T): T => {
       owned.push(x);
       return x;
@@ -100,11 +165,15 @@ function createKernel(wasm: ManifoldToplevel): SolidKernel {
         assertInt(node.z0, "z0");
         assertInt(node.z1, "z1");
         if (node.z1 <= node.z0) throw new GeometryError("INVALID_ARGUMENT", `압출 높이가 0 이하입니다 (${node.z0}..${node.z1})`);
+        const div = node.divisions ?? 0;
+        if (!Number.isSafeInteger(div) || div < 0 || div > MAX_DIVISIONS) throw new GeometryError("INVALID_ARGUMENT", `divisions는 0~${MAX_DIVISIONS} 정수입니다 (${div})`);
         const cs = evalRegion(node.region, owned);
         if (cs.isEmpty()) return keep(M.union([]));
-        const m = keep(cs.extrude(node.z1 - node.z0));
+        const m = keep(div === 0 ? cs.extrude(node.z1 - node.z0) : cs.extrude(node.z1 - node.z0, div));
         return node.z0 === 0 ? m : keep(m.translate([0, 0, node.z0]));
       }
+      case "mesh":
+        return meshManifold(node.mesh, keep);
       case "hull": {
         node.points.forEach(([x, y, z], i) => {
           assertInt(x, `hull ${i}.x`);
@@ -115,7 +184,7 @@ function createKernel(wasm: ManifoldToplevel): SolidKernel {
       }
       case "union":
       case "intersect": {
-        const parts = node.children.map((c) => evalSolid(c, owned));
+        const parts = node.children.map((c) => evalSolid(c, owned, memo));
         if (parts.length === 0) {
           if (node.op === "intersect") throw new GeometryError("INVALID_ARGUMENT", "intersect 항이 없습니다");
           return keep(M.union([]));
@@ -124,9 +193,9 @@ function createKernel(wasm: ManifoldToplevel): SolidKernel {
         return keep(node.op === "union" ? M.union(parts) : M.intersection(parts));
       }
       case "subtract": {
-        const base = evalSolid(node.base, owned);
+        const base = evalSolid(node.base, owned, memo);
         if (node.minus.length === 0) return base;
-        const minus = node.minus.map((c) => evalSolid(c, owned));
+        const minus = node.minus.map((c) => evalSolid(c, owned, memo));
         return keep(M.difference([base, ...minus]));
       }
     }
@@ -178,6 +247,30 @@ function createKernel(wasm: ManifoldToplevel): SolidKernel {
           tris.push([mesh.triVerts[i] as number, mesh.triVerts[i + 1] as number, mesh.triVerts[i + 2] as number]);
         }
         return closeMesh(canonicalMesh(verts, tris)); // 퇴화 정리 + 닫힘 검사(SOLID_DEGENERATE)
+      });
+    },
+    renderMeshes(nodes) {
+      return run((owned) => {
+        const memo = new Map<SolidNode, Manifold>();
+        return nodes.map((node) => {
+          const m = evalSolid(node, owned, memo);
+          const status = m.status();
+          if (status !== "NoError") throw new GeometryError("NUMERIC_FAILURE", `Manifold 상태 오류: ${status}`);
+          const mesh = m.getMesh();
+          const n = mesh.numProp;
+          // getMesh 버퍼는 WASM 힙 사본이라 delete 뒤에도 유효하다. 전송(Transferable)용으로 자기 버퍼를 갖게 복사한다.
+          let positions: Float32Array;
+          if (n === 3) positions = mesh.vertProperties.slice();
+          else {
+            positions = new Float32Array((mesh.vertProperties.length / n) * 3);
+            for (let i = 0, j = 0; i < mesh.vertProperties.length; i += n, j += 3) {
+              positions[j] = mesh.vertProperties[i] as number;
+              positions[j + 1] = mesh.vertProperties[i + 1] as number;
+              positions[j + 2] = mesh.vertProperties[i + 2] as number;
+            }
+          }
+          return { positions, index: mesh.triVerts.slice() };
+        });
       });
     },
   };
