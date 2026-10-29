@@ -180,3 +180,45 @@ test("어댑터: 시도별 verifier 상한(오래된 것부터), 손상된 묶�
     await assert.rejects(adapter.getItem(bad), BridgeError);
   }
 });
+
+function jwtWithRole(role: string): string {
+  return `${b64url({ alg: "HS256", typ: "JWT" })}.${b64url({ iss: "supabase", role })}.SIG`;
+}
+
+function thrown(fn: () => unknown): unknown {
+  try {
+    fn();
+  } catch (e) {
+    return e;
+  }
+  return undefined;
+}
+
+test("클라이언트 생성: 비밀 키(sb_secret_·service_role JWT)는 거부, 오류에 키·URL 원문 0", () => {
+  const secrets = createTauriBridge(createKeychainInvoke().invoke).secrets;
+  for (const key of ["sb_secret_ABCDEF123456", jwtWithRole("service_role")]) {
+    const err = thrown(() => createArchSupabaseClient({ url: URL_, anonKey: key, secrets }));
+    assert.ok(err instanceof BridgeError && err.code === "SUPABASE_KEY_FORBIDDEN");
+    const surface = errorSurface(err);
+    assert.ok(!surface.includes(key) && !surface.includes("sb_secret_") && !surface.includes("example.supabase.co"));
+  }
+});
+
+test("클라이언트 생성: https가 아닌 URL은 거부(127.0.0.1·localhost http는 개발용 예외)", () => {
+  const secrets = createTauriBridge(createKeychainInvoke().invoke).secrets;
+  for (const url of ["http://example.supabase.co", "ftp://example.supabase.co", "not a url", "http://127.0.0.1.evil.com"]) {
+    const err = thrown(() => createArchSupabaseClient({ url, anonKey: ANON, secrets }));
+    assert.ok(err instanceof BridgeError && err.code === "SUPABASE_URL_INSECURE", url);
+    assert.ok(!errorSurface(err).includes("evil.com"));
+  }
+  for (const url of ["http://127.0.0.1:54321", "http://localhost:54321", "https://example.supabase.co"]) {
+    assert.doesNotThrow(() => createArchSupabaseClient({ url, anonKey: ANON, secrets }), url);
+  }
+});
+
+test("클라이언트 생성: 공개 키(anon JWT·publishable·형식 불명)는 통과", () => {
+  const secrets = createTauriBridge(createKeychainInvoke().invoke).secrets;
+  for (const key of [jwtWithRole("anon"), "sb_publishable_ABC123", "anon-public-key", "a.b.c", "x.@@@.y"]) {
+    assert.doesNotThrow(() => createArchSupabaseClient({ url: URL_, anonKey: key, secrets }));
+  }
+});

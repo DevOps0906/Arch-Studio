@@ -120,11 +120,48 @@ export interface ArchSupabaseOptions {
   fetch?: typeof fetch;
 }
 
+const LOOPBACK_HOSTS = new Set(["127.0.0.1", "localhost"]);
+
+/** JWT 형식이면 payload(base64url)의 role을 읽는다. 형식이 아니거나 해석 불가면 undefined. */
+function jwtRole(key: string): unknown {
+  const parts = key.split(".");
+  if (parts.length !== 3) return undefined;
+  try {
+    // 브라우저·웹뷰에는 Buffer가 없다: base64url → base64 → atob → UTF-8.
+    const b64 = (parts[1] ?? "").replace(/-/g, "+").replace(/_/g, "/");
+    const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+    const payload: unknown = JSON.parse(new TextDecoder().decode(bytes));
+    return typeof payload === "object" && payload !== null ? (payload as { role?: unknown }).role : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * 클라이언트에 넣을 수 없는 값을 거부한다: 비밀 키(`sb_secret_`·service_role JWT)와 https가 아닌 URL(개발용 loopback 제외).
+ * 오류에는 코드만 담는다(키·URL 값 미포함).
+ */
+export function assertClientConfig(url: string, anonKey: string): void {
+  const key = anonKey.trim();
+  if (key.startsWith("sb_secret_") || jwtRole(key) === "service_role") {
+    throw new BridgeError("SUPABASE_KEY_FORBIDDEN");
+  }
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new BridgeError("SUPABASE_URL_INSECURE");
+  }
+  const loopbackDev = parsed.protocol === "http:" && LOOPBACK_HOSTS.has(parsed.hostname);
+  if (parsed.protocol !== "https:" && !loopbackDev) throw new BridgeError("SUPABASE_URL_INSECURE");
+}
+
 /**
  * PKCE·`detectSessionInUrl: false`(딥링크 `code`는 shell-bridge auth가 직접 교환) 고정.
  * 세션·verifier는 `secrets`에만 저장된다.
  */
 export function createArchSupabaseClient(options: ArchSupabaseOptions): SupabaseClient {
+  assertClientConfig(options.url, options.anonKey);
   return createClient(options.url, options.anonKey, {
     auth: {
       flowType: "pkce",

@@ -14,8 +14,11 @@ export type LicenseErrorCode =
   | "LICENSE_NETWORK"
   | "LICENSE_UNAVAILABLE";
 
+/** Supabase 클라이언트 설정 검증 오류(키·URL 값은 메시지에 담지 않는다). */
+export type ConfigErrorCode = "SUPABASE_KEY_FORBIDDEN" | "SUPABASE_URL_INSECURE";
+
 /** 플랫폼 기능 미지원(웹에서 로컬 파일 등). */
-export type BridgeErrorCode = SecretErrorCode | ExportErrorCode | LicenseErrorCode | "NOT_SUPPORTED";
+export type BridgeErrorCode = SecretErrorCode | ExportErrorCode | LicenseErrorCode | ConfigErrorCode | "NOT_SUPPORTED";
 
 export class BridgeError extends Error {
   readonly code: BridgeErrorCode;
