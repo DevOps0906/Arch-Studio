@@ -5,8 +5,11 @@
 //! - 설치: 라이선스 파일 재검증 → [`admit_rule_pack`](서명 `"arch-rulepack-v1\n"`·`verify_strict`·sha256·크기·자격) →
 //!   설치된 팩 중 검증을 통과한 최고 버전보다 낮으면 `downgrade`, 같은 버전·다른 본문은 `conflict`, 같은 버전·같은 본문은
 //!   서명 매니페스트만 바꾼다(키 회전 재서명) → 임시 폴더에 쓰고 fsync 후 이름 바꾸기(원자적).
-//! - 불러오기: 가장 높은 버전 폴더 하나를 디스크에서 **다시** 검증(서명·해시·크기) + 라이선스 자격. 실패하면 낮은 버전으로
-//!   내려가지 않고 `invalid`(캐시 오염·쓰다 만 파일 방어).
+//! - 불러오기: 높은 버전부터 디스크에서 **다시** 검증(서명·해시·크기) + 라이선스 자격. 변조(서명 불일치·해시 불일치·형식
+//!   위반·폴더 이름과 서명 버전 불일치·읽기 실패)면 낮은 버전으로 내려가지 않고 `invalid`(캐시 오염·쓰다 만 파일 방어).
+//!   지금 키 고리에 없는 kid(키 회전으로 제거된 kid)로 서명된 폴더만 건너뛴다(보안 리뷰 #2: 회전 뒤 영구 `invalid` 방지).
+//! - 설치(`installed`) 뒤 새 버전보다 높은데 검증되지 않는 폴더(모르는 kid·변조)는 `quarantine/`으로 옮긴다(지우지 않음).
+//!   롤백 기준은 그대로 "검증된 설치본 중 최고 버전"이다.
 //! - 설치 경로는 서명된 manifest의 `version`(`YYYY.MM.n`)과 고정 파일 이름으로만 만든다. 화면이 주는 경로·버전은 없다.
 //! - 결과는 상태 이름만(서명·본문·경로 원문 없음). 이 모듈은 로그를 남기지 않는다.
 
@@ -30,6 +33,8 @@ pub const MANIFEST_FILE: &str = "manifest.json";
 pub const PACK_FILE: &str = "pack.json";
 /// 쓰는 중인 임시 폴더 접두(불러오기·버전 계산에서 무시하고 다음 설치 때 지운다).
 const TMP_PREFIX: &str = ".tmp-";
+/// 검증되지 않는 상위 버전 폴더를 옮겨 두는 폴더(버전 형식이 아니라 불러오기·버전 계산에서 무시된다).
+pub const QUARANTINE_DIR: &str = "quarantine";
 /// 폴더 훑기 상한(로컬 DoS 방지. 월 1회 게시 기준 20년치).
 const MAX_SCAN_ENTRIES: usize = 256;
 
@@ -62,7 +67,7 @@ impl std::fmt::Debug for LoadedRulePack {
     }
 }
 
-/// 불러오기 결과. `state` = `ok`·`missing`(설치된 팩 없음)·`invalid`(디스크 팩 검증 실패)·`not_entitled`(라이선스 만료·자격 밖).
+/// 불러오기 결과. `state` = `ok`·`missing`(설치된 팩 없음, 또는 모두 지금 고리에 없는 kid)·`invalid`(디스크 팩 검증 실패)·`not_entitled`(라이선스 만료·자격 밖).
 #[derive(Serialize, Clone, PartialEq, Eq, Debug)]
 pub struct RulePackLoadStatus {
     pub state: &'static str,
@@ -104,20 +109,41 @@ struct InstalledPack {
     pack: Vec<u8>,
 }
 
-fn verify_dir(keys: &KeyRing, dir: &Path, version: &str) -> Option<InstalledPack> {
-    let signed = String::from_utf8(read_capped(
-        &dir.join(MANIFEST_FILE),
-        MAX_SIGNED_MANIFEST_BYTES,
-    )?)
-    .ok()?;
-    let pack = read_capped(&dir.join(PACK_FILE), MAX_PACK_BYTES)?;
-    let manifest = verify_rule_pack(keys, &signed, &pack).ok()?;
-    // 폴더 이름과 서명된 버전이 다르면(옮겨 놓은 폴더) 믿지 않는다.
-    (manifest.version == version).then_some(InstalledPack {
-        manifest,
-        signed,
-        pack,
-    })
+/// 설치 폴더 하나의 판정.
+enum DirCheck {
+    Verified(Box<InstalledPack>),
+    /// 지금 키 고리에 없는 kid(키 회전으로 제거). 위조인지 옛 정상 팩인지 이 고리로는 가릴 수 없다 → 건너뛴다.
+    UnknownKid,
+    /// 서명 불일치·해시 불일치·형식 위반·버전 불일치·읽기 실패(변조·손상).
+    Invalid,
+}
+
+fn check_dir(keys: &KeyRing, dir: &Path, version: &str) -> DirCheck {
+    let read = || -> Option<(String, Vec<u8>)> {
+        let signed = String::from_utf8(read_capped(
+            &dir.join(MANIFEST_FILE),
+            MAX_SIGNED_MANIFEST_BYTES,
+        )?)
+        .ok()?;
+        let pack = read_capped(&dir.join(PACK_FILE), MAX_PACK_BYTES)?;
+        Some((signed, pack))
+    };
+    let Some((signed, pack)) = read() else {
+        return DirCheck::Invalid;
+    };
+    match verify_rule_pack(keys, &signed, &pack) {
+        // 폴더 이름과 서명된 버전이 다르면(옮겨 놓은 폴더) 믿지 않는다.
+        Ok(manifest) if manifest.version == version => {
+            DirCheck::Verified(Box::new(InstalledPack {
+                manifest,
+                signed,
+                pack,
+            }))
+        }
+        Ok(_) => DirCheck::Invalid,
+        Err(RulePackRejection::UnknownKid) => DirCheck::UnknownKid,
+        Err(_) => DirCheck::Invalid,
+    }
 }
 
 /// 설치 폴더의 버전 폴더(이름이 `YYYY.MM.n`인 실제 폴더만), 높은 버전부터.
@@ -176,10 +202,44 @@ impl RulePackService {
         )
     }
 
+    /// 롤백 기준: 검증을 통과한 설치본 중 최고 버전(모르는 kid·변조 폴더는 기준이 되지 않는다).
     fn highest_verified(&self, root: &Path) -> Option<InstalledPack> {
-        installed_versions(root)
-            .iter()
-            .find_map(|v| verify_dir(&self.keys, &root.join(v), v))
+        installed_versions(root).iter().find_map(|v| {
+            match check_dir(&self.keys, &root.join(v), v) {
+                DirCheck::Verified(p) => Some(*p),
+                DirCheck::UnknownKid | DirCheck::Invalid => None,
+            }
+        })
+    }
+
+    /// 방금 설치한 `version`보다 높은 버전 폴더를 `quarantine/<버전>-<uuid>`로 옮긴다. 설치가 성공했다는 것은 더 높은
+    /// **검증된** 폴더가 없다는 뜻(있으면 `downgrade`)이라 여기서 옮기는 폴더는 모두 검증되지 않는 폴더다(모르는 kid·변조).
+    /// 지우지 않고 보관한다(조사용). 실패해도 설치 결과는 바꾸지 않는다(그 경우 불러오기가 `invalid`로 실패 닫힘).
+    fn quarantine_above(&self, root: &Path, version: &str) {
+        let above: Vec<String> = installed_versions(root)
+            .into_iter()
+            .filter(|v| compare_versions(v, version) == std::cmp::Ordering::Greater)
+            .collect();
+        if above.is_empty() {
+            return;
+        }
+        let q = root.join(QUARANTINE_DIR);
+        if fs::create_dir_all(&q).is_err() {
+            return;
+        }
+        for v in above {
+            // 경합으로 그 사이 검증되는 폴더가 생겼다면(뮤텍스 안이라 정상 경로로는 없음) 옮기지 않는다.
+            if matches!(
+                check_dir(&self.keys, &root.join(&v), &v),
+                DirCheck::Verified(_)
+            ) {
+                continue;
+            }
+            let _ = fs::rename(
+                root.join(&v),
+                q.join(format!("{v}-{}", uuid::Uuid::now_v7())),
+            );
+        }
     }
 
     fn cleanup_tmp(root: &Path) {
@@ -241,7 +301,10 @@ impl RulePackService {
             }
         }
         match Self::write_new(root, &version, signed_manifest, pack) {
-            Ok(()) => install_status("installed", Some(&version)),
+            Ok(()) => {
+                self.quarantine_above(root, &version);
+                install_status("installed", Some(&version))
+            }
             Err(_) => install_status("write_failed", Some(&version)),
         }
     }
@@ -277,12 +340,21 @@ impl RulePackService {
         };
         let found = {
             let _guard = self.lock.lock().unwrap_or_else(|e| e.into_inner());
-            let versions = installed_versions(root);
-            let Some(top) = versions.first() else {
+            // 높은 버전부터: 모르는 kid는 건너뛰고, 변조를 만나면 낮은 버전으로 내려가지 않는다.
+            let mut found = None;
+            for v in installed_versions(root) {
+                match check_dir(&self.keys, &root.join(&v), &v) {
+                    DirCheck::Verified(p) => {
+                        found = Some(*p);
+                        break;
+                    }
+                    DirCheck::UnknownKid => continue,
+                    DirCheck::Invalid => return RulePackLoadStatus::fail("invalid"),
+                }
+            }
+            // 폴더가 없거나 모두 모르는 kid면 쓸 수 있는 팩이 없다(`missing` → 화면은 내려받기 안내).
+            let Some(found) = found else {
                 return RulePackLoadStatus::fail("missing");
-            };
-            let Some(found) = verify_dir(&self.keys, &root.join(top), top) else {
-                return RulePackLoadStatus::fail("invalid");
             };
             found
         };

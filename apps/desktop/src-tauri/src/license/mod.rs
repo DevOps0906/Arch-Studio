@@ -99,14 +99,17 @@ const fn hex_nibble(c: u8) -> u8 {
 }
 
 /// 테스트 공개키 거부 목록: 교차 벡터(`tests/fixtures/license/vectors.json`의 `keys`·`rulepack_keys`) 3개 +
-/// 단위 테스트 시드 키(`[1;32]`·`[2;32]`·`[9;32]`) 3개. 운영 슬롯에 들어가면 컴파일이 실패한다(kid 이름과 무관하게 바이트 비교).
-pub const TEST_PUBLIC_KEYS: [[u8; 32]; 6] = [
+/// 단위·통합 테스트 시드 키(`[1;32]`·`[2;32]`·`[9;32]`·`[10;32]`·`[11;32]`, `tests/rule_pack.rs`가 10·11을 쓴다) 5개.
+/// 운영 슬롯에 들어가면 컴파일이 실패한다(kid 이름과 무관하게 바이트 비교). 테스트에 새 시드를 쓰면 여기에 함께 넣는다.
+pub const TEST_PUBLIC_KEYS: [[u8; 32]; 8] = [
     hex32("838b58f7453e68683484f8e258e723db774b6546b008ba4c857c666847a560a8"),
     hex32("fcc3d2eb48301c279897f575ee0f8f6b99a019fc4ed3266a24f83edd93cf110c"),
     hex32("c670cd5cdfb2962bf1dd6dbbca8f96560c15968d62047c0f81344bd0e08bb398"),
     hex32("8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"),
     hex32("8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394"),
     hex32("fd1724385aa0c75b64fb78cd602fa1d991fdebf76b13c58ed702eac835e9f618"),
+    hex32("43a72e714401762df66b68c26dfbdf2682aaec9f2474eca4613e424a0fbafd3c"),
+    hex32("66be7e332c7a453332bd9d0a7f7db055f5c5ef1a06ada66d98b39fb6810c473a"),
 ];
 
 /// 슬롯에 거부 목록 키가 하나라도 있으면 true(컴파일 가드용).

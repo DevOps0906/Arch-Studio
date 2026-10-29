@@ -5,11 +5,13 @@ use std::sync::Arc;
 
 use arch_studio_desktop_lib::commands::license::LicenseService;
 use arch_studio_desktop_lib::commands::rule_pack::{
-    RulePackService, RulePackState, MANIFEST_FILE, PACK_FILE,
+    RulePackService, RulePackState, MANIFEST_FILE, PACK_FILE, QUARANTINE_DIR,
 };
 use arch_studio_desktop_lib::device::{current_device_hash, StaticDeviceId};
 use arch_studio_desktop_lib::license::codec::{b64url_encode, parse_date, parse_instant};
-use arch_studio_desktop_lib::license::rule_pack::{compare_versions, MAX_PACK_BYTES};
+use arch_studio_desktop_lib::license::rule_pack::{
+    compare_versions, valid_version, MAX_PACK_BYTES,
+};
 use arch_studio_desktop_lib::license::{
     KeyRing, MemoryClockStore, LICENSE_CONTEXT, RULEPACK_CONTEXT,
 };
@@ -126,6 +128,39 @@ fn service_at(root: Option<&Path>, now: i64) -> RulePackService {
         license,
         root.map(|r| r.join("rule-packs")),
     )
+}
+
+/// 규칙 팩 고리를 지정한 서비스(키 회전 시나리오).
+fn service_with_ring(root: &Path, now: i64, pack_ring: KeyRing) -> RulePackService {
+    let license = Arc::new(LicenseService::new(
+        ring(&[(LIC_KID, &key(1))]),
+        Arc::new(StaticDeviceId(Some(MACHINE.into()))),
+        Arc::new(MemoryClockStore::default()),
+        Arc::new(move || now),
+        parse_date("2026-10-01"),
+    ));
+    RulePackService::new(pack_ring, license, Some(root.join("rule-packs")))
+}
+
+fn sign_pack_2(version: &str, pack: &[u8]) -> String {
+    signed(
+        &key(10),
+        PACK_KID_2,
+        &manifest(version, pack, "2026-10-20T00:00:00Z", PACK_KID_2),
+    )
+}
+
+fn quarantined(root: &Path) -> Vec<String> {
+    std::fs::read_dir(root.join("rule-packs").join(QUARANTINE_DIR))
+        .map(|d| {
+            let mut v: Vec<String> = d
+                .filter_map(Result::ok)
+                .map(|e| e.file_name().to_string_lossy().into_owned())
+                .collect();
+            v.sort();
+            v
+        })
+        .unwrap_or_default()
 }
 
 fn now() -> i64 {
@@ -350,6 +385,156 @@ fn entitlement_is_checked_on_install_and_every_load() {
     assert_eq!(none.load(Some(&lic)).state, "missing");
     assert_eq!(none.install(Some(&lic), &m, &pack).state, "write_failed");
     let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn key_rotation_skips_unknown_kid_and_recovers_on_higher_install() {
+    // 보안 리뷰 #2: 고리에서 kid를 뺀 빌드로 바뀌면 그 kid로 서명된 상위 폴더 때문에 영구 invalid가 되면 안 된다.
+    let root = temp_root("rotate");
+    let lic = license_file("license", true);
+    let old = service_at(Some(&root), now()); // 고리 = {PACK_KID, PACK_KID_2}
+    let p9 = pack_body("2026.09.0", "a");
+    let p12 = pack_body("2026.12.0", "b");
+    assert_eq!(
+        old.install(Some(&lic), &sign_pack("2026.09.0", &p9), &p9)
+            .state,
+        "installed"
+    );
+    assert_eq!(
+        old.install(Some(&lic), &sign_pack_2("2026.12.0", &p12), &p12)
+            .state,
+        "installed"
+    );
+    assert_eq!(old.load(Some(&lic)).pack.unwrap().version, "2026.12.0");
+
+    // 회전: PACK_KID_2 제거(유출 대응 빌드).
+    let rotated = service_with_ring(&root, now(), ring(&[(PACK_KID, &key(9))]));
+    let l = rotated.load(Some(&lic));
+    assert_eq!(l.state, "ok", "모르는 kid 폴더는 건너뛴다");
+    assert_eq!(l.pack.unwrap().version, "2026.09.0");
+    // 롤백 기준은 검증된 최고 버전(2026.09.0): 더 낮은 버전은 여전히 거부.
+    let p8 = pack_body("2026.08.0", "z");
+    assert_eq!(
+        rotated
+            .install(Some(&lic), &sign_pack("2026.08.0", &p8), &p8)
+            .state,
+        "downgrade"
+    );
+    // 더 높은 버전 설치 → 성공, 검증 안 되는 상위 폴더(2026.12.0)는 격리.
+    let p10 = pack_body("2026.10.0", "c");
+    assert_eq!(
+        rotated
+            .install(Some(&lic), &sign_pack("2026.10.0", &p10), &p10)
+            .state,
+        "installed"
+    );
+    assert!(!root.join("rule-packs/2026.12.0").exists());
+    let q = quarantined(&root);
+    assert_eq!(q.len(), 1);
+    assert!(q[0].starts_with("2026.12.0-"), "{q:?}");
+    assert_eq!(rotated.load(Some(&lic)).pack.unwrap().version, "2026.10.0");
+    // 설치 이후 롤백 기준은 2026.10.0.
+    assert_eq!(
+        rotated
+            .install(Some(&lic), &sign_pack("2026.09.0", &p9), &p9)
+            .state,
+        "downgrade"
+    );
+    // 같은 본문을 남은 kid로 재서명한 2026.12.0은 다시 설치된다(격리 폴더는 버전 계산에 들어가지 않음).
+    assert_eq!(
+        rotated
+            .install(Some(&lic), &sign_pack("2026.12.0", &p12), &p12)
+            .state,
+        "installed"
+    );
+    assert_eq!(rotated.load(Some(&lic)).pack.unwrap().version, "2026.12.0");
+
+    // 모든 폴더가 모르는 kid면 쓸 수 있는 팩이 없다(missing).
+    let empty = service_with_ring(&root, now(), ring(&[(PACK_KID_2, &key(10))]));
+    assert_eq!(empty.load(Some(&lic)).state, "missing");
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn tampered_higher_folder_stays_invalid_until_verified_install() {
+    // 변조(서명 불일치·해시 불일치)는 모르는 kid와 달리 건너뛰지 않는다.
+    let root = temp_root("tamper-high");
+    let lic = license_file("license", true);
+    let s = service_at(Some(&root), now());
+    let p0 = pack_body("2026.10.0", "a");
+    let p1 = pack_body("2026.11.0", "b");
+    s.install(Some(&lic), &sign_pack("2026.10.0", &p0), &p0);
+    s.install(Some(&lic), &sign_pack("2026.11.0", &p1), &p1);
+    let top = root.join("rule-packs/2026.11.0");
+    // (a) 서명 불일치: 알려진 kid, 다른 키로 서명.
+    let forged = signed(
+        &key(11),
+        PACK_KID,
+        &manifest("2026.11.0", &p1, "2026-10-20T00:00:00Z", PACK_KID),
+    );
+    std::fs::write(top.join(MANIFEST_FILE), &forged).unwrap();
+    assert_eq!(s.load(Some(&lic)).state, "invalid");
+    // (b) 해시 불일치.
+    std::fs::write(top.join(MANIFEST_FILE), sign_pack("2026.11.0", &p1)).unwrap();
+    std::fs::write(top.join(PACK_FILE), pack_body("2026.11.0", "x")).unwrap();
+    assert_eq!(s.load(Some(&lic)).state, "invalid");
+    // 같은 버전 정상 재설치로 복구(교체), 또는 더 높은 검증 버전 설치로 복구(격리).
+    let fake_top = root.join("rule-packs/2027.01.0");
+    std::fs::create_dir_all(&fake_top).unwrap();
+    std::fs::write(fake_top.join(MANIFEST_FILE), &forged).unwrap();
+    std::fs::write(fake_top.join(PACK_FILE), &p1).unwrap();
+    assert_eq!(s.load(Some(&lic)).state, "invalid");
+    // 낮은 버전 재설치(2026.10.0, 이미 있음)는 상위 변조 폴더를 치우지 않는다(조용한 하향 없음).
+    assert_eq!(
+        s.install(Some(&lic), &sign_pack("2026.10.0", &p0), &p0)
+            .state,
+        "already_installed"
+    );
+    assert_eq!(s.load(Some(&lic)).state, "invalid");
+    let p2 = pack_body("2026.12.0", "c");
+    assert_eq!(
+        s.install(Some(&lic), &sign_pack("2026.12.0", &p2), &p2)
+            .state,
+        "installed"
+    );
+    assert!(!fake_top.exists());
+    assert_eq!(
+        quarantined(&root).len(),
+        1,
+        "2027.01.0만 격리(2026.11.0은 아래 버전이라 그대로)"
+    );
+    assert!(top.exists());
+    assert_eq!(s.load(Some(&lic)).pack.unwrap().version, "2026.12.0");
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn version_is_canonical() {
+    for ok in [
+        "2026.01.0",
+        "2026.12.999",
+        "2026.10.1",
+        "2026.10.10",
+        "0000.01.0",
+    ] {
+        assert!(valid_version(ok), "{ok}");
+    }
+    for bad in [
+        "2026.00.0",
+        "2026.13.0",
+        "2026.10.00",
+        "2026.10.01",
+        "2026.10.1000",
+        "2026.1.0",
+        "2026.10.",
+        "2026..0",
+        "2026.10.0.0",
+        "+026.10.0",
+        "2026.10.-1",
+        "２026.10.0",
+    ] {
+        assert!(!valid_version(bad), "{bad}");
+    }
 }
 
 #[test]

@@ -1159,8 +1159,9 @@ fn production_slots_parse_and_exclude_test_public_keys() {
     // 운영 키 주입 전인 지금은 빈 슬롯을 허용한다(빈 고리 = 실패 닫힘, 의도된 상태).
     assert!(KeyRing::from_raw(PRODUCTION_LICENSE_KEYS).is_ok());
     assert!(KeyRing::from_raw(PRODUCTION_RULEPACK_KEYS).is_ok());
-    // 거부 목록은 단위 테스트 시드 키를 포함한다(교차 벡터 키는 tests/license.rs가 확인).
-    for label in [1u8, 2, 9] {
+    // 거부 목록은 단위·통합 테스트 시드 키를 포함한다(교차 벡터 키는 tests/license.rs가 확인).
+    // 10·11은 tests/rule_pack.rs(키 회전·모르는 kid)가 쓴다.
+    for label in [1u8, 2, 9, 10, 11] {
         let pk = key(label).verifying_key().to_bytes();
         assert!(TEST_PUBLIC_KEYS.contains(&pk), "key({label})");
         assert!(has_denied_key(&[("prod-1", pk)], &TEST_PUBLIC_KEYS));

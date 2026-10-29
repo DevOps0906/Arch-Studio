@@ -44,14 +44,23 @@ pub struct RulePackManifest {
     pub kid: String,
 }
 
-/// `YYYY.MM.n` 형식(설치 폴더 이름으로도 쓰므로 숫자·점 외 문자는 받지 않는다, AR-06-042 P7).
+/// `YYYY.MM.n` 정준형(설치 폴더 이름으로도 쓰므로 숫자·점 외 문자는 받지 않는다, AR-06-042 P7).
+/// - 연 4자리, 월 `01`~`12`, n은 `0` 또는 `[1-9][0-9]{0,2}`(앞자리 0 금지).
+/// - 정준형이 하나뿐이라 `2026.10.1`과 `2026.10.01`처럼 비교상 같은 버전이 다른 폴더·다른 행으로 갈리지 않는다.
+/// - TS `manifest.ts` `VERSION_RE`·shell-bridge·`packages/rules`와 같은 규칙(DB 정규식 정렬은 tasks/logs/AR-06-042.md 후속).
 pub fn valid_version(v: &str) -> bool {
     let parts: Vec<&str> = v.split('.').collect();
-    parts.len() == 3
-        && parts[0].len() == 4
-        && parts[1].len() == 2
-        && (1..=3).contains(&parts[2].len())
-        && parts.iter().all(|p| p.bytes().all(|b| b.is_ascii_digit()))
+    if parts.len() != 3
+        || !parts
+            .iter()
+            .all(|p| !p.is_empty() && p.bytes().all(|b| b.is_ascii_digit()))
+    {
+        return false;
+    }
+    let (year, month, n) = (parts[0], parts[1], parts[2]);
+    let month_ok = month.len() == 2 && matches!(month.parse::<u8>(), Ok(1..=12));
+    let n_ok = n == "0" || ((1..=3).contains(&n.len()) && !n.starts_with('0'));
+    year.len() == 4 && month_ok && n_ok
 }
 
 impl RulePackManifest {
