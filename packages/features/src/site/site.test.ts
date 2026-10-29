@@ -142,3 +142,44 @@ test("서버 렌더: 단위 확인 대화상자는 AR053 문구와 단위 버튼
   const idle = renderToStaticMarkup(h(parts.UnitDialog, { flow: { step: "idle" }, onChoose: () => undefined, onCancel: () => undefined }));
   assert.doesNotMatch(idle, /<button[^>]*>mm/);
 });
+
+test("서버 렌더: 후보 단계에 적용 단위와 실제 외접 가로×세로(m)가 항상 보인다", () => {
+  const html = renderToStaticMarkup(
+    h(parts.CandidateList, {
+      candidates: [
+        {
+          origin: "dxf",
+          outer: [
+            [0, 0],
+            [30000, 0],
+            [30000, 20000],
+            [0, 20000],
+          ],
+          area_mm2: 600_000_000,
+          perimeter_mm: 100_000,
+          label: "1순위 · 레이어 A-SITE-BNDY",
+          notes: [],
+          extent_mm: [30000, 20000],
+          unit_text: "적용 단위: cm(헤더)",
+        },
+      ],
+      selected: 0,
+      onSelect: () => undefined,
+      onApply: () => undefined,
+      onDiscard: () => undefined,
+      notice: "DXF에서 찾은 닫힌 선입니다.",
+      disabled: false,
+    }),
+  );
+  assert.match(html, /적용 단위: cm\(헤더\)/);
+  assert.match(html, /외접 30\.00m × 20\.00m/);
+});
+
+test("서버 렌더: 단위 확인 대화상자 선택지는 io options 전체(cm·in·ft 포함)와 환산 크기", async () => {
+  const { UnitDialog } = parts;
+  const options = ["mm", "cm", "m", "in", "ft"].map((unit, i) => ({ unit, plausible: i < 2, reference_extent_mm: 30000 * [1, 10, 1000, 25.4, 304.8][i]!, fits_coord_limit: true }));
+  const flow = { step: "confirm_unit", message: "확인", unit: "cm", options, pending: null } as never;
+  const html = renderToStaticMarkup(h(UnitDialog, { flow, onChoose: () => undefined, onCancel: () => undefined }));
+  for (const label of ["mm", "cm", ">m<", "inch", "ft"]) assert.ok(html.includes(label), label);
+  assert.match(html, /가장 긴 변 300\.00m/);
+});

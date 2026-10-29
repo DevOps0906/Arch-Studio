@@ -63,6 +63,8 @@ export interface UnitInfo {
   declared_insunits: number | null;
   /** 호출자 지정 단위가 헤더 선언과 다르면 true. */
   declared_mismatch: boolean;
+  /** 모든 후보 단위별 환산 크기·그럴듯함(화면이 선언 단위 외에 다른 단위도 그럴듯한지 보여 주는 근거). */
+  options: UnitOption[];
 }
 
 /** AR054: 지원하지 않아 무시한 엔티티 요약. */

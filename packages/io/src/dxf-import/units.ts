@@ -102,6 +102,7 @@ export function decideUnit(
       needs_confirmation: confirm,
       declared_insunits: insunits,
       declared_mismatch: declared !== null && declared !== unit,
+      options,
     },
   });
   if (chosen !== undefined) return mk(chosen, "caller", false);

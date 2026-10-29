@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { importDxf, type DxfImportResult } from "@arch-studio/io";
-import { DXF_TEXT, candidateFromDxf, confirmUnit, dxfNext, needsUnitDialog, pickCandidate, unitChoices } from "./dxf-flow.ts";
+import { DXF_TEXT, appliedUnitText, candidateFromDxf, confirmUnit, dxfNext, needsUnitDialog, pickCandidate, unitChoices } from "./dxf-flow.ts";
 
 type G = [number, string | number];
 const pairs = (list: G[]) => list.map(([c, v]) => `${String(c).padStart(3)}\r\n${v}\r\n`).join("");
@@ -41,7 +41,7 @@ test("범위 추정(needs_confirmation) → confirm_unit 단계, 확인 전에�
   assert.equal(pickCandidate(f, 1), null);
   if (f.step !== "confirm_unit") return;
   assert.equal(f.unit, "m");
-  assert.deepEqual(unitChoices(f), ["m", "mm"]);
+  assert.deepEqual(unitChoices(f), ["m", "mm", "cm"]); // io options 전체(추정 단위가 먼저)
   // 추정 단위 확인 → 후보 단계
   const ok = confirmUnit(f, "m");
   assert.ok("next" in ok && ok.next.step === "choose");
@@ -55,14 +55,46 @@ test("범위 추정(needs_confirmation) → confirm_unit 단계, 확인 전에�
   assert.deepEqual(confirmUnit(f, "mm"), { rerun: "mm" });
 });
 
-test("헤더 선언이 맞으면 확인 없이 후보 단계, AR054 경고 문구", () => {
-  const r = importDxf(dxf([rect("A-SITE-BNDY", 20000, 15000), spline, spline], 4));
+test("헤더 선언도 확인한다: mm가 아니면 확인 단계, 선택지는 io options 전체(cm 포함)", () => {
+  // mm로 그린 30m 대지에 헤더가 cm: 300m로 읽혀도 그럴듯하다 → 확인 없이 후보로 가면 면적 100배 오류
+  const r = importDxf(dxf([rect("A-SITE-BNDY", 30000, 20000)], 5));
+  assert.ok(r.ok && r.status === "ok" && r.unit.source === "insunits" && r.unit.unit === "cm" && !r.unit.needs_confirmation);
+  const f = dxfNext(r);
+  assert.equal(f.step, "confirm_unit");
+  assert.equal(needsUnitDialog(f), true);
+  assert.equal(pickCandidate(f, 1), null);
+  if (f.step !== "confirm_unit") return;
+  assert.equal(f.unit, "cm");
+  assert.match(f.message, /헤더는 단위를 cm로 선언/);
+  assert.deepEqual(unitChoices(f), ["cm", "mm", "m"]);
+  // 사용자가 mm를 고르면 다시 파싱 → 후보 단계에 헤더와 다름이 남는다
+  assert.deepEqual(confirmUnit(f, "mm"), { rerun: "mm" });
+  const again = dxfNext(importDxf(dxf([rect("A-SITE-BNDY", 30000, 20000)], 5), { unit: "mm" }), true);
+  assert.equal(again.step, "choose");
+  if (again.step === "choose") {
+    assert.equal(again.info.declared_mismatch, true);
+    assert.equal(appliedUnitText(again.info), "적용 단위: mm(직접 선택) · 헤더 선언은 cm과(와) 다릅니다");
+  }
+});
+
+test("헤더 mm여도 다른 단위가 그럴듯하면 확인, inch 헤더 선택지에 in·ft 포함, 오직 하나만 그럴듯하면 확인 없이 후보", () => {
+  const amb = dxfNext(importDxf(dxf([rect("A-SITE-BNDY", 20000, 15000)], 4)));
+  assert.equal(amb.step, "confirm_unit"); // cm로 읽어도 200m라 그럴듯함
+  const inch = dxfNext(importDxf(dxf([rect("A-SITE-BNDY", 800, 600)], 1)));
+  assert.equal(inch.step, "confirm_unit");
+  assert.ok(unitChoices(inch).includes("in") && unitChoices(inch).includes("ft") && unitChoices(inch).includes("cm"));
+  // 200m 변: mm만 그럴듯(cm는 2km) → 선언 mm 확인 불필요
+  const r = importDxf(dxf([rect("A-SITE-BNDY", 200000, 150000), spline, spline], 4));
   const f = dxfNext(r);
   assert.equal(f.step, "choose");
   assert.equal(needsUnitDialog(f), false);
   if (f.step === "choose") {
     assert.match(f.warning ?? "", /지원하지 않는 요소 2개\(SPLINE\)를 건너뛰었습니다/);
     assert.equal(pickCandidate(f, 1)?.rank, 1);
+    assert.equal(appliedUnitText(f.info), "적용 단위: mm(헤더)");
+    const v = candidateFromDxf(f.candidates[0]!, f.info);
+    assert.deepEqual(v.extent_mm, [200000, 150000]);
+    assert.equal(v.unit_text, "적용 단위: mm(헤더)");
   }
 });
 
@@ -72,7 +104,7 @@ test("오류: AR055는 20MB 문구, 그 밖의 파싱 실패는 '읽지 못했�
   const bin = importDxf(new Uint8Array([0x41, 0x75, 0x74, 0x6f, 0x43, 0x41, 0x44]));
   assert.equal(dxfNext(bin).step, "error");
   const empty = importDxf(dxf([pairs([[0, "LINE"], [8, "0"], [10, 0], [20, 0], [30, 0], [11, 5000], [21, 0], [31, 0]])], 4));
-  const f = dxfNext(empty);
+  const f = dxfNext(empty, true); // 단위는 이미 확정된 경우
   assert.equal(f.step, "error");
   if (f.step === "error") assert.ok(f.message === DXF_TEXT.noClosed || f.message === DXF_TEXT.unreadable);
 });
