@@ -12,6 +12,9 @@
     "test": "node --test env-allowlist.test.ts"
   },
   "dependencies": {
+    "@arch-studio/domain": "workspace:*",
+    "@arch-studio/drafting": "workspace:*",
+    "@arch-studio/rules": "workspace:*",
     "react": "19.2.9",
     "react-dom": "19.2.9",
     "react-router": "8.5.1"

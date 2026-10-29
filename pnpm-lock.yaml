@@ -23,6 +23,15 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@arch-studio/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
+      '@arch-studio/drafting':
+        specifier: workspace:*
+        version: link:../../packages/drafting
+      '@arch-studio/rules':
+        specifier: workspace:*
+        version: link:../../packages/rules
       react:
         specifier: 19.2.9
         version: 19.2.9
