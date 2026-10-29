@@ -1,9 +1,9 @@
-// 라이선스 API 실제 배선(서버 전용). 환경 변수는 serverEnv()로만 읽는다(LICENSE_SIGNING_*·AI_TOKEN_*·RATE_LIMIT_IP_SALT).
+// 라이선스 API 실제 배선(서버 전용). 환경 변수는 serverEnv()로만 읽는다(LICENSE_SIGNING_*·AI_TOKEN_*·RATE_LIMIT_IP_SALT·TRUSTED_PROXY_HOPS).
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { serverEnv } from "../env.ts";
 import { createSupabaseServiceClient } from "../supabase/service.ts";
-import { MemoryRateLimitStore, type TrustedProxyConfig } from "./rate-limit.ts";
+import { MemoryRateLimitStore, proxyConfigFromHops, type TrustedProxyConfig } from "./rate-limit.ts";
 import { createLicenseSigner, type LicenseSigner } from "./signing.ts";
 import { bearerSessionResolver, schemaNames, supabasePrivilegedRepo, supabaseUserRepo } from "./supabase-repo.ts";
 import type { LicenseDeps } from "./types.ts";
@@ -24,11 +24,11 @@ function loadSigner(): LicenseSigner {
 }
 
 /**
- * 프록시 신뢰 범위. 전용 환경 변수가 아직 없어(env.ts 소유 밖) Vercel 배포(VERCEL=1, 플랫폼이 설정)면 XFF 1홉,
- * 그 밖(로컬·자체 호스팅)은 0홉 = 헤더 불신 → 공용 unknown 버킷. 환경 변수 TRUSTED_PROXY_HOPS 추가는 보고서 요청 줄 참고.
+ * 프록시 신뢰 범위: serverEnv().TRUSTED_PROXY_HOPS(기본 0)만 따른다(플랫폼 감지 특례 없음, 명시 설정 우선).
+ * 0 = 헤더 불신 → IP 버킷을 끄고 사용자 버킷만. Vercel 배포는 TRUSTED_PROXY_HOPS=1을 설정해야 IP 버킷이 켜진다.
  */
 function proxyConfig(): TrustedProxyConfig {
-  return process.env.VERCEL === "1" ? { header: "x-forwarded-for", trustedHops: 1 } : { header: null, trustedHops: 0 };
+  return proxyConfigFromHops(serverEnv().TRUSTED_PROXY_HOPS);
 }
 
 export function licenseDeps(): LicenseDeps {

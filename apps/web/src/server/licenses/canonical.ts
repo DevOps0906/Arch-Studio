@@ -5,6 +5,8 @@
 //   - 공백·들여쓰기 없음, 문자열은 JSON.stringify 이스케이프
 // 추가 규칙(서명 대상이라 더 엄격): 일반 객체(프로토타입 Object 또는 null)가 아닌 객체(Date·Map 등)와
 // bigint·symbol·function은 TypeError. Rust 검증자(AR-06-041)는 이 바이트를 다시 만들지 않고 서명된 바이트 그대로 검증한다.
+// 서명 입력은 이 바이트 앞에 용도 접두 "arch-license-v1\n"(signing.ts LICENSE_SIGNING_CONTEXT)를 붙인 것이다(도메인 분리).
+// 파일의 payload 필드는 접두 없는 이 바이트의 base64url이다.
 
 function isPlainObject(value: object): boolean {
   const proto = Object.getPrototypeOf(value);

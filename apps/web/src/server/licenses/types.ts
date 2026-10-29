@@ -51,6 +51,8 @@ export interface RefreshActivation {
 
 /** 사용자 JWT 클라이언트(RLS·authenticated RPC). DB 오류는 DbCallError로 throw. */
 export interface UserLicenseRepo {
+  /** 호출자(JWT)의 그 조직 현재 역할이 roles 중 하나인지. core.has_org_role(org, roles)(authenticated EXECUTE, 활성 멤버만). */
+  hasOrgRole(orgId: string, roles: readonly string[]): Promise<boolean>;
   orgFeatures(orgId: string): Promise<OrgFeaturesView>;
   deactivateActivation(activationId: string): Promise<{ id: string; org_id: string; deactivated_at: string }>;
   countSelfDeactivations(orgId: string, sinceIso: string): Promise<number>;

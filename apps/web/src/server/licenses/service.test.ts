@@ -46,6 +46,10 @@ interface World {
   signerError?: LicenseSignerError;
   calls: string[];
   clock: number;
+  /** 세션 조직(session_context 기본 = 개인 조직). 기본 ORG */
+  sessionOrg?: string;
+  /** 조직별 현재 역할(has_org_role 목). 기본 { [세션 조직]: role } */
+  orgRoles?: Record<string, string>;
 }
 
 function world(over: Partial<World> = {}): World {
@@ -63,8 +67,15 @@ function world(over: Partial<World> = {}): World {
 const db = (code: string) => new DbCallError({ code, message: `raw db message for ${code} serial ${SERIAL}` });
 
 function deps(w: World, store = new MemoryRateLimitStore()): LicenseDeps {
-  const session: LicenseSession = { userId: USER, orgId: ORG, role: w.role, accessToken: "token" };
+  const sessionOrg = w.sessionOrg ?? ORG;
+  const session: LicenseSession = { userId: USER, orgId: sessionOrg, role: w.role, accessToken: "token" };
+  const roles = w.orgRoles ?? { [sessionOrg]: w.role };
   const user: UserLicenseRepo = {
+    async hasOrgRole(orgId, allowed) {
+      w.calls.push(`user.hasOrgRole:${orgId}:${allowed.join(",")}`);
+      const r = roles[orgId];
+      return r !== undefined && allowed.includes(r);
+    },
     async orgFeatures(orgId) {
       w.calls.push(`user.orgFeatures:${orgId}`);
       if (w.orgFeaturesError) throw db(w.orgFeaturesError);
@@ -81,7 +92,7 @@ function deps(w: World, store = new MemoryRateLimitStore()): LicenseDeps {
     },
     async getLicense(id) {
       w.calls.push(`user.getLicense:${id}`);
-      return id === LIC ? { id, org_id: ORG, sku_code: "perpetual_early", status: w.licenseStatus, updates_until: "2027-10-29", serial_last5: "HV6YC" } : null;
+      return id === LIC ? { id, org_id: w.refreshAct?.org_id ?? ORG, sku_code: "perpetual_early", status: w.licenseStatus, updates_until: "2027-10-29", serial_last5: "HV6YC" } : null;
     },
     async listLicenses() {
       w.calls.push("user.listLicenses");
@@ -301,6 +312,53 @@ test("refresh: 정지·환불 라이선스 AR003 403, 만료 플랜 402, 플랜�
   const p = verify(((await json(r)).data as { license_file: SignedLicenseFile }).license_file);
   assert.equal(p.offline_valid_until, "2026-11-05T03:00:00Z");
   assert.equal(p.sku, "sub_monthly");
+});
+
+// 회귀 🟠1(보안 리뷰): session_context를 p_org 없이 부르면 개인 조직(owner)이 세션이 된다.
+// 팀 조직 member로 활성화한 뒤 viewer로 강등·탈퇴된 사용자가 activation_id + device_hash로 팀 영구 라이선스를 계속 재서명받으면 안 된다.
+const ORG_PERSONAL = "11111111-1111-4111-8111-111111111111";
+const ORG_TEAM = "22222222-2222-4222-8222-222222222222";
+const TEAM_ACT: RefreshActivation = { id: ACT, org_id: ORG_TEAM, license_id: LIC, source: "license", device_hash: DEVICE, deactivated_at: null };
+
+test("회귀 🟠1 refresh: 세션은 개인 조직 owner여도 활성화 조직(팀)에서 viewer·탈퇴면 404, 재서명 0", async () => {
+  for (const [name, teamRole] of [["viewer 강등", "viewer"], ["탈퇴(역할 없음)", undefined]] as const) {
+    const orgRoles: Record<string, string> = { [ORG_PERSONAL]: "owner" };
+    if (teamRole) orgRoles[ORG_TEAM] = teamRole;
+    const w = world({ role: "owner", sessionOrg: ORG_PERSONAL, orgRoles, refreshAct: TEAM_ACT });
+    const res = await handleRefresh(post("refresh", { activation_id: ACT, device_hash: DEVICE }), deps(w));
+    assert.equal(res.status, 404, name);
+    const body = await json(res);
+    assert.equal(body.error?.code, "P0002", name);
+    assert.ok(w.calls.includes(`user.hasOrgRole:${ORG_TEAM}:owner,admin,member`), `${name}: 활성화 조직 역할을 확인한다`);
+    assert.ok(!w.calls.some((c) => c.startsWith("user.getLicense")), `${name}: 라이선스 조회·서명까지 가지 않는다`);
+  }
+});
+
+test("refresh: 활성화 조직(팀) member면 세션 조직과 달라도 200, 파일 org_id는 활성화 조직", async () => {
+  const w = world({ role: "owner", sessionOrg: ORG_PERSONAL, orgRoles: { [ORG_PERSONAL]: "owner", [ORG_TEAM]: "member" }, refreshAct: TEAM_ACT });
+  const res = await handleRefresh(post("refresh", { activation_id: ACT, device_hash: DEVICE }), deps(w));
+  assert.equal(res.status, 200);
+  const p = verify(((await json(res)).data as { license_file: SignedLicenseFile }).license_file);
+  assert.equal(p.org_id, ORG_TEAM);
+  // 역할 확인이 org_features보다 먼저(viewer도 통과하는 org_features에 의존하지 않는다)
+  const iRole = w.calls.indexOf(`user.hasOrgRole:${ORG_TEAM}:owner,admin,member`);
+  const iFeat = w.calls.indexOf(`user.orgFeatures:${ORG_TEAM}`);
+  assert.ok(iRole >= 0 && iFeat > iRole, w.calls.join());
+});
+
+test("refresh: 세션 조직 역할이 viewer여도 활성화 조직 역할로 판정(세션 역할은 근거가 아님)", async () => {
+  const w = world({ role: "viewer", sessionOrg: ORG_TEAM, orgRoles: { [ORG_TEAM]: "viewer", [ORG_PERSONAL]: "owner" }, refreshAct: { ...TEAM_ACT, org_id: ORG_PERSONAL } });
+  assert.equal((await handleRefresh(post("refresh", { activation_id: ACT, device_hash: DEVICE }), deps(w))).status, 200);
+  const v = world({ role: "owner", sessionOrg: ORG_PERSONAL, orgRoles: { [ORG_TEAM]: "viewer", [ORG_PERSONAL]: "owner" }, refreshAct: TEAM_ACT });
+  assert.equal((await handleRefresh(post("refresh", { activation_id: ACT, device_hash: DEVICE }), deps(v))).status, 404);
+});
+
+test("activate(시리얼): 영구 파일에도 rights_expiry = issued_at + 30일(D-H5 ②)", async () => {
+  const res = await handleActivate(post("activate", { serial: SERIAL, device_hash: DEVICE }), deps(world()));
+  const p = verify(((await json(res)).data as { license_file: SignedLicenseFile }).license_file);
+  const exp = "2026-11-28T03:00:00Z";
+  assert.deepEqual(p.rights_expiry, { ai_chat: exp, ai_render: exp, cloud_review: exp, desktop_edit: exp, web_edit: exp });
+  assert.equal(p.offline_valid_until, null, "영구 offline_valid_until은 그대로 null");
 });
 
 test("list: RLS repo만, 시리얼 끝 5자만, 기기 해시 없음", async () => {

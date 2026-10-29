@@ -85,3 +85,57 @@ test("확장점(AR-06-074): seat_id·rights 포함, product_ends_at으로 clamp"
   assert.deepEqual(p.rights, { web_edit: true, devices_max: 2 });
   assert.equal(p.offline_valid_until, "2026-10-31T00:00:00Z");
 });
+
+const LICENSED_F: OrgFeaturesView = { ...TRIAL, state: "licensed", plan_code: null, trial_ends_at: null, updates_until: "2027-10-29", drafting_watermark: false };
+const licenseInput = (extension?: Parameters<typeof buildLicensePayload>[0]["extension"], nowMs = NOW) =>
+  buildLicensePayload({
+    source: "license",
+    licenseId: "l",
+    orgId: "o",
+    sku: "perpetual_early",
+    updatesUntil: "2027-10-29",
+    activationId: "a",
+    deviceHash: "d".repeat(64),
+    kid: "k",
+    nowMs,
+    features: LICENSED_F,
+    extension,
+  });
+
+test("회귀 🟠4: 영구(license) 파일은 확장이 없어도 rights_expiry = issued_at + 30일(5개 권리, view_export 제외)", () => {
+  const p = licenseInput();
+  const exp = "2026-11-28T09:00:00Z"; // 발급 2026-10-29T09:00:00Z(밀리초 버림) + 30일
+  assert.deepEqual(p.rights_expiry, { web_edit: exp, desktop_edit: exp, ai_render: exp, ai_chat: exp, cloud_review: exp });
+  assert.ok(!("view_export" in (p.rights_expiry ?? {})));
+  assert.equal(p.offline_valid_until, null);
+  assert.ok(canonicalJson(p).includes('"rights_expiry":{"ai_chat":"2026-11-28T09:00:00Z"'), "정준화 키 정렬");
+});
+
+test("rights_expiry(license): 확장 값은 30일 상한으로 clamp, null·누락·깨진 값은 30일, 이른 값은 유지", () => {
+  const p = licenseInput({
+    rights_expiry: { web_edit: "2027-12-31T00:00:00Z", desktop_edit: null, ai_render: "2026-11-01T00:00:00+09:00", ai_chat: "garbage" },
+  });
+  const cap = "2026-11-28T09:00:00Z";
+  assert.deepEqual(p.rights_expiry, { web_edit: cap, desktop_edit: cap, ai_render: "2026-10-31T15:00:00Z", ai_chat: cap, cloud_review: cap });
+});
+
+test("속성(300회): license 출처 rights_expiry 각 값 ≤ issued_at + 30일, 키 5개", () => {
+  const rnd = prng(11);
+  for (let i = 0; i < 300; i++) {
+    const now = Date.UTC(2026, 0, 1) + Math.floor(rnd() * 365 * 86_400_000);
+    const ext: Record<string, string | null> = {};
+    for (const k of ["web_edit", "desktop_edit", "ai_render", "ai_chat", "cloud_review"]) {
+      ext[k] = rnd() < 0.2 ? null : new Date(now + Math.floor((rnd() - 0.3) * 90 * 86_400_000)).toISOString();
+    }
+    const p = licenseInput({ rights_expiry: ext }, now);
+    const cap = Math.floor(now / 1000) * 1000 + 30 * 86_400_000;
+    for (const v of Object.values(p.rights_expiry ?? {})) assert.ok(v !== null && Date.parse(v) <= cap);
+    assert.equal(Object.keys(p.rights_expiry ?? {}).length, 5);
+  }
+});
+
+test("rights_expiry(plan): 이 작업은 기본값을 넣지 않는다(확장 값 그대로, 074 소유)", () => {
+  const base = { source: "plan", licenseId: null, orgId: "o", sku: "trial", updatesUntil: null, activationId: "a", deviceHash: "d", kid: "k", nowMs: NOW, features: TRIAL } as const;
+  assert.equal(buildLicensePayload(base).rights_expiry, undefined);
+  assert.deepEqual(buildLicensePayload({ ...base, extension: { rights_expiry: { web_edit: "2026-11-02T00:00:00Z" } } }).rights_expiry, { web_edit: "2026-11-02T00:00:00Z" });
+});

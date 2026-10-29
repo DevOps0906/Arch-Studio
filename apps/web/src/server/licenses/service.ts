@@ -10,7 +10,8 @@ import { normalizeSerial, serialHash, serialLast5 } from "./serial.ts";
 import { LicenseSignerError, type LicenseSigner, type SignedLicenseFile } from "./signing.ts";
 import type { LicenseDeps, LicenseSession } from "./types.ts";
 
-const MEMBER_PLUS = new Set(["owner", "admin", "member"]);
+const MEMBER_ROLES = ["owner", "admin", "member"] as const;
+const MEMBER_PLUS: ReadonlySet<string> = new Set(MEMBER_ROLES);
 const OWNER_ADMIN = new Set(["owner", "admin"]);
 const PLAN_ACTIVE_STATES = new Set(["trial", "subscribed"]);
 const SELF_WINDOW_MS = 30 * 86_400_000;
@@ -212,11 +213,15 @@ export async function handleDeactivate(req: Request, deps: LicenseDeps): Promise
   }
 }
 
-/** POST /api/license/refresh — 서버 상태로 재판정 후 재서명. 활성화 없음·해제·기기 불일치·비멤버는 모두 같은 404. */
+/**
+ * POST /api/license/refresh — 서버 상태로 재판정 후 재서명. 활성화 없음·해제·기기 불일치·비멤버·역할 부족은 모두 같은 404.
+ * 권한 근거는 세션 조직 역할이 아니라 **활성화 행 org_id에 대한 호출자의 현재 역할**(owner·admin·member)이다.
+ * session_context를 p_org 없이 부르면 개인 조직 owner가 세션이 되므로, 세션 역할만 보면 팀에서 viewer로 강등·탈퇴된 사용자가
+ * 팀 활성화를 계속 재서명받을 수 있었다(보안 리뷰 🟠1). org_features는 viewer도 통과시키므로 근거가 될 수 없다.
+ */
 export async function handleRefresh(req: Request, deps: LicenseDeps): Promise<Response> {
   try {
     const session = await deps.session.resolve(req);
-    requireRole(session, MEMBER_PLUS);
     const parsed = refreshSchema.safeParse(await readJson(req));
     if (!parsed.success) throw new LicenseApiError("invalid_input");
     await checkActivateLimit(req, session, deps);
@@ -226,6 +231,7 @@ export async function handleRefresh(req: Request, deps: LicenseDeps): Promise<Re
     const act = await deps.privilegedRepo().getActivationForRefresh(activation_id);
     if (!act || act.deactivated_at !== null || !sameHex(act.device_hash, device_hash)) throw new LicenseApiError("P0002");
     const user = deps.userRepo(session);
+    if (!(await user.hasOrgRole(act.org_id, MEMBER_ROLES))) throw new LicenseApiError("P0002"); // viewer·탈퇴·비멤버
     let features: OrgFeaturesView;
     try {
       features = await user.orgFeatures(act.org_id); // 비멤버면 DB 42501 → 404로 숨김

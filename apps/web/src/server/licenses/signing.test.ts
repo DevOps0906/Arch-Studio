@@ -1,10 +1,10 @@
 // 실행: pnpm --filter ./apps/web test
 import assert from "node:assert/strict";
-import { generateKeyPairSync } from "node:crypto";
+import { createPrivateKey, createPublicKey, generateKeyPairSync, sign, verify } from "node:crypto";
 import { test } from "node:test";
 import { canonicalJson } from "./canonical.ts";
 import { buildLicensePayload, type OrgFeaturesView } from "./payload.ts";
-import { createLicenseSigner, LicenseSignerError, verifyLicenseFile } from "./signing.ts";
+import { createLicenseSigner, LICENSE_SIGNING_CONTEXT, LicenseSignerError, verifyLicenseFile } from "./signing.ts";
 import { newEd25519Pem } from "./test-helpers.ts";
 
 const FEATURES: OrgFeaturesView = {
@@ -126,6 +126,26 @@ test("키 없음·깨짐·비 Ed25519·AI 토큰 키와 같은 키/kid는 거부
     const text = `${(error as Error).message} ${(error as Error).stack ?? ""}`;
     assert.ok(!text.includes(key.pem.slice(30, 60)), "키 조각이 메시지에 없음");
   }
+});
+
+test("회귀 🟡 도메인 분리: 서명 입력 = LICENSE_SIGNING_CONTEXT + payload 바이트, 접두 없이 서명한 바이트는 거부", () => {
+  assert.equal(LICENSE_SIGNING_CONTEXT, "arch-license-v1\n");
+  const key = newEd25519Pem();
+  const s = createLicenseSigner({ privateKey: key.pem, kid: "lic-ctx", aiTokenPrivateKey: undefined, aiTokenKid: undefined });
+  const file = s.signPayload(payload(s.kid));
+  const keys = { [s.kid]: s.publicKeyDer };
+  const pub = createPublicKey({ key: s.publicKeyDer, format: "der", type: "spki" });
+  const bytes = Buffer.from(file.payload, "base64url");
+  const sig = Buffer.from(file.sig, "base64url");
+  assert.equal(verify(null, Buffer.concat([Buffer.from(LICENSE_SIGNING_CONTEXT, "utf8"), bytes]), pub, sig), true, "접두 + 바이트에 대한 서명");
+  assert.equal(verify(null, bytes, pub, sig), false, "payload 바이트만으로는 검증되지 않는다");
+  assert.equal(bytes.toString("utf8"), canonicalJson(payload(s.kid)), "payload 필드에는 접두가 없다");
+
+  // 같은 키로 다른 용도(예: 규칙 팩 매니페스트)에서 접두 없이·다른 접두로 서명한 바이트를 라이선스 파일로 재사용할 수 없다
+  const raw = sign(null, bytes, createPrivateKey(key.pem));
+  assert.deepEqual(verifyLicenseFile({ ...file, sig: raw.toString("base64url") }, keys), { ok: false, reason: "invalid_signature" });
+  const other = sign(null, Buffer.concat([Buffer.from("arch-rulepack-v1\n", "utf8"), bytes]), createPrivateKey(key.pem));
+  assert.deepEqual(verifyLicenseFile({ ...file, sig: other.toString("base64url") }, keys), { ok: false, reason: "invalid_signature" });
 });
 
 test("payload kid가 서명기 kid와 다르면 서명하지 않는다", () => {

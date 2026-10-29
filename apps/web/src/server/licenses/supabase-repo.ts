@@ -35,7 +35,12 @@ function unwrap<T>(result: { data: T | null; error: unknown }): T {
 
 const BEARER = /^Bearer ([A-Za-z0-9._~+/=-]{20,4096})$/;
 
-/** Authorization: Bearer <Supabase access_token> 검증(04_API.md 1장, 데스크톱 D). 쿠키 세션은 lib/auth(requireSession, T-C1)가 붙인다. */
+/**
+ * Authorization: Bearer <Supabase access_token> 검증(04_API.md 1장, 데스크톱 D). 쿠키 세션은 lib/auth(requireSession, T-C1)가 붙인다.
+ * 신뢰 경계: session_context를 p_org 없이 부르므로 세션 조직은 항상 사용자의 개인 조직이다. 요청(헤더·본문)으로 조직을 고르는
+ * 경로는 두지 않는다(04_API에 정의 없음, 본문은 zod strict로 org_id 거부). session.orgId·role은 세션 조직에 대한 값일 뿐이라
+ * 다른 조직 행(활성화·라이선스)의 권한 근거로 쓰지 않는다: refresh는 활성화 행 org_id로 hasOrgRole을 다시 확인한다.
+ */
 export function bearerSessionResolver(makeUserClient: (token: string) => Client, schemas: SchemaNames): SessionResolver {
   return {
     async resolve(req) {
@@ -60,6 +65,12 @@ export function bearerSessionResolver(makeUserClient: (token: string) => Client,
 export function supabaseUserRepo(client: Client, schemas: SchemaNames): UserLicenseRepo {
   const arch = () => client.schema(schemas.arch);
   return {
+    async hasOrgRole(orgId, roles) {
+      // 코어 헬퍼(SECURITY DEFINER, auth.uid() 기준 활성 멤버십·역할). 스키마 변경 없음: 기존 GRANT(authenticated)로 호출.
+      const { data, error } = await client.schema(schemas.core).rpc("has_org_role", { org: orgId, roles: [...roles] });
+      if (error) throw new DbCallError(error);
+      return data === true;
+    },
     async orgFeatures(orgId) {
       return unwrap(await arch().rpc("org_features", { p_org: orgId })) as OrgFeaturesView;
     },

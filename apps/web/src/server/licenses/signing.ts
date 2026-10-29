@@ -5,9 +5,22 @@
 import { createPrivateKey, createPublicKey, sign, verify, type KeyObject } from "node:crypto";
 import { canonicalBytes } from "./canonical.ts";
 
+/**
+ * 서명 도메인 분리 접두(용도·버전). 서명 입력 = UTF-8(LICENSE_SIGNING_CONTEXT) || payload 바이트.
+ * 같은 키·다른 용도(규칙 팩 매니페스트·업데이트 등)의 서명을 라이선스 파일로 재사용하지 못하게 한다.
+ * payload 필드에는 접두를 넣지 않는다. Rust 검증자(AR-06-041 license.rs)와 같은 값이어야 한다(합의 필요 항목).
+ */
+export const LICENSE_SIGNING_CONTEXT = "arch-license-v1\n";
+const CONTEXT_BYTES = Buffer.from(LICENSE_SIGNING_CONTEXT, "utf8");
+
+/** 서명·검증 입력 바이트(접두 + payload 바이트). */
+export function licenseSigningInput(payloadBytes: Buffer): Buffer {
+  return Buffer.concat([CONTEXT_BYTES, payloadBytes]);
+}
+
 export interface SignedLicenseFile {
-  payload: string; // base64url(정준 JSON UTF-8 바이트)
-  sig: string; // base64url(Ed25519(payload 바이트))
+  payload: string; // base64url(정준 JSON UTF-8 바이트, 접두 없음)
+  sig: string; // base64url(Ed25519(LICENSE_SIGNING_CONTEXT || payload 바이트))
   kid: string; // payload.kid와 같다
 }
 
@@ -88,9 +101,10 @@ export function createLicenseSigner(input: SignerKeyInput): LicenseSigner {
     signPayload(payload) {
       if (payload.kid !== kid) throw new Error("payload kid mismatch");
       const bytes = canonicalBytes(payload);
-      const sig = sign(null, bytes, key);
+      const message = licenseSigningInput(bytes);
+      const sig = sign(null, message, key);
       // 자체 검증: 키·바이트 불일치가 있으면 파일을 내보내지 않는다.
-      if (!verify(null, bytes, publicKey, sig)) throw new Error("license self-verification failed");
+      if (!verify(null, message, publicKey, sig)) throw new Error("license self-verification failed");
       return { payload: bytes.toString("base64url"), sig: sig.toString("base64url"), kid };
     },
   };
@@ -103,7 +117,7 @@ export type VerifyResult =
 const B64URL = /^[A-Za-z0-9_-]*$/;
 
 /**
- * 검증 참조 구현(Rust license.rs 동작 명세 겸 테스트용). 서명된 바이트 그대로 검증한 뒤 파싱한다(재직렬화하지 않음).
+ * 검증 참조 구현(Rust license.rs 동작 명세 겸 테스트용). 접두 + 디코드한 payload 바이트 그대로 검증한 뒤 파싱한다(재직렬화하지 않음).
  * publicKeys: kid → SPKI DER.
  */
 export function verifyLicenseFile(file: unknown, publicKeys: Readonly<Record<string, Buffer>>): VerifyResult {
@@ -117,7 +131,7 @@ export function verifyLicenseFile(file: unknown, publicKeys: Readonly<Record<str
   const sigBytes = Buffer.from(sig, "base64url");
   let valid = false;
   try {
-    valid = sigBytes.length === 64 && verify(null, bytes, createPublicKey({ key: der, format: "der", type: "spki" }), sigBytes);
+    valid = sigBytes.length === 64 && verify(null, licenseSigningInput(bytes), createPublicKey({ key: der, format: "der", type: "spki" }), sigBytes);
   } catch {
     valid = false;
   }
