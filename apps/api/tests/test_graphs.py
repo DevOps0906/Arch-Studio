@@ -96,15 +96,17 @@ def test_invalid_body_does_not_burn_jti(client: TestClient, auth: Auth) -> None:
 
 
 def test_get_run_same_org(client: TestClient, auth: Auth) -> None:
-    run = start(client, auth).json()["data"]
-    res = client.get(f"/graphs/runs/{run['graph_run_id']}", headers=auth(scope="graph:arch.review"))
+    job = str(uuid.uuid4())
+    run = start(client, auth, sub=f"job:{job}").json()["data"]
+    res = client.get(f"/graphs/runs/{run['graph_run_id']}", headers=auth(sub=f"job:{job}", scope="graph:arch.review"))
     assert res.status_code == 200
     assert res.json()["data"]["graph_run_id"] == run["graph_run_id"]
 
 
 def test_get_run_does_not_consume_jti(client: TestClient, auth: Auth) -> None:
-    run = start(client, auth).json()["data"]
-    headers = auth(scope="graph:arch.review")
+    job = str(uuid.uuid4())
+    run = start(client, auth, sub=f"job:{job}").json()["data"]
+    headers = auth(sub=f"job:{job}", scope="graph:arch.review")
     for _ in range(2):
         assert client.get(f"/graphs/runs/{run['graph_run_id']}", headers=headers).status_code == 200
 
@@ -135,10 +137,50 @@ def test_other_org_same_run_id_isolated(client: TestClient, auth: Auth) -> None:
 
 
 def test_get_run_scope_mismatch_403(client: TestClient, auth: Auth) -> None:
-    run = start(client, auth).json()["data"]
-    res = client.get(f"/graphs/runs/{run['graph_run_id']}", headers=auth(scope="graph:arch.intake"))
+    job = str(uuid.uuid4())
+    run = start(client, auth, sub=f"job:{job}").json()["data"]
+    res = client.get(f"/graphs/runs/{run['graph_run_id']}", headers=auth(sub=f"job:{job}", scope="graph:arch.intake"))
     assert res.status_code == 403
 
 
 def test_intake_graph_scope(client: TestClient, auth: Auth) -> None:
     assert start(client, auth, graph="arch.intake", feat="arch.intake_consult").status_code == 202
+
+
+# --- run·job 바인딩(AR-06-047, 046 보안 리뷰 후속) ---------------------------------
+
+
+def test_run_claim_mismatch_403(client: TestClient, auth: Auth) -> None:
+    other_run = str(uuid.uuid4())
+    res = start(client, auth, run=other_run)  # 본문 run_id = RUN_ID, 토큰 run = 다른 실행
+    assert res.status_code == 403
+    assert res.json()["error"]["code"] == "RUN_MISMATCH"
+
+
+def test_run_mismatch_does_not_burn_jti(client: TestClient, auth: Auth) -> None:
+    headers = auth(scope="graph:arch.review")  # run 클레임 = RUN_ID
+    other = {"run_id": str(uuid.uuid4())}
+    assert client.post("/graphs/arch.review/runs", json=other, headers=headers).status_code == 403
+    assert client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers=headers).status_code == 202
+
+
+def test_run_binding_is_exact(client: TestClient, auth: Auth) -> None:
+    # 대문자 표기는 정규 표기가 아니라 401(정확 일치 비교의 전제).
+    res = start(client, auth, run="AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA")
+    assert res.status_code == 401
+
+
+def test_get_run_other_job_404(client: TestClient, auth: Auth) -> None:
+    job = str(uuid.uuid4())
+    run = start(client, auth, sub=f"job:{job}").json()["data"]
+    # 같은 조직·같은 scope라도 다른 잡의 토큰으로는 실행을 볼 수 없다(없는 실행과 같은 응답).
+    res = client.get(f"/graphs/runs/{run['graph_run_id']}", headers=auth(scope="graph:arch.review"))
+    missing = client.get(f"/graphs/runs/{uuid.uuid4()}", headers=auth(scope="graph:arch.review"))
+    assert res.status_code == 404
+    assert res.json() == missing.json()
+
+
+def test_retry_resume_needs_same_job_and_run(client: TestClient, auth: Auth) -> None:
+    job = str(uuid.uuid4())
+    assert start(client, auth, sub=f"job:{job}").status_code == 202
+    assert start(client, auth, sub=f"job:{job}", run=str(uuid.uuid4())).status_code == 403

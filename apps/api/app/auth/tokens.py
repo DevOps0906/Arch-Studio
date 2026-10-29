@@ -1,7 +1,9 @@
 """서명 토큰·잡 토큰 검증(AI_ARCHITECTURE.md 2.1절, 04_API.md 2.2절).
 
 JWT EdDSA(Ed25519). 클레임: iss=<app>, aud=platform-ai:<app>, org, app, sub, scope, jti, iat, exp (+ feat, conv 선택).
-잡 토큰은 sub=job:<job_id>. 검증 순서: 길이 → 헤더(alg 화이트리스트, 키 주입 헤더 거부, kid) → 서명 → 클레임.
+잡 토큰은 sub=job:<job_id>이고 `job`(= sub의 job_id)·`run`(제품 실행 행 id) 클레임이 필수다
+(AR-06-047: 토큰을 잡·실행 하나에 묶는다). 사용자 서명 토큰(sub=<user uuid>)에는 `job`·`run`이 없어야 한다.
+검증 순서: 길이 → 헤더(alg 화이트리스트, 키 주입 헤더 거부, kid) → 서명 → 클레임.
 """
 
 from __future__ import annotations
@@ -57,6 +59,8 @@ class TokenClaims:
     exp: int
     feat: str | None = None
     conv: str | None = None
+    run: str | None = None  # 잡 토큰만: 제품 실행 행 id(arch.reviews.id 등)
+    job: str | None = None  # 잡 토큰만: core.jobs.id(= sub의 job_id)
 
     @property
     def job_id(self) -> str | None:
@@ -161,6 +165,7 @@ def verify_token(
         raise _unauthorized("TOKEN_CLAIMS")
     if sub.startswith(JOB_SUB_PREFIX) and not _is_uuid(sub[len(JOB_SUB_PREFIX) :]):
         raise _unauthorized("TOKEN_CLAIMS")
+    run, job = _binding_claims(payload, sub)
     # scope는 문자열 하나. 공백 구분 다중 scope·배열은 형식 오류(scope 우회 차단).
     scope = payload.get("scope")
     if not isinstance(scope, str) or not scope or len(scope) > 128 or any(ch.isspace() for ch in scope):
@@ -179,4 +184,20 @@ def verify_token(
         exp=exp,
         feat=_opt_str(payload, "feat"),
         conv=_opt_str(payload, "conv"),
+        run=run,
+        job=job,
     )
+
+
+def _binding_claims(payload: Mapping[str, Any], sub: str) -> tuple[str | None, str | None]:
+    """잡 토큰: `job` == sub의 job_id, `run`은 UUID(둘 다 필수). 사용자 토큰: 둘 다 없어야 한다."""
+    run = payload.get("run")
+    job = payload.get("job")
+    if not sub.startswith(JOB_SUB_PREFIX):
+        if run is not None or job is not None:
+            raise _unauthorized("TOKEN_CLAIMS")
+        return None, None
+    # 정확 일치 비교를 하므로 정규 표기(소문자 UUID)만 받는다.
+    if not (_is_uuid(run) and _is_uuid(job) and run == str(run).lower() and job == sub[len(JOB_SUB_PREFIX) :].lower()):
+        raise _unauthorized("TOKEN_BINDING")
+    return str(run), str(job)

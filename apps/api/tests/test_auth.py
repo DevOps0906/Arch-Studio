@@ -123,6 +123,37 @@ def test_bad_claims_401(issuer: Issuer, keys: KeyStore, overrides: dict[str, Any
     assert reason(issuer.token(**overrides), keys) == code
 
 
+def test_valid_job_token_carries_binding(issuer: Issuer, keys: KeyStore) -> None:
+    job = str(uuid.uuid4())
+    claims = verify_token(issuer.token(sub=f"job:{job}", run=RUN_ID), keys)
+    assert claims.job == job == claims.job_id
+    assert claims.run == RUN_ID
+
+
+@pytest.mark.parametrize("missing", ["run", "job"])
+def test_job_token_without_binding_401(issuer: Issuer, keys: KeyStore, missing: str) -> None:
+    assert reason(issuer.token(**{missing: None}), keys) == "TOKEN_BINDING"
+
+
+def test_job_claim_must_match_sub_401(issuer: Issuer, keys: KeyStore) -> None:
+    assert reason(issuer.token(job=str(uuid.uuid4())), keys) == "TOKEN_BINDING"
+
+
+@pytest.mark.parametrize("value", ["not-a-uuid", 123, "", "AAAAAAAA-AAAA-4AAA-8AAA-AAAAAAAAAAAA"])
+def test_run_claim_must_be_uuid_401(issuer: Issuer, keys: KeyStore, value: object) -> None:
+    assert reason(issuer.token(run=value), keys) == "TOKEN_BINDING"
+
+
+@pytest.mark.parametrize("extra", [{"run": RUN_ID}, {"job": "44444444-4444-4444-8444-444444444444"}])
+def test_user_token_with_binding_claims_401(issuer: Issuer, keys: KeyStore, extra: dict[str, Any]) -> None:
+    assert reason(issuer.token(sub=str(uuid.uuid4()), scope="chat", **extra), keys) == "TOKEN_CLAIMS"
+
+
+def test_user_token_has_no_binding(issuer: Issuer, keys: KeyStore) -> None:
+    claims = verify_token(issuer.token(sub=str(uuid.uuid4()), scope="chat"), keys)
+    assert claims.run is None and claims.job is None and claims.job_id is None
+
+
 def test_token_too_long_401(keys: KeyStore) -> None:
     assert reason("a" * 5000, keys) == "TOKEN_MALFORMED"
 

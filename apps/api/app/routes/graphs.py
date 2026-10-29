@@ -1,6 +1,7 @@
 """그래프 실행 경로(04_API.md 6.3절). 호출자는 workers/arch-jobs(잡 토큰)뿐이다.
 
-순서: 토큰 검증(401) → 그래프 존재·제품 일치(404) → 잡 토큰·scope(403) → 본문 strict 검증(422) → jti 1회 소비(401)
+순서: 토큰 검증(401) → 그래프 존재·제품 일치(404) → 잡 토큰·scope(403) → 본문 strict 검증(422)
+→ 토큰 `run` == 본문 run_id(403, AR-06-047) → jti 1회 소비(401)
 → 실행 생성·재개(202). 본문은 직접 읽어 인증보다 먼저 파싱되지 않게 한다.
 """
 
@@ -14,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.ai.interfaces import GraphRunner
 from app.ai.products import ProductConfig
-from app.auth.deps import consume_jti, require_job_scope, token_claims
+from app.auth.deps import consume_jti, require_job_binding, require_job_scope, require_run_binding, token_claims
 from app.auth.tokens import TokenClaims
 from app.errors import ApiError, ok, validation_details
 from app.runs import GraphRun, RunConflict, RunStore
@@ -63,6 +64,7 @@ async def start_graph_run(
     except ValidationError as exc:
         raise ApiError(422, "VALIDATION", "입력이 계약과 다릅니다", details=validation_details(exc.errors())) from None
 
+    require_run_binding(claims, body.run_id)
     consume_jti(request, claims)
 
     store: RunStore = request.app.state.runs
@@ -87,5 +89,6 @@ async def get_graph_run(
     run = store.get(app=claims.app, org=claims.org, graph_run_id=graph_run_id)
     if run is None:
         raise _not_found()
+    require_job_binding(claims, run.job_id)
     require_job_scope(claims, f"graph:{run.graph}")
     return ok(_run_view(run))
