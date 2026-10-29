@@ -40,6 +40,14 @@ fn capability_denies_commands_outside_allowlist() {
         "plugin:webview|create_webview_window",
         "plugin:app|app_hide",
         "plugin:fs|read_file",
+        "plugin:fs|write_file",
+        "plugin:sql|load",
+        "plugin:sql|execute",
+        "plugin:sql|select",
+        // 등록돼 있지만(dialog 플러그인) capability 밖이라 거부되어야 한다.
+        "plugin:dialog|open",
+        "plugin:dialog|save",
+        "plugin:dialog|message",
         "not_registered_command",
     ] {
         let err = invoke(cmd).expect_err(cmd);
@@ -47,5 +55,25 @@ fn capability_denies_commands_outside_allowlist() {
             err.contains("not allowed") || err.contains("not found"),
             "{cmd}: {err}"
         );
+    }
+}
+
+/// 앱 명령은 capability로 허용된다(상태 미등록 오류는 나도 "not allowed"는 아니다).
+#[test]
+fn capability_allows_app_commands() {
+    for cmd in [
+        "local_db_list_projects",
+        "local_db_get_project",
+        "local_db_save_project",
+        "local_db_delete_project",
+        "fs_open_import",
+        "export_save_file",
+    ] {
+        if let Err(err) = invoke(cmd) {
+            assert!(
+                !err.contains("not allowed") && !err.contains("not found"),
+                "{cmd}: {err}"
+            );
+        }
     }
 }

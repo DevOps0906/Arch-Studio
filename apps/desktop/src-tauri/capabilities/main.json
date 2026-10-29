@@ -1,7 +1,15 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "메인 창 최소 권한: 앱 이름·버전 읽기만. 플러그인·앱 명령 없음.",
+  "description": "메인 창 최소 권한: 앱 이름·버전 읽기, 로컬 DB(ProjectStore 4개), 가져오기·내보내기 대화상자 명령. plugin:dialog·fs·sql 권한 없음.",
   "windows": ["main"],
-  "permissions": ["core:app:default"]
+  "permissions": [
+    "core:app:default",
+    "allow-local-db-list-projects",
+    "allow-local-db-get-project",
+    "allow-local-db-save-project",
+    "allow-local-db-delete-project",
+    "allow-fs-open-import",
+    "allow-export-save-file"
+  ]
 }

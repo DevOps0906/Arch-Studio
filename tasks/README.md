@@ -21,7 +21,7 @@
 | AR-V2-01 | 공용 compliance 모듈 적용 | W1 | W0, compliance 출시 | 높음 | builder | 대기 |
 | AR-06-002 | RLS·권한 회귀 스모크 | W1 | 001 | 높음 | challenger→builder | 완료 |
 | AR-06-005 | shell-bridge·키체인·Supabase 클라이언트 | W1 | 004 | 높음 | builder | 대기 |
-| AR-06-006 | Rust 로컬 명령(local_db·fs·export) | W1 | 004 | 보통 | builder | 진행 |
+| AR-06-006 | Rust 로컬 명령(local_db·fs·export) | W1 | 004 | 보통 | builder | 완료 |
 | AR-06-014 | 지오메트리 2D(합집합·오프셋·면적) | W1 | 013 | 높음 | builder | 완료 |
 | AR-06-018 | 프로그램·개략 공사비 엔진 | W1 | 013 | 보통 | builder | 완료 |
 | AR-06-046 | AI 서비스 설치·arch 스키마 동치 테스트 | W1 | 001, 013 | 높음 | builder | 대기 |
@@ -110,5 +110,7 @@
 | 2026-10-29 | AR-06-002 완료 조건 "두 대상, CI 잡" | 모놀리스만 통과(129건), 모듈러는 platform 코어 0000~0009 필요로 미검증, `.github/workflows` 없음 | 첫 CI는 보안 S-7(`/secure setup --ci`)과 함께 신설해 test:rls·test:db·db:check 포함 |
 | 2026-10-29 | `reconcile_runs`(0002) | 최종 실패에서 fail_job 후 fail_ai_run 전에 워커가 죽으면 원장 환불은 끝났는데 실행이 failed로만 남아 refunded 전이 누락(이중 환불은 아님, codex 리뷰) | 새 마이그레이션으로 reconcile이 잡 원장 환불 여부를 보고 refunded 전이(2401 조각 방식) |
 | 2026-10-29 | AR-06-048 워커 ↔ 04_API.md | 워커가 부르는 `POST /api/internal/ai-settle`·`/api/internal/ai-token`(Bearer 워커 키, `{job_id, scope}`→`{token}`)과 잡 타임아웃(intake·proposal_pdf 5분, stt 30분)은 builder가 정한 값 | AR-06-047 AI 게이트에서 04_API에 확정 |
+| 2026-10-29 | AR-06-006 로컬 명령 | 내부 오류 코드 5개(CANCELLED·READ_FAILED·INVALID_INPUT·NOT_FOUND·VERSION_CONFLICT)가 04_API 7.3 AR 코드 밖, 저장 기본 파일명 export.<ext>(4.7.6 이름 규칙 미반영), 리비전 보존 정책 없음, 100MiB 내보내기 쓰기가 async 스레드를 잠시 점유, cargo audit 미설치 | 7.3 정식 코드화는 070 어댑터 때, 파일명은 030 ExportDialog, 보존 정책·cargo audit은 CI(S-7) |
+| 2026-10-29 | AR-06-006 사람 확인 | 실제 Windows 열기·저장·덮어쓰기 대화상자, OneDrive·junction·260자+ 경로 미검증(테스트는 picker 대체) | 대표님 확인 후 tasks/logs/AR-06-006.md에 기록 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
