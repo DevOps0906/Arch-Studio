@@ -5,6 +5,7 @@ import { createDraftingHandlers } from "../../../../../apps/desktop/src/workers/
 import { parseRequest } from "../../../../../apps/desktop/src/workers/protocol.ts";
 import { buildSheet, buildSitePlanView, DISCLAIMER, validateDraftingInput, WATERMARK_TEXT } from "../../../../drafting/src/index.ts";
 import { writeSvg } from "../../../../drafting/src/writers/svg/index.ts";
+import { ENGINE_VERSION } from "../../../../rules/src/index.ts";
 import { DEFAULT_PROFILE } from "./profile.ts";
 import { buildSheetRequest, previewInput, readPreviewResponse } from "./preview.ts";
 import { DISCLAIMER_TEXT } from "./texts.ts";
@@ -25,7 +26,8 @@ async function viaWorker(watermark: boolean): Promise<string> {
 function direct(watermark: boolean): string {
   const v = validateDraftingInput(previewInput(profile, watermark, "2026-10-29"));
   assert.ok(v.ok, v.ok ? "" : v.issues.join(";"));
-  const built = buildSheet(v.input, buildSitePlanView(v.input, {}));
+  const input = { ...v.input, engine_version: ENGINE_VERSION }; // 워커가 엔진 버전을 정한다
+  const built = buildSheet(input, buildSitePlanView(input, {}));
   return writeSvg(built.sheet);
 }
 

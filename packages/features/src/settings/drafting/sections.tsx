@@ -8,6 +8,7 @@ import { LoadingState, useApi, useEngine } from "../../shell/index.ts";
 import { layerTable, LINETYPE_LABEL, WARNING_TEXT, type SaveLayerWarning } from "./layer-map.ts";
 import { LOGO_FAILURE_TEXT, parseTicket, sha256Hex, stripPng } from "./logo.ts";
 import { BUNDLED_FONTS, checkForm, DEFAULT_PROFILE, PAPERS, type FormErrors, type Paper, type ProfileForm } from "./profile.ts";
+import { nextSheetSeq } from "../../sheets/seq.ts";
 import { buildSheetRequest, localDate, previewInput, readPreviewResponse } from "./preview.ts";
 import { DISCLAIMER_TEXT, saveErrorText } from "./texts.ts";
 
@@ -173,7 +174,8 @@ export function PreviewSection({ form, saved, watermark }: { form: ProfileForm; 
       setState({ kind: "unavailable" });
       return;
     }
-    const reqId = `ttlb-preview-${++seq.current}`;
+    seq.current = nextSheetSeq(); // 워커 sheet 레인 seq는 화면 간 단조 증가여야 한다(sheets/seq.ts)
+    const reqId = `ttlb-preview-${seq.current}`;
     let url: string | null = null;
     setState({ kind: "loading" });
     const unsub = engine.subscribe((res) => {

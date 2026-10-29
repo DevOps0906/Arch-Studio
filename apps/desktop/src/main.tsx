@@ -18,6 +18,7 @@ async function createRuntime(): Promise<ShellRuntime> {
   const engine = createBrowserEngineHost();
   if (typeof import.meta.env !== "undefined" && import.meta.env.DEV === true && import.meta.env.VITE_DEMO_MODE === "1") {
     const { createDemoRuntime } = await import("@arch-studio/features/demo");
+    void import("./shell/demo-rule-pack.ts").then((m) => m.loadDemoRulePack(engine));
     return createDemoRuntime({ search: location.search, engine });
   }
   return createDesktopRuntime(engine);
