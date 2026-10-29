@@ -41,6 +41,11 @@ export interface RunStarter {
     p_project_ref: string;
     p_options: Record<string, unknown>;
   }): Promise<unknown>;
+  /**
+   * 같은 request_id의 실행 행이 이미 있는가(멱등 재전송 판별). 로그 분류에만 쓰며 차감 판단에는 쓰지 않는다.
+   * 구현하지 않으면 재전송을 구분하지 못하고 불일치를 오류로 남긴다(실패 쪽이 경보 쪽).
+   */
+  runExists?(requestId: string): Promise<boolean>;
 }
 
 /** p_options에 들어오면 안 되는 키(금액·조직·행위자 위조 시도). 깊이 상관없이 검사한다. */
@@ -120,6 +125,16 @@ export async function startAiRun(starter: RunStarter, input: StartAiRunInput): P
   }
   const expected = priceOf(input.variant);
 
+  // 재전송이면 DB는 최초 차감액을 돌려준다(현재 단가와 다를 수 있다). 호출 전에 알아야 하므로 먼저 본다.
+  let replay = false;
+  if (starter.runExists) {
+    try {
+      replay = await starter.runExists(input.requestId);
+    } catch {
+      replay = false; // 판별 실패는 경보 쪽으로(불일치를 오류로 남긴다)
+    }
+  }
+
   let data: unknown;
   try {
     data = await starter.startAiRun({
@@ -142,8 +157,17 @@ export async function startAiRun(starter: RunStarter, input: StartAiRunInput): P
     throw new GatewayError("internal");
   }
   if (result.credits !== expected) {
-    // 차감은 이미 DB 기준으로 끝났다(원장이 정본). 상수와 seed가 어긋났다는 운영 신호만 남긴다(AR-06-049가 CI에서 막는다).
-    gatewayLog.error("start_ai_run.price_mismatch", { route: "start_ai_run", kind: input.kind, variant: input.variant, run_id: result.run_id });
+    const fields = { route: "start_ai_run" as const, kind: input.kind, variant: input.variant, run_id: result.run_id };
+    if (input.variant === "doc_template" && result.credits === 0) {
+      // 정상: 같은 조직의 doc_template 성공 이력이 있으면 DB가 0크레딧으로 처리한다(2400_arch.sql 1225행 부근).
+      gatewayLog.info("start_ai_run.free_rerun", fields);
+    } else if (replay) {
+      // 정상: 멱등 재전송은 최초 차감액을 돌려준다(단가가 그 뒤 바뀌었을 수 있음).
+      gatewayLog.info("start_ai_run.replay", fields);
+    } else {
+      // 차감은 이미 DB 기준으로 끝났다(원장이 정본). 상수와 seed가 어긋났다는 운영 신호만 남긴다(AR-06-049가 CI에서 막는다).
+      gatewayLog.error("start_ai_run.price_mismatch", fields);
+    }
   }
   return result;
 }

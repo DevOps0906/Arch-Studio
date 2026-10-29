@@ -70,7 +70,8 @@ class Issuer:
         return {k: v for k, v in base.items() if v is not None}
 
     def token(self, headers: dict[str, Any] | None = None, **overrides: Any) -> str:
-        h = {"kid": self.kid, **(headers or {})}
+        h = {"kid": self.kid, "ctx": "arch-ai-token-v1", **(headers or {})}
+        h = {k: v for k, v in h.items() if v is not None}
         return jwt.encode(self.claims(**overrides), self.private, algorithm="EdDSA", headers=h)
 
 

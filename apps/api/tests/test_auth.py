@@ -99,7 +99,7 @@ def test_future_iat_401(issuer: Issuer, keys: KeyStore) -> None:
 def test_missing_required_claim_401(issuer: Issuer, keys: KeyStore, claim: str) -> None:
     claims = issuer.claims()
     claims.pop(claim)
-    token = jwt.encode(claims, issuer.private, algorithm="EdDSA", headers={"kid": KID})
+    token = jwt.encode(claims, issuer.private, algorithm="EdDSA", headers={"kid": KID, "ctx": "arch-ai-token-v1"})
     assert reason(token, keys) in {"TOKEN_CLAIMS", "TOKEN_AUDIENCE"}
 
 
@@ -202,3 +202,35 @@ def test_forged_token_http_401(client: TestClient) -> None:
     token = Issuer(Ed25519PrivateKey.generate()).token()
     res = client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers={"Authorization": f"Bearer {token}"})
     assert res.status_code == 401
+
+
+def _raw_token(issuer: Issuer, headers: dict[str, Any]) -> str:
+    """conftest의 Issuer를 거치지 않고 PyJWT로 직접 서명(다른 도메인 발급자 흉내)."""
+    return jwt.encode(issuer.claims(), issuer.private, algorithm="EdDSA", headers=headers)
+
+
+def test_ctx_header_required_401(issuer: Issuer, keys: KeyStore) -> None:
+    """ctx 없이 서명한 토큰(키가 같아도 도메인이 다름)은 거부한다."""
+    assert reason(_raw_token(issuer, {"kid": KID}), keys) == "TOKEN_HEADER"
+
+
+@pytest.mark.parametrize("value", ["arch-license-v1", "ARCH-AI-TOKEN-V1", "", 1, ["arch-ai-token-v1"]])
+def test_ctx_header_wrong_value_401(issuer: Issuer, keys: KeyStore, value: Any) -> None:
+    assert reason(_raw_token(issuer, {"kid": KID, "ctx": value}), keys) == "TOKEN_HEADER"
+
+
+def test_ctx_header_accepts_ts_issuer_header(issuer: Issuer, keys: KeyStore) -> None:
+    """TS 발급자 헤더 {alg,typ,kid,ctx}와 같은 모양은 통과한다."""
+    token = _raw_token(issuer, {"kid": KID, "typ": "JWT", "ctx": "arch-ai-token-v1"})
+    assert verify_token(token, keys).app == "arch"
+
+
+def test_sub_job_id_uppercase_401(issuer: Issuer, keys: KeyStore) -> None:
+    """sub의 job_id가 대문자 UUID면, job 클레임이 소문자여도 거부한다."""
+    job = str(uuid.uuid4())
+    assert reason(issuer.token(sub=f"job:{job.upper()}", job=job), keys) == "TOKEN_CLAIMS"
+
+
+def test_sub_and_job_both_uppercase_401(issuer: Issuer, keys: KeyStore) -> None:
+    job = str(uuid.uuid4()).upper()
+    assert reason(issuer.token(sub=f"job:{job}", job=job), keys) == "TOKEN_CLAIMS"

@@ -21,6 +21,7 @@ interface World {
   features: Record<string, unknown>;
   signed: { bucket: string; path: string }[];
   storageFails?: boolean;
+  webEdit?: "allowed" | "fallback" | "denied";
 }
 
 function world(over: Partial<World> = {}): World {
@@ -34,6 +35,7 @@ function world(over: Partial<World> = {}): World {
 
 function deps(w: World, rate = new MemoryRateLimitStore()): UploadDeps {
   return {
+    ...(w.webEdit ? { webEdit: async () => w.webEdit as "allowed" | "fallback" | "denied" } : {}),
     session: {
       async resolve() {
         if (w.session instanceof GatewayError) throw w.session;
@@ -189,6 +191,23 @@ test("확장자 허용 목록 밖 415, 목적별 크기 상한 초과 413 AR031"
     const atLimit = await call(world(), { ...body, bytes: p.maxBytes });
     assert.equal(atLimit.status, 200, purpose);
   }
+});
+
+test("consult_audio 상한은 voice-audio 버킷 50MB(52428800) 이하", () => {
+  assert.ok(PURPOSE_POLICIES.consult_audio.maxBytes <= 52428800);
+});
+
+test("web_edit 판정 주입: fallback·denied는 project_snapshot만 402, 미주입은 기존 동작", async (t) => {
+  spy(t);
+  const snap = { purpose: "project_snapshot", project_ref: PROJECT, ext: "arch", bytes: 10, sha256: SHA };
+  const fb = await call(world({ webEdit: "fallback" }), snap);
+  assert.equal(fb.status, 402);
+  assert.equal(fb.json.error.details.fallback, true);
+  assert.equal(fb.json.error.details.can_download, true);
+  assert.equal((await call(world({ webEdit: "denied" }), snap)).status, 402);
+  assert.equal((await call(world({ webEdit: "allowed" }), snap)).status, 200);
+  assert.equal((await call(world(), snap)).status, 200);
+  assert.equal((await call(world({ webEdit: "denied" }))).status, 200); // render_input은 영향 없음
 });
 
 test("권한: 미인증 401, 역할 없음 403, 엔타이틀먼트 만료 402, 기능 없음 402", async (t) => {

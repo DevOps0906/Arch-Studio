@@ -28,6 +28,9 @@ from jwt.exceptions import (
 from app.auth.keys import KeyStore
 
 ALLOWED_ALGORITHMS = ("EdDSA",)
+# TS 발급자(apps/web/src/server/ai/token/signer.ts)가 보호 헤더에 넣는 용도 표지.
+# 라이선스 서명 등 다른 도메인의 서명과 분리한다(비밀 아님).
+TOKEN_CONTEXT = "arch-ai-token-v1"  # noqa: S105
 FORBIDDEN_HEADERS = frozenset({"jku", "x5u", "jwk", "x5c", "x5t", "x5t#S256", "crit"})
 MAX_TOKEN_LENGTH = 4096
 MAX_LIFETIME_S = 600  # 10분(AI_ARCHITECTURE.md 2.1절 "수명")
@@ -68,6 +71,11 @@ class TokenClaims:
         if self.sub.startswith(JOB_SUB_PREFIX):
             return self.sub[len(JOB_SUB_PREFIX) :]
         return None
+
+
+def _is_canonical_uuid(value: object) -> bool:
+    """소문자 하이픈 UUID(정규형)만 참. 대문자·중괄호·urn 표기는 거짓."""
+    return isinstance(value, str) and len(value) == 36 and _is_uuid(value) and value == value.lower()
 
 
 def _is_uuid(value: object) -> bool:
@@ -120,6 +128,9 @@ def verify_token(
     key = keys.get(kid)
     if key is None:
         raise _unauthorized("TOKEN_KID")
+    # 도메인 분리: ctx 없음·다른 값은 사유를 하나(TOKEN_HEADER)로 합쳐 거부한다.
+    if header.get("ctx") != TOKEN_CONTEXT:
+        raise _unauthorized("TOKEN_HEADER")
 
     app = key.app
     try:
@@ -163,7 +174,7 @@ def verify_token(
     sub = payload.get("sub")
     if not isinstance(sub, str) or not (1 <= len(sub) <= 200):
         raise _unauthorized("TOKEN_CLAIMS")
-    if sub.startswith(JOB_SUB_PREFIX) and not _is_uuid(sub[len(JOB_SUB_PREFIX) :]):
+    if sub.startswith(JOB_SUB_PREFIX) and not _is_canonical_uuid(sub[len(JOB_SUB_PREFIX) :]):
         raise _unauthorized("TOKEN_CLAIMS")
     run, job = _binding_claims(payload, sub)
     # scope는 문자열 하나. 공백 구분 다중 scope·배열은 형식 오류(scope 우회 차단).
@@ -198,6 +209,6 @@ def _binding_claims(payload: Mapping[str, Any], sub: str) -> tuple[str | None, s
             raise _unauthorized("TOKEN_CLAIMS")
         return None, None
     # 정확 일치 비교를 하므로 정규 표기(소문자 UUID)만 받는다.
-    if not (_is_uuid(run) and _is_uuid(job) and run == str(run).lower() and job == sub[len(JOB_SUB_PREFIX) :].lower()):
+    if not (_is_canonical_uuid(run) and _is_canonical_uuid(job) and job == sub[len(JOB_SUB_PREFIX) :]):
         raise _unauthorized("TOKEN_BINDING")
     return str(run), str(job)

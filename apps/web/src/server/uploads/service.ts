@@ -21,10 +21,21 @@ export interface UploadFeatureRepo {
   orgFeatures(orgId: string): Promise<Record<string, unknown>>;
 }
 
+/**
+ * `rights.web_edit` 판정(04_API.md 2.1절, ADR-001 4.7). 'fallback' = 영구 라이선스 업데이트 만료(편집 불가, 내려받기 가능).
+ */
+export type WebEditDecision = "allowed" | "fallback" | "denied";
+
 export interface UploadDeps {
   session: GatewaySessionResolver;
   features(session: GatewaySession): UploadFeatureRepo;
   signer(): UploadSigner;
+  /**
+   * 074 연결 지점: `arch.org_features`의 사용자 합성 `rights.web_edit`를 읽는 구현을 여기에 주입한다(074 전에는 서버에 판정 근거가 없다).
+   * 주입하지 않으면 기존 동작(entitled만 확인)을 유지한다. 실패 닫힘으로 만들면 현재 저장이 전부 막힌다.
+   * project_snapshot에만 적용한다.
+   */
+  webEdit?(session: GatewaySession): Promise<WebEditDecision>;
   rateLimit: RateLimitStore;
   now(): number;
   randomUUID(): string;
@@ -77,6 +88,11 @@ export async function handleUploadSign(req: Request, deps: UploadDeps): Promise<
     if (!session.entitled) throw new GatewayError("entitlement_expired", { can_download: true });
 
     const policy = policyFor(input.purpose) as PurposePolicy;
+    if (input.purpose === "project_snapshot" && deps.webEdit) {
+      const decision = await deps.webEdit(session);
+      if (decision === "fallback") throw new GatewayError("entitlement_expired", { can_download: true, fallback: true });
+      if (decision !== "allowed") throw new GatewayError("entitlement_expired", { can_download: true });
+    }
     if (policy.feature) {
       const features = await deps.features(session).orgFeatures(session.orgId);
       if (features[policy.feature] !== true) throw new GatewayError("feature_unavailable", { can_download: true });

@@ -26,7 +26,9 @@ export const PURPOSE_POLICIES: Readonly<Record<UploadPurpose, PurposePolicy>> = 
   project_snapshot: { bucket: "arch-user", exts: ["arch"], maxBytes: 100 * MB, requiresProjectRef: true, feature: null },
   render_input: { bucket: "arch-user", exts: ["png"], maxBytes: 10 * MB, requiresProjectRef: false, feature: "ai_render" },
   proposal_sheet: { bucket: "arch-user", exts: ["svg"], maxBytes: 2 * MB, requiresProjectRef: false, feature: "ai_render" },
-  consult_audio: { bucket: "voice-audio", exts: ["m4a", "webm", "ogg", "wav"], maxBytes: 200 * MB, requiresProjectRef: false, feature: "ai_intake" },
+  // 상한 = voice-audio 버킷 file_size_limit 52428800(50MB, 20261013000001_core_lite.sql 3162~3164행). 버킷보다 크게 허용하면
+  // 서명은 성공하고 업로드 단계에서 거절돼 사용자가 긴 녹음 후에야 실패를 안다. 버킷 값을 바꾸면 여기도 같이 바꾼다.
+  consult_audio: { bucket: "voice-audio", exts: ["m4a", "webm", "ogg", "wav"], maxBytes: 50 * MB, requiresProjectRef: false, feature: "ai_intake" },
 };
 
 export function isUploadPurpose(value: unknown): value is UploadPurpose {

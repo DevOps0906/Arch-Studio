@@ -69,5 +69,17 @@ export function supabaseRunStarter(service: Client, schemas: SchemaNames): RunSt
       if (error) throw new DbCodeError(error);
       return data;
     },
+    async runExists(requestId) {
+      // 멱등 재전송 판별(로그 분류용 읽기 전용). start_ai_run이 보는 4개 실행 테이블과 같다(2400_arch.sql 1124행 부근).
+      const tables = ["renders", "reviews", "intake_runs", "proposals"] as const;
+      const counts = await Promise.all(
+        tables.map(async (table) => {
+          const { count, error } = await service.schema(schemas.arch).from(table).select("id", { count: "exact", head: true }).eq("request_id", requestId);
+          if (error) throw new DbCodeError(error);
+          return count ?? 0;
+        }),
+      );
+      return counts.some((n) => n > 0);
+    },
   };
 }

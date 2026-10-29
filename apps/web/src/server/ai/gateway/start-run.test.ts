@@ -35,7 +35,7 @@ function starter(result: unknown, calls: unknown[] = []): RunStarter {
 
 function quiet(t: TestContext): string[] {
   const lines: string[] = [];
-  for (const m of ["log", "warn", "error"] as const) t.mock.method(console, m, (...a: unknown[]) => void lines.push(a.join(" ")));
+  for (const m of ["log", "info", "warn", "error"] as const) t.mock.method(console, m, (...a: unknown[]) => void lines.push(a.join(" ")));
   return lines;
 }
 
@@ -137,6 +137,41 @@ test("반환 크레딧이 pricing.ts와 다르면 원장 값을 돌려주고 오
   assert.equal(out.credits, 99);
   assert.ok(lines.some((l) => l.includes("start_ai_run.price_mismatch")));
   assert.ok(!lines.join("").includes("rule_pack_version"));
+});
+
+test("doc_template 같은 버전 재요청(DB가 0크레딧)은 정상: price_mismatch 오류 로그 없음", async (t) => {
+  const lines = quiet(t);
+  const out = await startAiRun(starter([{ run_id: RUN, job_id: JOB, credits: 0 }]), { ...base, kind: "proposal", variant: "doc_template", options: {} });
+  assert.equal(out.credits, 0);
+  assert.ok(!lines.some((l) => l.includes("price_mismatch")));
+  assert.ok(lines.some((l) => l.includes("start_ai_run.free_rerun")));
+});
+
+test("0크레딧이라도 doc_template이 아니면 여전히 오류 로그", async (t) => {
+  const lines = quiet(t);
+  await startAiRun(starter([{ run_id: RUN, job_id: JOB, credits: 0 }]), base);
+  assert.ok(lines.some((l) => l.includes("start_ai_run.price_mismatch")));
+});
+
+test("멱등 재전송(최초 차감액 반환)은 정상: price_mismatch 오류 로그 없음", async (t) => {
+  const lines = quiet(t);
+  const s: RunStarter = { ...starter([{ run_id: RUN, job_id: JOB, credits: 99 }]), runExists: async () => true };
+  const out = await startAiRun(s, base);
+  assert.equal(out.credits, 99);
+  assert.ok(!lines.some((l) => l.includes("price_mismatch")));
+  assert.ok(lines.some((l) => l.includes("start_ai_run.replay")));
+});
+
+test("재전송 판별이 실패하면 경보 쪽(오류 로그 유지)", async (t) => {
+  const lines = quiet(t);
+  const s: RunStarter = {
+    ...starter([{ run_id: RUN, job_id: JOB, credits: 99 }]),
+    runExists: async () => {
+      throw new Error("db down");
+    },
+  };
+  await startAiRun(s, base);
+  assert.ok(lines.some((l) => l.includes("start_ai_run.price_mismatch")));
 });
 
 test("Route Handler·서버 AI 코드에서 consume_credits 직접 호출 0(04_API.md 1장 선차감 위치)", () => {
