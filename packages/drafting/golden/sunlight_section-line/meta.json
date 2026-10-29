@@ -1,0 +1,8 @@
+{
+  "case_id": "sunlight_section-line",
+  "note": "section_line 지정(x=5000 정북 직선), 구 기준 3층",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-031"
+  ]
+}
