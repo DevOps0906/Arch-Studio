@@ -39,3 +39,8 @@
 ## 갱신 (036 완료)
 - 036 본 구현 병합·완료. 사람 몫: 실기 GPU fps 측정. 결정 필요: 02_ARCHITECTURE 2.4절·04_API 4.7.5절에 mesh/preview 레인·mass_meshes/mass_excess op 추가(제안 문안은 tasks/logs/AR-06-036.md).
 - 높음: 앱에 규칙 팩 공급 경로 없음 → 판정·엔벨로프가 AR050으로 끝남(042/RulePackProvider 필요). 037 문구에서 AR050이 원인과 다르게 읽힘 → 오류 코드 세분화 필요.
+
+## 갱신 (027·028·030·042 완료)
+- 완료 추가: 027, 028, 030, 042(보안 리뷰 반영 병합). 데모에서는 개발용 규칙 팩으로 판정·엔벨로프·매스 제안 동작.
+- 042 운영 전 차단: 공유 레이트리밋/URL 캐시, 릴리스 CI 공개키 유효성, CSP connect-src+라이선스 파일 전달+동기화 호출 연결(설치형 팩 공급 완성), Tauri 업데이터, DB 버전 CHECK 정준형 후속 마이그레이션, 로컬 Supabase 통합 시나리오.
+- 사람 판정: 운영 공개키 주입(ARCH_LICENSE_PUBKEYS·ARCH_RULEPACK_PUBKEYS), 서명키 규격 C-3.
