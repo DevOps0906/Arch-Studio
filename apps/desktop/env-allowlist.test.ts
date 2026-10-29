@@ -26,6 +26,13 @@ test("VITE_AUTH_MODE=mock은 개발 빌드만 허용한다", () => {
   assert.throws(() => checkDesktopEnv({ VITE_AUTH_MODE: "mock" }, true), /mock/);
 });
 
+test("VITE_DEMO_MODE(데모 데이터)는 개발 빌드만 허용한다(AR-06-004b)", () => {
+  assert.doesNotThrow(() => checkDesktopEnv({ VITE_DEMO_MODE: "1" }, false));
+  assert.throws(() => checkDesktopEnv({ VITE_DEMO_MODE: "1" }, true), /VITE_DEMO_MODE/);
+  assert.throws(() => checkDesktopEnv({ VITE_DEMO_MODE: "0" }, true), /VITE_DEMO_MODE/);
+  assert.doesNotThrow(() => checkDesktopEnv({ VITE_DEMO_MODE: "" }, true));
+});
+
 test("vite build가 허용 목록 밖 변수로 실패한다", () => {
   const vitePkg = createRequire(import.meta.url).resolve("vite/package.json");
   const viteBin = path.join(path.dirname(vitePkg), "bin", "vite.js");

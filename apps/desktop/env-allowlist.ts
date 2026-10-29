@@ -9,6 +9,8 @@ export const ALLOWED_ENV = [
   "VITE_SUPABASE_ANON_KEY",
   "VITE_API_BASE_URL",
   "VITE_AUTH_MODE",
+  // 개발 전용 데모 데이터 모드(AR-06-004b). 릴리스 빌드에서는 값이 있으면 실패한다(아래).
+  "VITE_DEMO_MODE",
 ] as const;
 
 /** 허용 목록 밖 VITE_ 변수, 릴리스 빌드의 `VITE_AUTH_MODE=mock`(9절)이면 예외를 던진다. */
@@ -22,6 +24,9 @@ export function checkDesktopEnv(env: Record<string, string | undefined>, release
   }
   if (release && env.VITE_AUTH_MODE === "mock") {
     throw new Error("릴리스 빌드에서 VITE_AUTH_MODE=mock은 쓸 수 없다(개발 빌드 전용).");
+  }
+  if (release && env.VITE_DEMO_MODE) {
+    throw new Error("릴리스 빌드에서 VITE_DEMO_MODE는 쓸 수 없다(개발 빌드 전용 데모 데이터).");
   }
 }
 

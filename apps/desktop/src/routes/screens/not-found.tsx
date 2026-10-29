@@ -1,5 +1,2 @@
-import { Placeholder } from "../Placeholder.tsx";
-
-export function Component() {
-  return <Placeholder title="페이지를 찾을 수 없습니다" />;
-}
+// 얇은 래퍼(화면 작성 규약): 본문은 packages/features/src/not-found/index.tsx(AR-06-004b). 여기에는 로직을 두지 않는다.
+export { Screen as Component } from "@arch-studio/features/not-found";
