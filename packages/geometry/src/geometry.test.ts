@@ -222,6 +222,24 @@ test("오프셋: miter·square, 안쪽 소멸, 구멍, 갈라짐, 인자 거부"
   const m = offset(spike, 10, { miterLimit: 100 });
   const s = offset(spike, 10);
   assert.ok((m[0] as Polygon).outer.length < (s[0] as Polygon).outer.length);
+  // 회귀(속성 테스트 seed -1130307967 반례): 폭 ~1mm 바늘 삼각형의 안쪽 오프셋은 빈 배열.
+  // 예전에는 바늘 끝(법선 cos ≤ -0.999)에 square/miter 마개가 붙어 원본 밖 다각형이 나왔다.
+  const needle: Polygon = { outer: [[0, 1], [-1, 24], [-1, 0]] };
+  for (const join of ["miter", "square"] as const) {
+    for (const d of [1, 2, 12, 24, 100, 5000]) assert.deepEqual(offset(needle, -d, { join }), [], `${join} -${d}`);
+  }
+  // 몸통에 붙은 바늘: 안쪽 오프셋은 바늘을 지우고 몸통만 줄인다(⊆ 원본).
+  const body: Polygon = { outer: [[0, 0], [100, 0], [100, 40], [101, 2000], [99, 40], [99, 100], [0, 100]] };
+  for (const join of ["miter", "square"] as const) {
+    const r = offset(body, -10, { join });
+    assert.equal(r.length, 1, join);
+    for (const [x, y] of (r[0] as Polygon).outer) assert.ok(x >= 10 && x <= 90 && y >= 10 && y <= 90, `${join} (${x}, ${y})`);
+  }
+  // 구멍이 바늘이면 바깥 오프셋에서 구멍이 사라진다(구멍 쪽으로는 안쪽 오프셋과 같다).
+  const needleHole: Polygon = { outer: sq(-100, -100, 300).outer, holes: [[[0, 1], [-1, 0], [-1, 24]]] };
+  for (const join of ["miter", "square"] as const) {
+    assert.deepEqual(offset(needleHole, 24, { join }), offset(sq(-100, -100, 300), 24, { join }), join);
+  }
   assert.equal(code(() => offset(sq(0, 0, 10), 1.5)), "INVALID_ARGUMENT");
   assert.equal(code(() => offset(sq(0, 0, 10), 1, { join: "round" as never })), "INVALID_ARGUMENT");
   assert.equal(code(() => offset(sq(0, 0, 10), 1, { miterLimit: 0.5 })), "INVALID_ARGUMENT");

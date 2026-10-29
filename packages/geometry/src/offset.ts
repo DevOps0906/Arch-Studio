@@ -5,6 +5,7 @@ import type { Point, Polygon } from "@arch-studio/domain";
 import { fillPositive, type Seg } from "./arrangement.ts";
 import { assertResultRange, pushRing } from "./boolean.ts";
 import { GeometryError } from "./errors.ts";
+import { orient } from "./predicates.ts";
 import { roundHalfAway } from "./round.ts";
 import { COORD_LIMIT, normalizePolygon } from "./validate.ts";
 
@@ -17,8 +18,14 @@ export interface OffsetOptions {
   miterLimit?: number;
 }
 
-/** 거의 일직선(cos > 0.999)은 join과 무관하게 miter, 오목 판정은 cos > -0.999 (Clipper2와 같은 기준). */
+/** 거의 일직선(cos > 0.999)은 join과 무관하게 miter. */
 const STRAIGHT_COS = 0.999;
+
+// 정당성: 원시 경로(1-사슬) = ∂P + Σ(sign δ)·∂(변 띠) + Σ(sign δ)·∂(벌어지는 쪽 모서리 조각).
+// 그래서 감김수 = [P 안] ± (덮는 조각 수)가 되어 감김수 > 0 이 정확히 "P ∪ 조각"(δ>0) / "P \ 조각"(δ<0)이다.
+// 이 등식은 겹치는 쪽 꼭짓점에서 반드시 세 점(꼭짓점 포함)을 넣을 때만 성립한다. 예전에는 Clipper2처럼
+// cos ≤ -0.999(바늘처럼 뾰족한 꼭짓점)를 오목에서 빼 square/miter 마개를 붙였는데, 안쪽 오프셋에서 그 마개가
+// 원본 밖으로 뻗은 양의 영역을 만들었다(AR-06-014 결함). 오목 판정은 정수 외적 부호로 정확히 한다.
 
 function offsetRing(ring: readonly Point[], delta: number, join: OffsetJoin, miterLimit: number): Point[] {
   const n = ring.length;
@@ -47,9 +54,10 @@ function offsetRing(ring: readonly Point[], delta: number, join: OffsetJoin, mit
     const n1y = ny[k] as number;
     const n2x = nx[j] as number;
     const n2y = ny[j] as number;
-    const sinA = n1x * n2y - n1y * n2x;
+    // n1 × n2 의 부호 = 변 방향 외적의 부호 = orient(이전, 현재, 다음) — 정수라 정확.
+    const turn = Math.sign(orient(ring[k] as Point, ring[j] as Point, ring[(j + 1) % n] as Point));
     const cosA = n1x * n2x + n1y * n2y;
-    if (cosA > -STRAIGHT_COS && sinA * delta < 0) {
+    if (turn * Math.sign(delta) < 0) {
       // 오목(오프셋 방향 기준): 세 점을 넣고, 생기는 음의 영역은 정리 단계가 지운다.
       emit(px + n1x * delta, py + n1y * delta);
       emit(px, py);
