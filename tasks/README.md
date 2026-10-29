@@ -11,7 +11,7 @@
 | AR-06-003 | 모노레포·web 골격·린트 경계·env 검증 | W0 | — | 보통 | builder | 완료 |
 | AR-06-004 | 데스크톱 셸 골격(Tauri·CSP·capability) | W0 | — | 보통 | builder | 대기 |
 | AR-06-009 | 디자인 레퍼런스 확정(1단계) | W0 | — | 낮음 | codex-designer⇄designer | 완료 |
-| AR-06-013 | 도메인 계약 zod(DesignModel 등) | W0 | — | 보통 | builder | 진행 |
+| AR-06-013 | 도메인 계약 zod(DesignModel 등) | W0 | — | 보통 | builder | 완료 |
 | AR-06-019 | 도면 스파이크 2일(DXF·PDF, D-20·D-23) | W0 | — | 보통 | builder→사람(AutoCAD 확인) | 진행 |
 | AR-06-066 | 주장 장부·V0 질문지·V1 측정 양식 | W0 | — (V1은 060 뒤) | 낮음 | builder(인터뷰는 사람) | 완료 |
 | AR-06-071a | 웹 스튜디오 셸 Vite/Next 공유 스파이크 1주 | W0 | 003, 004 | 보통 | builder | 대기 |
@@ -100,6 +100,11 @@
 |---|---|---|---|
 | 2026-10-28 | `supabase/migrations/20261013000001_core_lite.sql` consume_credits | `p_idempotency_key` 기본값 null → 키 없이 호출 시 멱등 검사 생략(운영 경로는 키 전달, 현재 중복 차감 없음). `tests/rls_smoke.sql`도 키 생략 | **AR-06-001에서** 새 마이그레이션으로 키 NULL·공백 거부(22023) + 스모크 수정 (Codex 리뷰 🟡) |
 | 2026-10-28 | `supabase/migrations/20261013000002_arch_domain.sql` 동시 렌더 수 검사 | 잠금 전에 개수를 세어 동시 요청 2건이 모두 통과할 수 있음(미재현) | **AR-06-001에서** 조직 단위 잠금 후 검사 + 동시 요청 테스트 (Codex 리뷰 🟡) |
+| 2026-10-29 | `03_SCREENS_UX.md` 4.3절 | "DESIGN.md 5절"을 가리키나 DESIGN.md는 4절까지 | 다음 문서 작업에서 참조 정정 |
+| 2026-10-29 | `06_AGENT_PLAN.md` AR-06-013 행 | 근거 `04_API.md:276-366`이 실제 4.7절(306~393줄)과 어긋남 | 장 번호 인용으로 교체 |
+| 2026-10-29 | `02_ARCHITECTURE.md` 위험 #2 ↔ AR-06-013 | 판정 필수값 누락: 위험 #2는 "입력 필요" 표시, 013은 스키마 검증 실패 | AR-06-037 판정 패널에서 검증 실패를 "입력 필요"로 표시해 양립 |
+| 2026-10-29 | `04_API.md` 4.7.3 SheetSpec `dx_mm`·`dy_mm` | 모델 mm인지 용지 단위인지 모호(현재 number, 정수 강제 없음) | AR-06-020에서 확정 |
+| 2026-10-29 | 기획 문서 전반 "task `log.md`" | `[DECISION]` 기록 경로가 저장소에 정해지지 않음 | 사용자 결정 대기(`tasks/logs/AR-06-NNN.md` 제안) |
 
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
