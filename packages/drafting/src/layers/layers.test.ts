@@ -60,3 +60,33 @@ test("매핑·금지 문자·합치기·표준 밖 키", () => {
   );
   for (const ch of '<>/\\":;?*|=,') assert.equal(resolveLayerMap({ "A-PARK": `P${ch}` }).names["A-PARK"], "A-PARK");
 });
+
+test("제어 문자 이름은 invalid_name 후 표준 이름(DXF 줄 구조 보호)", () => {
+  for (const bad of ["벽\n체", "A\rB", "탭\t", "널\u0000", "DEL\u007f", "\u001f"]) {
+    const r = resolveLayerMap({ "A-WALL": bad });
+    assert.equal(r.names["A-WALL"], "A-WALL");
+    assert.deepEqual(r.warnings, [{ kind: "invalid_name", key: "A-WALL", name: bad }]);
+  }
+});
+
+test("이름 충돌은 대소문자 무시(ASCII): 앞 레이어 유지, 뒤는 표준 이름 + name_conflict, 예약 \"0\" 포함", () => {
+  const r = resolveLayerMap({ "A-MASS": "Bldg", "A-WALL": "BLDG", "A-DOOR": "0", "A-GLAZ": "glaz", "A-AREA": "a-site-bndy" });
+  assert.equal(r.names["A-MASS"], "Bldg");
+  assert.equal(r.names["A-WALL"], "A-WALL");
+  assert.equal(r.names["A-DOOR"], "A-DOOR");
+  assert.equal(r.names["A-GLAZ"], "glaz");
+  assert.equal(r.names["A-AREA"], "A-AREA"); // 앞의 표준 이름 A-SITE-BNDY와 대소문자만 다름
+  assert.deepEqual(
+    r.warnings.map((w) => `${w.kind}:${w.key}:${w.name}`),
+    ["name_conflict:A-WALL:BLDG", "name_conflict:A-DOOR:0", "name_conflict:A-AREA:a-site-bndy"],
+  );
+  const keys = ["0", ...r.table.map((l) => l.name)].map((n) => n.toUpperCase());
+  assert.equal(new Set(keys).size, keys.length);
+  // 정확히 같은 철자는 합치기(경고 없음). "0"은 철자가 같아도 충돌.
+  assert.deepEqual(resolveLayerMap({ "A-MASS": "X", "A-WALL": "X" }).warnings, []);
+  assert.equal(resolveLayerMap({ "A-MASS": "0" }).names["A-MASS"], "A-MASS");
+  // 되돌린 표준 이름이 앞 이름과 대소문자만 다르면 앞 이름에 합친다.
+  const m = resolveLayerMap({ "A-MASS": "a-wall", "A-WALL": "0" });
+  assert.equal(m.names["A-WALL"], "a-wall");
+  assert.deepEqual(m.warnings.map((w) => w.kind), ["name_conflict"]);
+});

@@ -1,0 +1,10 @@
+{
+  "case_id": "writer-site-a3-watermark-fallback",
+  "note": "체험판 + 폴백 동시",
+  "writer_version": "dxf-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

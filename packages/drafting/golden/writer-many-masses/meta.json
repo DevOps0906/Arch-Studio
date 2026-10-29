@@ -1,0 +1,10 @@
+{
+  "case_id": "writer-many-masses",
+  "note": "매스 9·실 20",
+  "writer_version": "dxf-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

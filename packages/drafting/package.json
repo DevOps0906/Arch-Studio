@@ -4,13 +4,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./writers/dxf": "./src/writers/dxf/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test \"src/**/*.test.ts\"",
-    "bench": "node src/sheet/bench.ts"
+    "test": "node --test \"src/**/*.test.ts\" \"golden/_harness/*.test.ts\"",
+    "bench": "node src/sheet/bench.ts",
+    "test:golden": "node --test \"golden/_harness/*.test.ts\"",
+    "golden:update": "node golden/_harness/update.ts",
+    "bench:dxf": "node golden/_harness/bench.ts"
   },
   "dependencies": {
     "@arch-studio/domain": "workspace:*",

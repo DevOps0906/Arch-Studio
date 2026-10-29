@@ -1,0 +1,10 @@
+{
+  "case_id": "writer-text-align",
+  "note": "TEXT 정렬 l·c·r(용지·뷰), 값 TEXT source_ref",
+  "writer_version": "dxf-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

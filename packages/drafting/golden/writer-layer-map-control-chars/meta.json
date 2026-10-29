@@ -1,0 +1,10 @@
+{
+  "case_id": "writer-layer-map-control-chars",
+  "note": "layer_map: 제어 문자(줄바꿈·탭·NUL) 이름은 표준 유지, 대소문자만 다른 이름·\"0\"은 충돌 경고 후 표준 이름",
+  "writer_version": "dxf-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}
