@@ -11,6 +11,15 @@ use tauri::test::{get_ipc_response, mock_builder, MockRuntime, INVOKE_KEY};
 use tauri::webview::InvokeRequest;
 use tauri::{WebviewWindow, WebviewWindowBuilder};
 
+/// 플랫폼별 로컬 출처(Windows는 http://tauri.localhost, 그 밖은 tauri://localhost).
+fn local_url() -> &'static str {
+    if cfg!(windows) {
+        "http://tauri.localhost"
+    } else {
+        "tauri://localhost"
+    }
+}
+
 struct Fake(Option<PathBuf>);
 impl FilePicker for Fake {
     fn pick_open(&self, _: FileFilter) -> Option<PathBuf> {
@@ -50,7 +59,7 @@ fn call(
             cmd: cmd.into(),
             callback: CallbackFn(0),
             error: CallbackFn(1),
-            url: "http://tauri.localhost".parse().expect("URL"),
+            url: local_url().parse().expect("URL"),
             body,
             headers,
             invoke_key: INVOKE_KEY.to_string(),
@@ -208,5 +217,6 @@ fn no_command_takes_path_or_sql_argument() {
             }
         }
     }
-    assert_eq!(commands, 9, "build.rs APP_COMMANDS와 개수 일치");
+    // 이름 집합 일치는 tests/capabilities.rs의 command_names_match_across_build_handler_and_capability가 보증한다.
+    assert!(commands >= 9, "명령 소스 파싱 실패: {commands}");
 }

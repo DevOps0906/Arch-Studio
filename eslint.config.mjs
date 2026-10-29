@@ -30,7 +30,28 @@ const RESTRICTIONS = {
     source: "/^(node:|fs($|\\u002F)|child_process$)/",
     message: "엔진은 Node 내장 모듈(I/O·프로세스)을 쓰지 않는다.",
   },
+  // 테스트 더블(@arch-studio/shell-bridge/testing, src/testing, src/test-helpers)은 *.test.ts(x)에서만 허용한다.
+  // 이름이 testing인 다른 폴더도 같이 막힌다(과잉 차단은 의도: 새 폴더는 이름을 바꾸거나 여기를 고친다).
+  testDouble: {
+    group: ["**/testing", "**/testing/**", "**/test-helpers", "**/test-helpers.*"],
+    source: "/(^|\\u002F)(testing|test-helpers)($|\\u002F|\\.)/",
+    message: "테스트 더블(testing·test-helpers)은 *.test.ts(x)에서만 import한다. 프로덕션 코드에서 쓰면 릴리스에 Mock이 남는다.",
+  },
 };
+
+const TEST_FILES = ["**/*.test.ts", "**/*.test.tsx"];
+
+/**
+ * 영역 하나 = 프로덕션 설정 + 테스트 파일 설정. 테스트 파일은 같은 영역의 금지에서 testDouble만 빠진다.
+ * 뒤 설정이 앞 설정을 덮어쓰므로 테스트 설정은 영역 설정 바로 뒤에 둔다(flat config의 중첩 배열 = AND).
+ */
+function area(files, names, extraSyntax = [], extraRules = {}) {
+  const testFiles = files ? files.flatMap((f) => TEST_FILES.map((t) => [f, t])) : TEST_FILES;
+  return [
+    { ...(files ? { files } : {}), rules: { ...extraRules, ...restrict([...names, "testDouble"], extraSyntax) } },
+    { files: testFiles, rules: restrict(names, extraSyntax) },
+  ];
+}
 
 /** 영역별 금지 묶음 → no-restricted-imports + 동적 import()용 no-restricted-syntax. */
 function restrict(names, extraSyntax = []) {
@@ -91,21 +112,16 @@ export default tseslint.config(
     ignores: ["**/node_modules/**", "**/.next/**", "**/dist/**", "**/coverage/**", "spikes/**", "**/next-env.d.ts"],
   },
   ...tseslint.configs.recommended,
+  { plugins: { arch: { rules: { "no-service-client": serviceClientRule } } } },
+  ...area(undefined, ["tauri", "three", "spikes"], [], { "arch/no-service-client": "error" }),
+  ...area(WEB_SERVER, ["tauri", "three", "spikes"], NO_REEXPORT, { "arch/no-service-client": "off" }),
+  ...area(SHELL_BRIDGE, ["three", "spikes"]),
+  ...area(THREE_ALLOWED, ["tauri", "spikes"]),
+  // 엔진은 결정적 순수 함수만: 시간·난수·네트워크·환경 변수·타이머·Node I/O 금지(.claude/rules/engine.md).
+  ...area(ENGINE, ["tauri", "three", "spikes", "node"]),
   {
-    plugins: { arch: { rules: { "no-service-client": serviceClientRule } } },
-    rules: { "arch/no-service-client": "error", ...restrict(["tauri", "three", "spikes"]) },
-  },
-  {
-    files: WEB_SERVER,
-    rules: { "arch/no-service-client": "off", ...restrict(["tauri", "three", "spikes"], NO_REEXPORT) },
-  },
-  { files: SHELL_BRIDGE, rules: restrict(["three", "spikes"]) },
-  { files: THREE_ALLOWED, rules: restrict(["tauri", "spikes"]) },
-  {
-    // 엔진은 결정적 순수 함수만: 시간·난수·네트워크·환경 변수·타이머·Node I/O 금지(.claude/rules/engine.md).
     files: ENGINE,
     rules: {
-      ...restrict(["tauri", "three", "spikes", "node"]),
       "no-restricted-globals": [
         "error",
         { name: "Date", message: "엔진은 시간을 읽지 않는다. 필요한 값은 입력으로 받는다." },
