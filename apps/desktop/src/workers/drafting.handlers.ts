@@ -3,6 +3,8 @@ import {
   buildAreaPlanView,
   buildSheet,
   buildSitePlanView,
+  DraftingError,
+  tryBuildFloorPlanView,
   sha256Hex,
   validateDraftingInput,
   type AreaPlanInput,
@@ -32,8 +34,21 @@ const sheetHandler: Handler = async (req: LaneRequest, ctx) => {
       view = buildAreaPlanView(area);
       break;
     }
+    case "floor_plan": {
+      // AR-06-027: 평면 개략도. AR051(겹침·외곽 이탈·문창 범위) 위반 모델은 시트를 만들지 않고 AR051로 답한다(생성기 거부를 그대로 전달).
+      let built;
+      try {
+        built = tryBuildFloorPlanView(input);
+      } catch (e) {
+        if (e instanceof DraftingError) throw new HandlerError("AR050", "평면 시트에 필요한 층·실 배치가 없습니다");
+        throw e;
+      }
+      if (!built.ok) throw new HandlerError("AR051", `실 배치 오류 ${built.issues.length}건(겹침·외곽 이탈·문창 범위)`);
+      view = built.view;
+      break;
+    }
     default:
-      // sunlight_section 은 엔벨로프 입력(솔리드 커널)이 필요하고, floor_plan·elevation 뷰 생성기는 아직 없다(후속).
+      // sunlight_section 은 엔벨로프 입력(솔리드 커널)이 필요하고, elevation 뷰 생성기는 아직 없다(후속).
       throw new HandlerError("AR050", "이 시트 종류는 아직 지원하지 않습니다");
   }
   await ctx.checkpoint();

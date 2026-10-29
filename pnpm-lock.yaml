@@ -164,6 +164,9 @@ importers:
       '@arch-studio/io':
         specifier: workspace:*
         version: link:../io
+      '@arch-studio/layout':
+        specifier: workspace:*
+        version: link:../layout
       '@arch-studio/ui':
         specifier: workspace:*
         version: link:../ui
