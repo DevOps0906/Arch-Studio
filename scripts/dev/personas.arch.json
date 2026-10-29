@@ -1,0 +1,108 @@
+{
+  "$comment": "AR-06-008 시드 페르소나 정본(데이터). 근거: AUTH_ROADMAP.md 2.2절(공통 페르소나), 01_PRD.md 4.3절(상태별 기능 표), AUTH_ROADMAP.md 8장 arch 행. 이메일 도메인은 예약 TLD .test(메일 발송 없음). 비밀번호는 DEV_SEED_PASSWORD 환경 변수만 쓴다(여기에 넣지 않는다). steps 어휘는 scripts/dev/seed-lib.mjs의 STEP_OPS. expect는 seed-users.mjs가 실행 후 session_context('arch'[, p_org])·org_features로 대조한다.",
+  "app": "arch",
+  "emailDomain": "dev.test",
+  "personas": [
+    {
+      "key": "owner",
+      "label": "소유자(체험 중)",
+      "source": "AUTH_ROADMAP 2.2 owner, PRD 4.3 체험 14일",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }],
+      "expect": { "org": "self", "role": "owner", "entitled": true, "plan_code": "trial", "credit_balance": 30, "features_state": "trial" }
+    },
+    {
+      "key": "admin",
+      "label": "관리자(owner 조직)",
+      "source": "AUTH_ROADMAP 2.2 admin",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }, { "op": "join_org", "of": "owner", "role": "admin" }],
+      "expect": { "org": "owner", "role": "admin", "entitled": true, "plan_code": "trial", "credit_balance": 30, "features_state": "trial" }
+    },
+    {
+      "key": "member",
+      "label": "구성원(owner 조직)",
+      "source": "AUTH_ROADMAP 2.2 member",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }, { "op": "join_org", "of": "owner", "role": "member" }],
+      "expect": { "org": "owner", "role": "member", "entitled": true, "plan_code": "trial", "credit_balance": 30, "features_state": "trial" }
+    },
+    {
+      "key": "viewer",
+      "label": "열람자(owner 조직)",
+      "source": "AUTH_ROADMAP 2.2 viewer",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }, { "op": "join_org", "of": "owner", "role": "viewer" }],
+      "expect": { "org": "owner", "role": "viewer", "entitled": true, "plan_code": "trial", "credit_balance": 30, "features_state": "trial" }
+    },
+    {
+      "key": "outsider",
+      "label": "다른 조직 사용자",
+      "source": "AUTH_ROADMAP 2.2 outsider(교차 테넌트 거부 확인)",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }],
+      "expect": { "org": "self", "role": "owner", "entitled": true, "plan_code": "trial", "credit_balance": 30, "features_state": "trial" }
+    },
+    {
+      "key": "no_app",
+      "label": "앱 메타데이터 없이 가입",
+      "source": "AUTH_ROADMAP 2.2 no_app. 모놀리스는 apps 행이 1개라 가입 트리거가 자동 부트스트랩(entitled=true)",
+      "steps": [{ "op": "create_user", "signup_app": null }],
+      "expect": { "org": "self", "role": "owner", "entitled": true, "plan_code": "trial", "credit_balance": 30, "features_state": "trial" }
+    },
+    {
+      "key": "suspended",
+      "label": "정지된 계정",
+      "source": "AUTH_ROADMAP 2.2 suspended(403)",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }, { "op": "set_profile", "status": "suspended" }],
+      "expect": { "org": "self", "role": "owner", "status": "suspended", "entitled": true, "plan_code": "trial" }
+    },
+    {
+      "key": "ops",
+      "label": "운영자",
+      "source": "AUTH_ROADMAP 2.2 ops(platform_admin)",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }, { "op": "set_profile", "platform_role": "platform_admin" }],
+      "expect": { "org": "self", "role": "owner", "platform_role": "platform_admin", "entitled": true, "plan_code": "trial" }
+    },
+    {
+      "key": "trial_expired",
+      "label": "체험 만료(라이선스 없음)",
+      "source": "PRD 4.3 체험 만료, 라이선스 없음(열람·내보내기만). 만료는 org_features가 엔타이틀먼트 생성 시각 + trial_days로 판정",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }, { "op": "age_entitlement", "days": 15 }],
+      "expect": { "org": "self", "role": "owner", "entitled": true, "plan_code": "trial", "credit_balance": 30, "features_state": "trial_expired" }
+    },
+    {
+      "key": "perpetual",
+      "label": "영구 + 업데이트 유효",
+      "source": "PRD 4.3 영구 + 업데이트 유효(licenses.updates_until ≥ 오늘)",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }, { "op": "grant_license", "sku": "perpetual_standard", "updates_until_days": 365 }],
+      "expect": { "org": "self", "role": "owner", "entitled": true, "plan_code": "trial", "credit_balance": 30, "features_state": "licensed" }
+    },
+    {
+      "key": "perpetual_fallback",
+      "label": "영구 + 업데이트 만료(폴백)",
+      "source": "PRD 4.3 영구 + 업데이트 만료(폴백)",
+      "steps": [
+        { "op": "create_user", "signup_app": "arch" },
+        { "op": "age_entitlement", "days": 15 },
+        { "op": "grant_license", "sku": "perpetual_standard", "updates_until_days": -1 }
+      ],
+      "expect": { "org": "self", "role": "owner", "entitled": true, "plan_code": "trial", "credit_balance": 30, "features_state": "licensed_fallback" }
+    },
+    {
+      "key": "sub_active",
+      "label": "월 구독 활성",
+      "source": "PRD 4.3 월 구독 활성",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }, { "op": "set_plan", "plan": "sub_monthly", "status": "active" }],
+      "expect": { "org": "self", "role": "owner", "entitled": true, "plan_code": "sub_monthly", "credit_balance": 30, "features_state": "subscribed" }
+    },
+    {
+      "key": "sub_expired",
+      "label": "월 구독 만료(라이선스 없음)",
+      "source": "PRD 4.3 월 구독 만료, 라이선스 없음(열람·내보내기만)",
+      "steps": [{ "op": "create_user", "signup_app": "arch" }, { "op": "set_plan", "plan": "sub_monthly", "status": "expired" }],
+      "expect": { "org": "self", "role": "owner", "entitled": false, "plan_code": null, "credit_balance": 30, "features_state": "subscription_expired" }
+    }
+  ],
+  "unsupported": [
+    { "key": "pending", "reason": "approval 앱 전용(AUTH_ROADMAP 2.2). arch는 signup_policy='open'" },
+    { "key": "term_active", "reason": "PRD 4.3 기간제 활성은 '제안'이고 스키마에 기간제 상품(term_*)이 없다" },
+    { "key": "term_expired", "reason": "같음" },
+    { "key": "devices_2", "reason": "AUTH_ROADMAP 8장 arch '기기 2대 활성화 완료'는 license_activations(device_hash)가 필요해 040 활성화 E2E가 만든다" }
+  ]
+}
