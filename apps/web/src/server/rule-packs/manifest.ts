@@ -12,8 +12,12 @@ export const MAX_SIGNED_MANIFEST_BYTES = 8 * 1024;
 export const MAX_MANIFEST_BYTES = 4 * 1024;
 /** 팩 본문 상한(Rust MAX_PACK_BYTES). */
 export const MAX_PACK_BYTES = 8 * 1024 * 1024;
-/** `YYYY.MM.n`(DB rule_packs_version_check·Rust valid_version과 같다). */
-export const VERSION_RE = /^[0-9]{4}\.[0-9]{2}\.[0-9]{1,3}$/;
+/**
+ * `YYYY.MM.n` 정준형: 월 01~12, n은 `0` 또는 `[1-9][0-9]{0,2}`(앞자리 0 금지). Rust `valid_version`·shell-bridge·packages/rules와 같다.
+ * DB `rule_packs_version_check`(`^[0-9]{4}\.[0-9]{2}\.[0-9]{1,3}$`)는 아직 더 넓다 — 새 마이그레이션으로 맞추는 것은 후속(tasks/logs/AR-06-042.md).
+ * 그래서 DB 행 중 정준형이 아닌 버전은 목록에서 빠지고 다운로드는 422가 된다(실패 닫힘).
+ */
+export const VERSION_RE = /^[0-9]{4}\.(0[1-9]|1[0-2])\.(0|[1-9][0-9]{0,2})$/;
 
 export interface RulePackManifestV1 {
   v: 1;
@@ -97,13 +101,37 @@ export interface RulePackRowFacts {
   bytes: number;
   kid: string;
   signature: string;
+  /** DB rule_packs.published_at(timestamptz 문자열). manifest와 **같은 시각**이어야 한다(표기 차이 `Z`·`+00:00`은 허용). */
+  published_at: string;
+  /** DB rule_packs.basis_date(`YYYY-MM-DD`). manifest와 문자열이 정확히 같아야 한다. */
+  basis_date: string;
+}
+
+/** RFC 3339 문자열을 시각(ms)으로. 형식이 틀리거나 달력에 없는 값(2월 31일·24시 — Date.parse는 넘겨 버린다)이면 null. */
+function instantMs(v: unknown): number | null {
+  if (typeof v !== "string" || !RFC3339.test(v)) return null;
+  const [y, mo, d, h, mi, se] = [v.slice(0, 4), v.slice(5, 7), v.slice(8, 10), v.slice(11, 13), v.slice(14, 16), v.slice(17, 19)].map(Number) as [number, number, number, number, number, number];
+  const daysInMonth = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  if (mo < 1 || mo > 12 || d < 1 || d > daysInMonth || h > 23 || mi > 59 || se > 59) return null;
+  const ms = Date.parse(v);
+  return Number.isFinite(ms) ? ms : null;
+}
+
+/** PostgREST timestamptz 표기(`2026-10-20 00:00:00+00`처럼 공백·짧은 오프셋)도 받는다. 해석 불가면 null. */
+function dbInstantMs(v: string): number | null {
+  const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)(Z|[+-]\d{2}(?::?\d{2})?)$/.exec(v);
+  if (!m) return null;
+  const [, d, t, zRaw] = m as unknown as [string, string, string, string];
+  const z = zRaw === "Z" ? "Z" : zRaw.length === 3 ? `${zRaw}:00` : zRaw.includes(":") ? zRaw : `${zRaw.slice(0, 3)}:${zRaw.slice(3)}`;
+  return instantMs(`${d}T${t}${z}`);
 }
 
 export type ManifestCheck = { ok: true; text: string; manifest: RulePackManifestV1 } | { ok: false; reason: string };
 
 /**
  * 저장소에서 읽은 서명 매니페스트 문자열을 DB 행과 대조한다(서명 자체는 Rust가 검증한다). 하나라도 다르면 내주지 않는다(실패 닫힘).
- * 확인: 크기 상한, 바깥 키 3개만, sig = rule_packs.signature, kid = rule_packs.kid, manifest의 v·app_id·version·sha256·bytes·kid = 행.
+ * 확인: 크기 상한, 바깥 키 3개만, sig = rule_packs.signature, kid = rule_packs.kid, manifest의 v·app_id·version·sha256·bytes·kid = 행,
+ * manifest의 published_at = 행(같은 시각, 앱 자격 판정이 이 값을 쓴다), basis_date = 행(문자열 정확히).
  */
 export function checkSignedManifest(text: string, row: RulePackRowFacts): ManifestCheck {
   if (Buffer.byteLength(text, "utf8") > MAX_SIGNED_MANIFEST_BYTES) return { ok: false, reason: "too_large" };
@@ -138,12 +166,15 @@ export function checkSignedManifest(text: string, row: RulePackRowFacts): Manife
     mm.sha256 === row.sha256 &&
     mm.bytes === row.bytes &&
     mm.kid === row.kid &&
-    typeof mm.published_at === "string" &&
-    RFC3339.test(mm.published_at) &&
     typeof mm.basis_date === "string" &&
     DATE.test(mm.basis_date) &&
     HEX64.test(row.sha256);
   if (!same) return { ok: false, reason: "manifest_mismatch" };
+  // 게시 시각·기준일(감사 #1): 서버 자격 판정(DB published_at)과 앱 자격 판정(서명된 manifest published_at)이 같은 값을 봐야 한다.
+  const signedAt = instantMs(mm.published_at);
+  const rowAt = dbInstantMs(row.published_at);
+  if (signedAt === null || rowAt === null || signedAt !== rowAt) return { ok: false, reason: "published_at_mismatch" };
+  if (mm.basis_date !== row.basis_date) return { ok: false, reason: "basis_date_mismatch" };
   return { ok: true, text, manifest: mm as unknown as RulePackManifestV1 };
 }
 

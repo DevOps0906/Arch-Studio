@@ -40,6 +40,8 @@ test("로더: 근거 누락·빈 칸·미확인 규칙의 수치·서명 없는 
   rejects((r) => (rule(r, 4).effective_to = "1999-12-31"), /폐지일/);
   rejects((r) => (rule(r, 1).id = rule(r, 0).id), /중복/);
   rejects((r) => (r.version = "2000.13.1"), /YYYY\.MM\.n/);
+  rejects((r) => (r.version = "2026.10.01"), /YYYY\.MM\.n/); // 정준형: n 앞자리 0 금지(Rust valid_version과 같음)
+  rejects((r) => (r.version = "2026.10.1000"), /YYYY\.MM\.n/);
   rejects((r) => (rule(r, 0).params = { max_pct_by_district: { 가짜주거: 50.123 } }), /둘째 자리/);
   rejects((r) => (rule(r, 0).extra = 1), /Unrecognized/);
   rejects((r) => (rule(r, 1).ordinance_dependent = false), /ordinance_dependent가 true/); // 조례 근거(ordinance:true)

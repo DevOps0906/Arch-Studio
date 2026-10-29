@@ -217,7 +217,16 @@ export async function handleRulePackDownload(req: Request, rawVersion: string, d
     }
     const text = await priv.readSmallText(manifestStoragePath(version), MAX_SIGNED_MANIFEST_BYTES);
     if (text === null) throw new ReleaseApiError("internal", { reason: "manifest_missing" });
-    const check = checkSignedManifest(text, { version, sha256: object.sha256, bytes: object.bytes, kid: object.kid, signature: object.signature });
+    const check = checkSignedManifest(text, {
+      version,
+      sha256: object.sha256,
+      bytes: object.bytes,
+      kid: object.kid,
+      signature: object.signature,
+      // 게시 시각·기준일은 자격 RPC 행(arch.eligible_rule_packs)의 값과 대조한다(객체 행에는 없다).
+      published_at: eligible.published_at,
+      basis_date: eligible.basis_date,
+    });
     if (!check.ok) throw new ReleaseApiError("internal", { reason: `manifest_${check.reason}`.slice(0, 40) });
     const cacheKey = `${session.orgId}:rule-pack:${version}`;
     let signed = deps.urlCache.get(cacheKey, nowMs);

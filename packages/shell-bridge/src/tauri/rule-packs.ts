@@ -11,7 +11,7 @@ import {
 } from "../adapters/rule-packs.ts";
 import { RULE_PACK_INSTALL_COMMAND, RULE_PACK_LOAD_COMMAND, type InvokeFn } from "./invoke.ts";
 
-const VERSION = /^[0-9]{4}\.[0-9]{2}\.[0-9]{1,3}$/;
+const VERSION = /^[0-9]{4}\.(0[1-9]|1[0-2])\.(0|[1-9][0-9]{0,2})$/; // 정준형(Rust valid_version·web VERSION_RE와 같다)
 const HEX64 = /^[0-9a-f]{64}$/;
 const utf8Bytes = (s: string) => new TextEncoder().encode(s).byteLength;
 

@@ -129,7 +129,7 @@ const packShape = z
   .object({
     format: z.literal(1),
     /** YYYY.MM.n (05_DATA_MODEL.md rule_packs.version) */
-    version: z.string().regex(/^\d{4}\.(0[1-9]|1[0-2])\.\d+$/, "버전은 YYYY.MM.n"),
+    version: z.string().regex(/^\d{4}\.(0[1-9]|1[0-2])\.(0|[1-9]\d{0,2})$/, "버전은 YYYY.MM.n"),
     /** 규칙 팩이 반영한 법령·조례 시점. */
     basis_date: dateSchema,
     title: nonBlank,

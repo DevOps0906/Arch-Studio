@@ -188,6 +188,9 @@ test("다운로드: DB 행·저장 매니페스트가 어긋나면 500(서명값
   const cases: Partial<World>[] = [
     { object: { ...OBJECT, storage_path: "rule-packs/2026.10.0/../../builds/x" } },
     { object: { ...OBJECT, sha256: "f".repeat(64) } },
+    // 서명된 게시 시각·기준일이 DB 자격 행과 다름(감사 #1).
+    { eligible: [{ ...ELIGIBLE, published_at: "2026-10-20T00:00:01+00:00" }] },
+    { eligible: [{ ...ELIGIBLE, basis_date: "2026-10-15" }] },
     { manifestText: null },
     { manifestText: SIGNED.replace(SIG, SIG.split("").reverse().join("")) },
     { manifestText: signRulePackManifest({ privateKeyPem: KEY.pem, kid: "pack-a", version: "2026.10.0", publishedAt: "2026-10-20T00:00:00Z", basisDate: "2026-10-14", pack: Buffer.from("다른 본문") }) },
