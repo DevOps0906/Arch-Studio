@@ -7,11 +7,14 @@ import { mmSchema } from "./units.ts";
 export const pointSchema = z.tuple([mmSchema, mmSchema]);
 export type Point = z.infer<typeof pointSchema>;
 
-/** 외곽 반시계, 구멍 시계, 닫는 점 중복 없음(문서상 제안 — 방향은 여기서 검사하지 않는다). */
+/**
+ * 외곽 반시계, 구멍 시계, 닫는 점 중복 없음. 여기서는 점 개수(3 이상)·좌표 범위만 검사하고
+ * 방향 정리·면적 0·자기교차 거부는 `@arch-studio/geometry`의 normalizePolygon이 맡는다.
+ */
 export const polygonSchema = z
   .object({
-    outer: z.array(pointSchema),
-    holes: z.array(z.array(pointSchema)).optional(),
+    outer: z.array(pointSchema).min(3),
+    holes: z.array(z.array(pointSchema).min(3)).optional(),
   })
   .strict();
 export type Polygon = z.infer<typeof polygonSchema>;

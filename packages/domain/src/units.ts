@@ -4,8 +4,11 @@ import { z } from "zod";
 /** 모델 길이 단위. 항상 정수 mm. */
 export type Mm = number;
 
-/** mm 정수 스키마. 소수·NaN·Infinity는 거부한다. */
-export const mmSchema = z.number().int();
+/** 좌표·길이 상한(mm). 로컬 원점 기준 ±10km. 넘으면 geometry가 OUT_OF_RANGE로 거부한다. */
+export const MM_COORD_LIMIT = 10_000_000;
+
+/** mm 정수 스키마. 소수·NaN·Infinity·±10km 초과는 거부한다(상한 안이면 safe int). */
+export const mmSchema = z.number().int().min(-MM_COORD_LIMIT).max(MM_COORD_LIMIT);
 
 const MM2_PER_M2_HUNDREDTH = 10_000; // 0.01 m2 = 10,000 mm2
 
@@ -14,11 +17,22 @@ export function isMm(value: unknown): value is Mm {
   return typeof value === "number" && Number.isSafeInteger(value);
 }
 
-/** m 값을 mm 정수로 바꾼다(0에서 먼 쪽 반올림). */
+/**
+ * m 값을 mm 정수로 바꾼다(0에서 먼 쪽 반올림).
+ * `meters * 1000`의 부동소수 오차(1.0005 → 1000.4999…)를 피하려고 최단 10진 표기(String, ES 명세로 고정)의
+ * 자릿수를 옮겨 10진 자리에서 반올림한다. 결과가 safe int를 넘으면 RangeError.
+ */
 export function mToMm(meters: number): Mm {
   if (!Number.isFinite(meters)) throw new RangeError(`유한한 수가 아닙니다: ${meters}`);
-  const mm = Math.round(Math.abs(meters * 1000));
-  return mm === 0 ? 0 : Math.sign(meters) * mm;
+  const [mantissa = "0", exp = "0"] = String(Math.abs(meters)).split("e");
+  const [intPart = "0", fracPart = ""] = mantissa.split(".");
+  const digits = intPart + fracPart;
+  const point = intPart.length + Number(exp) + 3; // ×1000
+  const whole = point <= 0 ? "0" : digits.slice(0, point).padEnd(point, "0");
+  const next = point < 0 ? "0" : (digits[point] ?? "0");
+  const mm = Number(whole) + (next >= "5" ? 1 : 0);
+  if (!Number.isSafeInteger(mm)) throw new RangeError(`mm 정수 범위를 넘습니다: ${meters}`);
+  return mm === 0 ? 0 : meters < 0 ? -mm : mm;
 }
 
 /** mm2 정수 면적 → 0.01 m2 단위 정수(0에서 먼 쪽 반올림, 정수 연산만). */
