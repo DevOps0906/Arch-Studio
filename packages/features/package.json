@@ -4,11 +4,49 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./shell": "./src/shell/index.ts",
+    "./demo": "./src/demo/index.ts",
+    "./login": "./src/login/index.tsx",
+    "./onboarding": "./src/onboarding/index.tsx",
+    "./projects": "./src/projects/index.tsx",
+    "./site": "./src/site/index.tsx",
+    "./modeler": "./src/modeler/index.tsx",
+    "./program": "./src/program/index.tsx",
+    "./plans": "./src/plans/index.tsx",
+    "./sheets": "./src/sheets/index.tsx",
+    "./render": "./src/render/index.tsx",
+    "./proposal": "./src/proposal/index.tsx",
+    "./review": "./src/review/index.tsx",
+    "./chat": "./src/chat/index.tsx",
+    "./wiki": "./src/wiki/index.tsx",
+    "./settings/drafting": "./src/settings/drafting/index.tsx",
+    "./settings/general": "./src/settings/general/index.tsx",
+    "./license": "./src/license/index.tsx",
+    "./credits": "./src/credits/index.tsx",
+    "./not-found": "./src/not-found/index.tsx"
   },
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@arch-studio/domain": "workspace:*",
+    "@arch-studio/ui": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "react-router": "8.5.1"
+  },
+  "devDependencies": {
+    "@arch-studio/shell-bridge": "workspace:*",
+    "@types/node": "24.19.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "react-router": "8.5.1"
   }
 }

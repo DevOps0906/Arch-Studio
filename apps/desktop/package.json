@@ -6,24 +6,30 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "check:release": "node scripts/check-release-bundle.mjs dist",
     "tauri": "tauri",
-    "lint": "eslint src vite.config.ts env-allowlist.ts env-allowlist.test.ts",
+    "lint": "eslint src scripts vite.config.ts env-allowlist.ts env-allowlist.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test env-allowlist.test.ts \"src/workers/*.test.ts\""
+    "test": "node --test env-allowlist.test.ts \"src/workers/*.test.ts\" \"src/shell/*.test.ts\""
   },
   "dependencies": {
     "@arch-studio/domain": "workspace:*",
     "@arch-studio/drafting": "workspace:*",
+    "@arch-studio/features": "workspace:*",
     "@arch-studio/rules": "workspace:*",
+    "@arch-studio/shell-bridge": "workspace:*",
+    "@arch-studio/ui": "workspace:*",
     "react": "19.2.9",
     "react-dom": "19.2.9",
     "react-router": "8.5.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
     "@tauri-apps/cli": "2.12.4",
     "@types/node": "24.19.2",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
+    "tailwindcss": "4.3.3",
     "vite": "8.3.5"
   }
 }
