@@ -21,3 +21,16 @@
   magic-string 0.30.21(MIT), fast-xml-parser 5.11.2(MIT), convert-source-map 2.0.0(MIT), @jridgewell/*(MIT), ndarray 계열(MIT),
   semver 7.8.5(ISC), detect-libc 2.1.2(Apache-2.0), sharp 0.35.5(Apache-2.0) + @img/sharp-* 네이티브 바이너리(Apache-2.0 AND **LGPL-3.0-or-later**, libvips).
   설치형(Tauri) 패키징에 node_modules를 넣지 않으면 배포물에 포함되지 않는다 — 포함 여부는 패키징 단계에서 확인한다.
+
+## @arch-studio/drafting — 번들 글꼴 (AR-06-022)
+- **Noto Sans KR Regular(400) 부분 집합** `packages/drafting/fonts/NotoSansKR-Regular.subset.ttf` — SIL Open Font License 1.1.
+  Copyright 2014-2021 Adobe (http://www.adobe.com/), with Reserved Font Name 'Source'. 라이선스 전문 `packages/drafting/fonts/OFL.txt`(글꼴 파일과 함께 배포물에 넣는다).
+  출처: npm `@expo-google-fonts/noto-sans-kr@0.4.4`(Google Fonts notosanskr v40, 원본 sha256 `b4a747e78805bc25b610dcfc3003cb5fb2e2ec034763774b24216ed15889eef4`).
+  수정: fonttools `pyftsubset`으로 현대 한글 음절 11,172자 + 기호만 남김(글리프 이름·이름 표는 원본 그대로; 예약 이름 'Source'는 글꼴 이름에 쓰이지 않음 — `fonts/README.md`). 수정본도 OFL로 배포한다. 글꼴 단독 판매 금지.
+  jsPDF가 PDF에 글꼴을 임베드(쓴 글자만 부분 집합)하는 것도 OFL이 허용한다.
+
+## @arch-studio/drafting — PDF (jsPDF, AR-06-022 갱신)
+- jspdf 4.2.1 — MIT License, Copyright (c) 2010-2025 James Hall, yWorks GmbH 외. https://github.com/parallax/jsPDF
+- 함께 설치되는 전이 의존성(drafting 런타임 트리, `pnpm licenses list --prod` 2026-10-29): fflate 0.8.3(MIT), fast-png(MIT)·pako(MIT AND Zlib)·iobuffer(MIT),
+  @babel/runtime(MIT), 선택 의존성 canvg·core-js·html2canvas(MIT) 및 그 하위(raf, rgbcolor, stackblur-canvas, svg-pathdata, text-segmentation, utrie, css-line-break, base64-arraybuffer, performance-now, regenerator-runtime: MIT),
+  dompurify(MPL-2.0 OR Apache-2.0 — Apache-2.0 선택). 엔진은 jsPDF의 html·canvas 기능을 쓰지 않는다.

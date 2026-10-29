@@ -2,7 +2,7 @@
   "case_id": "svg-site-a3-fallback",
   "source_case": "writer-site-a3-fallback",
   "note": "폴백 표제란 \"이후 개정 3건\"",
-  "writer_version": "svg-1.0.0",
+  "writer_version": "svg-1.1.0",
   "engine_version": "0.0.0",
   "features": [
     "AR-F-028",

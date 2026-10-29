@@ -2,7 +2,7 @@
   "case_id": "svg-area-a2-landscape",
   "source_case": "writer-area-a2-landscape",
   "note": "면적 산정도 A2 가로, 실 6개",
-  "writer_version": "svg-1.0.0",
+  "writer_version": "svg-1.1.0",
   "engine_version": "0.0.0",
   "features": [
     "AR-F-028",

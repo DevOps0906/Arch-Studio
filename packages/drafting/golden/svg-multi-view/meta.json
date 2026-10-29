@@ -2,7 +2,7 @@
   "case_id": "svg-multi-view",
   "source_case": "writer-multi-view",
   "note": "뷰 2개(main + detail), 뷰 순서 정렬",
-  "writer_version": "svg-1.0.0",
+  "writer_version": "svg-1.1.0",
   "engine_version": "0.0.0",
   "features": [
     "AR-F-028",

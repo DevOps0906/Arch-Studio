@@ -1,14 +1,13 @@
 // PDF 묶음 벤치(AR-06-022 완료 조건: 시트 10장 PDF p95 10초, 02_ARCHITECTURE.md 2.3절 성능 예산). 수동 실행(packages/drafting에서):
-//   node golden/svg-tools/bench-pdf.ts            — 대체 글꼴(helvetica)
-//   ARCH_TEST_KR_FONT=<NanumGothic.ttf> node golden/svg-tools/bench-pdf.ts — 한글 글꼴 임베드(부분 집합)
+//   node golden/svg-tools/bench-pdf.ts            — 번들 Noto Sans KR 임베드(기본)
+//   ARCH_BENCH_NO_FONT=1 node golden/svg-tools/bench-pdf.ts — 대체 글꼴(helvetica)
 // 시트: 매스 50·실 200(DXF 벤치와 같은 규모) + 실마다 해치(짝수 SOLID·홀수 ANSI31)·문 INSERT, 10장. writePdf·writeSvg만 잰다.
-// eslint-disable-next-line no-restricted-imports -- 벤치 스크립트(엔진 밖)는 글꼴 파일을 읽는다
-import { readFileSync } from "node:fs";
 // eslint-disable-next-line no-restricted-imports -- 해시
 import { createHash } from "node:crypto";
 import { buildSheet, validateDraftingInput, type Prim, type SheetModel } from "../../src/index.ts";
 import { sampleInput, sampleModel, sampleView } from "../../src/sheet/test-fixtures.ts";
 import { writePdf, type PdfOptions } from "../../src/writers/pdf/index.ts";
+import { loadBundledFont, loadBundledMetrics } from "../../src/writers/pdf/node.ts";
 import { writeSvg } from "../../src/writers/svg/index.ts";
 
 const model = sampleModel({ w: 60_000, h: 40_000, masses: 50, rooms: 200 });
@@ -36,9 +35,9 @@ view.blocks = [
 const base = buildSheet(v.input, view).sheet;
 const sheets: SheetModel[] = Array.from({ length: 10 }, (_, i) => ({ ...structuredClone(base), sheet_id: `s${i + 1}` }));
 
-// eslint-disable-next-line no-restricted-properties -- 벤치 스크립트(엔진 밖)는 글꼴 경로를 환경 변수로 받는다
-const fontPath = process.env.ARCH_TEST_KR_FONT;
-const opts: PdfOptions = fontPath ? { font: { family: "NanumGothic", ttf: new Uint8Array(readFileSync(fontPath)) } } : {};
+// eslint-disable-next-line no-restricted-properties -- 벤치 스크립트(엔진 밖)는 환경 변수로 글꼴 사용 여부를 받는다
+const useFont = process.env.ARCH_BENCH_NO_FONT === undefined;
+const opts: PdfOptions = useFont ? { font: loadBundledFont(), metrics: loadBundledMetrics() } : {};
 const sha = (u8: Uint8Array) => createHash("sha256").update(u8).digest("hex").slice(0, 16);
 
 function bench(label: string, runs: number, f: () => number): void {
@@ -61,7 +60,7 @@ function bench(label: string, runs: number, f: () => number): void {
   }
 }
 
-console.log(`node ${process.version}, 시트 10장 × 뷰 요소 ${main.prims.length}, 글꼴 ${fontPath ? "NanumGothic 임베드" : "helvetica(대체)"}`);
+console.log(`node ${process.version}, 시트 10장 × 뷰 요소 ${main.prims.length}, 글꼴 ${useFont ? "Noto Sans KR 임베드(번들 부분 집합)" : "helvetica(대체)"}`);
 for (const compress of [true, false]) {
   bench(`writePdf 10장 compress=${compress}`, 20, () => writePdf(sheets, { ...opts, compress }).bytes.length);
 }
