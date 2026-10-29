@@ -1,4 +1,4 @@
-//! 규칙 팩 매니페스트 서명·자격 검사(AR-06-041). 엔진 전달 배선은 AR-06-042·후속.
+//! 규칙 팩 매니페스트 서명·자격 검사(AR-06-041). 설치·불러오기 배선은 AR-06-042 `commands/rule_pack.rs`.
 //!
 //! - 서명 매니페스트 = `{ manifest: base64url(JSON 바이트), sig: base64url(Ed25519), kid }`.
 //!   서명 입력 = [`RULEPACK_CONTEXT`](`"arch-rulepack-v1\n"`) ‖ manifest 바이트 그대로(라이선스와 다른 도메인·다른 키 고리).
@@ -21,8 +21,8 @@ use super::{
 pub const MAX_SIGNED_MANIFEST_BYTES: usize = 8 * 1024;
 /// 디코드한 manifest 상한.
 pub const MAX_MANIFEST_BYTES: usize = 4 * 1024;
-/// 팩 본문 상한(제안).
-pub const MAX_PACK_BYTES: usize = 64 * 1024 * 1024;
+/// 팩 본문 상한(AR-06-042 P6: 2026.10.0 팩은 약 7 KB. 넉넉히 8 MiB, 파싱·해시 전에 검사).
+pub const MAX_PACK_BYTES: usize = 8 * 1024 * 1024;
 
 #[derive(Deserialize)]
 struct RawSignedManifest {
@@ -44,7 +44,8 @@ pub struct RulePackManifest {
     pub kid: String,
 }
 
-fn valid_version(v: &str) -> bool {
+/// `YYYY.MM.n` 형식(설치 폴더 이름으로도 쓰므로 숫자·점 외 문자는 받지 않는다, AR-06-042 P7).
+pub fn valid_version(v: &str) -> bool {
     let parts: Vec<&str> = v.split('.').collect();
     parts.len() == 3
         && parts[0].len() == 4
@@ -70,11 +71,25 @@ impl RulePackManifest {
     }
 }
 
+/// `YYYY.MM.n` 버전 비교. 형식은 [`valid_version`]으로 먼저 확인한다(형식 밖 조각은 0으로 읽는다).
+pub fn compare_versions(a: &str, b: &str) -> std::cmp::Ordering {
+    let parse = |v: &str| -> [u32; 3] {
+        let mut out = [0u32; 3];
+        for (i, p) in v.split('.').take(3).enumerate() {
+            out[i] = p.parse().unwrap_or(0);
+        }
+        out
+    };
+    parse(a).cmp(&parse(b))
+}
+
 /// 거부 이유(내용·서명 없음).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RulePackRejection {
     /// 라이선스가 `valid`가 아니거나 팩이 자격 밖.
     NotEntitled,
+    /// 서명 매니페스트·본문이 상한을 넘음(파싱 전 검사).
+    TooLarge,
     Malformed,
     UnknownKid,
     InvalidSignature,
@@ -125,18 +140,29 @@ pub fn pack_entitled(license: &LicenseVerdict, published_at: i64) -> bool {
     }
 }
 
-/// 매니페스트 서명 → 본문 해시·크기 → 자격 순으로 검사하고, 모두 통과하면 엔진 전달용 팩을 만든다.
-pub fn admit_rule_pack(
-    license: &LicenseVerdict,
+impl RulePackRejection {
+    /// 화면·로그용 상태 이름.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            RulePackRejection::NotEntitled => "not_entitled",
+            RulePackRejection::TooLarge => "too_large",
+            RulePackRejection::Malformed => "malformed",
+            RulePackRejection::UnknownKid => "unknown_kid",
+            RulePackRejection::InvalidSignature => "invalid_signature",
+            RulePackRejection::ContentMismatch => "content_mismatch",
+        }
+    }
+}
+
+/// 매니페스트 서명 → 형식 → 본문 해시·크기만 검사한다(자격은 보지 않는다). 설치된 팩의 최고 버전 계산(롤백 방어)과
+/// [`admit_rule_pack`]이 쓴다. 성공하면 서명된 manifest.
+pub fn verify_rule_pack(
     keys: &KeyRing,
     signed_manifest: &str,
-    pack: Vec<u8>,
-) -> Result<AdmittedRulePack, RulePackRejection> {
-    if !matches!(license, LicenseVerdict::Valid(_)) {
-        return Err(RulePackRejection::NotEntitled);
-    }
+    pack: &[u8],
+) -> Result<RulePackManifest, RulePackRejection> {
     if signed_manifest.len() > MAX_SIGNED_MANIFEST_BYTES || pack.len() > MAX_PACK_BYTES {
-        return Err(RulePackRejection::Malformed);
+        return Err(RulePackRejection::TooLarge);
     }
     let raw: RawSignedManifest =
         serde_json::from_str(signed_manifest).map_err(|_| RulePackRejection::Malformed)?;
@@ -161,11 +187,25 @@ pub fn admit_rule_pack(
     if !manifest.validate() {
         return Err(RulePackRejection::Malformed);
     }
-    let digest = Sha256::digest(&pack);
+    let digest = Sha256::digest(pack);
     let hex: String = digest.iter().map(|b| format!("{b:02x}")).collect();
     if manifest.bytes != pack.len() as u64 || hex != manifest.sha256 {
         return Err(RulePackRejection::ContentMismatch);
     }
+    Ok(manifest)
+}
+
+/// 라이선스 `valid` → 매니페스트 서명 → 본문 해시·크기 → 자격 순으로 검사하고, 모두 통과하면 엔진 전달용 팩을 만든다.
+pub fn admit_rule_pack(
+    license: &LicenseVerdict,
+    keys: &KeyRing,
+    signed_manifest: &str,
+    pack: Vec<u8>,
+) -> Result<AdmittedRulePack, RulePackRejection> {
+    if !matches!(license, LicenseVerdict::Valid(_)) {
+        return Err(RulePackRejection::NotEntitled);
+    }
+    let manifest = verify_rule_pack(keys, signed_manifest, &pack)?;
     let published_at = parse_instant(&manifest.published_at).ok_or(RulePackRejection::Malformed)?;
     if !pack_entitled(license, published_at) {
         return Err(RulePackRejection::NotEntitled);

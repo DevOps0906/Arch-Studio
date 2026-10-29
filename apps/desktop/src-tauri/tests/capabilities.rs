@@ -84,6 +84,8 @@ fn capability_allows_app_commands() {
         "license_verify",
         "device_hash_get",
         "rasterize_svg",
+        "rule_pack_install",
+        "rule_pack_load",
     ] {
         if let Err(err) = invoke(cmd) {
             assert!(

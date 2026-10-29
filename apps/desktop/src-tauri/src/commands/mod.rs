@@ -6,6 +6,7 @@ pub mod fs;
 pub mod license;
 pub mod local_db;
 pub mod raster;
+pub mod rule_pack;
 pub mod secrets;
 
 use std::path::{Path, PathBuf};
