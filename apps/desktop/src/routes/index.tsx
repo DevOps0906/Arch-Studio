@@ -13,6 +13,7 @@ export const routes: RouteObject[] = [
       // 셸 밖(전체 화면, 8.7절 표)
       { path: "login", lazy: () => import("./screens/login.tsx") },
       { path: "onboarding", lazy: () => import("./screens/onboarding.tsx") },
+      ...(import.meta.env.DEV ? [{ path: "dev/judgment", lazy: () => import("../../../../packages/features/src/judgment/preview.tsx") }] : []), // 개발 전용(AR-06-037), 릴리스 번들 제외
       {
         element: <AppShell />,
         children: [
