@@ -9,7 +9,7 @@
     "tauri": "tauri",
     "lint": "eslint src vite.config.ts env-allowlist.ts env-allowlist.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test env-allowlist.test.ts"
+    "test": "node --test env-allowlist.test.ts \"src/workers/*.test.ts\""
   },
   "dependencies": {
     "@arch-studio/domain": "workspace:*",
