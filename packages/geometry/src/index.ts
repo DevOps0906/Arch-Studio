@@ -7,3 +7,20 @@ export { area, area2 } from "./area.ts";
 export { union } from "./boolean.ts";
 export { offset, type OffsetJoin, type OffsetOptions } from "./offset.ts";
 export { compareDistance, distance, type DistanceResult } from "./distance.ts";
+export {
+  SolidError,
+  canonicalMesh,
+  closeMesh,
+  closedMeshIssue,
+  loadSolidKernel,
+  meshVolume,
+  meshVolume6,
+  volumeToString,
+  type IntMesh,
+  type LoadSolidOptions,
+  type Point3,
+  type RegionNode,
+  type SolidKernel,
+  type SolidErrorCode,
+  type SolidNode,
+} from "./solid/index.ts";

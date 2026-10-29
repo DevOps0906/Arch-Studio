@@ -13,7 +13,10 @@
     "test:golden": "node --test src/golden.test.ts",
     "golden:update": "node ../../scripts/rule-packs/update-golden.ts",
     "bench": "node ../../scripts/rule-packs/bench-judge.ts",
-    "manifest": "node ../../scripts/rule-packs/manifest.ts"
+    "manifest": "node ../../scripts/rule-packs/manifest.ts",
+    "test:golden:envelope": "node --test src/envelope/golden.test.ts",
+    "golden:envelope:update": "node src/envelope/update-golden.mjs",
+    "bench:envelope": "node src/envelope/bench.mjs"
   },
   "dependencies": {
     "@arch-studio/domain": "workspace:*",

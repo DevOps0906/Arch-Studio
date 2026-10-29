@@ -26,3 +26,22 @@ export {
   type ReasonCode,
   type WarningCode,
 } from "./judge.ts";
+export {
+  ENVELOPE_ENGINE_VERSION,
+  ENVELOPE_REASON_MESSAGES,
+  buildEnvelope,
+  serializeEnvelope,
+  northVector,
+  sinCosDeg,
+  sunlightParamsSchema,
+  type EnvelopeConstraint,
+  type EnvelopeConstraintKey,
+  type EnvelopeOptions,
+  type EnvelopeOutput,
+  type EnvelopeReason,
+  type EnvelopeStatus,
+  type EnvelopeWarning,
+  type EnvelopeWarningCode,
+  type SunlightBand,
+  type SunlightParams,
+} from "./envelope/index.ts";

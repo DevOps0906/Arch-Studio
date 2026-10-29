@@ -11,3 +11,13 @@
 
 ## @arch-studio/domain
 - zod 3.25.76 — MIT License, Copyright (c) Colin McDonnell. https://github.com/colinhacks/zod
+
+## @arch-studio/geometry — 솔리드 래퍼 (AR-06-016)
+- manifold-3d 3.5.4 (`manifold.js` + `manifold.wasm`만 사용) — Apache License 2.0, Copyright Emmett Lalish 외 Manifold 기여자.
+  https://github.com/elalish/manifold · tarball sha256 `cf57c91fcd33b6315bff28e424ac8c5f04acb5410e9dd8e9886838303910c568`.
+  WASM 안에 포함된 Clipper2(BSL-1.0, © Angus Johnson)·oneTBB(Apache-2.0) 고지는 Manifold 저장소 LICENSE·README를 따른다(배포 전 원문 대조 필요).
+- 설치 시 함께 깔리는 manifold-3d 전이 의존성(manifoldCAD·glTF 도구용, 엔진은 import하지 않아 웹 번들에 들어가지 않음):
+  @gltf-transform/core·extensions·functions 4.5.1(MIT), @jscadui/3mf-export 0.5.0(MIT), fflate 0.8.3(MIT), commander 13.1.0(MIT),
+  magic-string 0.30.21(MIT), fast-xml-parser 5.11.2(MIT), convert-source-map 2.0.0(MIT), @jridgewell/*(MIT), ndarray 계열(MIT),
+  semver 7.8.5(ISC), detect-libc 2.1.2(Apache-2.0), sharp 0.35.5(Apache-2.0) + @img/sharp-* 네이티브 바이너리(Apache-2.0 AND **LGPL-3.0-or-later**, libvips).
+  설치형(Tauri) 패키징에 node_modules를 넣지 않으면 배포물에 포함되지 않는다 — 포함 여부는 패키징 단계에서 확인한다.

@@ -1,0 +1,378 @@
+{
+  "application_date": "2000-03-01",
+  "constraints": [
+    {
+      "applied": true,
+      "applied_params": {
+        "max_pct": 40
+      },
+      "basis": [
+        {
+          "article": "가짜 조례 제1조",
+          "effective_from": "2000-01-01",
+          "law": "테스트법(가짜)",
+          "ordinance": true
+        }
+      ],
+      "key": "coverage",
+      "reasons": [],
+      "rule_ids": [
+        "coverage.fake-local"
+      ],
+      "status": "applied"
+    },
+    {
+      "applied": true,
+      "applied_params": {
+        "max_mm": 12000
+      },
+      "basis": [
+        {
+          "article": "가짜 제3조",
+          "effective_from": "2000-01-01",
+          "law": "테스트법(가짜)",
+          "ordinance": false
+        }
+      ],
+      "key": "height",
+      "reasons": [],
+      "rule_ids": [
+        "height.fake"
+      ],
+      "status": "applied"
+    },
+    {
+      "applied": true,
+      "applied_params": {
+        "bands": [
+          {
+            "min_distance_mm": 1000,
+            "up_to_mm": 3000
+          },
+          {
+            "distance_ratio": {
+              "den": 1,
+              "num": 1
+            },
+            "up_to_mm": null
+          }
+        ],
+        "road_edges": "exempt"
+      },
+      "basis": [
+        {
+          "article": "가짜 제4조(구)",
+          "effective_from": "2000-01-01",
+          "law": "테스트법(가짜)",
+          "ordinance": false
+        }
+      ],
+      "key": "sunlight",
+      "reasons": [],
+      "rule_ids": [
+        "sunlight.fake-old"
+      ],
+      "status": "applied"
+    },
+    {
+      "applied": true,
+      "applied_params": {
+        "min_mm": 1500
+      },
+      "basis": [
+        {
+          "article": "가짜 제5조",
+          "effective_from": "2000-01-01",
+          "law": "테스트법(가짜)",
+          "ordinance": false
+        }
+      ],
+      "edge_class": "road",
+      "key": "setback",
+      "reasons": [],
+      "rule_ids": [
+        "setback.fake-road"
+      ],
+      "status": "applied"
+    },
+    {
+      "applied": true,
+      "applied_params": {
+        "min_mm": 1000
+      },
+      "basis": [
+        {
+          "article": "가짜 제6조",
+          "effective_from": "2000-01-01",
+          "law": "테스트법(가짜)",
+          "ordinance": false
+        }
+      ],
+      "edge_class": "adjacent",
+      "key": "setback",
+      "reasons": [],
+      "rule_ids": [
+        "setback.fake-adjacent"
+      ],
+      "status": "applied"
+    }
+  ],
+  "engine_version": "envelope-0.1.0",
+  "footprint": [
+    {
+      "holes": [],
+      "outer": [
+        [
+          1000,
+          1500
+        ],
+        [
+          19000,
+          1500
+        ],
+        [
+          19000,
+          14000
+        ],
+        [
+          1000,
+          14000
+        ]
+      ]
+    }
+  ],
+  "footprint_area_mm2": 225000000,
+  "max_building_area_mm2": 120000000,
+  "rule_pack_version": "2000.01.1",
+  "solid": {
+    "triangles": [
+      [
+        0,
+        1,
+        4
+      ],
+      [
+        0,
+        4,
+        6
+      ],
+      [
+        0,
+        5,
+        11
+      ],
+      [
+        0,
+        6,
+        5
+      ],
+      [
+        0,
+        11,
+        1
+      ],
+      [
+        1,
+        2,
+        4
+      ],
+      [
+        1,
+        7,
+        2
+      ],
+      [
+        1,
+        9,
+        7
+      ],
+      [
+        1,
+        11,
+        9
+      ],
+      [
+        2,
+        3,
+        4
+      ],
+      [
+        2,
+        7,
+        3
+      ],
+      [
+        3,
+        7,
+        8
+      ],
+      [
+        3,
+        8,
+        10
+      ],
+      [
+        3,
+        10,
+        4
+      ],
+      [
+        4,
+        10,
+        6
+      ],
+      [
+        5,
+        6,
+        14
+      ],
+      [
+        5,
+        13,
+        11
+      ],
+      [
+        5,
+        14,
+        13
+      ],
+      [
+        6,
+        10,
+        14
+      ],
+      [
+        7,
+        9,
+        8
+      ],
+      [
+        8,
+        9,
+        10
+      ],
+      [
+        9,
+        11,
+        12
+      ],
+      [
+        9,
+        12,
+        10
+      ],
+      [
+        10,
+        12,
+        14
+      ],
+      [
+        11,
+        13,
+        12
+      ],
+      [
+        12,
+        13,
+        14
+      ]
+    ],
+    "vertices": [
+      [
+        1000,
+        1500,
+        0
+      ],
+      [
+        1000,
+        1500,
+        3000
+      ],
+      [
+        1000,
+        1500,
+        12000
+      ],
+      [
+        1000,
+        4608,
+        12000
+      ],
+      [
+        1000,
+        12402,
+        3000
+      ],
+      [
+        1000,
+        14000,
+        0
+      ],
+      [
+        1000,
+        14000,
+        3000
+      ],
+      [
+        14001,
+        1500,
+        12000
+      ],
+      [
+        14001,
+        4608,
+        12000
+      ],
+      [
+        18501,
+        1500,
+        3000
+      ],
+      [
+        18501,
+        12402,
+        3000
+      ],
+      [
+        19000,
+        1500,
+        0
+      ],
+      [
+        19000,
+        1500,
+        3000
+      ],
+      [
+        19000,
+        14000,
+        0
+      ],
+      [
+        19000,
+        14000,
+        3000
+      ]
+    ]
+  },
+  "top_mm": 12000,
+  "top_source": "height_rule",
+  "volume_mm3": "1662804045000",
+  "warnings": [
+    {
+      "code": "SCHEDULED_RULES",
+      "message": "신청 예정일(2000-03-01) 뒤에 시행되는 예정 규칙 2건이 있습니다(엔벨로프에 반영하지 않음).",
+      "rule_ids": [
+        "far.fake-future",
+        "sunlight.fake-new"
+      ]
+    },
+    {
+      "code": "FOOTPRINT_EXCEEDS_COVERAGE",
+      "message": "엔벨로프 바닥이 건폐율 한도보다 넓습니다. 매스 바닥 면적은 건폐율 한도 안이어야 합니다.",
+      "rule_ids": [
+        "coverage.fake-local"
+      ]
+    }
+  ]
+}

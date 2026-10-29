@@ -1,0 +1,102 @@
+{
+  "model": {
+    "floor_layouts": [],
+    "masses": [
+      {
+        "base_level_mm": 0,
+        "floors": [
+          {
+            "height_mm": 3000,
+            "id": "f1",
+            "level": 1,
+            "use": "가짜용도A"
+          },
+          {
+            "height_mm": 3000,
+            "id": "f2",
+            "level": 2,
+            "use": "가짜용도A"
+          }
+        ],
+        "footprint": {
+          "outer": [
+            [
+              2000,
+              2000
+            ],
+            [
+              12000,
+              2000
+            ],
+            [
+              12000,
+              10000
+            ],
+            [
+              2000,
+              10000
+            ]
+          ]
+        },
+        "id": "m1",
+        "roof": {
+          "type": "flat"
+        }
+      }
+    ],
+    "meta": {
+      "created_by_engine_version": "0.0.0"
+    },
+    "program": {
+      "checklist_answers": {},
+      "targets": [],
+      "user_locked_rows": []
+    },
+    "rule_context": {
+      "application_date": "2000-06-30",
+      "municipality_code": "T-OK",
+      "ordinance_applied": true,
+      "rule_pack_version": "2000.01.1"
+    },
+    "schema_version": 1,
+    "site": {
+      "boundary": {
+        "outer": [
+          [
+            0,
+            0
+          ],
+          [
+            20000,
+            0
+          ],
+          [
+            20000,
+            15000
+          ],
+          [
+            0,
+            15000
+          ]
+        ]
+      },
+      "north_angle_deg": 0,
+      "parcel": {},
+      "roads": [
+        {
+          "edge_index": 0,
+          "width_mm": 6000
+        }
+      ],
+      "zoning": {
+        "districts": [],
+        "use_district": "가짜주거"
+      }
+    },
+    "units": "mm"
+  },
+  "options": {
+    "cap_height_mm": 30000
+  },
+  "pack": "fixture"
+}
