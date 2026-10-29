@@ -61,6 +61,16 @@ const RESTRICTIONS = {
     })(),
     message: "플랫폼 이름을 직접 검사하지 않는다. @arch-studio/shell-bridge의 capabilities(hasCapability 등)로 분기한다(ADR-001 2.1).",
   },
+  // 인증 단계 분기(AUTH_MODE·VITE_AUTH_MODE)는 인증 경로(AUTH_PATHS)에서만 읽는다(AUTH_ROADMAP.md 2.4·9장, AR-06-008).
+  // 잡는 모양: `x.AUTH_MODE`, `x["AUTH_MODE"]`, 구조 분해·식별자 `AUTH_MODE`(VITE_ 접두 포함). 템플릿 리터럴 우회는 boundary.test.ts(grep)가 잡는다.
+  authMode: {
+    syntax: [
+      "MemberExpression[property.name=/^(VITE_)?AUTH_MODE$/]",
+      "Literal[value=/^(VITE_)?AUTH_MODE$/]",
+      "Identifier[name=/^(VITE_)?AUTH_MODE$/]",
+    ],
+    message: "AUTH_MODE·VITE_AUTH_MODE는 인증 경로(lib/auth, shell-bridge/src/auth, features/src/auth)에서만 읽는다. 기능 코드는 isMockAuthAllowed 등 판정 결과만 쓴다.",
+  },
 };
 
 const TEST_FILES = ["**/*.test.ts", "**/*.test.tsx"];
@@ -129,6 +139,16 @@ const NO_REEXPORT = [
 const WEB_SERVER = ["apps/web/src/server/**"];
 const SHELL_BRIDGE = ["packages/shell-bridge/**"];
 const THREE_ALLOWED = ["apps/web/src/components/hero3d/**", "packages/features/src/modeler/**"];
+// 인증 경로: authMode 묶음만 빠진다. env 스키마·데스크톱 env 허용 목록은 변수 "선언"이라 같은 예외(boundary.test.ts와 같은 목록).
+const AUTH_PATHS_DEFAULT = [
+  "apps/web/src/lib/auth/**",
+  "packages/features/src/auth/**",
+  "apps/web/src/lib/env/schema.ts",
+  "apps/web/src/lib/env/schema.test.ts",
+  "apps/desktop/env-allowlist.ts",
+  "apps/desktop/env-allowlist.test.ts",
+];
+const AUTH_PATHS_SHELL = ["packages/shell-bridge/src/auth/**"];
 const ENGINE = ["domain", "geometry", "rules", "program", "massing", "layout", "drafting", "io"].map(
   (name) => `packages/${name}/**`,
 );
@@ -139,13 +159,16 @@ export default tseslint.config(
   },
   ...tseslint.configs.recommended,
   { plugins: { arch: { rules: { "no-service-client": serviceClientRule } } } },
-  ...area(undefined, ["tauri", "three", "spikes", "platform"], [], { "arch/no-service-client": "error" }),
-  ...area(WEB_SERVER, ["tauri", "three", "spikes", "platform"], NO_REEXPORT, { "arch/no-service-client": "off" }),
+  ...area(undefined, ["tauri", "three", "spikes", "platform", "authMode"], [], { "arch/no-service-client": "error" }),
+  ...area(WEB_SERVER, ["tauri", "three", "spikes", "platform", "authMode"], NO_REEXPORT, { "arch/no-service-client": "off" }),
   // shell-bridge는 플랫폼 판정을 하는 유일한 곳이라 platform 묶음을 뺀다.
-  ...area(SHELL_BRIDGE, ["three", "spikes"]),
-  ...area(THREE_ALLOWED, ["tauri", "spikes", "platform"]),
+  ...area(SHELL_BRIDGE, ["three", "spikes", "authMode"]),
+  ...area(THREE_ALLOWED, ["tauri", "spikes", "platform", "authMode"]),
   // 엔진은 결정적 순수 함수만: 시간·난수·네트워크·환경 변수·타이머·Node I/O 금지(.claude/rules/engine.md).
-  ...area(ENGINE, ["tauri", "three", "spikes", "node", "platform"]),
+  ...area(ENGINE, ["tauri", "three", "spikes", "node", "platform", "authMode"]),
+  // 인증 경로는 부모 영역의 묶음에서 authMode만 뺀다(뒤 설정이 덮어쓰므로 영역 설정들 뒤에 둔다).
+  ...area(AUTH_PATHS_DEFAULT, ["tauri", "three", "spikes", "platform"]),
+  ...area(AUTH_PATHS_SHELL, ["three", "spikes"]),
   {
     files: ENGINE,
     rules: {
