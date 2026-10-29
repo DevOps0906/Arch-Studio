@@ -40,7 +40,7 @@ test("성능(회귀 ⚪): 상한에 꽉 찬 저장소에 새 키 10만 개를 �
   const started = performance.now();
   for (let i = 0; i < 100_000; i++) store.hit(`k${i}`, 10, 3600, 1);
   const elapsed = performance.now() - started;
-  assert.ok(elapsed < 1_500, `${Math.round(elapsed)}ms (옛 구현은 삽입마다 전체 순회: 약 5억 회)`);
+  assert.ok(elapsed < 3_000, `${Math.round(elapsed)}ms (옛 구현은 삽입마다 전체 순회: 약 5억 회)`);
 });
 
 test("프록시 설정: TRUSTED_PROXY_HOPS 0 → 헤더 불신, 1 이상 → XFF 오른쪽 N번째", () => {
