@@ -16,7 +16,8 @@
     "db:convert:check": "node scripts/db/convert.mjs",
     "db:check": "node scripts/db/check.mjs",
     "db:types": "node scripts/db/gen-types.mjs",
-    "test:db": "node --test scripts/db/convert.test.mjs"
+    "test:db": "node --test scripts/db/convert.test.mjs",
+    "test:rls": "node scripts/test-rls/run.mjs --target mono"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "16.2.12",

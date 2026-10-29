@@ -1,4 +1,4 @@
--- 실행: node products/arch-studio/supabase/monolith/tests/run-smoke.mjs --target mod | mono
+-- 실행: node scripts/test-rls/run.mjs --target mono | mod   (pnpm test:rls = mono, 선행: npx supabase@2.122.0 db reset --local)
 --       러너가 @S@/@C@ 를 모듈러는 arch/core, 모놀리스는 public/public 으로 치환하고, "-- AS <행위자>" 마다
 --       역할(service_role 또는 authenticated + request.jwt.claim.sub)을 바꿔 "-- TEST" 다음 한 문장씩 실행한다.
 -- =====================================================================
@@ -163,6 +163,10 @@ select * from @S@.eligible_rule_packs();
 select * from @S@.save_cloud_project(gen_random_uuid(), 'c', (select oc from t_ids)::text || '/arch/project_snapshot/' || gen_random_uuid()::text || '/' || gen_random_uuid()::text || '.json', 0);
 
 -- AS service
+-- TEST service FOR ALL 정책 0(명령별 정책만) | expect=rows:0
+select 1 from pg_catalog.pg_policies where schemaname in ('@S@', '@C@') and cmd = 'ALL';
+-- TEST service RLS 꺼진 테이블 0 | expect=rows:0
+select 1 from pg_catalog.pg_class c join pg_catalog.pg_namespace n on n.oid = c.relnamespace where n.nspname in ('@S@', '@C@') and c.relkind = 'r' and not c.relrowsecurity;
 -- TEST service 영구 라이선스 활성화 기기 1 | expect=ok
 select @S@.activate_license(encode(extensions.digest('AAAAABBBBBCCCCCDDDDD', 'sha256'), 'hex'), repeat('1', 64), 'aaaaaaaa-0000-4000-8000-000000000001');
 -- TEST service 같은 기기 재활성화는 같은 행(활성 1) | expect=rows:1
@@ -313,6 +317,10 @@ select 1 where @S@.org_features((select ob from t_ids)) ->> 'state' = 'licensed'
 select @S@.deactivate_activation((select id from @S@.license_activations where device_label = 'd1'));
 
 -- AS B
+-- TEST B(outsider) 다른 조직 렌더 안 보임 | expect=rows:0
+select 1 from @S@.renders where org_id = (select oa from t_ids);
+-- TEST B(outsider) 다른 조직 기기 활성화 안 보임 | expect=rows:0
+select 1 from @S@.license_activations where org_id = (select oa from t_ids);
 -- TEST B 다른 조직 기기 해제 P0002 | expect=sqlstate:P0002
 select @S@.deactivate_activation((select id from @S@.license_activations where device_label = 'd1'));
 
