@@ -8,6 +8,6 @@
 - 열린 결정: OH Architecture 확인, DB 예외(073·074 계열), 보안 L2(S-1), 기간제 가격, 본인인증 제공자, 법규 범위, 규칙 세트·단가표 정본 위치(018), 면적표 같은 이름 실 허용 여부
 - 주의: 3000번 포트 Windows 예약 → dev는 `next dev -H 127.0.0.1 -p 3123` + 메모리 env. 로컬 Supabase 5532x(컨테이너 supabase_db_Arch-Studio). 검사: `pnpm test`(db 변환 골든 포함)·`pnpm test:rls`(db reset 먼저)·`node scripts/db/check.mjs`. 결정 기록은 tasks/logs/AR-06-NNN.md. bash에서 cargo는 `export PATH="$HOME/.cargo/bin:$PATH"`. 위임 기본 Opus, 고난도 검증 Fable, Codex astra 금지
 - 뷰 후속(023~025 보고): rules가 면적 분해(건축면적·연면적·층별·용도별 ㎡)·최단 이격 점 쌍·장애인 주차 대수·일조사선 초과 구간을 JudgmentResult/envelope로 내보내야 뷰가 값을 재계산하지 않음(현재 구조적 입력 extras/area_breakdown으로 대체)
-- 발견: geometry offset 안쪽(-d) 가는 삼각형 [[0,1],[-1,24],[-1,0]] d=24 miter가 빈 결과 대신 원본 밖 다각형 반환(속성 테스트 무작위 시드에서 간헐 실패, 014 잠복 결함)
+- 수정됨: geometry offset 안쪽 오프셋 바늘 꼭짓점 결함(014 잠복) — 판정을 정수 외적 부호로 교체, 회귀 테스트 추가(tasks/logs/AR-06-014.md [FIX])
 - 후속(작업 표 '발견한 문제'): reconcile refunded 전이 마이그레이션, CI 신설(S-7, test:rls·db:check 포함), ADR-001·071/072 문서 정정, 내부 API 경로·타임아웃(047), design-preview 랜딩 덮어쓰기 결함
 - 테스트 상태: pnpm -r lint·typecheck·test 통과, RLS 129+9, db check 6/6
