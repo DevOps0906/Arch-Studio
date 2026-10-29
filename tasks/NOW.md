@@ -11,5 +11,6 @@
 - 수정됨: geometry offset 안쪽 오프셋 바늘 꼭짓점 결함(014 잠복) — 판정을 정수 외적 부호로 교체, 회귀 테스트 추가(tasks/logs/AR-06-014.md [FIX])
 - 017 후속: 워커 호스트 연결(new Worker, src/routes)·실제 RulePackProvider·엔벨로프 op(솔리드 wasm)·suggest_mass/validate_layout/import_dxf는 해당 패키지 구현 후 연결. export·import 레인은 문서(마지막 1건만)와 달리 응답 못 받은 요청을 모두 순서대로 재전송(출력 유실 방지) — 04_API/02_ARCH 2.4절 정정 필요
 - 040 병합됨(상태=진행): 보안 리뷰 전·C-3(서명 키 규격) 미결이라 완료 처리 안 함. 운영 전 필수: 레이트리밋 저장소 메모리→DB/Redis, 세션 조직 불일치(RPC 변경)·기기 한도 단위(074a), TRUSTED_PROXY_HOPS를 deps.ts에 연결(env 스키마에는 추가됨), 로컬 Supabase 통합 테스트 S1~S9, canonicalJson ↔ Rust 041 규칙 일치
+- 005·046 병합됨(상태=진행, 보안 리뷰 전). 046 후속: zod에 intake·review·layout 결과 스키마 없음(pydantic만 PENDING_ZOD), 루트 pnpm test·CI api.yml 연결, jti/실행 저장소 메모리→공유, .env.example에 AI_TOKEN_JWKS_URL·AI_TOKEN_JWKS·AI_API_MAX_BODY_BYTES·AI_TOKEN_LEEWAY_S 추가 필요. 005 후속: tests/capabilities.rs·ipc_commands.rs가 Linux에서 실패(출처가 Windows 고정, 006 소유, 변경 전부터), 실제 Windows 키체인 사람 확인
 - 후속(작업 표 '발견한 문제'): reconcile refunded 전이 마이그레이션, CI 신설(S-7, test:rls·db:check 포함), ADR-001·071/072 문서 정정, 내부 API 경로·타임아웃(047), design-preview 랜딩 덮어쓰기 결함
 - 테스트 상태: pnpm -r lint·typecheck·test 통과, RLS 129+9, db check 6/6

@@ -20,11 +20,11 @@
 | AR-06-012 | 디자인 정답 확정(4단계) | W0-D | 011 | 낮음 | codex-designer⇄designer | 완료 |
 | AR-V2-01 | 공용 compliance 모듈 적용 | W1 | W0, compliance 출시 | 높음 | builder | 대기 |
 | AR-06-002 | RLS·권한 회귀 스모크 | W1 | 001 | 높음 | challenger→builder | 완료 |
-| AR-06-005 | shell-bridge·키체인·Supabase 클라이언트 | W1 | 004 | 높음 | builder | 대기 |
+| AR-06-005 | shell-bridge·키체인·Supabase 클라이언트 | W1 | 004 | 높음 | builder | 진행 |
 | AR-06-006 | Rust 로컬 명령(local_db·fs·export) | W1 | 004 | 보통 | builder | 완료 |
 | AR-06-014 | 지오메트리 2D(합집합·오프셋·면적) | W1 | 013 | 높음 | builder | 완료 |
 | AR-06-018 | 프로그램·개략 공사비 엔진 | W1 | 013 | 보통 | builder | 완료 |
-| AR-06-046 | AI 서비스 설치·arch 스키마 동치 테스트 | W1 | 001, 013 | 높음 | builder | 대기 |
+| AR-06-046 | AI 서비스 설치·arch 스키마 동치 테스트 | W1 | 001, 013 | 높음 | builder | 진행 |
 | AR-06-048 | 워커 골격(claim_jobs·실패·크론) | W1 | 001 | 보통 | builder | 완료 |
 | AR-06-007 | 클라우드 API 클라이언트(재시도·오류 매핑) | W1 | 005 | 보통 | builder | 대기 |
 | AR-06-008 | 인증 Stage A: Mock 로그인·온보딩 | W1 | 001, 003, 005 | 높음 | builder | 대기 |
