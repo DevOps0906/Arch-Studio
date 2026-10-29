@@ -42,11 +42,12 @@ export interface ProviderLookupResult {
   crs: typeof VWORLD_CRS;
   /** 외곽 고리(닫는 점 없음, 제공자 좌표 그대로, m). */
   ring_m: PointM[];
+  /** 용도지역 조회가 실패하면 { null, [] }로 내리고 notes에 "zoning_unavailable"을 남긴다(경계는 돌려준다). */
   zoning: { use_district: string | null; districts: string[] };
   /** 제공자에 도로 폭 정보가 없어 비운다(사용자가 변마다 입력). */
   roads: { edge_index: number; width_m?: number }[];
   /** 정리 과정에서 버린 것(다중 필지 조각·구멍). 화면이 확인 안내에 쓴다. */
-  notes: ("multipart" | "holes_dropped")[];
+  notes: ("multipart" | "holes_dropped" | "zoning_unavailable")[];
   datasets: string[];
 }
 
@@ -356,22 +357,28 @@ export function createVworldProvider(options: VworldOptions): SiteLookupProvider
               ? cached
               : parseParcel(await call(deadline, VWORLD_PATHS.data, parcelParams({ attrFilter: `pnu:=:${resolved.pnu}` }), signal), resolved.pnu);
           const [zx, zy] = resolved.point ?? bboxCenter(parcel.ring_m);
-          const zoningJson = await call(
-            deadline,
-            VWORLD_PATHS.data,
-            { service: "data", request: "GetFeature", version: "2.0", data: VWORLD_DATASETS.zoning, geomFilter: `POINT(${zx} ${zy})`, geometry: "false", attribute: "true", crs: VWORLD_CRS, size: "10" },
-            signal,
-          );
-          const zones = parseZoning(zoningJson);
+          // 용도지역은 경계와 별개의 보조 정보다: 여기서 실패해도 이미 기록(차감)된 경계를 버리지 않는다.
+          let zones: string[] | null = null;
+          try {
+            const zoningJson = await call(
+              deadline,
+              VWORLD_PATHS.data,
+              { service: "data", request: "GetFeature", version: "2.0", data: VWORLD_DATASETS.zoning, geomFilter: `POINT(${zx} ${zy})`, geometry: "false", attribute: "true", crs: VWORLD_CRS, size: "10" },
+              signal,
+            );
+            zones = parseZoning(zoningJson);
+          } catch (e) {
+            if (!(e instanceof SiteError)) throw e;
+          }
           return {
             pnu: parcel.pnu,
             address_label: parcel.address_label,
             crs: VWORLD_CRS,
             ring_m: parcel.ring_m,
-            zoning: { use_district: zones[0] ?? null, districts: zones.slice(1) },
+            zoning: zones ? { use_district: zones[0] ?? null, districts: zones.slice(1) } : { use_district: null, districts: [] },
             roads: [],
-            notes: parcel.notes,
-            datasets: [VWORLD_DATASETS.parcel, VWORLD_DATASETS.zoning],
+            notes: zones ? parcel.notes : [...parcel.notes, "zoning_unavailable"],
+            datasets: zones ? [VWORLD_DATASETS.parcel, VWORLD_DATASETS.zoning] : [VWORLD_DATASETS.parcel],
           };
         },
       };

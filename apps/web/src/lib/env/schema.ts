@@ -32,7 +32,7 @@ export const serverEnvSchema = publicEnvSchema
     TOSS_WEBHOOK_SECRET: required,
     LICENSE_SIGNING_PRIVATE_KEY: required,
     LICENSE_SIGNING_KID: required,
-    SITE_LOOKUP_HASH_KEY: required,
+    SITE_LOOKUP_HASH_KEY: z.string().min(32),
     AI_TOKEN_PRIVATE_KEY: required,
     AI_TOKEN_KID: required,
     ARCH_WORKER_INTERNAL_KEY: required,

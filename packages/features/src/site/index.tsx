@@ -185,7 +185,7 @@ function SiteScreen({ record, preview }: { record: ProjectRecord; preview: Retur
     if (next.step === "choose") {
       bytesRef.current = null;
       setCandidates({
-        items: next.candidates.map(candidateFromDxf),
+        items: next.candidates.map((c) => candidateFromDxf(c, next.info)),
         selected: 0,
         notice: "DXF에서 찾은 닫힌 선입니다. 대지 경계로 쓸 선을 고르세요. 정북 방향은 아래 속성에서 지정합니다.",
         warning: next.warning,
@@ -216,7 +216,7 @@ function SiteScreen({ record, preview }: { record: ProjectRecord; preview: Retur
       else if (r.next.step === "choose") {
         const next = r.next;
         bytesRef.current = null;
-        setCandidates({ items: next.candidates.map(candidateFromDxf), selected: 0, notice: "DXF에서 찾은 닫힌 선입니다. 대지 경계로 쓸 선을 고르세요.", warning: next.warning });
+        setCandidates({ items: next.candidates.map((c) => candidateFromDxf(c, next.info)), selected: 0, notice: "DXF에서 찾은 닫힌 선입니다. 대지 경계로 쓸 선을 고르세요.", warning: next.warning });
         setFlow({ step: "idle" });
       } else setFlow(r.next);
     } else if (flow.step === "ask_unit") void parseDxf(u);

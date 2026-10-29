@@ -296,6 +296,13 @@ export function CandidateList({
             <input type="radio" name={name} className="mt-1" checked={selected === i} onChange={() => onSelect(i)} />
             <span className="flex min-w-0 flex-col">
               <span className="truncate text-body font-medium text-fg">{c.label}</span>
+              {c.unit_text || c.extent_mm ? (
+                <span className="text-caption font-medium text-fg tabular-nums">
+                  {c.unit_text ?? ""}
+                  {c.unit_text && c.extent_mm ? " · " : ""}
+                  {c.extent_mm ? `외접 ${formatM(c.extent_mm[0])}m × ${formatM(c.extent_mm[1])}m` : ""}
+                </span>
+              ) : null}
               <span className="text-caption text-fg-2 tabular-nums">
                 면적 {siteMetrics(c.outer)?.area_m2_text ?? "-"}㎡ · 둘레 {formatM(c.perimeter_mm)}m · 꼭짓점 {formatMm(c.outer.length)}개
                 {c.use_district ? ` · ${c.use_district}` : ""}
@@ -327,7 +334,7 @@ export function UnitDialog({ flow, onChoose, onCancel }: { flow: DxfFlow; onChoo
   const message = open ? flow.message : "";
   const choices = unitChoices(flow);
   const extentOf = (u: DxfUnit): string | null => {
-    if (flow.step !== "ask_unit") return null;
+    if (flow.step !== "ask_unit" && flow.step !== "confirm_unit") return null;
     const o = flow.options.find((x) => x.unit === u);
     return o ? `가장 긴 변 ${formatM(o.reference_extent_mm)}m${o.plausible ? " · 대지로 그럴듯함" : ""}` : null;
   };

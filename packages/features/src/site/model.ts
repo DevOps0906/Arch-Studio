@@ -252,6 +252,10 @@ export interface SiteCandidateView {
   /** 원점 이동량(mm, 조회 좌표계의 원점). 표시·추적용. */
   origin_mm?: [number, number];
   notes: string[];
+  /** DXF 후보: 외접 사각형 가로×세로(mm). 단위 오류(예: 100배)를 눈으로 잡게 항상 보여 준다. */
+  extent_mm?: [number, number];
+  /** DXF 후보: "적용 단위: cm(헤더)" 같은 문구. */
+  unit_text?: string;
 }
 
 export interface LookupData {
@@ -294,13 +298,14 @@ export function parseLookupData(raw: unknown): LookupData | null {
   const remaining = Number.isSafeInteger(d["remaining_today"]) ? (d["remaining_today"] as number) : null;
   const source = d["source"] as Record<string, unknown> | undefined;
   const notice = str(source?.["notice"], 300) ?? "공공 데이터 값은 입력 후보이며 판정 기준이 아닙니다.";
-  const notes = Array.isArray(d["notes"]) ? (d["notes"] as unknown[]).filter((n): n is string => n === "multipart" || n === "holes_dropped") : [];
+  const notes = Array.isArray(d["notes"]) ? (d["notes"] as unknown[]).filter((n): n is string => n === "multipart" || n === "holes_dropped" || n === "zoning_unavailable") : [];
   return { parcel: { pnu, address_label: label }, crs: "EPSG:5186", boundary_m: pts, zoning: { use_district: use, districts }, remaining_today: remaining, notice, notes };
 }
 
 const NOTE_TEXT: Readonly<Record<string, string>> = {
   multipart: "필지가 여러 조각이라 가장 큰 조각만 가져왔습니다.",
   holes_dropped: "필지 안쪽 구멍은 가져오지 않았습니다.",
+  zoning_unavailable: "용도지역을 가져오지 못했습니다. 경계만 반영되며 용도지역은 아래 속성에서 직접 입력하세요.",
 };
 
 /**

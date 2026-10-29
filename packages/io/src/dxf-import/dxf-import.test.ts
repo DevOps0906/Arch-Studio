@@ -95,6 +95,11 @@ test("단위 모호: INSUNITS=0(단위 없음), 헤더와 크기 모순, 지원 
   // 호출자 단위가 헤더와 다르면 표시
   const mis = ok(importDxf(doc({ insunits: 4, entities: [rect(SITE, 0, 0, 20, 15)] }), { unit: "m" }));
   assert.equal(mis.unit.declared_mismatch, true);
+  // ok 결과도 단위별 환산 크기(options)를 돌려준다: 화면이 선언 외 단위가 그럴듯한지 확인하는 근거
+  const hdr = ok(importDxf(doc({ insunits: 5, entities: [rect(SITE, 0, 0, 30000, 20000)] })));
+  assert.deepEqual(hdr.unit.options.map((o) => o.unit), ["mm", "cm", "m"]);
+  assert.equal(hdr.unit.options.find((o) => o.unit === "mm")?.plausible, true);
+  assert.equal(hdr.unit.options.find((o) => o.unit === "cm")?.plausible, true);
 });
 
 test("미지원 엔티티는 경고 AR054 후 무시: 종류·개수 요약", () => {

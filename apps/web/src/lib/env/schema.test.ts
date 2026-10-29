@@ -14,7 +14,7 @@ const complete: Record<string, string> = {
   TOSS_WEBHOOK_SECRET: "x",
   LICENSE_SIGNING_PRIVATE_KEY: "x",
   LICENSE_SIGNING_KID: "k1",
-  SITE_LOOKUP_HASH_KEY: "x",
+  SITE_LOOKUP_HASH_KEY: "site-lookup-hash-key-for-tests-0123456789",
   AI_TOKEN_PRIVATE_KEY: "x",
   AI_TOKEN_KID: "k1",
   ARCH_WORKER_INTERNAL_KEY: "x",
@@ -49,4 +49,9 @@ test("live 모드에서 AUTH_PROVIDERS가 0개면 실패", () => {
 
 test("mock 모드에서 DEV_SEED_PASSWORD가 없으면 실패", () => {
   assert.throws(() => parseEnv(serverEnvSchema, { ...complete, AUTH_MODE: "mock" }), /DEV_SEED_PASSWORD/);
+});
+
+test("SITE_LOOKUP_HASH_KEY는 32자 미만이면 기동 실패(변수 이름만)", () => {
+  assert.throws(() => parseEnv(serverEnvSchema, { ...complete, SITE_LOOKUP_HASH_KEY: "x".repeat(31) }), /SITE_LOOKUP_HASH_KEY/);
+  assert.doesNotThrow(() => parseEnv(serverEnvSchema, { ...complete, SITE_LOOKUP_HASH_KEY: "x".repeat(32) }));
 });

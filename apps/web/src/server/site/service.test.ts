@@ -24,6 +24,8 @@ interface World {
   fetchCalls: string[];
   geocode?: unknown;
   providerOff?: boolean;
+  /** 용도지역(LT_C_UQ111) 호출만 이 상태로 실패시킨다. */
+  zoningStatus?: number;
   hashKey?: string;
 }
 
@@ -41,6 +43,7 @@ function deps(w: World, rate = new MemoryRateLimitStore()): SiteLookupDeps {
   const fetch: FetchImpl = async (raw) => {
     w.fetchCalls.push(raw);
     const url = new URL(raw);
+    if (w.zoningStatus && url.searchParams.get("data") === "LT_C_UQ111") return new Response("{}", { status: w.zoningStatus });
     const body =
       url.pathname === "/req/address" ? (w.geocode ?? geocodeOk()) : url.searchParams.get("data") === "LT_C_UQ111" ? zoningOk(["제1종일반주거지역", "지구단위계획구역"]) : parcelOk();
     return new Response(JSON.stringify(body), { status: 200 });
@@ -195,4 +198,21 @@ test("DB 기타 오류는 500 internal(원문 미노출)", async () => {
   const r = await call(w, pnuBody);
   assert.equal(r.status, 500);
   assert.ok(!r.text.includes("service_role"));
+});
+
+test("용도지역 호출 실패: 경계는 돌려주고(zoning null + note), 기록(차감)은 한 번, AR021이 아니다", async (t) => {
+  const logs = captureLogs(t);
+  const w = world({ zoningStatus: 503 });
+  const r = await call(w);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.ok, true);
+  const d = r.json.data!;
+  assert.equal((d["boundary_m"] as unknown[]).length, 4);
+  assert.deepEqual(d["zoning"], { use_district: null, districts: [] });
+  assert.deepEqual(d["notes"], ["zoning_unavailable"]);
+  assert.deepEqual((d["sources"] as { datasets: string[] }[])[0]?.datasets, ["LP_PA_CBND_BUBUN"]);
+  assert.equal(w.recorded.length, 1);
+  for (const s of [API_KEY, HASH_KEY]) assert.ok(!r.text.includes(s), s);
+  const all = logs.join("\n");
+  for (const s of [API_KEY, HASH_KEY, ADDRESS, FIXTURE_PNU]) assert.ok(!all.includes(s), s);
 });

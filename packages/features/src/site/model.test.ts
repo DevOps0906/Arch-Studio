@@ -196,3 +196,24 @@ test("설계 모델 JSON이 깨졌으면 ok:false", () => {
   assert.deepEqual(parseDesignModel("{}"), { ok: false });
   assert.equal(parseDesignModel(JSON.stringify(sample())).ok, true);
 });
+
+test("조회 응답: 용도지역 없음(zoning null + note)도 후보로 쓸 수 있고 기존 용도지역을 지우지 않는다", () => {
+  const data = parseLookupData({ ...lookupRaw, zoning: { use_district: null, districts: [] }, notes: ["zoning_unavailable"] });
+  assert.ok(data);
+  assert.deepEqual(data!.zoning, { use_district: null, districts: [] });
+  const c = candidateFromLookup(data!);
+  assert.ok(c);
+  assert.match(c!.notes.join(" "), /용도지역을 가져오지 못했습니다/);
+  const base = draftFromModel(sample());
+  const d = draftWithCandidate(base, c!);
+  assert.equal(d.use_district, base.use_district);
+  assert.deepEqual(d.districts, base.districts);
+  // zoning 자체가 없거나 틀린 모양이어도 안전하게 null 처리
+  for (const z of [undefined, null, "x", { use_district: 5 }]) {
+    const p = parseLookupData({ ...lookupRaw, zoning: z });
+    assert.ok(p);
+    assert.equal(p!.zoning.use_district, null);
+    assert.deepEqual(p!.zoning.districts, []);
+    assert.ok(candidateFromLookup(p!));
+  }
+});
