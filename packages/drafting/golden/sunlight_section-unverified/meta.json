@@ -1,0 +1,8 @@
+{
+  "case_id": "sunlight_section-unverified",
+  "note": "일조사선 미확인(적용 안 함) — 사선·초과 없이 미적용 라벨",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-031"
+  ]
+}

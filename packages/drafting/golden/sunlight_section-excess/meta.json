@@ -1,0 +1,8 @@
+{
+  "case_id": "sunlight_section-excess",
+  "note": "신 기준, 3층 매스(9m) — 7m 위 비율 구간에서 사선 초과",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-031"
+  ]
+}
