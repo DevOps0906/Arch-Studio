@@ -6,13 +6,16 @@ use std::sync::Arc;
 use arch_studio_desktop_lib::commands::license::{
     KeychainClockStore, LicenseService, LicenseState, CLOCK_ACCOUNT,
 };
-use arch_studio_desktop_lib::commands::secrets::{MemoryBackend, SecretBackend};
-use arch_studio_desktop_lib::device::{current_device_hash, StaticDeviceId};
+use arch_studio_desktop_lib::commands::secrets::{BackendError, MemoryBackend, SecretBackend};
+use arch_studio_desktop_lib::device::{
+    current_device_hash, DeviceIdSource, RawDeviceId, StaticDeviceId,
+};
 use arch_studio_desktop_lib::license::codec::{b64url_decode, parse_date, parse_instant};
 use arch_studio_desktop_lib::license::rule_pack::{admit_rule_pack, RulePackRejection};
 use arch_studio_desktop_lib::license::{
-    evaluate, ClockRecord, ClockStore, KeyRing, LicenseVerdict, MemoryClockStore, VerifyInput,
-    LICENSE_CONTEXT, PRODUCTION_LICENSE_KEYS, PRODUCTION_RULEPACK_KEYS, RULEPACK_CONTEXT,
+    evaluate, ClockLoad, ClockRecord, ClockStore, KeyRing, LicenseVerdict, MemoryClockStore,
+    VerifyInput, LICENSE_CONTEXT, PRODUCTION_LICENSE_KEYS, PRODUCTION_RULEPACK_KEYS,
+    RULEPACK_CONTEXT, TEST_PUBLIC_KEYS,
 };
 use serde_json::{json, Value};
 use tauri::ipc::{CallbackFn, InvokeBody, InvokeResponseBody};
@@ -90,7 +93,7 @@ fn cross_vectors_from_040_signing() {
             now,
             build_date: parse_date("2027-01-01"),
         };
-        let (verdict, _) = evaluate(Some(&file), &input, None);
+        let (verdict, _) = evaluate(Some(&file), &input, ClockLoad::Missing);
         assert_eq!(verdict.state(), case["expect"].as_str().unwrap(), "{name}");
         // Node 참조 검증기(서명·kid만)가 통과시킨 것은 Rust도 서명 단계를 통과해야 한다(일치 확인).
         if case["node_verify"] == "ok" {
@@ -112,15 +115,22 @@ fn cross_vectors_from_040_signing() {
         now,
         build_date: parse_date("2027-01-01"),
     };
-    let check = |name: &str| evaluate(Some(&files[name]["file"].to_string()), &input, None).0;
+    let check = |name: &str| {
+        evaluate(
+            Some(&files[name]["file"].to_string()),
+            &input,
+            ClockLoad::Missing,
+        )
+        .0
+    };
     match check("perpetual") {
         LicenseVerdict::Valid(l) => {
-            assert_eq!(l.payload.sku, "perpetual_standard");
-            assert_eq!(l.payload.updates_until.as_deref(), Some("2027-10-28"));
-            assert_eq!(l.payload.issued_at, "2026-10-29T03:04:05Z");
-            assert!(l.payload.offline_valid_until.is_none());
+            assert_eq!(l.payload().sku(), "perpetual_standard");
+            assert_eq!(l.payload().updates_until(), Some("2027-10-28"));
+            assert_eq!(l.payload().issued_at(), "2026-10-29T03:04:05Z");
+            assert!(l.payload().offline_valid_until().is_none());
             // 040 computeLicenseRightsExpiry: 5키 = issued_at + 30일.
-            let e = l.payload.rights_expiry.clone().unwrap();
+            let e = l.payload().rights_expiry().cloned().unwrap();
             for k in [
                 e.web_edit,
                 e.desktop_edit,
@@ -130,33 +140,31 @@ fn cross_vectors_from_040_signing() {
             ] {
                 assert_eq!(k.as_deref(), Some("2026-11-28T03:04:05Z"));
             }
-            assert!(l.rights.desktop_edit && l.build_eligible);
+            assert!(l.rights().desktop_edit && l.build_eligible());
         }
         other => panic!("{other:?}"),
     }
     match check("trial") {
         LicenseVerdict::Valid(l) => {
             assert_eq!(
-                l.payload.offline_valid_until.as_deref(),
+                l.payload().offline_valid_until(),
                 Some("2026-11-02T00:00:00Z")
             );
-            assert!(l.payload.features.drafting_watermark);
+            assert!(l.payload().features().drafting_watermark);
         }
         other => panic!("{other:?}"),
     }
     match check("sub_ext") {
         LicenseVerdict::Valid(l) => {
-            assert!(l.rights.ai_render && l.rights.ai_chat && l.rights.web_edit);
-            assert_eq!(l.payload.rights.unwrap().devices_max, Some(2));
+            let r = l.rights();
+            assert!(r.ai_render && r.ai_chat && r.web_edit);
+            assert_eq!(l.payload().granted_rights().unwrap().devices_max, Some(2));
         }
         other => panic!("{other:?}"),
     }
     match check("unicode") {
         LicenseVerdict::Valid(l) => {
-            assert_eq!(
-                l.payload.seat_id.as_deref(),
-                Some("좌석-\"따옴표\"-\\-\u{1}-✓")
-            );
+            assert_eq!(l.payload().seat_id(), Some("좌석-\"따옴표\"-\\-\u{1}-✓"));
         }
         other => panic!("{other:?}"),
     }
@@ -176,7 +184,18 @@ fn cross_vectors_expire_and_roll_back() {
             now,
             build_date: None,
         };
-        evaluate(Some(&file), &input, prev).0.state()
+        // 기록 있음(빈 초기값). 기록 없음 규칙은 단위 테스트가 따로 본다.
+        let blank = ClockRecord {
+            last_seen: i64::MIN,
+            max_issued_at: i64::MIN,
+        };
+        evaluate(
+            Some(&file),
+            &input,
+            ClockLoad::Record(prev.unwrap_or(blank)),
+        )
+        .0
+        .state()
     };
     assert_eq!(at(until - 1, None), "valid");
     assert_eq!(at(until, None), "expired");
@@ -203,7 +222,7 @@ fn cross_vector_rule_pack_manifest() {
     let lic = evaluate(
         Some(&v["files"]["perpetual"]["file"].to_string()),
         &input,
-        None,
+        ClockLoad::Missing,
     )
     .0;
     assert!(matches!(lic, LicenseVerdict::Valid(_)));
@@ -230,7 +249,7 @@ fn cross_vector_rule_pack_manifest() {
             now: issued(&v) + 31 * 86_400,
             ..input
         },
-        None,
+        ClockLoad::Missing,
     )
     .0;
     assert_eq!(
@@ -268,6 +287,13 @@ fn production_keyrings_exclude_test_keys() {
         KeyRing::production_rulepack().kids().len(),
         PRODUCTION_RULEPACK_KEYS.len()
     );
+    // 컴파일 가드용 거부 목록(TEST_PUBLIC_KEYS)이 교차 벡터 공개키를 모두 담는다(벡터 키를 바꾸면 함께 갱신).
+    for k in &fixture_keys {
+        assert!(TEST_PUBLIC_KEYS.contains(k), "거부 목록에 없는 픽스처 키");
+    }
+    // 운영 슬롯 상수는 오류 없이 고리가 된다(오류면 production_*()이 조용히 빈 고리가 된다).
+    assert!(KeyRing::from_raw(PRODUCTION_LICENSE_KEYS).is_ok());
+    assert!(KeyRing::from_raw(PRODUCTION_RULEPACK_KEYS).is_ok());
     // 라이선스·규칙 팩 운영 키는 서로 다르다.
     for (_, a) in PRODUCTION_LICENSE_KEYS {
         assert!(PRODUCTION_RULEPACK_KEYS.iter().all(|(_, b)| a != b));
@@ -296,18 +322,123 @@ fn fixtures_do_not_contain_private_keys() {
 fn keychain_clock_store_roundtrip_and_isolation() {
     let backend = Arc::new(MemoryBackend::default());
     let store = KeychainClockStore::new(backend.clone());
-    assert_eq!(store.load(), None);
+    assert_eq!(store.load(), ClockLoad::Missing);
     let rec = ClockRecord {
         last_seen: 10,
         max_issued_at: 5,
     };
     store.save(rec);
-    assert_eq!(store.load(), Some(rec));
+    assert_eq!(store.load(), ClockLoad::Record(rec));
     assert_eq!(backend.accounts(), vec![CLOCK_ACCOUNT.to_string()]);
-    backend.set(CLOCK_ACCOUNT, b"garbage").unwrap();
-    assert_eq!(store.load(), None);
+    // 형식 오류(정상 경로에서는 생기지 않음)는 기록 없음이 아니라 Corrupt(시계 이상).
+    for garbage in [&b"garbage"[..], b"v1:1", b"\xff\xfe", b""] {
+        backend.set(CLOCK_ACCOUNT, garbage).unwrap();
+        assert_eq!(store.load(), ClockLoad::Corrupt, "{garbage:?}");
+    }
+    // 읽기 실패는 Unreadable(덮어쓰지 않음).
+    assert_eq!(
+        KeychainClockStore::new(Arc::new(FailingBackend)).load(),
+        ClockLoad::Unreadable
+    );
     // 화면 비밀 허용 키 밖이다.
     assert!(!arch_studio_desktop_lib::commands::secrets::ALLOWED_KEYS.contains(&CLOCK_ACCOUNT));
+}
+
+/// 항상 실패하는 키체인(잠김·접근 거부 흉내).
+struct FailingBackend;
+
+impl SecretBackend for FailingBackend {
+    fn get(&self, _: &str) -> Result<Option<Vec<u8>>, BackendError> {
+        Err(BackendError::Unavailable)
+    }
+    fn set(&self, _: &str, _: &[u8]) -> Result<(), BackendError> {
+        Err(BackendError::Unavailable)
+    }
+    fn delete(&self, _: &str) -> Result<(), BackendError> {
+        Err(BackendError::Unavailable)
+    }
+}
+
+/// 조회 횟수를 세는 기기 ID 출처.
+struct CountingDevice {
+    raw: String,
+    calls: std::sync::atomic::AtomicUsize,
+}
+
+impl DeviceIdSource for CountingDevice {
+    fn raw_id(&self) -> Option<RawDeviceId> {
+        self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        RawDeviceId::new(&self.raw)
+    }
+}
+
+#[test]
+fn service_keychain_garbage_is_clock_anomaly_and_device_hash_is_cached() {
+    let v = vectors();
+    let backend = Arc::new(MemoryBackend::default());
+    let device = Arc::new(CountingDevice {
+        raw: v["raw_device_id"].as_str().unwrap().to_string(),
+        calls: Default::default(),
+    });
+    let now = issued(&v) + 2 * 86_400;
+    let service = LicenseService::new(
+        ring_of(&v["keys"]),
+        device.clone(),
+        Arc::new(KeychainClockStore::new(backend.clone())),
+        Arc::new(move || now),
+        parse_date("2027-01-01"),
+    );
+    let file = v["files"]["perpetual"]["file"].to_string();
+    // 키체인 항목이 형식 오류면 시계 이상(기록 삭제와 같은 "열린 채 실패"가 아니다). 기록은 그대로.
+    backend.set(CLOCK_ACCOUNT, b"garbage").unwrap();
+    assert_eq!(service.verify(Some(&file)).state(), "clock_anomaly");
+    assert_eq!(
+        backend.get(CLOCK_ACCOUNT).unwrap().as_deref(),
+        Some(&b"garbage"[..])
+    );
+    // 항목 삭제 + 1일 넘은 파일 → expired(온라인 refresh 필요), 기록을 새로 만들지 않는다.
+    backend.delete(CLOCK_ACCOUNT).unwrap();
+    assert_eq!(service.verify(Some(&file)).state(), "expired");
+    assert_eq!(backend.get(CLOCK_ACCOUNT).unwrap(), None);
+    // 반복 호출해도 기기 ID 조회는 한 번(프로세스 수명 캐시).
+    for _ in 0..20 {
+        let _ = service.verify(Some(&file));
+        let _ = service.device_hash().unwrap();
+    }
+    assert_eq!(device.calls.load(std::sync::atomic::Ordering::SeqCst), 1);
+}
+
+#[test]
+fn device_hash_failure_is_not_cached() {
+    struct Flaky(std::sync::atomic::AtomicUsize, String);
+    impl DeviceIdSource for Flaky {
+        fn raw_id(&self) -> Option<RawDeviceId> {
+            let n = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            (n > 0).then(|| RawDeviceId::new(&self.1)).flatten()
+        }
+    }
+    let v = vectors();
+    let src = Arc::new(Flaky(
+        Default::default(),
+        v["raw_device_id"].as_str().unwrap().to_string(),
+    ));
+    let service = LicenseService::new(
+        ring_of(&v["keys"]),
+        src.clone(),
+        Arc::new(MemoryClockStore::default()),
+        Arc::new(|| 0),
+        None,
+    );
+    assert!(service.device_hash().is_err());
+    assert_eq!(
+        service.device_hash().unwrap(),
+        v["device_hash"].as_str().unwrap()
+    );
+    assert_eq!(
+        service.device_hash().unwrap(),
+        v["device_hash"].as_str().unwrap()
+    );
+    assert_eq!(src.0.load(std::sync::atomic::Ordering::SeqCst), 2);
 }
 
 // ---- IPC ----
@@ -486,7 +617,7 @@ fn production_service_with_empty_slots_fails_closed() {
         .map(|(k, c)| {
             (
                 k.clone(),
-                evaluate(Some(&c["file"].to_string()), &input, None)
+                evaluate(Some(&c["file"].to_string()), &input, ClockLoad::Missing)
                     .0
                     .state(),
             )
@@ -497,5 +628,21 @@ fn production_service_with_empty_slots_fails_closed() {
     }
     for s in states.values() {
         assert_ne!(*s, "valid");
+    }
+}
+
+#[test]
+fn build_date_shape_for_release_assertion() {
+    use arch_studio_desktop_lib::commands::license::is_build_date_shape;
+    assert!(is_build_date_shape(Some("2026-10-29")));
+    for bad in [
+        None,
+        Some(""),
+        Some("2026/10/29"),
+        Some("2026-10-2"),
+        Some("2026-10-290"),
+        Some("20a6-10-29"),
+    ] {
+        assert!(!is_build_date_shape(bad), "{bad:?}");
     }
 }

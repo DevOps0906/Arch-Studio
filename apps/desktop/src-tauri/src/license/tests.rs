@@ -81,8 +81,20 @@ fn input<'a>(keys: &'a KeyRing, now: i64) -> VerifyInput<'a> {
     }
 }
 
+/// 기록은 있으나 아직 아무 값도 본 적 없는 상태(기록 없음 규칙과 분리해 다른 규칙을 시험할 때 쓴다).
+/// 기록 없음(`ClockLoad::Missing`)·형식 오류·읽기 실패는 `clock_store_*` 테스트가 따로 시험한다.
+const BLANK: ClockLoad = ClockLoad::Record(ClockRecord {
+    last_seen: i64::MIN,
+    max_issued_at: i64::MIN,
+});
+
 fn eval(keys: &KeyRing, file: &str, now: i64, prev: Option<ClockRecord>) -> LicenseVerdict {
-    evaluate(Some(file), &input(keys, now), prev).0
+    evaluate(
+        Some(file),
+        &input(keys, now),
+        prev.map_or(BLANK, ClockLoad::Record),
+    )
+    .0
 }
 
 /// 시드 고정 xorshift(속성 테스트용, 의존성 없음).
@@ -132,7 +144,7 @@ fn absent_and_size_limits() {
     let keys = ring(&[(KID, &key(1))]);
     for f in [None, Some(""), Some("  \n")] {
         assert_eq!(
-            evaluate(f, &input(&keys, 0), None).0,
+            evaluate(f, &input(&keys, 0), BLANK).0,
             LicenseVerdict::Absent
         );
     }
@@ -344,10 +356,10 @@ fn device_mismatch_and_unavailable() {
             ..input(&keys, issued())
         };
         assert_eq!(
-            evaluate(Some(&f), &inp, None).0,
+            evaluate(Some(&f), &inp, BLANK).0,
             LicenseVerdict::DeviceMismatch
         );
-        assert_eq!(evaluate(Some(&f), &inp, None).1, None);
+        assert_eq!(evaluate(Some(&f), &inp, BLANK).1, None);
     }
 }
 
@@ -369,7 +381,7 @@ fn clock_rollback_boundaries() {
     let (v, next) = evaluate(
         Some(&f),
         &input(&keys, now),
-        Some(rec(now + CLOCK_TOLERANCE_SECS + 1)),
+        ClockLoad::Record(rec(now + CLOCK_TOLERANCE_SECS + 1)),
     );
     match v {
         LicenseVerdict::ClockAnomaly(l) => assert_eq!(l.rights, EffectiveRights::VIEW_EXPORT_ONLY),
@@ -474,7 +486,10 @@ fn rights_expiry_and_offline_boundaries() {
 fn older_file_after_newer_is_expired() {
     let sk = key(1);
     let keys = ring(&[(KID, &sk)]);
-    let store = MemoryClockStore::default();
+    let store = MemoryClockStore::with(ClockRecord {
+        last_seen: issued(),
+        max_issued_at: issued(),
+    });
     let old = sign(&sk, &perpetual());
     let mut newer = perpetual();
     newer["issued_at"] = json!("2026-10-30T00:00:00Z");
@@ -544,7 +559,7 @@ fn build_eligibility() {
             build_date: build.and_then(parse_date),
             ..input(&keys, issued())
         };
-        evaluate(Some(&f), &inp, None)
+        evaluate(Some(&f), &inp, BLANK)
             .0
             .license()
             .unwrap()
@@ -555,7 +570,7 @@ fn build_eligibility() {
     assert!(!at(None), "빌드 날짜 모르면 영구는 실패 닫힘");
     let t = sign(&sk, &trial());
     assert!(
-        evaluate(Some(&t), &input(&keys, issued()), None)
+        evaluate(Some(&t), &input(&keys, issued()), BLANK)
             .0
             .license()
             .unwrap()
@@ -586,7 +601,7 @@ fn failures_and_debug_leak_nothing() {
                 device_hash: Some(OTHER_DEVICE),
                 ..input(&keys, issued())
             },
-            None,
+            BLANK,
         )
         .0,
         eval(&ring(&[]), &f, issued(), None),
@@ -814,4 +829,344 @@ fn rule_pack_entitlement_property_seeded() {
             "uu={uu} published={published} now={now} {lic:?}"
         );
     }
+}
+
+// ---- 보안 리뷰 지적 수정(AR-06-041 후속) ----
+
+#[test]
+fn small_order_r_signature_needs_verify_strict() {
+    use curve25519_dalek::edwards::EdwardsPoint;
+    use curve25519_dalek::scalar::Scalar;
+    use curve25519_dalek::traits::Identity;
+    use ed25519_dalek::Verifier;
+    use sha2::{Digest, Sha512};
+
+    // ARCH_TEST_ONLY: 테스트 전용 비밀 스칼라(운영 키 아님). 공개키 A = a·B는 작은 위수가 아니다.
+    let a = Scalar::from_bytes_mod_order([7u8; 32]);
+    let pk = EdwardsPoint::mul_base(&a).compress();
+    let keys = KeyRing::from_raw(&[(KID, pk.to_bytes())]).unwrap();
+    let body = perpetual().to_string().into_bytes();
+    let mut msg = LICENSE_CONTEXT.to_vec();
+    msg.extend_from_slice(&body);
+    // R = 항등원(위수 1, 작은 위수). s = k·a 이면 [s]B − [k]A = 항등원 = R 이라 느슨한 검증식은 성립한다.
+    let r = EdwardsPoint::identity().compress();
+    let h = Sha512::new()
+        .chain_update(r.as_bytes())
+        .chain_update(pk.as_bytes())
+        .chain_update(&msg)
+        .finalize();
+    let mut wide = [0u8; 64];
+    wide.copy_from_slice(&h);
+    let s = Scalar::from_bytes_mod_order_wide(&wide) * a;
+    let mut sig = [0u8; 64];
+    sig[..32].copy_from_slice(r.as_bytes());
+    sig[32..].copy_from_slice(s.as_bytes());
+
+    // 전제: 느슨한 `verify`는 받아들이고 `verify_strict`만 거부한다(이 벡터는 strict 분기만 시험한다).
+    let vk = VerifyingKey::from_bytes(&pk.to_bytes()).unwrap();
+    assert!(vk.verify(&msg, &Signature::from_bytes(&sig)).is_ok());
+    assert!(vk
+        .verify_strict(&msg, &Signature::from_bytes(&sig))
+        .is_err());
+
+    let f = json!({"payload": b64url_encode(&body), "sig": b64url_encode(&sig), "kid": KID})
+        .to_string();
+    assert_eq!(
+        eval(&keys, &f, issued(), None),
+        LicenseVerdict::InvalidSignature
+    );
+}
+
+#[test]
+fn offline_limit_boundary_when_desktop_right_outlives_it() {
+    // desktop_edit 권리 기한이 오프라인 한도보다 길면 경계는 오프라인 한도 검사(`effective_now >= t`)만이 정한다.
+    let sk = key(1);
+    let keys = ring(&[(KID, &sk)]);
+    let mut p = trial();
+    p["rights_expiry"] = json!({"desktop_edit": "2026-12-31T00:00:00Z"});
+    let f = sign(&sk, &p);
+    let until = parse_instant("2026-11-02T00:00:00Z").unwrap();
+    match eval(&keys, &f, until - 1, None) {
+        LicenseVerdict::Valid(l) => assert!(l.rights().desktop_edit),
+        v => panic!("{v:?}"),
+    }
+    match eval(&keys, &f, until, None) {
+        LicenseVerdict::Expired(l) => assert_eq!(l.rights(), EffectiveRights::VIEW_EXPORT_ONLY),
+        v => panic!("{v:?}"),
+    }
+}
+
+#[test]
+fn future_clock_lock_recovers_only_with_fresh_newer_file() {
+    let sk = key(1);
+    let keys = ring(&[(KID, &sk)]);
+    let old = sign(&sk, &perpetual());
+    // 시계를 1년 뒤로 잘못 맞춘 채 한 번 열었던 기록.
+    let locked = ClockRecord {
+        last_seen: issued() + 365 * DAY,
+        max_issued_at: issued(),
+    };
+    let real_now = issued() + 2 * DAY;
+    assert!(matches!(
+        eval(&keys, &old, real_now, Some(locked)),
+        LicenseVerdict::ClockAnomaly(_)
+    ));
+    // 옛 파일 재제출은 (발급 직후 시각이어도) 재설정하지 못한다: issued_at이 max_issued_at보다 크지 않다.
+    assert!(matches!(
+        eval(&keys, &old, issued(), Some(locked)),
+        LicenseVerdict::ClockAnomaly(_)
+    ));
+
+    // 서버가 막 발급한 새 파일(issued_at = N).
+    let n = real_now;
+    let mut p = perpetual();
+    p["issued_at"] = json!(codec::format_instant(n));
+    let newer = sign(&sk, &p);
+    for (now, ok) in [
+        (n, true),
+        (n + CLOCK_TOLERANCE_SECS, true),
+        (n - CLOCK_TOLERANCE_SECS, true),
+        (n + CLOCK_TOLERANCE_SECS + 1, false),
+        (n - CLOCK_TOLERANCE_SECS - 1, false),
+    ] {
+        let (v, next) = evaluate(Some(&newer), &input(&keys, now), ClockLoad::Record(locked));
+        if ok {
+            assert!(matches!(v, LicenseVerdict::Valid(_)), "{now}: {v:?}");
+            let next = next.unwrap();
+            assert_eq!(
+                next.last_seen,
+                now.max(n),
+                "last_seen = max(now, issued_at)"
+            );
+            assert_eq!(next.max_issued_at, n);
+        } else {
+            assert!(matches!(v, LicenseVerdict::ClockAnomaly(_)), "{now}: {v:?}");
+            assert_eq!(next, None);
+        }
+    }
+
+    // 저장소를 통한 흐름: 복구 뒤 옛 파일은 롤백 규칙으로 expired, 새 파일은 계속 valid.
+    let store = MemoryClockStore::with(locked);
+    assert!(matches!(
+        verify_license(Some(&newer), &input(&keys, n), &store),
+        LicenseVerdict::Valid(_)
+    ));
+    assert_eq!(
+        store.get(),
+        Some(ClockRecord {
+            last_seen: n,
+            max_issued_at: n
+        })
+    );
+    assert!(matches!(
+        verify_license(Some(&old), &input(&keys, n + 60), &store),
+        LicenseVerdict::Expired(_)
+    ));
+    assert!(matches!(
+        verify_license(Some(&newer), &input(&keys, n + DAY), &store),
+        LicenseVerdict::Valid(_)
+    ));
+    // 같은 새 파일을 다시 내도 재설정은 한 번뿐(issued_at = max_issued_at): 시계를 되돌리면 다시 시계 이상.
+    assert!(matches!(
+        verify_license(Some(&newer), &input(&keys, n), &store),
+        LicenseVerdict::ClockAnomaly(_)
+    ));
+}
+
+#[test]
+fn build_ineligible_disables_desktop_edit_only() {
+    let sk = key(1);
+    let keys = ring(&[(KID, &sk)]);
+    let f = sign(&sk, &perpetual()); // updates_until 2027-10-28
+    for build in [Some("2027-10-29"), None] {
+        let inp = VerifyInput {
+            build_date: build.and_then(parse_date),
+            ..input(&keys, issued() + DAY)
+        };
+        match evaluate(Some(&f), &inp, BLANK).0 {
+            LicenseVerdict::Valid(l) => {
+                assert!(!l.build_eligible(), "{build:?}");
+                assert!(
+                    !l.rights().desktop_edit,
+                    "{build:?}: 업데이트 기간 밖 빌드는 편집 불가"
+                );
+                assert!(l.rights().view_export, "{build:?}: 열람·내보내기 유지");
+            }
+            v => panic!("{build:?}: {v:?}"),
+        }
+    }
+    // 기간 안 빌드는 편집 가능.
+    match eval(&keys, &f, issued() + DAY, None) {
+        LicenseVerdict::Valid(l) => assert!(l.build_eligible() && l.rights().desktop_edit),
+        v => panic!("{v:?}"),
+    }
+    // 플랜은 빌드 날짜와 무관.
+    let t = sign(&sk, &trial());
+    let inp = VerifyInput {
+        build_date: None,
+        ..input(&keys, issued() + DAY)
+    };
+    match evaluate(Some(&t), &inp, BLANK).0 {
+        LicenseVerdict::Valid(l) => assert!(l.build_eligible() && l.rights().desktop_edit),
+        v => panic!("{v:?}"),
+    }
+}
+
+#[test]
+fn clock_store_corrupt_is_anomaly_unless_fresh() {
+    let sk = key(1);
+    let keys = ring(&[(KID, &sk)]);
+    let f = sign(&sk, &perpetual());
+    for (now, ok) in [
+        (issued() + 2 * DAY, false),
+        (issued() + CLOCK_TOLERANCE_SECS + 1, false),
+        (issued() + CLOCK_TOLERANCE_SECS, true),
+        (issued(), true),
+    ] {
+        let (v, next) = evaluate(Some(&f), &input(&keys, now), ClockLoad::Corrupt);
+        if ok {
+            assert!(matches!(v, LicenseVerdict::Valid(_)), "{now}: {v:?}");
+            assert_eq!(
+                next,
+                Some(ClockRecord {
+                    last_seen: now,
+                    max_issued_at: issued()
+                })
+            );
+        } else {
+            assert!(matches!(v, LicenseVerdict::ClockAnomaly(_)), "{now}: {v:?}");
+            assert_eq!(next, None);
+        }
+    }
+}
+
+#[test]
+fn clock_store_missing_requires_refresh_for_old_file() {
+    let sk = key(1);
+    let keys = ring(&[(KID, &sk)]);
+    let f = sign(&sk, &perpetual());
+    let edge = issued() + MISSING_RECORD_MAX_AGE_SECS;
+    // 첫 활성화 직후(1일 이내)는 영향 없음, 기록을 쓴다.
+    let (v, next) = evaluate(Some(&f), &input(&keys, edge), ClockLoad::Missing);
+    assert!(matches!(v, LicenseVerdict::Valid(_)), "{v:?}");
+    assert!(next.is_some());
+    // 기록 없음 + 1일 초과 → 온라인 refresh 필요(expired), 기록은 쓰지 않는다.
+    let (v, next) = evaluate(Some(&f), &input(&keys, edge + 1), ClockLoad::Missing);
+    match v {
+        LicenseVerdict::Expired(l) => assert_eq!(l.rights(), EffectiveRights::VIEW_EXPORT_ONLY),
+        v => panic!("{v:?}"),
+    }
+    assert_eq!(next, None);
+    // 읽기 실패: 판정은 기록 없음과 같고, 어느 경우에도 덮어쓰지 않는다.
+    let (v, next) = evaluate(
+        Some(&f),
+        &input(&keys, issued() + 60),
+        ClockLoad::Unreadable,
+    );
+    assert!(matches!(v, LicenseVerdict::Valid(_)), "{v:?}");
+    assert_eq!(next, None);
+    let (v, _) = evaluate(Some(&f), &input(&keys, edge + 1), ClockLoad::Unreadable);
+    assert!(matches!(v, LicenseVerdict::Expired(_)), "{v:?}");
+
+    // 저장소 흐름: 기록 삭제 후 시계를 되돌려도(옛 파일, 1일 초과) 열리지 않는다. 새 파일(refresh)이면 복구.
+    let store = MemoryClockStore::default();
+    assert!(matches!(
+        verify_license(Some(&f), &input(&keys, issued() + 60), &store),
+        LicenseVerdict::Valid(_)
+    ));
+    store.clear();
+    for _ in 0..2 {
+        assert!(matches!(
+            verify_license(Some(&f), &input(&keys, issued() + 5 * DAY), &store),
+            LicenseVerdict::Expired(_)
+        ));
+        assert_eq!(
+            store.get(),
+            None,
+            "기록 없음 상태를 새 기록으로 덮지 않는다"
+        );
+    }
+    let mut p = perpetual();
+    p["issued_at"] = json!(codec::format_instant(issued() + 5 * DAY));
+    assert!(matches!(
+        verify_license(
+            Some(&sign(&sk, &p)),
+            &input(&keys, issued() + 5 * DAY),
+            &store
+        ),
+        LicenseVerdict::Valid(_)
+    ));
+    assert!(store.get().is_some());
+}
+
+/// 쓰기 횟수를 세는 저장소.
+#[derive(Default)]
+struct CountingStore {
+    inner: MemoryClockStore,
+    saves: std::sync::atomic::AtomicUsize,
+}
+
+impl ClockStore for CountingStore {
+    fn load(&self) -> ClockLoad {
+        self.inner.load()
+    }
+    fn save(&self, record: ClockRecord) {
+        self.saves.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        self.inner.save(record);
+    }
+}
+
+#[test]
+fn clock_record_writes_are_throttled() {
+    let sk = key(1);
+    let keys = ring(&[(KID, &sk)]);
+    let f = sign(&sk, &perpetual());
+    let store = CountingStore::default();
+    let saves = || store.saves.load(std::sync::atomic::Ordering::SeqCst);
+    let t0 = issued() + 60;
+    let _ = verify_license(Some(&f), &input(&keys, t0), &store);
+    assert_eq!(saves(), 1, "첫 기록은 쓴다");
+    for _ in 0..100 {
+        let _ = verify_license(Some(&f), &input(&keys, t0), &store);
+    }
+    let _ = verify_license(
+        Some(&f),
+        &input(&keys, t0 + CLOCK_SAVE_INTERVAL_SECS - 1),
+        &store,
+    );
+    assert_eq!(saves(), 1, "반복 호출·간격 미만 변화는 쓰지 않는다");
+    let _ = verify_license(
+        Some(&f),
+        &input(&keys, t0 + CLOCK_SAVE_INTERVAL_SECS),
+        &store,
+    );
+    assert_eq!(saves(), 2);
+    // max_issued_at 변화는 간격과 무관하게 쓴다.
+    let mut p = perpetual();
+    p["issued_at"] = json!(codec::format_instant(issued() + 120));
+    let _ = verify_license(
+        Some(&sign(&sk, &p)),
+        &input(&keys, t0 + CLOCK_SAVE_INTERVAL_SECS),
+        &store,
+    );
+    assert_eq!(saves(), 3);
+    assert_eq!(store.inner.get().unwrap().max_issued_at, issued() + 120);
+}
+
+#[test]
+fn production_slots_parse_and_exclude_test_public_keys() {
+    // 운영 슬롯 상수 오류가 `unwrap_or(빈 고리)`로 조용히 전원 unknown_kid가 되지 않게 한다.
+    // 운영 키 주입 전인 지금은 빈 슬롯을 허용한다(빈 고리 = 실패 닫힘, 의도된 상태).
+    assert!(KeyRing::from_raw(PRODUCTION_LICENSE_KEYS).is_ok());
+    assert!(KeyRing::from_raw(PRODUCTION_RULEPACK_KEYS).is_ok());
+    // 거부 목록은 단위 테스트 시드 키를 포함한다(교차 벡터 키는 tests/license.rs가 확인).
+    for label in [1u8, 2, 9] {
+        let pk = key(label).verifying_key().to_bytes();
+        assert!(TEST_PUBLIC_KEYS.contains(&pk), "key({label})");
+        assert!(has_denied_key(&[("prod-1", pk)], &TEST_PUBLIC_KEYS));
+    }
+    let other = key(3).verifying_key().to_bytes();
+    assert!(!has_denied_key(&[("prod-1", other)], &TEST_PUBLIC_KEYS));
+    assert!(!has_denied_key(PRODUCTION_LICENSE_KEYS, &TEST_PUBLIC_KEYS));
+    assert!(!has_denied_key(PRODUCTION_RULEPACK_KEYS, &TEST_PUBLIC_KEYS));
 }

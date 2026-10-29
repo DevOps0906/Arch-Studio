@@ -31,6 +31,10 @@
   fiat-crypto 0.2.9(MIT OR Apache-2.0 OR BSD-1-Clause, 일부 대상만), zeroize 1.9(Apache-2.0 OR MIT),
   sha2 0.10.9·digest 0.10·cpufeatures 0.2(MIT OR Apache-2.0, 기존 의존성 공유). 빌드 전용 curve25519-dalek-derive 0.1.1·rustc_version 0.4.1(MIT/Apache-2.0)은 배포물에 들어가지 않는다.
   GPL·AGPL 없음. BSD-3-Clause는 배포물 고지(저작권 표시·조건·면책 문구)를 요구한다.
+- windows-sys 0.60.2 — MIT OR Apache-2.0, Copyright (c) Microsoft Corporation(배포 전 LICENSE 원문 대조). https://github.com/microsoft/windows-rs
+  Windows 대상에서만 직접 의존(기능 `Win32_Foundation`·`Win32_System_Registry`): 기기 ID(`MachineGuid`)를 `RegGetValueW`로 읽는다
+  (보안 리뷰: `reg.exe` 실행 제거). keyring(windows-native)이 이미 쓰는 같은 버전·같은 전이(windows-targets 0.53, MIT OR Apache-2.0)라 배포물에 새 크레이트가 늘지 않는다.
+- 테스트 전용 dev-dependency curve25519-dalek 4.1.3(BSD-3-Clause, 위 전이와 같은 버전)은 작은 위수 R 서명 벡터 생성에만 쓰고 배포물 의존성은 바뀌지 않는다.
 
 ## @arch-studio/geometry — 솔리드 래퍼 (AR-06-016)
 - manifold-3d 3.5.4 (`manifold.js` + `manifold.wasm`만 사용) — Apache License 2.0, Copyright Emmett Lalish 외 Manifold 기여자.

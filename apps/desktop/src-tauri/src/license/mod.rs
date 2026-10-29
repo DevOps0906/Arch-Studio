@@ -10,7 +10,11 @@
 //! - 로컬 권한은 서명 파일만 믿는다. SQLite·`local_settings` 값은 입력으로 받지 않는다(02_ARCHITECTURE.md 2.2절).
 //! - `device_hash`는 현재 기기에서 다시 계산한 값과 정확히 같아야 한다(다른 PC 파일 거부).
 //! - 시계 되돌림: 단조 기록([`ClockStore`])의 `last_seen`이나 파일 `issued_at`보다 현재가 [`CLOCK_TOLERANCE_SECS`] 넘게 이르면
-//!   [`LicenseVerdict::ClockAnomaly`](만료와 같은 처리: 열람·내보내기만).
+//!   [`LicenseVerdict::ClockAnomaly`](만료와 같은 처리: 열람·내보내기만). 기록 형식 오류도 시계 이상이다.
+//!   기록이 없는데(삭제·초기화) 파일이 [`MISSING_RECORD_MAX_AGE_SECS`]보다 오래됐으면 `expired`(온라인 refresh 필요).
+//! - 시계를 미래로 잘못 맞췄던 기록은 서버가 막 발급한 새 파일(`issued_at > max_issued_at`, 현재와 허용 오차 안)로만 복구된다.
+//! - 업데이트 기간 밖 빌드(`build_eligible = false`)는 설치형 편집을 끈다(열람·내보내기 유지).
+//! - 판정 결과([`VerifiedLicense`])는 이 모듈의 [`evaluate`]만 만들 수 있다(봉인 필드). 외부는 getter로만 읽는다.
 //! - 결과의 실패 상태에는 파일 내용·서명·기기 해시·원인 문자열을 담지 않는다. `Debug`는 상태 이름만 출력한다.
 
 pub mod codec;
@@ -41,6 +45,12 @@ pub const CLOCK_TOLERANCE_SECS: i64 = 600;
 pub const PERPETUAL_RIGHTS_SECS: i64 = 30 * 86_400;
 /// 플랜 출처 오프라인 기본 한도: `issued_at` + 7일(02_ARCHITECTURE.md 2.2절). `offline_valid_until`이 없을 때.
 pub const PLAN_OFFLINE_SECS: i64 = 7 * 86_400;
+/// 시계 기록이 없을 때 받아들이는 파일 나이 상한(`now − issued_at`). 넘으면 `expired`(온라인 refresh로 새 파일 필요).
+/// 첫 활성화 직후(방금 받은 파일)는 영향 없다. 기록 삭제 → 시계 되돌림 우회의 비용을 높인다(D-H3 수용 범위 안에서).
+pub const MISSING_RECORD_MAX_AGE_SECS: i64 = 86_400;
+/// 시계 기록 쓰기 최소 간격. `last_seen`만 이보다 적게 움직였으면 키체인에 쓰지 않는다(반복 호출 쓰기 증폭 방지).
+/// 대신 되돌림 감지 여유가 최대 이 값만큼 늘어난다(허용 오차 + 간격).
+pub const CLOCK_SAVE_INTERVAL_SECS: i64 = 600;
 /// 서버 `eligible_rule_packs`의 기준 시간대(Asia/Seoul, +09:00).
 const SEOUL_OFFSET_SECS: i64 = 9 * 3600;
 
@@ -67,9 +77,73 @@ pub const fn has_test_kid(keys: &[(&str, [u8; 32])]) -> bool {
     false
 }
 
-// 운영 빌드에 테스트 키가 들어가면 컴파일 실패.
+/// 64자 hex → 32바이트(컴파일 시점 상수용). 형식이 틀리면 컴파일 실패.
+const fn hex32(s: &str) -> [u8; 32] {
+    let b = s.as_bytes();
+    assert!(b.len() == 64);
+    let mut out = [0u8; 32];
+    let mut i = 0;
+    while i < 32 {
+        out[i] = (hex_nibble(b[i * 2]) << 4) | hex_nibble(b[i * 2 + 1]);
+        i += 1;
+    }
+    out
+}
+
+const fn hex_nibble(c: u8) -> u8 {
+    match c {
+        b'0'..=b'9' => c - b'0',
+        b'a'..=b'f' => c - b'a' + 10,
+        _ => panic!("hex"),
+    }
+}
+
+/// 테스트 공개키 거부 목록: 교차 벡터(`tests/fixtures/license/vectors.json`의 `keys`·`rulepack_keys`) 3개 +
+/// 단위 테스트 시드 키(`[1;32]`·`[2;32]`·`[9;32]`) 3개. 운영 슬롯에 들어가면 컴파일이 실패한다(kid 이름과 무관하게 바이트 비교).
+pub const TEST_PUBLIC_KEYS: [[u8; 32]; 6] = [
+    hex32("838b58f7453e68683484f8e258e723db774b6546b008ba4c857c666847a560a8"),
+    hex32("fcc3d2eb48301c279897f575ee0f8f6b99a019fc4ed3266a24f83edd93cf110c"),
+    hex32("c670cd5cdfb2962bf1dd6dbbca8f96560c15968d62047c0f81344bd0e08bb398"),
+    hex32("8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"),
+    hex32("8139770ea87d175f56a35466c34c7ecccb8d8a91b4ee37a25df60f5b8fc9b394"),
+    hex32("fd1724385aa0c75b64fb78cd602fa1d991fdebf76b13c58ed702eac835e9f618"),
+];
+
+/// 슬롯에 거부 목록 키가 하나라도 있으면 true(컴파일 가드용).
+pub const fn has_denied_key(keys: &[(&str, [u8; 32])], denied: &[[u8; 32]]) -> bool {
+    let mut i = 0;
+    while i < keys.len() {
+        let mut j = 0;
+        while j < denied.len() {
+            let mut k = 0;
+            let mut same = true;
+            while k < 32 {
+                if keys[i].1[k] != denied[j][k] {
+                    same = false;
+                }
+                k += 1;
+            }
+            if same {
+                return true;
+            }
+            j += 1;
+        }
+        i += 1;
+    }
+    false
+}
+
+// 운영 빌드에 테스트 키가 들어가면 컴파일 실패(kid 이름·공개키 바이트 둘 다).
 const _: () = assert!(!has_test_kid(production_keys::LICENSE_KEYS));
 const _: () = assert!(!has_test_kid(production_keys::RULEPACK_KEYS));
+const _: () = assert!(!has_denied_key(
+    production_keys::LICENSE_KEYS,
+    &TEST_PUBLIC_KEYS
+));
+const _: () = assert!(!has_denied_key(
+    production_keys::RULEPACK_KEYS,
+    &TEST_PUBLIC_KEYS
+));
 
 /// 운영 라이선스 키 슬롯(검사·고지용, 공개키).
 pub const PRODUCTION_LICENSE_KEYS: &[(&str, [u8; 32])] = production_keys::LICENSE_KEYS;
@@ -118,6 +192,7 @@ impl KeyRing {
     }
 
     /// 운영 라이선스 키 고리. 상수가 잘못되면 빈 고리(모든 파일 `unknown_kid`, 실패 닫힘).
+    /// 조용히 빈 고리가 되지 않도록 `production_slots_parse` 테스트가 `from_raw(...).is_ok()`를 단언한다.
     pub fn production_license() -> Self {
         Self::from_raw(PRODUCTION_LICENSE_KEYS).unwrap_or(Self { keys: Vec::new() })
     }
@@ -264,28 +339,28 @@ impl Right {
     ];
 }
 
-/// 서명된 payload(04_API.md 2.4절 `LicensePayloadV1`). `Debug`는 가린다.
+/// 서명된 payload(04_API.md 2.4절 `LicensePayloadV1`). `Debug`는 가린다. 필드는 크레이트 밖에서 getter로만 읽는다.
 #[derive(Deserialize, Clone, PartialEq, Eq)]
 pub struct LicensePayload {
-    pub v: u32,
-    pub license_id: Option<String>,
-    pub org_id: String,
-    pub app_id: String,
-    pub sku: String,
-    pub source: Source,
-    pub updates_until: Option<String>,
-    pub activation_id: String,
-    pub device_hash: String,
-    pub issued_at: String,
-    pub kid: String,
-    pub offline_valid_until: Option<String>,
-    pub features: Features,
+    pub(crate) v: u32,
+    pub(crate) license_id: Option<String>,
+    pub(crate) org_id: String,
+    pub(crate) app_id: String,
+    pub(crate) sku: String,
+    pub(crate) source: Source,
+    pub(crate) updates_until: Option<String>,
+    pub(crate) activation_id: String,
+    pub(crate) device_hash: String,
+    pub(crate) issued_at: String,
+    pub(crate) kid: String,
+    pub(crate) offline_valid_until: Option<String>,
+    pub(crate) features: Features,
     #[serde(default)]
-    pub seat_id: Option<String>,
+    pub(crate) seat_id: Option<String>,
     #[serde(default)]
-    pub rights: Option<Rights>,
+    pub(crate) rights: Option<Rights>,
     #[serde(default)]
-    pub rights_expiry: Option<RightsExpiry>,
+    pub(crate) rights_expiry: Option<RightsExpiry>,
 }
 
 impl std::fmt::Debug for LicensePayload {
@@ -299,6 +374,44 @@ fn is_hex64(s: &str) -> bool {
 }
 
 impl LicensePayload {
+    pub fn license_id(&self) -> Option<&str> {
+        self.license_id.as_deref()
+    }
+    pub fn org_id(&self) -> &str {
+        &self.org_id
+    }
+    pub fn sku(&self) -> &str {
+        &self.sku
+    }
+    pub fn source(&self) -> Source {
+        self.source
+    }
+    pub fn updates_until(&self) -> Option<&str> {
+        self.updates_until.as_deref()
+    }
+    pub fn activation_id(&self) -> &str {
+        &self.activation_id
+    }
+    pub fn issued_at(&self) -> &str {
+        &self.issued_at
+    }
+    pub fn offline_valid_until(&self) -> Option<&str> {
+        self.offline_valid_until.as_deref()
+    }
+    pub fn features(&self) -> Features {
+        self.features
+    }
+    pub fn seat_id(&self) -> Option<&str> {
+        self.seat_id.as_deref()
+    }
+    /// 파일에 적힌 권리(만료 반영 전). 실제 권리는 [`VerifiedLicense::rights`].
+    pub fn granted_rights(&self) -> Option<Rights> {
+        self.rights
+    }
+    pub fn rights_expiry(&self) -> Option<&RightsExpiry> {
+        self.rights_expiry.as_ref()
+    }
+
     /// `issued_at`(유닉스 초). [`validate`] 뒤에만 부른다.
     pub fn issued_at_secs(&self) -> i64 {
         parse_instant(&self.issued_at).unwrap_or(i64::MAX)
@@ -411,12 +524,49 @@ impl EffectiveRights {
 }
 
 /// 서명·기기 검증을 통과한 파일과 판정 결과. `Debug`는 가린다.
+///
+/// 봉인: 이 모듈의 [`evaluate`]만 만든다(비공개 `_seal`). 크레이트 밖에서는 서명 없이 "valid"를 만들 수 없다.
+///
+/// ```compile_fail
+/// // 필드 직접 읽기 불가(getter만).
+/// fn f(l: &arch_studio_desktop_lib::license::VerifiedLicense) -> bool { l.build_eligible }
+/// ```
+///
+/// ```compile_fail
+/// // 구조체 리터럴로 만들 수 없다.
+/// use arch_studio_desktop_lib::license::{EffectiveRights, LicensePayload, VerifiedLicense};
+/// fn f(payload: LicensePayload) -> VerifiedLicense {
+///     VerifiedLicense { payload, rights: EffectiveRights::VIEW_EXPORT_ONLY, build_eligible: true, _seal: () }
+/// }
+/// ```
+///
+/// ```compile_fail
+/// // payload 필드도 크레이트 밖에서 쓰거나 읽을 수 없다.
+/// fn f(p: &mut arch_studio_desktop_lib::license::LicensePayload) { p.device_hash = String::new(); }
+/// ```
 #[derive(Clone, PartialEq, Eq)]
 pub struct VerifiedLicense {
-    pub payload: LicensePayload,
-    pub rights: EffectiveRights,
+    pub(crate) payload: LicensePayload,
+    pub(crate) rights: EffectiveRights,
     /// 내장 빌드 날짜 <= `updates_until`(영구). 플랜은 true. 빌드 날짜를 모르면 영구는 false(실패 닫힘).
-    pub build_eligible: bool,
+    pub(crate) build_eligible: bool,
+    _seal: (),
+}
+
+impl VerifiedLicense {
+    pub fn payload(&self) -> &LicensePayload {
+        &self.payload
+    }
+
+    /// 판정 시각 기준 실제 권리(만료·빌드 자격 반영).
+    pub fn rights(&self) -> EffectiveRights {
+        self.rights
+    }
+
+    /// 업데이트 기간 안의 빌드인가. false면 `rights().desktop_edit`도 false다.
+    pub fn build_eligible(&self) -> bool {
+        self.build_eligible
+    }
 }
 
 impl std::fmt::Debug for VerifiedLicense {
@@ -510,10 +660,28 @@ impl ClockRecord {
     }
 }
 
+/// 시계 기록 읽기 결과.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum ClockLoad {
+    /// 항목 없음(첫 실행·삭제). 파일이 [`MISSING_RECORD_MAX_AGE_SECS`]보다 오래됐으면 `expired`.
+    Missing,
+    /// 저장소를 읽지 못함(키체인 잠김·접근 거부). 판정은 `Missing`과 같고, 덮어쓰지 않는다(더 높은 기록을 낮추지 않게).
+    Unreadable,
+    /// 항목은 있으나 형식 오류. 정상 경로에서는 생기지 않으므로 `clock_anomaly`(막 발급된 파일만 복구).
+    Corrupt,
+    Record(ClockRecord),
+}
+
+impl From<Option<ClockRecord>> for ClockLoad {
+    fn from(v: Option<ClockRecord>) -> Self {
+        v.map_or(ClockLoad::Missing, ClockLoad::Record)
+    }
+}
+
 /// 시계 기록 저장소. 앱은 OS 키체인(`commands::license::KeychainClockStore`), 테스트는 [`MemoryClockStore`].
-/// SQLite·`local_settings`에 두지 않는다. 읽기 실패는 `None`(기록 없음과 같음, D-H3 위험 수용), 쓰기 실패는 무시.
+/// SQLite·`local_settings`에 두지 않는다. 쓰기 실패는 무시(다음 판정이 기록 없음·옛 기록으로 처리).
 pub trait ClockStore: Send + Sync {
-    fn load(&self) -> Option<ClockRecord>;
+    fn load(&self) -> ClockLoad;
     fn save(&self, record: ClockRecord);
 }
 
@@ -538,8 +706,8 @@ impl MemoryClockStore {
 }
 
 impl ClockStore for MemoryClockStore {
-    fn load(&self) -> Option<ClockRecord> {
-        self.get()
+    fn load(&self) -> ClockLoad {
+        self.get().into()
     }
 
     fn save(&self, record: ClockRecord) {
@@ -562,7 +730,8 @@ pub struct VerifyInput<'a> {
     pub build_date: Option<i64>,
 }
 
-/// 판정 + 기록 갱신. `store`는 `max`로만 움직인다.
+/// 판정 + 기록 갱신. 기록은 `max`로만 움직인다(예외: 서버가 막 발급한 새 파일로 미래 시각 잠금 복구).
+/// `last_seen`만 [`CLOCK_SAVE_INTERVAL_SECS`]보다 적게 움직였으면 쓰지 않는다.
 pub fn verify_license(
     file: Option<&str>,
     input: &VerifyInput<'_>,
@@ -571,18 +740,36 @@ pub fn verify_license(
     let previous = store.load();
     let (verdict, next) = evaluate(file, input, previous);
     if let Some(next) = next {
-        if Some(next) != previous {
+        if should_persist(previous, next) {
             store.save(next);
         }
     }
     verdict
 }
 
+/// 새 기록을 저장소에 쓸지. 기록이 없었거나 형식 오류였거나, `max_issued_at`이 바뀌었거나,
+/// `last_seen`이 내려갔거나(미래 시각 잠금 복구), 간격 이상 올라갔을 때만.
+fn should_persist(previous: ClockLoad, next: ClockRecord) -> bool {
+    match previous {
+        ClockLoad::Record(r) => {
+            next.max_issued_at != r.max_issued_at
+                || next.last_seen < r.last_seen
+                || next.last_seen.saturating_sub(r.last_seen) >= CLOCK_SAVE_INTERVAL_SECS
+        }
+        _ => true,
+    }
+}
+
+const NO_RECORD: ClockRecord = ClockRecord {
+    last_seen: i64::MIN,
+    max_issued_at: i64::MIN,
+};
+
 /// 순수 판정. 두 번째 값은 저장할 새 기록(없으면 그대로).
 pub fn evaluate(
     file: Option<&str>,
     input: &VerifyInput<'_>,
-    previous: Option<ClockRecord>,
+    previous: ClockLoad,
 ) -> (LicenseVerdict, Option<ClockRecord>) {
     let payload = match authenticate(file, input.keys) {
         Ok(p) => p,
@@ -595,12 +782,6 @@ pub fn evaluate(
 
     let now = input.now;
     let issued = payload.issued_at_secs();
-    let prev = previous.unwrap_or(ClockRecord {
-        last_seen: i64::MIN,
-        max_issued_at: i64::MIN,
-    });
-    let rolled_back = now.saturating_add(CLOCK_TOLERANCE_SECS) < prev.last_seen
-        || now.saturating_add(CLOCK_TOLERANCE_SECS) < issued;
     let build_eligible = match payload.source {
         Source::Plan => true,
         Source::License => match (
@@ -615,23 +796,51 @@ pub fn evaluate(
         payload,
         rights: EffectiveRights::VIEW_EXPORT_ONLY,
         build_eligible,
+        _seal: (),
     };
+    // 서버가 막 발급한 파일: 서명 검증 통과 + 발급 시각이 현재와 허용 오차 안.
+    let fresh = now.abs_diff(issued) <= CLOCK_TOLERANCE_SECS.unsigned_abs();
+    // (비교 기준 기록, 새 기록을 돌려줄지, 기록이 없는 상태인지)
+    let (prev, persist, unrecorded) = match previous {
+        // 미래 시각 잠금 복구: 본 적 없는 더 새 파일이 지금 막 발급됐으면 last_seen을 다시 잡는다.
+        // 옛 파일 재제출(issued <= max_issued_at)이나 시계를 되돌린 상태(fresh 아님)로는 복구되지 않는다.
+        ClockLoad::Record(r) if fresh && issued > r.max_issued_at => (
+            ClockRecord {
+                last_seen: now.max(issued),
+                max_issued_at: r.max_issued_at,
+            },
+            true,
+            false,
+        ),
+        ClockLoad::Record(r) => (r, true, false),
+        ClockLoad::Corrupt if fresh => (NO_RECORD, true, false),
+        ClockLoad::Corrupt => return (LicenseVerdict::ClockAnomaly(restricted(payload)), None),
+        ClockLoad::Missing => (NO_RECORD, true, true),
+        ClockLoad::Unreadable => (NO_RECORD, false, true),
+    };
+    let rolled_back = now.saturating_add(CLOCK_TOLERANCE_SECS) < prev.last_seen
+        || now.saturating_add(CLOCK_TOLERANCE_SECS) < issued;
     if rolled_back {
         // 기록을 낮추지도, 미래 issued_at으로 올리지도 않는다.
         return (LicenseVerdict::ClockAnomaly(restricted(payload)), None);
     }
+    if unrecorded && now.saturating_sub(issued) > MISSING_RECORD_MAX_AGE_SECS {
+        // 기록 없음 + 오래된 파일: 기록 삭제 뒤 시계 되돌림과 구분할 수 없다 → 온라인 refresh 필요.
+        // 기록을 새로 쓰지 않는다(쓰면 다음 실행부터 기록 삭제가 다시 통한다).
+        return (LicenseVerdict::Expired(restricted(payload)), None);
+    }
 
     let effective_now = now.max(prev.last_seen);
-    let next = ClockRecord {
+    let next = persist.then_some(ClockRecord {
         last_seen: effective_now,
         max_issued_at: prev.max_issued_at.max(issued),
-    };
+    });
     if issued < prev.max_issued_at {
         // 더 새 파일을 본 뒤의 옛 파일(백업 복원·좌석 회수 전 파일 재사용).
-        return (LicenseVerdict::Expired(restricted(payload)), Some(next));
+        return (LicenseVerdict::Expired(restricted(payload)), next);
     }
     if payload.offline_limit().is_some_and(|t| effective_now >= t) {
-        return (LicenseVerdict::Expired(restricted(payload)), Some(next));
+        return (LicenseVerdict::Expired(restricted(payload)), next);
     }
 
     let mut rights = EffectiveRights {
@@ -648,15 +857,19 @@ pub fn evaluate(
     }
     if payload.granted(Right::DesktopEdit) && !rights.desktop_edit {
         // 설치형 편집 권리가 기간(영구 30일 재확인 등)을 넘겼다.
-        return (LicenseVerdict::Expired(restricted(payload)), Some(next));
+        return (LicenseVerdict::Expired(restricted(payload)), next);
     }
+    // 업데이트 기간 밖 빌드(또는 빌드 날짜 모름): 설치형 편집은 끄고 열람·내보내기는 유지한다.
+    // 상태는 `valid`, 화면은 `build_eligible = false`로 "이 버전은 업데이트 기간 밖"을 안내한다.
+    rights.desktop_edit &= build_eligible;
     (
         LicenseVerdict::Valid(VerifiedLicense {
             payload,
             rights,
             build_eligible,
+            _seal: (),
         }),
-        Some(next),
+        next,
     )
 }
 
