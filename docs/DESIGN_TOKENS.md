@@ -3,29 +3,40 @@
 ## 색
 | 토큰 | 라이트 | 다크 |
 |---|---|---|
-| `--color-bg` | `#f1f2ee` | `—` |
-| `--color-surface` | `#fbfbf9` | `—` |
-| `--color-raised` | `#f7f8f5` | `—` |
-| `--color-nav` | `#e7e9e3` | `—` |
-| `--color-fg` | `#1f2328` | `—` |
-| `--color-fg-2` | `#474d53` | `—` |
-| `--color-fg-3` | `#5b6167` | `—` |
-| `--color-line` | `#d8dbd5` | `—` |
-| `--color-input` | `#5b6167` | `—` |
-| `--color-accent` | `#1f2328` | `—` |
-| `--color-accent-fg` | `#f1f2ee` | `—` |
-| `--color-info` | `#34507a` | `—` |
-| `--color-info-fg` | `#ffffff` | `—` |
-| `--color-ok` | `#2a7549` | `—` |
-| `--color-ok-fg` | `#ffffff` | `—` |
-| `--color-warn` | `#8a5a00` | `—` |
-| `--color-warn-fg` | `#ffffff` | `—` |
-| `--color-danger` | `#b3261e` | `—` |
-| `--color-danger-fg` | `#ffffff` | `—` |
-| `--color-envelope` | `#276f80` | `—` |
-| `--color-envelope-fg` | `#ffffff` | `—` |
-| `--color-concrete` | `#a7aba8` | `—` |
-| `--color-focus` | `#34507a` | `—` |
+| `--color-bg` | `#f1f2ee` | `#20262a` |
+| `--color-surface` | `#fbfbf9` | `#283035` |
+| `--color-raised` | `#f7f8f5` | `#2e363c` |
+| `--color-nav` | `#e7e9e3` | `#1b2024` |
+| `--color-fg` | `#1f2328` | `#e8eae6` |
+| `--color-fg-2` | `#474d53` | `#c3c8c4` |
+| `--color-fg-3` | `#5b6167` | `#9aa19d` |
+| `--color-line` | `#d8dbd5` | `#3a4348` |
+| `--color-input` | `#5b6167` | `#8d9590` |
+| `--color-accent` | `#1f2328` | `#e8eae6` |
+| `--color-accent-fg` | `#f1f2ee` | `#20262a` |
+| `--color-info` | `#34507a` | `#9db6e0` |
+| `--color-info-fg` | `#ffffff` | `#20262a` |
+| `--color-ok` | `#2a7549` | `#6fcf97` |
+| `--color-ok-fg` | `#ffffff` | `#20262a` |
+| `--color-warn` | `#8a5a00` | `#f0b85a` |
+| `--color-warn-fg` | `#ffffff` | `#20262a` |
+| `--color-danger` | `#b3261e` | `#ff8a80` |
+| `--color-danger-fg` | `#ffffff` | `#20262a` |
+| `--color-envelope` | `#276f80` | `#5fc4d6` |
+| `--color-envelope-fg` | `#ffffff` | `#20262a` |
+| `--color-concrete` | `#a7aba8` | `#6b7276` |
+| `--color-focus` | `#34507a` | `#9db6e0` |
+| `--color-overlay` | `rgb(31 35 40 / 0.45)` | `rgb(0 0 0 / 0.55)` |
+| `--color-viewport` | `#f1f2ee` | `#20262a` |
+| `--color-grid` | `#d8dbd5` | `#3a4348` |
+| `--color-site-line` | `#1f2328` | `#e8eae6` |
+| `--color-setback` | `#34507a` | `#9db6e0` |
+| `--color-mass` | `#a7aba8` | `#6b7276` |
+| `--color-mass-edge` | `#474d53` | `#c3c8c4` |
+| `--color-room` | `#fbfbf9` | `#283035` |
+| `--color-selection` | `#34507a` | `#9db6e0` |
+| `--color-sheet-paper` | `#ffffff` | `#ffffff` |
+| `--color-sheet-ink` | `#1f2328` | `#1f2328` |
 | `--color-bg-deep` | `#171614` | `—` |
 | `--color-panel-2` | `#1b1a18` | `—` |
 | `--color-nav-sub` | `#232220` | `—` |
@@ -56,6 +67,11 @@
 | `--radius-card` | `10px` |
 | `--shadow-pop` | `0 16px 40px rgb(0 0 0 / 0.35)` |
 | `--spacing` | `4px` |
+| `--spacing-control` | `36px` |
+| `--spacing-control-sm` | `28px` |
+| `--spacing-row` | `36px` |
+| `--spacing-pad` | `16px` |
+| `--spacing-gap` | `12px` |
 | `--focus-ring-width` | `2px` |
 | `--focus-ring-offset` | `3px` |
 | `--breakpoint-md` | `768px` |
@@ -72,3 +88,7 @@
 | `--sidebar-w` | `248px` |
 | `--sidebar-w-collapsed` | `64px` |
 | `--ease-out` | `cubic-bezier(0.2, 0.8, 0.2, 1)` |
+| `--line-dash-site` | `12 3 2 3` |
+| `--line-dash-setback` | `6 4` |
+| `--envelope-fill-opacity` | `0.16` |
+| `--chat-bubble-max` | `85%` |

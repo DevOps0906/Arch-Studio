@@ -3,7 +3,10 @@
    출처: 앱 = design/reference/dashboard canvas.json notes.sub · 03_SCREENS_UX.md 4.3 / 랜딩 = design/reference/landing/landing.html :root.
    "제안" 표시 값은 시안·기획서에 없던 값(AR-06-010 토큰 확정 전)이다. 비주얼 수치의 최종 확정은 사람. */
 @import "tailwindcss";
+/* 앱 테마 전환은 .dark 하나로 통일(DESIGN_SYSTEM 6장). 밀도는 [data-density="compact"]. */
 @custom-variant dark (&:where(.dark, .dark *));
+/* 공유 컴포넌트 클래스 스캔: 웹은 node_modules 링크로 이 패키지를 보므로 명시한다(이 파일 기준 상대 경로). */
+@source "./components";
 
 @theme {
   /* ===== 색: 앱 라이트(기본) ===== */
@@ -30,6 +33,19 @@
   --color-envelope-fg: #ffffff;
   --color-concrete: #a7aba8;      /* 매스 재질·비활성: 글자·점에 쓰지 않음 */
   --color-focus: #34507a;         /* 승인 2026-10-28: 포커스 링 (bg 대비 3:1 이상). 랜딩은 accent로 재정의 */
+  --color-overlay: rgb(31 35 40 / 0.45); /* 제안: Dialog·Sheet 뒤 가림막(먹 45%) */
+
+  /* ===== 3D 뷰포트·SVG 도면 미리보기 색 (화면 테마용. DXF 출력은 ACI 고정이라 여기서 읽지 않는다) ===== */
+  --color-viewport: #f1f2ee;      /* 뷰포트 바탕 = 트레이싱지 */
+  --color-grid: #d8dbd5;          /* 모눈 = line */
+  --color-site-line: #1f2328;     /* 대지 경계(1점 쇄선) = 먹 */
+  --color-setback: #34507a;       /* 이격선·사선(파선) = 배치도 남 */
+  --color-mass: #a7aba8;          /* 매스 면 = 콘크리트 */
+  --color-mass-edge: #474d53;     /* 제안: 매스 모서리 = fg-2 */
+  --color-room: #fbfbf9;          /* 제안: 평면 실 면 = surface */
+  --color-selection: #34507a;     /* 제안: 선택 윤곽 = info */
+  --color-sheet-paper: #ffffff;   /* 제안: 도면 시트 미리보기 종이(인쇄 기준 흰색) */
+  --color-sheet-ink: #1f2328;     /* 도면 시트 선·글자 = 먹 */
 
   /* 랜딩 전용 색: Tailwind 유틸리티(bg-bg-deep 등) 생성용 등록. 앱 화면에서는 쓰지 않으며 값은 landing 블록이 재정의 */
   --color-bg-deep: #171614;
@@ -73,6 +89,12 @@
 
   /* ===== 간격·반경·그림자·레이아웃 ===== */
   --spacing: 4px;
+  /* 밀도 토큰(기본). 컴팩트 값은 [data-density="compact"]가 덮어쓴다. 유틸리티: h-control · h-row · p-pad · gap-gap 등 */
+  --spacing-control: 36px;     /* 제안: md 컨트롤 높이 */
+  --spacing-control-sm: 28px;  /* 제안: sm 컨트롤 높이 */
+  --spacing-row: 36px;         /* 제안: 표·트리 행 높이 */
+  --spacing-pad: 16px;         /* 제안: 패널 안쪽 여백 */
+  --spacing-gap: 12px;         /* 제안: 묶음 간격 */
   --radius-control: 6px;   /* 앱 컨트롤 */
   --radius-panel: 10px;    /* 앱 패널 */
   --radius-card: 10px;
@@ -92,6 +114,77 @@
   :root { --text-display: 32px; --text-h1: 24px; --text-h2: 20px; --text-body: 14px; --text-caption: 12px; --text-num: 13px; }
 }
 /* 앱 GNB: 1024px 미만은 햄버거 + 드로어(시안 Shell.dc). 미디어쿼리에는 변수를 못 쓰므로 컴포넌트가 이 값을 문서대로 쓴다. */
+
+/* ===== 선 종류 (SVG stroke-dasharray, 사용자 단위). 선의 종류가 의미를 나른다: 쇄선 = 경계, 파선 = 이격·사선 ===== */
+:root {
+  --line-dash-site: 12 3 2 3;     /* 1점 쇄선(제안 비율) */
+  --line-dash-setback: 6 4;       /* 파선(제안 비율) */
+  --envelope-fill-opacity: 0.16;  /* 제안: 엔벨로프 면 투명도 */
+  --chat-bubble-max: 85%;         /* 제안: 채팅 말풍선 최대 너비(스레드 폭 대비) */
+}
+
+/* ===== 밀도: 컴팩트 (Primer식, 간격·행 높이만 줄이고 글자 크기는 유지) ===== */
+[data-density="compact"] {
+  --spacing-control: 28px;
+  --spacing-control-sm: 24px;
+  --spacing-row: 28px;
+  --spacing-pad: 12px;
+  --spacing-gap: 8px;
+}
+
+/* ===== 앱 다크 "흑판" (03장 4.3: 바탕 #20262A만 확정, 나머지 전부 제안 — D-34 사람 확정 필요) ===== */
+.dark {
+  color-scheme: dark;
+  --color-bg: #20262a;            /* 흑판(4.3 확정) */
+  --color-surface: #283035;
+  --color-raised: #2e363c;
+  --color-nav: #1b2024;
+  --color-fg: #e8eae6;            /* 분필 */
+  --color-fg-2: #c3c8c4;
+  --color-fg-3: #9aa19d;
+  --color-line: #3a4348;
+  --color-input: #8d9590;
+  --color-accent: #e8eae6;        /* 앱 주 버튼 = 글자색 반전 */
+  --color-accent-fg: #20262a;
+  --color-info: #9db6e0;
+  --color-info-fg: #20262a;
+  --color-ok: #6fcf97;
+  --color-ok-fg: #20262a;
+  --color-warn: #f0b85a;
+  --color-warn-fg: #20262a;
+  --color-danger: #ff8a80;
+  --color-danger-fg: #20262a;
+  --color-envelope: #5fc4d6;      /* 4.3: 다크에서는 밝게 조정 */
+  --color-envelope-fg: #20262a;
+  --color-concrete: #6b7276;
+  --color-focus: #9db6e0;
+  --color-overlay: rgb(0 0 0 / 0.55);
+  --color-viewport: #20262a;
+  --color-grid: #3a4348;
+  --color-site-line: #e8eae6;
+  --color-setback: #9db6e0;
+  --color-mass: #6b7276;
+  --color-mass-edge: #c3c8c4;
+  --color-room: #283035;
+  --color-selection: #9db6e0;
+  --color-sheet-paper: #ffffff;   /* 시트 미리보기는 인쇄물이라 다크에서도 흰 종이 */
+  --color-sheet-ink: #1f2328;
+}
+
+/* ===== 포커스 링 유틸리티: 모든 상호작용 컴포넌트가 이 클래스만 쓴다 ===== */
+@utility focus-ring {
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+}
+/* 입력 묶음(접미사 단위가 붙은 Input 등)은 감싼 상자에 링을 그린다 */
+@utility focus-ring-within {
+  &:has(:focus-visible) {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+}
 
 /* ===== 랜딩 표면: 다크·민트 (불투명 면, 한글 서체, 유리·블러 없음) ===== */
 [data-surface="landing"] {
@@ -126,6 +219,16 @@
   --color-envelope-fg: #14161b;
   --color-violet: #b4a3ff;
   --color-focus: #5eead4;         /* 시안: accent */
+  /* 3D·도면 미리보기(제안: 랜딩 시안 팔레트에서 재사용) */
+  --color-viewport: #1e1d1b;
+  --color-grid: #3d3a36;
+  --color-site-line: #f4f0e8;
+  --color-setback: #8fb0ff;
+  --color-mass: #9a9388;
+  --color-mass-edge: #c8c1b6;
+  --color-room: #282624;
+  --color-selection: #5eead4;
+  --color-overlay: rgb(0 0 0 / 0.55);
   --radius-control: 10px;
   --radius-panel: 10px;
   --radius-card: 14px;
