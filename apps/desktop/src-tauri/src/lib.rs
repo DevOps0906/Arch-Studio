@@ -21,6 +21,9 @@ pub fn builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
             commands::local_db::local_db_delete_project,
             commands::fs::fs_open_import,
             commands::export::export_save_file,
+            commands::secrets::secret_get,
+            commands::secrets::secret_set,
+            commands::secrets::secret_delete,
         ])
 }
 
@@ -34,6 +37,9 @@ pub fn run() {
                 Err(_) => Err(AppError::new(code::DB_UNAVAILABLE, "app_data_dir")),
             };
             app.manage(LocalDbState(db));
+            app.manage(commands::secrets::SecretState(Arc::new(
+                commands::secrets::SecretStore::keychain(),
+            )));
             Ok(())
         })
         .run(tauri::generate_context!())

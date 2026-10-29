@@ -6,6 +6,9 @@ const APP_COMMANDS: &[&str] = &[
     "local_db_delete_project",
     "fs_open_import",
     "export_save_file",
+    "secret_get",
+    "secret_set",
+    "secret_delete",
 ];
 
 fn main() {

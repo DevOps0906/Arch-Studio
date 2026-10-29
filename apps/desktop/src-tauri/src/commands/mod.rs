@@ -4,6 +4,7 @@
 pub mod export;
 pub mod fs;
 pub mod local_db;
+pub mod secrets;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
