@@ -2,6 +2,7 @@
 // Mock은 개발 빌드(`import.meta.env.DEV`) + `VITE_AUTH_MODE=mock` 둘 다일 때만. 릴리스 빌드는 Vite가 DEV를 false로 치환해
 // 아래 조건이 상수 거짓이 되고, 그 안의 동적 import(dev-mock.ts)가 번들에서 빠진다(scripts/dev/check-bundle-mock.mjs로 확인).
 // Node 테스트에는 import.meta.env가 없어 거짓이다.
+// desktopAuthMode는 shell-bridge/src/auth 밖(기능 코드)에서 import하지 않는다(eslint `authJudge` 묶음, boundary.test.ts).
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { DevMockAuth } from "./dev-mock.ts";
 

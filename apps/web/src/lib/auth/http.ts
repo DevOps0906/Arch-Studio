@@ -138,7 +138,10 @@ export function isSameOriginRequest(req: Request): boolean {
     const o = new URL(origin);
     if (o.protocol !== "http:" && o.protocol !== "https:") return false;
     // Next 서버의 req.url 호스트는 바인딩 주소로 바뀔 수 있어(예: localhost) 브라우저가 보낸 Host와 비교한다.
-    // Host는 요청 대상 서버 자신이라 교차 사이트 공격자가 다른 값으로 바꿀 수 없다.
+    // 한계: Origin·Host는 요청자가 정하는 헤더다. 브라우저(교차 사이트 공격·DNS 리바인딩)는 둘을 마음대로 못 바꾸지만
+    // curl 같은 비브라우저 클라이언트는 둘 다 loopback으로 꾸밀 수 있다(예: req.url=http://192.168.0.5:3000, Origin·Host=localhost → 참).
+    // 그래서 이 검사는 CSRF 방어일 뿐이고, 원격 접근 차단은 isMockAuthAllowed(NODE_ENV·배포 표지)·hasProxyHeaders(404)·
+    // `next dev -H 127.0.0.1` 바인딩이 맡는다.
     // DNS 리바인딩(evil.com → 127.0.0.1) 차단: 로컬 전용 경로이므로 출처 호스트 이름은 loopback만.
     if (!LOOPBACK_HOSTNAMES.has(o.hostname)) return false;
     const host = req.headers.get("host");
@@ -147,4 +150,11 @@ export function isSameOriginRequest(req: Request): boolean {
   } catch {
     return false;
   }
+}
+
+/** 프록시·터널을 거친 요청 표지. 로컬 전용 경로(`/api/dev/login`)는 이 헤더가 하나라도 있으면 존재를 숨긴다(404). */
+const PROXY_HEADERS = ["x-forwarded-for", "x-forwarded-host", "forwarded"] as const;
+
+export function hasProxyHeaders(req: Request): boolean {
+  return PROXY_HEADERS.some((name) => req.headers.has(name));
 }

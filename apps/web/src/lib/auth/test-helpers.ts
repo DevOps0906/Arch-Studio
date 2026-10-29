@@ -18,6 +18,8 @@ export interface FakeDb {
   bootstrapCalls: number;
   audits: { orgId: string; userId: string; meta: unknown }[];
   profile: boolean;
+  /** approval 정책 앱 흉내: bootstrap 뒤 프로필 상태가 이 값으로 바뀐다(예: pending). */
+  statusAfterBootstrap?: string;
 }
 
 export function fakeDb(over: Partial<FakeDb> = {}): FakeDb {
@@ -53,6 +55,7 @@ export function fakeFinishDeps(
     async bootstrapApp() {
       db.bootstrapCalls += 1;
       db.entitled = true;
+      if (db.statusAfterBootstrap !== undefined) db.status = db.statusAfterBootstrap;
       const key = `signup:${ORG_ID}:arch`;
       if (!db.ledger.has(key)) db.ledger.set(key, 30);
     },

@@ -45,6 +45,14 @@ async function readContext(deps: FinishLoginDeps): Promise<SessionContext | null
   return parseSessionContext(await deps.sessionContext());
 }
 
+/** 계정 상태 분기. active가 아니면 거부 사유. bootstrap 전·후 두 번 적용한다(approval 정책 앱은 bootstrap이 pending으로 바꾼다). */
+function statusRejection(ctx: SessionContext): FinishLoginResult | null {
+  if (ctx.status === "pending") return { kind: "forbidden", reason: "pending" };
+  if (ctx.status === "suspended") return { kind: "forbidden", reason: "suspended" };
+  if (ctx.status !== "active") return { kind: "forbidden", reason: "inactive" };
+  return null;
+}
+
 export async function finishLogin(deps: FinishLoginDeps, input: FinishLoginInput): Promise<FinishLoginResult> {
   const user = await deps.getUser();
   if (!user) return { kind: "unauthorized" };
@@ -60,9 +68,8 @@ export async function finishLogin(deps: FinishLoginDeps, input: FinishLoginInput
   if (ctx.user_id !== user.id) return { kind: "unauthorized" };
 
   // 4) 상태(3번보다 먼저: 정지 계정에 부트스트랩하지 않는다)
-  if (ctx.status === "pending") return { kind: "forbidden", reason: "pending" };
-  if (ctx.status === "suspended") return { kind: "forbidden", reason: "suspended" };
-  if (ctx.status !== "active") return { kind: "forbidden", reason: "inactive" };
+  const rejected = statusRejection(ctx);
+  if (rejected) return rejected;
 
   // 3) open 앱: entitled=false이고 개인 조직 owner면 bootstrap 1회 후 다시 조회(DB 멱등: signup:<org>:arch).
   let firstLogin = false;
@@ -70,6 +77,9 @@ export async function finishLogin(deps: FinishLoginDeps, input: FinishLoginInput
     await deps.bootstrapApp();
     const again = await readContext(deps);
     if (!again || again.user_id !== user.id) return { kind: "no_profile" };
+    // bootstrap이 상태를 바꿀 수 있다(approval 정책 앱 → pending). 다시 읽은 값으로 상태 분기를 한 번 더 한다.
+    const rejectedAgain = statusRejection(again);
+    if (rejectedAgain) return rejectedAgain;
     firstLogin = again.entitled;
     ctx = again;
   }

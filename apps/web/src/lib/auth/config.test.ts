@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { getAuthConfig, isLoopbackUrl, isMockAuthAllowed } from "./config.ts";
+import { assertBuildAuthMode, getAuthConfig, isLoopbackUrl, isMockAuthAllowed } from "./config.ts";
 
 const LOCAL = {
   AUTH_MODE: "mock",
@@ -32,8 +32,14 @@ test("하나라도 어긋나면 거짓(기본 닫힘)", () => {
     "Railway project": { ...LOCAL, RAILWAY_PROJECT_ID: "p" },
     "비밀번호 없음": { ...LOCAL, DEV_SEED_PASSWORD: undefined },
     "비밀번호 빈 값": { ...LOCAL, DEV_SEED_PASSWORD: "" },
+    // 보안 리뷰: 프로덕션 빌드(`next start`)는 loopback·비배포여도 Mock을 열지 않는다.
+    "NODE_ENV production": { ...LOCAL, NODE_ENV: "production" },
   };
   for (const [name, env] of Object.entries(cases)) assert.equal(isMockAuthAllowed(env), false, name);
+});
+
+test("NODE_ENV가 development·test·없음이면 다른 조건대로", () => {
+  for (const NODE_ENV of [undefined, "development", "test"]) assert.equal(isMockAuthAllowed({ ...LOCAL, NODE_ENV }), true, String(NODE_ENV));
 });
 
 test("빌드에 박힌 Supabase URL이 원격이면 실행 env가 로컬이어도 거짓", () => {
@@ -57,4 +63,15 @@ test("getAuthConfig: 기본 live, 제공자 목록 검사", () => {
   assert.throws(() => getAuthConfig({}), /AUTH_PROVIDERS/);
   assert.throws(() => getAuthConfig({ AUTH_PROVIDERS: "google,facebook" }), /알 수 없는/);
   assert.throws(() => getAuthConfig({ AUTH_MODE: "dev" }), /AUTH_MODE/);
+});
+
+test("빌드 가드(B-4): AUTH_MODE=mock + 배포 표지(VERCEL_ENV·VERCEL·RAILWAY_*)면 빌드 실패", () => {
+  for (const marker of [{ VERCEL_ENV: "production" }, { VERCEL_ENV: "preview" }, { VERCEL: "1" }, { RAILWAY_ENVIRONMENT: "production" }, { RAILWAY_PROJECT_ID: "p" }]) {
+    assert.throws(() => assertBuildAuthMode({ AUTH_MODE: "mock", ...marker }), /mock/, JSON.stringify(marker));
+    assert.throws(() => assertBuildAuthMode({ AUTH_MODE: " mock ", ...marker }), /mock/, JSON.stringify(marker));
+  }
+  // 로컬 mock 빌드·배포 live 빌드는 통과(런타임 판정은 isMockAuthAllowed가 따로 한다).
+  assert.doesNotThrow(() => assertBuildAuthMode({ AUTH_MODE: "mock" }));
+  assert.doesNotThrow(() => assertBuildAuthMode({ AUTH_MODE: "live", VERCEL_ENV: "production" }));
+  assert.doesNotThrow(() => assertBuildAuthMode({ VERCEL_ENV: "production" }));
 });

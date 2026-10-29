@@ -69,7 +69,15 @@ const RESTRICTIONS = {
       "Literal[value=/^(VITE_)?AUTH_MODE$/]",
       "Identifier[name=/^(VITE_)?AUTH_MODE$/]",
     ],
-    message: "AUTH_MODE·VITE_AUTH_MODE는 인증 경로(lib/auth, shell-bridge/src/auth, features/src/auth)에서만 읽는다. 기능 코드는 isMockAuthAllowed 등 판정 결과만 쓴다.",
+    message:
+      "AUTH_MODE·VITE_AUTH_MODE는 인증 경로(lib/auth, shell-bridge/src/auth, features/src/auth)에서만 읽는다. 기능 코드는 인증 단계로 분기(`if (mock)`)하지 않는다.",
+  },
+  // 판정 함수(isMockAuthAllowed·desktopAuthMode)를 부르는 것도 값을 직접 읽는 것과 같다(보안 리뷰 M22: `if (isMockAuthAllowed())` = dev-user 우회 모양).
+  // 쓸 수 있는 곳은 AUTH_JUDGE_*(로그인 화면·dev 라우트·판정 모듈)뿐. 별칭 import·네임스페이스 접근·구조 분해도 식별자로 잡는다.
+  authJudge: {
+    syntax: ["Identifier[name=/^(isMockAuthAllowed|desktopAuthMode)$/]", "Literal[value=/^(isMockAuthAllowed|desktopAuthMode)$/]"],
+    message:
+      "isMockAuthAllowed·desktopAuthMode(인증 단계 판정)는 로그인 화면((auth)/layout·login/page)·/api/dev/login·lib/auth·shell-bridge/src/auth에서만 쓴다. 기능 코드는 `if (mock)` 분기를 하지 않는다.",
   },
 };
 
@@ -139,9 +147,14 @@ const NO_REEXPORT = [
 const WEB_SERVER = ["apps/web/src/server/**"];
 const SHELL_BRIDGE = ["packages/shell-bridge/**"];
 const THREE_ALLOWED = ["apps/web/src/components/hero3d/**", "packages/features/src/modeler/**"];
-// 인증 경로: authMode 묶음만 빠진다. env 스키마·데스크톱 env 허용 목록은 변수 "선언"이라 같은 예외(boundary.test.ts와 같은 목록).
+// 인증 경로(boundary.test.ts AUTH_PATHS·AUTH_MODE_DECLARATIONS·AUTH_JUDGE_ALLOWED와 같은 목록):
+// - AUTH_PATHS_DEFAULT: authMode만 빠진다(features/auth, env 스키마·데스크톱 env 허용 목록 = 변수 "선언").
+// - AUTH_JUDGE_WEB·AUTH_JUDGE_TOOLS: authJudge만 빠진다(로그인 화면·dev 라우트가 판정 결과로 Mock 패널·404를 정한다, 번들 검사 도구).
+// - AUTH_JUDGE_CORE(web lib/auth)·AUTH_PATHS_SHELL(shell-bridge/src/auth): 판정 모듈 자신이라 둘 다 빠진다.
+const AUTH_JUDGE_WEB = ["apps/web/src/app/(auth)/layout.tsx", "apps/web/src/app/(auth)/login/page.tsx", "apps/web/src/app/api/dev/login/**"];
+const AUTH_JUDGE_TOOLS = ["scripts/dev/check-bundle-mock.mjs"];
+const AUTH_JUDGE_CORE = ["apps/web/src/lib/auth/**"];
 const AUTH_PATHS_DEFAULT = [
-  "apps/web/src/lib/auth/**",
   "packages/features/src/auth/**",
   "apps/web/src/lib/env/schema.ts",
   "apps/web/src/lib/env/schema.test.ts",
@@ -159,15 +172,17 @@ export default tseslint.config(
   },
   ...tseslint.configs.recommended,
   { plugins: { arch: { rules: { "no-service-client": serviceClientRule } } } },
-  ...area(undefined, ["tauri", "three", "spikes", "platform", "authMode"], [], { "arch/no-service-client": "error" }),
-  ...area(WEB_SERVER, ["tauri", "three", "spikes", "platform", "authMode"], NO_REEXPORT, { "arch/no-service-client": "off" }),
+  ...area(undefined, ["tauri", "three", "spikes", "platform", "authMode", "authJudge"], [], { "arch/no-service-client": "error" }),
+  ...area(WEB_SERVER, ["tauri", "three", "spikes", "platform", "authMode", "authJudge"], NO_REEXPORT, { "arch/no-service-client": "off" }),
   // shell-bridge는 플랫폼 판정을 하는 유일한 곳이라 platform 묶음을 뺀다.
-  ...area(SHELL_BRIDGE, ["three", "spikes", "authMode"]),
-  ...area(THREE_ALLOWED, ["tauri", "spikes", "platform", "authMode"]),
+  ...area(SHELL_BRIDGE, ["three", "spikes", "authMode", "authJudge"]),
+  ...area(THREE_ALLOWED, ["tauri", "spikes", "platform", "authMode", "authJudge"]),
   // 엔진은 결정적 순수 함수만: 시간·난수·네트워크·환경 변수·타이머·Node I/O 금지(.claude/rules/engine.md).
-  ...area(ENGINE, ["tauri", "three", "spikes", "node", "platform", "authMode"]),
-  // 인증 경로는 부모 영역의 묶음에서 authMode만 뺀다(뒤 설정이 덮어쓰므로 영역 설정들 뒤에 둔다).
-  ...area(AUTH_PATHS_DEFAULT, ["tauri", "three", "spikes", "platform"]),
+  ...area(ENGINE, ["tauri", "three", "spikes", "node", "platform", "authMode", "authJudge"]),
+  // 인증 경로는 부모 영역의 묶음에서 authMode·authJudge를 뺀다(뒤 설정이 덮어쓰므로 영역 설정들 뒤에 둔다).
+  ...area(AUTH_PATHS_DEFAULT, ["tauri", "three", "spikes", "platform", "authJudge"]),
+  ...area([...AUTH_JUDGE_WEB, ...AUTH_JUDGE_TOOLS], ["tauri", "three", "spikes", "platform", "authMode"]),
+  ...area(AUTH_JUDGE_CORE, ["tauri", "three", "spikes", "platform"]),
   ...area(AUTH_PATHS_SHELL, ["three", "spikes"]),
   {
     files: ENGINE,

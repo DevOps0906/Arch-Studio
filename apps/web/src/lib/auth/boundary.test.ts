@@ -85,3 +85,43 @@ test("CI 금지 문자열(쿠키·스토리지 역할 Mock) 0건(AUTH_ROADMAP 9�
   const offenders = FILES.filter((f) => f !== "apps/web/src/lib/auth/boundary.test.ts").filter((f) => banned.test(read(f)));
   assert.deepEqual(offenders, []);
 });
+
+/**
+ * 인증 단계 판정 함수(isMockAuthAllowed·desktopAuthMode)를 쓸 수 있는 곳(보안 리뷰 M22: 기능 코드가 판정 결과로 `if (mock)` 분기 금지).
+ * eslint `authJudge` 묶음(eslint.config.mjs AUTH_JUDGE_*)과 같은 목록. 새 항목 추가 = 보안 리뷰.
+ */
+const AUTH_JUDGE_ALLOWED = [
+  "apps/web/src/lib/auth/",
+  "packages/shell-bridge/src/auth/",
+  "apps/web/src/app/(auth)/layout.tsx",
+  "apps/web/src/app/(auth)/login/page.tsx",
+  "apps/web/src/app/api/dev/login/",
+];
+/** 판정 함수 이름이 나오지만 기능 코드가 아닌 파일(이유 명시). */
+const AUTH_JUDGE_TOOLS: Record<string, string> = {
+  "scripts/dev/check-bundle-mock.mjs": "릴리스 번들 Mock 0 검사 도구(desktopAuthMode를 넣어 번들한 뒤 산출물을 grep)",
+};
+const JUDGE_NAMES = /\b(isMockAuthAllowed|desktopAuthMode)\b/;
+/** 주석을 지운 코드(주석 속 이름은 위반이 아니다). `http://` 같은 문자열 속 `//`는 앞 글자 `:`로 건너뛴다. */
+const stripComments = (src: string) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
+
+test("판정 함수(isMockAuthAllowed·desktopAuthMode)는 허용 목록 밖에서 import·호출 0건", () => {
+  const offenders = FILES.filter((f) => !AUTH_JUDGE_ALLOWED.some((p) => f.startsWith(p)) && !(f in AUTH_JUDGE_TOOLS)).filter((f) =>
+    JUDGE_NAMES.test(stripComments(read(f))),
+  );
+  assert.deepEqual(offenders, []);
+  // 검사기 자체 확인: 허용 목록 안의 로그인 화면은 실제로 판정 함수를 쓴다(목록·정규식이 비어 통과하는 것 방지).
+  assert.match(stripComments(read("apps/web/src/app/(auth)/login/page.tsx")), JUDGE_NAMES);
+  assert.doesNotMatch(stripComments("// isMockAuthAllowed()\nconst u = 'http://x'; /* desktopAuthMode */"), JUDGE_NAMES);
+  assert.match(stripComments("import { isMockAuthAllowed as ok } from 'x';"), JUDGE_NAMES);
+});
+
+test("safeNextPath 두 구현(web·features)과 테스트 벡터가 글자 그대로 같다", () => {
+  assert.equal(read("packages/features/src/auth/next-path.ts"), read("apps/web/src/lib/auth/next-path.ts"));
+  assert.equal(read("packages/features/src/auth/next-path.test.ts"), read("apps/web/src/lib/auth/next-path.test.ts"));
+});
+
+test("웹 dev 서버는 loopback에만 바인딩(`next dev -H 127.0.0.1`)", () => {
+  const pkg = JSON.parse(read("apps/web/package.json")) as { scripts: Record<string, string> };
+  assert.match(pkg.scripts.dev ?? "", /^next dev(\s.*)?\s-H 127\.0\.0\.1(\s|$)/);
+});

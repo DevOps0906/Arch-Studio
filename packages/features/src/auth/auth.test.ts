@@ -63,6 +63,12 @@ test("응답 모양 검사: 외부 next·잔액 소수·역할 이상은 invalid
   for (const bad of [
     { ...DATA, next: "//evil.com" },
     { ...DATA, next: "https://evil.com" },
+    // 보안 리뷰: `/\evil`은 브라우저가 `//evil`로 해석한다. 웹 safeNextPath와 같은 규칙(점 세그먼트·인코딩 포함).
+    { ...DATA, next: "/\\evil.com" },
+    { ...DATA, next: "/.//evil.com" },
+    { ...DATA, next: "/%2e//evil.com" },
+    { ...DATA, next: "/%2F%2Fevil.com" },
+    { ...DATA, next: "/@evil.com" },
     { ...DATA, session: { ...DATA.session, credit_balance: 1.5 } },
     { ...DATA, session: { ...DATA.session, org: { id: "x", role: "root" } } },
   ]) {

@@ -64,6 +64,16 @@ test("상태: suspended·pending은 403이고 bootstrap하지 않는다", async 
   }
 });
 
+test("bootstrap 뒤 다시 읽은 상태도 검사: approval 정책 앱이 pending으로 바꾸면 403 pending, 감사·ok 응답 없음(보안 리뷰)", async () => {
+  for (const status of ["pending", "suspended", "deleted"] as const) {
+    const db = fakeDb({ entitled: false, ledger: new Map(), statusAfterBootstrap: status });
+    const r = await finishLogin(fakeFinishDeps(db), { provider: "email", next: "/projects" });
+    assert.deepEqual(r, { kind: "forbidden", reason: status === "deleted" ? "inactive" : status }, status);
+    assert.equal(db.bootstrapCalls, 1);
+    assert.equal(db.audits.length, 0, "거부된 로그인은 감사 auth.login을 남기지 않는다");
+  }
+});
+
 test("프로필 없음 → no_profile, 사용자 없음·불일치 → unauthorized", async () => {
   assert.deepEqual(await finishLogin(fakeFinishDeps(fakeDb({ profile: false })), { provider: "email" }), { kind: "no_profile" });
   assert.deepEqual(await finishLogin(fakeFinishDeps(fakeDb(), { user: null }), { provider: "email" }), { kind: "unauthorized" });

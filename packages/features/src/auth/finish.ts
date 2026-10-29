@@ -1,6 +1,10 @@
 // features/auth: 로그인 직후 `POST /api/auth/finish` 호출(02_ARCHITECTURE.md 9.2절 5단계). 토큰은 api-client의 주입된
 // getAccessToken(shell-bridge createDesktopAuthSession)만 쓰고 본문에는 제공자만 보낸다(토큰·code·org_id 없음).
 import type { ApiClient } from "../api-client/index.ts";
+import { safeNextPath } from "./next-path.ts";
+
+/** 서버가 준 next는 웹 safeNextPath와 같은 규칙을 통과하고 그 결과와 같아야 한다(멱등 → 서버가 정상이면 항상 참). */
+const isSafeNext = (next: string): boolean => safeNextPath(next, "") === next;
 
 export type FinishProvider = "google" | "email" | "kakao" | "naver";
 
@@ -28,7 +32,7 @@ const ROLES = new Set(["owner", "admin", "member", "viewer"]);
 export function parseFinishData(data: unknown): FinishResult {
   const d = data as { next?: unknown; needs_onboarding?: unknown; session?: Record<string, unknown> } | null;
   const s = d?.session;
-  if (!d || typeof d.next !== "string" || !d.next.startsWith("/") || d.next.startsWith("//") || typeof d.needs_onboarding !== "boolean" || !s) {
+  if (!d || typeof d.next !== "string" || !isSafeNext(d.next) || typeof d.needs_onboarding !== "boolean" || !s) {
     throw new Error("invalid");
   }
   const org = s.org as { id?: unknown; role?: unknown } | null;
