@@ -1,0 +1,26 @@
+{
+  "name": "spike-studio-shell",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "gen": "node scripts/gen.ts",
+    "build:vite": "vite build vite-shell",
+    "build:next": "next build next-shell",
+    "start:next": "next start next-shell -p 3917",
+    "measure": "node scripts/measure.ts"
+  },
+  "dependencies": {
+    "next": "16.2.12",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
+    "react-router": "8.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.19.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  }
+}
