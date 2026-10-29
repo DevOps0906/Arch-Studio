@@ -3,15 +3,18 @@
 import type { DesignModelV1 } from "@arch-studio/domain";
 import type { DraftingInput, SheetModel } from "@arch-studio/drafting";
 
-export const LANES = ["judge", "suggest", "layout", "sheet", "export", "import"] as const;
+// mesh·preview 레인(AR-06-036 모델러 표시용 메시, 2.4절 추가 제안 — tasks/logs/AR-06-036.md [DECISION 필요]):
+//  - mesh: mass_meshes(매스별 표시 메시). preview: mass_excess(엔벨로프 표시 메시 + 매스 − 엔벨로프 초과분). 둘 다 최신만 유효.
+//  - 판정(judge) 레인과 분리해 드래그 중 표시 요청이 판정 요청을 superseded 로 밀어내지 않게 한다.
+export const LANES = ["judge", "suggest", "layout", "sheet", "export", "import", "mesh", "preview"] as const;
 export type Lane = (typeof LANES)[number];
 
 /** engine.worker 가 맡는 레인 / drafting.worker 가 맡는 레인(2.4절). */
-export const ENGINE_LANES: readonly Lane[] = ["judge", "suggest", "layout"];
+export const ENGINE_LANES: readonly Lane[] = ["judge", "suggest", "layout", "mesh", "preview"];
 export const DRAFTING_LANES: readonly Lane[] = ["sheet", "export", "import"];
 
 /** 레인마다 최신 요청만 유효한 레인. export 는 끝까지 실행, import 는 순서대로 모두 실행한다. */
-export const LATEST_ONLY_LANES: readonly Lane[] = ["judge", "suggest", "layout", "sheet"];
+export const LATEST_ONLY_LANES: readonly Lane[] = ["judge", "suggest", "layout", "sheet", "mesh", "preview"];
 export function isLatestOnly(lane: Lane): boolean {
   return LATEST_ONLY_LANES.includes(lane);
 }
@@ -26,6 +29,8 @@ export const OP_LANE = {
   build_sheet: "sheet",
   write: "export",
   import_dxf: "import",
+  mass_meshes: "mesh",
+  mass_excess: "preview",
 } as const;
 export type LaneOp = keyof typeof OP_LANE;
 
@@ -54,6 +59,19 @@ export type EngineRequest =
       date: string;
     }
   | { op: "import_dxf"; req_id: string; lane: "import"; bytes: ArrayBuffer; unit_hint?: "mm" | "m"; purpose: "site_boundary" | "reference" }
+  // AR-06-036: 표시용 메시(정수 정규화 없음, Float32 Transferable). 본문 검사는 modeler.handlers.ts.
+  | { op: "mass_meshes"; req_id: string; lane: "mesh"; seq: number; masses: DesignModelV1["masses"] }
+  | {
+      op: "mass_excess";
+      req_id: string;
+      lane: "preview";
+      seq: number;
+      model: DesignModelV1;
+      /** 초과분을 계산할 매스 id. null = 모든 매스(드래그 끝 전체 재계산). */
+      mass_ids: string[] | null;
+      /** true면 엔벨로프 표시 메시를 함께 보낸다(처음·대지/규칙이 바뀐 뒤). */
+      want_envelope: boolean;
+    }
   | { op: "cancel"; req_id: string };
 
 export type LaneRequest = Extract<EngineRequest, { lane: Lane }>;

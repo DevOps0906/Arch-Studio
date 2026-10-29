@@ -20,6 +20,7 @@ export {
   type LoadSolidOptions,
   type Point3,
   type RegionNode,
+  type RenderMesh,
   type SolidKernel,
   type SolidErrorCode,
   type SolidNode,

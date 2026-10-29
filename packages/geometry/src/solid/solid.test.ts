@@ -92,6 +92,50 @@ test("같은 입력 같은 바이트(자식 순서가 바뀌면 꼭짓점·부�
   assert.equal(JSON.stringify(a), JSON.stringify(k.solid({ op: "union", children: [box(0, 0, 10, 10, 0, 10), box(5, 3, 15, 13, 2, 12)] })));
 });
 
+test("extrude divisions(AR-06-036): 부피는 같고 층 경계 꼭짓점이 생긴다, 범위 밖 거부", () => {
+  const plain = k.solid(box(0, 0, 1000, 2000, 0, 9000));
+  const div: SolidNode = { op: "extrude", region: { op: "polygons", polygons: [rect(0, 0, 1000, 2000)] }, z0: 0, z1: 9000, divisions: 2 };
+  const d = k.solid(div);
+  assert.equal(meshVolume(d), meshVolume(plain));
+  const zs = new Set(d.vertices.map((v) => v[2]));
+  assert.deepEqual([...zs].sort((a, b) => a - b), [0, 3000, 6000, 9000]);
+  assert.throws(() => k.solid({ ...div, divisions: -1 }), (e: unknown) => e instanceof GeometryError && e.code === "INVALID_ARGUMENT");
+  assert.throws(() => k.solid({ ...div, divisions: 1.5 }), (e: unknown) => e instanceof GeometryError);
+});
+
+test("mesh 식(AR-06-036): 정수 메시를 다시 불리언에 쓴다, 열린 메시·번호 범위 밖 거부", () => {
+  const env = k.solid(box(0, 0, 100, 100, 0, 100));
+  const cut = k.solid({ op: "subtract", base: box(50, 0, 150, 100, 0, 50), minus: [{ op: "mesh", mesh: env }] });
+  assert.equal(meshVolume(cut), BigInt(50 * 100 * 50));
+  assert.deepEqual(k.solid({ op: "mesh", mesh: { vertices: [], triangles: [] } }), { vertices: [], triangles: [] });
+  assert.throws(() => k.solid({ op: "mesh", mesh: { vertices: [[0, 0, 0]], triangles: [[0, 0, 5]] } }), (e: unknown) => e instanceof GeometryError);
+  const open = { vertices: env.vertices, triangles: env.triangles.slice(1) };
+  assert.throws(() => k.solid({ op: "mesh", mesh: open }), (e: unknown) => e instanceof GeometryError);
+});
+
+test("renderMeshes(AR-06-036): Float32 버퍼(정규화 없음), 공유 하위 식, 같은 입력 같은 버퍼", () => {
+  const env: SolidNode = { op: "mesh", mesh: k.solid(box(0, 0, 100, 100, 0, 100)) };
+  const nodes: SolidNode[] = [
+    { op: "subtract", base: box(50, 0, 150, 100, 0, 50), minus: [env] },
+    { op: "subtract", base: box(10, 10, 20, 20, 0, 10), minus: [env] },
+    box(0, 0, 10, 10, 0, 10),
+  ];
+  const out = k.renderMeshes(nodes);
+  assert.equal(out.length, 3);
+  const [a, b, c] = out as [{ positions: Float32Array; index: Uint32Array }, { positions: Float32Array; index: Uint32Array }, { positions: Float32Array; index: Uint32Array }];
+  assert.ok(a.positions instanceof Float32Array && a.index instanceof Uint32Array);
+  assert.ok(a.index.length > 0 && a.index.length % 3 === 0);
+  for (let i = 0; i < a.positions.length; i += 3) assert.ok((a.positions[i] as number) >= 100 - 1e-3, "엔벨로프 밖 부분만 남는다");
+  assert.equal(b.index.length, 0, "완전히 안쪽인 매스는 초과분 없음");
+  assert.equal(c.index.length, 12 * 3);
+  const again = k.renderMeshes(nodes);
+  assert.deepEqual([...again[0]!.positions], [...a.positions]);
+  assert.deepEqual([...again[0]!.index], [...a.index]);
+  // 전송용 자기 버퍼(WASM 힙 뷰가 아님)
+  assert.equal(a.positions.byteOffset, 0);
+  assert.equal(a.positions.buffer.byteLength, a.positions.byteLength);
+});
+
 test("부피는 bigint: safe int를 넘는 1km×1km×30m도 정확, 문자열 직렬화", () => {
   const v = meshVolume(k.solid(box(0, 0, 1_000_000, 1_000_000, 0, 30_000)));
   assert.equal(v, 30_000_000_000_000_000n);
