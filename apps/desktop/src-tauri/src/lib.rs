@@ -2,6 +2,8 @@
 //! 새 명령은 build.rs `APP_COMMANDS`와 capabilities/ 에 함께 추가하고 보안 리뷰를 거친다.
 
 pub mod commands;
+pub mod device;
+pub mod license;
 
 use std::sync::Arc;
 
@@ -24,6 +26,8 @@ pub fn builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
             commands::secrets::secret_get,
             commands::secrets::secret_set,
             commands::secrets::secret_delete,
+            commands::license::license_verify,
+            commands::license::device_hash_get,
         ])
 }
 
@@ -39,6 +43,9 @@ pub fn run() {
             app.manage(LocalDbState(db));
             app.manage(commands::secrets::SecretState(Arc::new(
                 commands::secrets::SecretStore::keychain(),
+            )));
+            app.manage(commands::license::LicenseState(Arc::new(
+                commands::license::LicenseService::production(),
             )));
             Ok(())
         })

@@ -81,6 +81,8 @@ fn capability_allows_app_commands() {
         "secret_get",
         "secret_set",
         "secret_delete",
+        "license_verify",
+        "device_hash_get",
     ] {
         if let Err(err) = invoke(cmd) {
             assert!(
@@ -143,7 +145,7 @@ fn command_names_match_across_build_handler_and_capability() {
         .map(|n| n.replace('-', "_"))
         .collect();
 
-    assert!(build.len() >= 9, "APP_COMMANDS 파싱 실패: {build:?}");
+    assert!(build.len() >= 11, "APP_COMMANDS 파싱 실패: {build:?}");
     assert_eq!(build, handler, "build.rs APP_COMMANDS != generate_handler!");
     assert_eq!(
         build, allowed,

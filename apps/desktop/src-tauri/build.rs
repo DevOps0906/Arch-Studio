@@ -9,6 +9,8 @@ const APP_COMMANDS: &[&str] = &[
     "secret_get",
     "secret_set",
     "secret_delete",
+    "license_verify",
+    "device_hash_get",
 ];
 
 fn main() {
