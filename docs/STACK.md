@@ -12,6 +12,9 @@
 | DB·인증 | Supabase(Postgres 15 · pgvector · RLS · Auth). 로컬은 모놀리스 `public` | `supabase/` |
 | API·AI | FastAPI · Python 3.12 · Pydantic v2 · LangGraph (LLM 키는 여기에만) / 워커 Node 20 | `apps/api` · `workers/arch-jobs` |
 
+
+도구별 설정: Claude `CLAUDE.md`·`.claude/` · Codex `.codex/config.toml` · Gemini `.gemini/`·`.geminiignore`.
+
 ## 2. 명령
 | 목적 | 명령 |
 |---|---|

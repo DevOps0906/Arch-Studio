@@ -3,9 +3,9 @@
 > 모든 AI 코딩 도구가 읽는 **단일 정본**. 짧게 유지한다. 스택·명령·문서 지도 상세는 `docs/STACK.md`, 영역 규칙은 `.claude/rules/*.md`.
 
 ## 1. 무엇인가
-소형 건축사사무소용 AI 설계실무 도구(웹 SaaS·Windows 설치형 동등, ADR-001): 대지 → 법규 엔벨로프 → 실시간 판정 → 도면 자동 작도. 문서 지도 `docs/STACK.md` 3장.
+소형 건축사사무소용 AI 설계실무 도구(웹 SaaS·Windows 설치형 동등, ADR-001): 대지 → 법규 엔벨로프 → 실시간 판정 → 도면 자동 작도.
 
-## 2. 스택 · 명령 (상세 `docs/STACK.md`)
+## 2. 스택 · 명령
 `apps/desktop` Tauri 2 + Rust · `apps/web` Next.js 16 + Tailwind CSS v4 · `packages/*` 순수 TS 엔진·`drafting` 도면 · `supabase/` · `apps/api` FastAPI.
 검사: `pnpm -r lint` · `pnpm -r typecheck` · `pnpm -r test`. 긴 출력은 `~/.claude/nomad/bin/q <명령>`.
 
@@ -25,5 +25,4 @@
 
 ## 5. 영역 규칙
 파일을 고치기 **전에** 해당 영역 규칙을 읽는다: `.claude/rules/{web,desktop,engine,api,db,docs}.md` (각 파일 머리의 `paths:`가 적용 경로. Claude Code는 자동 로드).
-- 읽지 않는 파일: `.env*` · lock 파일 · `node_modules/` · `.next/` · `dist/` · `build/` · `coverage/` · `target/`.
-- 도구별 설정: Claude `CLAUDE.md`·`.claude/` · Codex `.codex/config.toml` · Gemini `.gemini/`·`.geminiignore`.
+- 읽지 않음: `.env*`·lock·`node_modules`·`.next`·`dist`·`build`·`coverage`·`target`.
