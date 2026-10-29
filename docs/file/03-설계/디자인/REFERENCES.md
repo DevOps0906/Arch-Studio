@@ -358,3 +358,18 @@
 | 랜딩 | Join Radio (SOTD) | Awwwards | https://www.awwwards.com/sites/join-radio | 선택에 따라 배경과 그래픽이 바뀌는 방식 → 장르 문법 6종을 고르면 같은 문장이 그 문법의 서체·모션으로 바뀌는 섹션 | 라디오 브랜드 색, 시간대 콘셉트 | 랜딩 "장르 문법" 섹션 |
 | 앱 | Video Editing Dashboard | Dribbble | https://dribbble.com/shots/25186663-Video-Editing-Dashboard | 미리보기와 하단 가로 스트립의 위계(스트립은 트랙이 아니라 장면 칸 한 줄) | 다중 트랙 타임라인, 파형 겹침 | 작업실 장면 띠 |
 | 앱 | AI book app | Dribbble | https://dribbble.com/shots/23707376-AI-book-app | AI 결과를 여러 안으로 나란히 보여 주고 하나를 고르게 하는 구조 | 일러스트 책 표지 장식, 둥근 카드 키트 | 브리프 3안 비교 |
+
+---
+
+## arch-studio (Arch Studio, 소형 건축사사무소용 AI 설계실무 도구)
+
+추가일 2026-10-29(AR-06-009). 새 URL은 없다. 랜딩 레퍼런스 행은 이 파일의 기존 절에 있는 URL(같은 확인 결과)을 다른 참고 포인트로 쓰며, 행 내용의 정본은 제품 `03_SCREENS_UX.md` 4.1절이다(한 곳에만 둔다). 앱 화면은 갤러리 샷이 아니라 디자인 시스템(Atlassian·Primer·Astryx 패턴만)을 따르고, 고른 내용은 `DESIGN.md` 1절에 있다. CAD·3D 설계 도구 계열 후보는 URL을 직접 확인한 뒤 이 절에 더한다(아직 없음).
+
+방향 요약: 대상은 계약 전 무료 제안에 1~2일을 쓰는 1~5인 건축사사무소 대표다. 랜딩은 다크 단일 테마로 엔진이 만든 엔벨로프·판정·도면을 그대로 보여 주고, 앱은 라이트 작업면에서 판정 상태와 수치 입력이 주인공이다.
+
+| 항목 | 내용 |
+|---|---|
+| 기존 토큰 | 정본 `packages/ui/src/tokens.css`(확정 시안 `design/reference/landing`·`dashboard`). 이 파일에 hex를 옮겨 적지 않는다 |
+| 피할 인상 | 제품 `03_SCREENS_UX.md` 4.2절 "피할 인상" |
+| 랜딩 행 | Kononenko Architectural Bureau(`:283`), Humbert & Poyet(`:282`), Runway Financial(`:218`), OH Architecture(`:286`, 참고 포인트 미확인) — 참고 포인트는 4.1절 |
+| 앱 행 | Table data view for admin dashboard(`:176`) — 크레딧 내역, 기기 목록, 내보내기 기록 |

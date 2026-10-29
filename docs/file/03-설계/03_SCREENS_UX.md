@@ -582,11 +582,11 @@ member는 읽기 전용(저장 시 `AR042`), 오프라인이면 캐시를 읽기
 | 항목 | 값 |
 |---|---|
 | 주 레퍼런스 | 모델러·평면·도면 화면: Atlassian(복잡한 폼과 상태, 패널 중첩) + Primer(정보 밀도, 상태 표시). 목록·라이선스·크레딧: Primer. 채팅·음성·위키: Astryx 패턴만(설치 안 함)(`DESIGN_SYSTEM.md` 5장, `docs/file/03-설계/디자인/DESIGN_SYSTEM.md:53-57`) |
-| 토큰 파일 | `packages/ui/tokens.css`(Tailwind CSS v4 `@theme`, 라이트·다크, 컴팩트·기본 밀도). 웹과 데스크톱이 같은 파일을 쓴다. `DESIGN_SYSTEM.md` 3장의 `apps/web/src/styles/tokens.css` 대신 공유 패키지에 두는 것은 Tauri 모노레포 구조(`D:/WorkSpace/platform/docs/Tauri/README.md:223`) 때문이다 |
+| 토큰 파일 | `packages/ui/src/tokens.css`(Tailwind CSS v4 `@theme`, 라이트·다크, 컴팩트·기본 밀도). 웹과 데스크톱이 같은 파일을 쓴다. `DESIGN_SYSTEM.md` 3장의 `apps/web/src/styles/tokens.css` 대신 공유 패키지에 두는 것은 Tauri 모노레포 구조(`D:/WorkSpace/platform/docs/Tauri/README.md:223`) 때문이다 |
 | 3D·도면 색 | 뷰포트 재질과 SVG 미리보기 색도 토큰에서 읽는다(`--color-envelope`, `--color-mass`, `--color-site-line` 등, 이름 제안). DXF 출력 색은 토큰이 아니라 ACI 번호(PRD 9.6절)로 고정해 화면 테마와 무관하게 같은 파일이 나온다 |
 | 기본 컴포넌트 | Button(primary/secondary/ghost/danger, sm/md), IconButton, Input·NumberInput(mm 단위 접미사, 화살표 키 증감), Select, Checkbox, Switch, Tabs, Dialog, Sheet, Toast, Tooltip, Table(컴팩트), Badge, Kbd, Banner, Progress, Skeleton, EmptyState |
 | CAD형 제품 컴포넌트 | `LayerPanel`(표시·잠금 토글, 들여쓰기 트리), `PropertyInspector`(수치 입력 묶음, 단위 표시, 여러 객체 선택 시 "여러 값"), `MeasureReadout`(뷰포트 위 치수 라벨, tabular 숫자), `ToolBar`(도구 + 단축키 Kbd 툴팁), `ViewCube`(투시·평면·단면 전환), `JudgmentBadge`(PASS 통과 / WARN 확인 필요 / FAIL 기준 초과: 색 + 아이콘 + 글자, 색만으로 구분하지 않음), `JudgmentPanel`, `RuleCitation`(조항·시행일·규칙 팩 버전 칩), `FallbackBanner`, `OfflineIndicator`, `RoomPolygonEditor`, `SheetPreview`, `ExportDialog`, `TitleBlockEditor`, `LayerMapTable`, `IntakeCandidateList`(배지 "AI 추출 후보"), `CreditCost`(실행 전 차감 크레딧 표시), `LicenseStatusBadge`, `ChatThread`, `VoiceButton` |
-| 정답 소스 | 코드(`packages/ui/tokens.css`, `packages/ui/src/**`). 문서(`DESIGN.md`, `COMPONENTS.md`)는 코드에서 갱신하고 다르면 코드가 이긴다(`DESIGN_SYSTEM.md` 3장) |
+| 정답 소스 | 코드(`packages/ui/src/tokens.css`, `packages/ui/src/**`). 문서(`DESIGN.md`, `COMPONENTS.md`)는 코드에서 갱신하고 다르면 코드가 이긴다(`DESIGN_SYSTEM.md` 3장) |
 | 금지 | hex 직접 사용(`bg-[#...]`), `tailwind.config.js`, Tailwind CSS v3 문법, 이모지 아이콘(Lucide만) |
 
 ## 4. 메인페이지(랜딩) 디자인 방향
