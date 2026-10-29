@@ -1,9 +1,19 @@
 // POST /api/dev/login 본체(Stage A, AUTH_ROADMAP.md 2.1·2.4절). 판정이 거짓이면 모든 메서드 404(존재를 숨긴다).
-// 순서: 판정 → 메서드 → 출처(CSRF) → 본문(JSON 또는 폼, 2KB) → 페르소나 허용 목록 → signInWithPassword(서버 env 비밀번호) → finishLogin.
+// 순서: 판정 → 프록시 전달 헤더(있으면 404) → 메서드 → 출처(CSRF) → 본문(JSON 또는 폼, 2KB) → 페르소나 허용 목록 → signInWithPassword(서버 env 비밀번호) → finishLogin.
 // 폼 요청(로그인 화면 Mock 패널, 클라이언트 JS 없음)은 303 이동, JSON 요청(E2E globalSetup)은 { next }.
 import type { AuthConfig } from "./config.ts";
 import { finishLogin, type FinishLoginDeps } from "./finish-login.ts";
-import { AuthHttpError, authError, bodyKind, authOk, hiddenNotFound, isSameOriginRequest, readAuthBody, type AuthErrorCode } from "./http.ts";
+import {
+  AuthHttpError,
+  authError,
+  bodyKind,
+  authOk,
+  hasProxyHeaders,
+  hiddenNotFound,
+  isSameOriginRequest,
+  readAuthBody,
+  type AuthErrorCode,
+} from "./http.ts";
 import { authLog, errorCodeOf } from "./log.ts";
 import { isMockPersonaKey, mockPersonaEmail } from "./personas.ts";
 
@@ -29,15 +39,17 @@ function failForm(code: AuthErrorCode): Response {
   return redirect(`/login?error=${code === "login_failed" ? "login" : "request"}`);
 }
 
-/** POST 이외 메서드: 판정이 거짓이면 404, 참이면 405. */
-export function handleDevLoginOtherMethod(deps: Pick<DevLoginDeps, "mockAllowed">): Response {
-  if (!deps.mockAllowed()) return hiddenNotFound();
+/** POST 이외 메서드: 판정이 거짓이거나 프록시 전달 헤더가 있으면 404, 아니면 405. */
+export function handleDevLoginOtherMethod(deps: Pick<DevLoginDeps, "mockAllowed">, req?: Request): Response {
+  if (!deps.mockAllowed() || (req !== undefined && hasProxyHeaders(req))) return hiddenNotFound();
   return new Response(null, { status: 405, headers: { allow: "POST", "cache-control": "no-store" } });
 }
 
 export async function handleDevLogin(req: Request, deps: DevLoginDeps): Promise<Response> {
   if (!deps.mockAllowed()) return hiddenNotFound();
-  if (req.method !== "POST") return handleDevLoginOtherMethod(deps);
+  // 프록시·터널(ngrok·리버스 프록시)을 거친 요청은 원격에서 온 것으로 본다. 존재를 숨긴다.
+  if (hasProxyHeaders(req)) return hiddenNotFound();
+  if (req.method !== "POST") return handleDevLoginOtherMethod(deps, req);
   if (!isSameOriginRequest(req)) {
     authLog.warn("auth.dev_login", { route: "dev_login", code: "forbidden_origin", status: 403 });
     return authError("forbidden_origin");

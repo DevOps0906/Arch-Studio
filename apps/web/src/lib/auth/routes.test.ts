@@ -64,6 +64,34 @@ test("원격·배포 환경: /api/dev/login 모든 메서드 404(본문 없음),
   }
 });
 
+test("로컬이어도 프록시 전달 헤더(x-forwarded-for·x-forwarded-host·forwarded)가 있으면 모든 메서드 404, 로그인 시도 0", async () => {
+  const proxied: Record<string, string>[] = [
+    { "x-forwarded-for": "203.0.113.7" },
+    { "x-forwarded-host": "127.0.0.1:3123" },
+    { forwarded: "for=203.0.113.7;host=127.0.0.1:3123" },
+    { "X-Forwarded-For": "127.0.0.1" },
+  ];
+  for (const headers of proxied) {
+    const { deps, calls } = devDeps(LOCAL_ENV);
+    const res = await handleDevLogin(post(JSON.stringify({ persona: "owner" }), headers), deps);
+    assert.equal(res.status, 404, JSON.stringify(headers));
+    assert.equal(await text(res), "");
+    const get = new Request(`${ORIGIN}/api/dev/login`, { method: "GET", headers });
+    assert.equal(handleDevLoginOtherMethod(deps, get).status, 404, JSON.stringify(headers));
+    assert.equal((await handleDevLogin(get, deps)).status, 404);
+    assert.equal(calls.length, 0);
+  }
+});
+
+test("Host·Origin을 loopback으로 꾸민 비브라우저 요청: 판정이 NODE_ENV=production이면 404", async () => {
+  // 재현: req.url=http://192.168.0.5:3000, Origin·Host=localhost → isSameOriginRequest는 참(헤더는 요청자가 정한다).
+  // 그래서 헤더 검사만 믿지 않고 판정(프로덕션 거부)·바인딩(dev -H 127.0.0.1)·전달 헤더 404를 겹친다.
+  const { deps, calls } = devDeps({ ...LOCAL_ENV, NODE_ENV: "production" });
+  const req = post(JSON.stringify({ persona: "owner" }), { origin: "http://localhost:3000", host: "localhost:3000" }, "http://192.168.0.5:3000/api/dev/login");
+  assert.equal((await handleDevLogin(req, deps)).status, 404);
+  assert.equal(calls.length, 0);
+});
+
 test("로컬: GET은 405, JSON 로그인은 finishLogin 결과를 준다(entitled·trial·30)", async () => {
   const { deps, calls } = devDeps(LOCAL_ENV);
   assert.equal(handleDevLoginOtherMethod(deps).status, 405);
