@@ -6,6 +6,12 @@ import { useEngine } from "../shell/index.ts";
 import type { JudgmentData } from "./model.ts";
 import { INITIAL_JUDGE_STATE, buildJudgeRequest, judgeReducer, type JudgeError, type JudgePhase } from "./request.ts";
 
+/**
+ * judge 레인 seq(모듈 전체 단조 증가). 워커 스케줄러는 레인의 최고 seq보다 작은 요청을 superseded로 끝내므로,
+ * 화면을 다시 열 때(훅 재마운트) seq가 0부터 다시 시작하면 판정이 영영 오지 않는다(AR-06-036에서 발견·수정).
+ */
+let judgeSeq = -1;
+
 export interface UseJudgmentArgs {
   /** 판정할 모델. null이면 요청하지 않는다(매스 없음·불러오는 중). */
   readonly model: DesignModelV1 | null;
@@ -29,7 +35,6 @@ export function useJudgment({ model, modelRev, pendingChanges, enabled = true }:
   const engine = useEngine();
   const [state, dispatch] = useReducer(judgeReducer, INITIAL_JUDGE_STATE);
   const [nonce, setNonce] = useState(0);
-  const seqRef = useRef(-1);
   const instance = useId();
   const pendingRef = useRef<string | null>(null);
   pendingRef.current = state.pendingReqId;
@@ -49,8 +54,8 @@ export function useJudgment({ model, modelRev, pendingChanges, enabled = true }:
       dispatch({ type: "fail", code: "ENGINE_UNAVAILABLE" });
       return;
     }
-    seqRef.current += 1;
-    const seq = seqRef.current;
+    judgeSeq += 1;
+    const seq = judgeSeq;
     const reqId = `judge:${instance}:${seq}`;
     dispatch({ type: "request", reqId, seq });
     try {
