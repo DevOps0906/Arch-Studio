@@ -22,7 +22,8 @@ export const DEFAULTS = {
   /** 일조 여유안: 정북 쪽 변을 더 물리는 거리. */
   northMarginMm: 2000,
   /** 정형안: 긴 변 ÷ 짧은 변 상한, 치수 모듈. */
-  regularAspect: 1.5,
+  /** 정형안 후보의 긴 변 ÷ 짧은 변 상한들(같은 안과 겹치면 다음 값으로). */
+  regularAspects: [1.5, 1.2, 1.0],
   regularModuleMm: 1000,
   /** 격자 한 축의 칸 수 상한. */
   maxCells: 48,
@@ -353,13 +354,13 @@ function pullNorth(r: Rect, north: readonly [number, number], d: number): Rect {
 }
 
 /** 정형안: 긴 변을 짧은 변의 aspect배 이내로 자르고 두 변을 모듈 배수로 내린다. */
-function regularize(r: Rect): Rect | null {
+function regularize(r: Rect, aspect: number): Rect | null {
   const m = DEFAULTS.regularModuleMm;
   let w = Math.floor(rectWidth(r) / m) * m;
   let d = Math.floor(rectDepth(r) / m) * m;
   // 짧은 변을 모듈에 맞춘 뒤 긴 변을 그 aspect배 이내(모듈 배수)로 자른다.
-  if (w >= d) w = Math.min(w, Math.floor((d * DEFAULTS.regularAspect) / m) * m);
-  else d = Math.min(d, Math.floor((w * DEFAULTS.regularAspect) / m) * m);
+  if (w >= d) w = Math.min(w, Math.floor((d * aspect) / m) * m);
+  else d = Math.min(d, Math.floor((w * aspect) / m) * m);
   if (w < DEFAULTS.minSideMm || d < DEFAULTS.minSideMm) return null;
   return { x0: r.x0, y0: r.y0, x1: r.x0 + w, y1: r.y0 + d };
 }
@@ -477,7 +478,7 @@ export function suggestMasses(modelIn: DesignModelV1, pack: RulePack, kernel: So
     (p) => Math.floor(((p.allowed - p.floors) * 1000) / Math.max(1, p.allowed)) * 1e9 + rectArea(p.rect) / 1e6,
   );
   const cPlans = sortPlans(
-    poolPlans.map((p) => derive(p, regularize(p.rect))).filter((p): p is Plan => p !== null),
+    poolPlans.flatMap((p) => DEFAULTS.regularAspects.map((asp) => derive(p, regularize(p.rect, asp)))).filter((p): p is Plan => p !== null),
     (p) => rectArea(p.rect),
   );
   const maxPlans = sortPlans(plansOf(pool, true), (p) => p.gfa);
@@ -508,7 +509,7 @@ export function suggestMasses(modelIn: DesignModelV1, pack: RulePack, kernel: So
     {
       key: "regular_plan",
       plans: cPlans,
-      reason: (p) => [`긴 변이 짧은 변의 ${DEFAULTS.regularAspect}배 이내이고 두 변이 ${DEFAULTS.regularModuleMm.toLocaleString("ko-KR")}mm 배수인 직사각형입니다(${rectWidth(p.rect).toLocaleString("ko-KR")}×${rectDepth(p.rect).toLocaleString("ko-KR")}mm).`],
+      reason: (p) => [`긴 변이 짧은 변의 ${Math.round((Math.max(rectWidth(p.rect), rectDepth(p.rect)) / Math.min(rectWidth(p.rect), rectDepth(p.rect))) * 100) / 100}배이고 두 변이 ${DEFAULTS.regularModuleMm.toLocaleString("ko-KR")}mm 배수인 직사각형입니다(${rectWidth(p.rect).toLocaleString("ko-KR")}×${rectDepth(p.rect).toLocaleString("ko-KR")}mm).`],
     },
   ];
   for (const s of strategies) {
