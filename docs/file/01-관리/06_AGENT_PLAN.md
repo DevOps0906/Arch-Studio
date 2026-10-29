@@ -360,3 +360,24 @@ MVP·P1 기능 29개가 모두 1개 이상의 작업에 매핑된다. 열린 결
 | 001, 002, 040, 041, 043 | 스키마 변경(073·074·074a·074b)에 따라 RLS 스모크(002)에 `cloud_projects`·`seats` 추가, 041의 라이선스 파일 필드 확장. 1장 "스키마는 001만" 규칙 예외는 팀장 결정 필요 |
 | 일정 | ADR-001 7장 표시: W4·W5 화면 작업에 웹 어댑터·E2E 추가 부담(위 17건, ADR-001의 "약 20건"과 차이는 기능 화면 판정 기준 차이로 팀장 확인 필요). 일정 재산정 `미확인` |
 | 일정 영향 없는 작업 | 069, 033, 065, 067, 068(마케팅·랜딩)은 영향 없음 |
+
+## 10. 추가 작업 (2026-10-29)
+
+1~9장을 고치지 않고 추가분만 둔다(줄 번호 인용 보호). 작업 합계는 기존 84개 + 1개 = 85개다. 근거는 결정 D-35(번들 글꼴 Noto Sans KR)·D-36(PNG 래스터화 resvg 단일 렌더러, `01_PRD.md` 결정 표).
+
+### 10.1 작업 목록 (2절과 같은 열)
+
+| ID | 작업 | 소유 파일/디렉토리 | 선행 작업 | 우선순위 | 규모 | 권장 모델 | 수용 기준 | 출처 |
+|---|---|---|---|---|---|---|---|---|
+| AR-06-080 | 설치형 PNG 래스터화: Rust `resvg` 크레이트(022가 기록한 resvg-js 내장 버전과 같은 버전 핀) Tauri 명령 `rasterize_svg`, 번들 Noto Sans KR만 로드(시스템 글꼴 배제), `shell-bridge` 어댑터 노출 | `apps/desktop/src-tauri/src/commands/raster.rs`, `apps/desktop/src-tauri/capabilities/**`(명령별 최소 권한), `packages/shell-bridge/src/**`의 `rasterize` 항목(070에 요청) | 006, 022, 070 | P1 | M | Opus (challenger + reviewer security) | 022의 `golden/png-*` 입력 SVG를 Rust로 렌더한 결과가 resvg-js 골든과 일치(바이트, 불가하면 허용 오차 기준을 `[DECISION]`으로 기록). 입력은 SVG 문자열·옵션만(파일 경로·네트워크 접근 0), 입력 크기·출력 픽셀 수 상한과 시간 제한, 상한 초과 거부 오류 코드. `cargo fmt --check`·`clippy -D warnings`·`cargo test` 통과. resvg(MPL-2.0) 고지를 THIRD_PARTY_NOTICES.md에 추가. 새 명령 권한 추가라 위험도 높음 규칙(`.claude/rules/desktop.md`) 적용 | D-36, `022`의 `writers/png/README.md` |
+
+### 10.2 웨이브와 기존 작업 영향
+
+| 대상 | 내용 |
+|---|---|
+| 웨이브 | W4. 070(W1)·022(W3) 뒤, 030(W5) 앞 |
+| 030 | PNG 내보내기·썸네일은 080의 `rasterize`를 쓴다. 선행에 080 추가 |
+| 022 | 웹·서버 PNG는 `@resvg/resvg-js`, 번들 글꼴은 Noto Sans KR로 변경(결정 반영). 데스크톱 구현은 022 범위 밖(080) |
+| 070 | `rasterize` 어댑터 항목 1건 요청(080이 채움) |
+| 임시안 | 080 전에 데스크톱에서 PNG가 필요하면 WebView canvas를 미리보기 용도로만 쓴다(바이트 결정성 요구 없음) |
+

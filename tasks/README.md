@@ -1,6 +1,6 @@
 # 작업 표
 
-정본: `docs/file/01-관리/06_AGENT_PLAN.md` 2장(작업 상세)·3장(웨이브)·8장·9장(ADR-001 웹·설치형 하이브리드). 이 표는 NOMAD 팀 구성(담당·위험도)으로 옮긴 실행 표다. 84개 고정(기존 71 + ADR-001 신규 13, 2026-10-28).
+정본: `docs/file/01-관리/06_AGENT_PLAN.md` 2장(작업 상세)·3장(웨이브)·8장·9장(ADR-001 웹·설치형 하이브리드). 이 표는 NOMAD 팀 구성(담당·위험도)으로 옮긴 실행 표다. 85개(기존 71 + ADR-001 신규 13 + 추가 1 [080], 2026-10-29).
 담당: `challenger→builder` = 착수 전 계획 공격 후 구현(원 모델 Fable). `사람` = 대표님 판정.
 변경 후 검증(NOMAD v3.0, 2026-10-28): 낮음 = builder 자가 검증(`q`), 화면이면 `codex-reviewer(design)` · 보통 = `codex-reviewer(code)` · 높음 = 착수 전 `challenger` + `codex-reviewer(code)` + `reviewer(security/contract)` → 필요 시 `tester`. Codex 불가 시 codex-reviewer → reviewer, codex-designer → designer·planner.
 `codex-designer⇄designer` = 공동 디자인(초안 한쪽, 상대는 변경분 교차 검토 1회). 기획 문서 작업은 `planner⇄codex-designer`.
@@ -66,10 +66,11 @@
 | AR-06-037 | 판정 패널(근거·폴백 배너) | W4 | 012, 015, 017 | 보통 | builder | 대기 |
 | AR-06-038 | 프로그램 화면·면적표·공사비 | W4 | 012, 018, 042 | 보통 | builder | 대기 |
 | AR-06-044 | 라이선스·크레딧 화면(데스크톱·웹) | W4 | 007, 012, 040, 043 | 높음 | builder | 대기 |
+| AR-06-080 | 설치형 PNG 래스터화(Rust resvg 명령, D-36) | W4 | 006, 022, 070 | 높음 | challenger→builder | 대기 |
 | AR-06-069 | 마케팅 컴포넌트 8종 | W4 | 012 | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-028 | 매스 자동 제안 3안 | W4 | 015, 016, 036 | 보통 | builder | 대기 |
 | AR-06-027 | 평면 개략도 편집기 | W5 | 012, 017, 026 | 보통 | builder | 대기 |
-| AR-06-030 | 도면 시트 화면·ExportDialog | W5 | 006, 012, 017, 021~025 | 보통 | builder | 대기 |
+| AR-06-030 | 도면 시트 화면·ExportDialog | W5 | 006, 012, 017, 021~025, 080 | 보통 | builder | 대기 |
 | AR-06-032 | 제안서 PDF(도면 시트 포함) | W5 | 022, 046, 047, 048 | 보통 | builder | 대기 |
 | AR-06-039 | 3D 입출력: glTF·IFC·.3dm | W5 | 013, 036 | 높음 | builder | 대기 |
 | AR-06-052 | 대화형 설계 입력·상담 녹음 후보 | W5 | 038, 046, 047, 048, 053 | 보통 | builder | 대기 |
