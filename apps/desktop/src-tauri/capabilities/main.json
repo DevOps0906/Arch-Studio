@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "메인 창 최소 권한: 앱 이름·버전 읽기, 로컬 DB(ProjectStore 4개), 가져오기·내보내기 대화상자 명령, 키체인 비밀(허용 키만) 3개. plugin:dialog·fs·sql 권한 없음.",
+  "description": "메인 창 최소 권한: 앱 이름·버전 읽기, 로컬 DB(ProjectStore 4개), 가져오기·내보내기 대화상자 명령, 키체인 비밀(허용 키만) 3개, 라이선스 검증·기기 해시 2개(AR-06-041). plugin:dialog·fs·sql 권한 없음.",
   "windows": ["main"],
   "permissions": [
     "core:app:default",
@@ -13,6 +13,8 @@
     "allow-export-save-file",
     "allow-secret-get",
     "allow-secret-set",
-    "allow-secret-delete"
+    "allow-secret-delete",
+    "allow-license-verify",
+    "allow-device-hash-get"
   ]
 }

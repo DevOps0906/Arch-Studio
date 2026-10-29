@@ -24,6 +24,8 @@ sha2 = "0.10.9"
 uuid = { version = "1.29", features = ["v7"] }
 # OS 키체인(AR-06-005, MIT OR Apache-2.0). linux-native = keyutils(순수 Rust, 시스템 라이브러리 불필요).
 keyring = { version = "=3.6.3", features = ["apple-native", "windows-native", "linux-native"] }
+# 라이선스·규칙 팩 서명 검증(AR-06-041, BSD-3-Clause). 검증만 쓴다(서명·난수 기능 없음). sha2 0.10은 위와 공유.
+ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std", "fast", "zeroize"] }
 
 [dev-dependencies]
 tauri = { version = "=2.12.5", features = ["test"] }

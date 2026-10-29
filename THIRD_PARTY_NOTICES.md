@@ -24,6 +24,14 @@
   zeroize 1.9(Apache-2.0 OR MIT) / macOS security-framework 3.7·core-foundation 0.10(MIT OR Apache-2.0) /
   Linux linux-keyutils 0.2.5(Apache-2.0 OR MIT). 공통 log 0.4(MIT OR Apache-2.0).
 
+## 데스크톱 셸 Rust — 라이선스·규칙 팩 서명 검증 (AR-06-041)
+- ed25519-dalek 2.2.0 — BSD-3-Clause, Copyright (c) 2017-2019 isis agora lovecruft 외 dalek-cryptography 기여자(배포 전 LICENSE 원문 대조). https://github.com/dalek-cryptography/curve25519-dalek
+  기능 `std`·`fast`·`zeroize`만(서명·난수 기능 없음, 검증 전용). 전이(`cargo tree --target all -e normal,build -f "{p} {l}"` 확인):
+  curve25519-dalek 4.1.3(BSD-3-Clause), subtle 2.6.1(BSD-3-Clause), ed25519 2.2.3·signature 2.2.0(Apache-2.0 OR MIT),
+  fiat-crypto 0.2.9(MIT OR Apache-2.0 OR BSD-1-Clause, 일부 대상만), zeroize 1.9(Apache-2.0 OR MIT),
+  sha2 0.10.9·digest 0.10·cpufeatures 0.2(MIT OR Apache-2.0, 기존 의존성 공유). 빌드 전용 curve25519-dalek-derive 0.1.1·rustc_version 0.4.1(MIT/Apache-2.0)은 배포물에 들어가지 않는다.
+  GPL·AGPL 없음. BSD-3-Clause는 배포물 고지(저작권 표시·조건·면책 문구)를 요구한다.
+
 ## @arch-studio/geometry — 솔리드 래퍼 (AR-06-016)
 - manifold-3d 3.5.4 (`manifold.js` + `manifold.wasm`만 사용) — Apache License 2.0, Copyright Emmett Lalish 외 Manifold 기여자.
   https://github.com/elalish/manifold · tarball sha256 `cf57c91fcd33b6315bff28e424ac8c5f04acb5410e9dd8e9886838303910c568`.

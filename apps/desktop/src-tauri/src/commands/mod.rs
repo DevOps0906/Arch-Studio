@@ -3,6 +3,7 @@
 
 pub mod export;
 pub mod fs;
+pub mod license;
 pub mod local_db;
 pub mod secrets;
 
