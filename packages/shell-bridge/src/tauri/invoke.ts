@@ -16,8 +16,13 @@ export type FileCommand = "fs_open_import" | "export_save_file";
 export const RASTERIZE_SVG_COMMAND = "rasterize_svg";
 export type RasterCommand = typeof RASTERIZE_SVG_COMMAND;
 
+/** RulePackStore 명령(`commands/rule_pack.rs`, AR-06-042). */
+export const RULE_PACK_INSTALL_COMMAND = "rule_pack_install";
+export const RULE_PACK_LOAD_COMMAND = "rule_pack_load";
+export type RulePackCommand = typeof RULE_PACK_INSTALL_COMMAND | typeof RULE_PACK_LOAD_COMMAND;
+
 /** 이 패키지가 부르는 명령 이름(build.rs APP_COMMANDS 중 화면용). */
-export type BridgeCommand = SecretCommand | ProjectCommand | FileCommand | RasterCommand;
+export type BridgeCommand = SecretCommand | ProjectCommand | FileCommand | RasterCommand | RulePackCommand;
 
 /** 명령 인자: JSON 객체 또는 원시 본문(`export_save_file`은 바이트 본문 + 헤더). */
 export type InvokeArgs = Record<string, unknown> | Uint8Array;

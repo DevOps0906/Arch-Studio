@@ -3,11 +3,19 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { daysBetween, fallbackSentence, revisionCheckSentence, revisionCheckStale } from "./fallback.ts";
 import { ENGINE_OUTPUTS, exampleConfirmed, toData, withMissingBasis } from "./fixtures.ts";
-import { DISCLAIMER, UNVERIFIED_TEXT } from "./messages.ts";
+import { DISCLAIMER, judgeErrorText, UNVERIFIED_TEXT } from "./messages.ts";
 import { buildRows, countStatuses, formatValue, noticeWarnings, scheduledRuleCount } from "./model.ts";
 import { INITIAL_JUDGE_STATE, buildJudgeRequest, judgeReducer, parseJudgeResult, type JudgeRequestState } from "./request.ts";
 
 const out0 = ENGINE_OUTPUTS[0]!;
+
+test("판정 오류 문구: 규칙 팩 공급 상태(AR063 없음·AR064 검증 실패·AR065 자격 없음)는 모델 문제(AR050)와 다른 문구", () => {
+  const model = judgeErrorText("AR050").title;
+  const titles = ["AR063", "AR064", "AR065"].map((c) => judgeErrorText(c).title);
+  assert.equal(new Set([model, ...titles]).size, 4);
+  for (const t of titles) assert.ok(t.includes("규칙 팩") && !t.includes("모델"), t);
+  assert.ok(judgeErrorText("AR065").description.includes("열람·내보내기"));
+});
 
 test("픽스처는 실제 엔진 출력 모양: 전 항목 WARN + 근거 1건 이상", () => {
   assert.equal(ENGINE_OUTPUTS.length, 3);

@@ -14,7 +14,7 @@ interface WorkerScope {
 }
 const scope = self as unknown as WorkerScope;
 
-// RulePackProvider 구현은 후속 작업. 지금은 load_rule_pack 메시지로 받은 팩만 쓴다.
+// 팩은 셸 RulePackProvider(src/shell/rule-packs.ts)가 load_rule_pack 메시지로 넣는다(서명·자격 확인은 Rust, AR-06-042).
 const store = new RulePackStore();
 const engine = createEngineHandlers(store);
 // 모델러 표시 핸들러와 매스 제안(AR-06-028)이 Manifold 인스턴스 하나를 나눠 쓴다(WASM 두 번 올리지 않음).

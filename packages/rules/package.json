@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./dev-packs/2026.10.0.json": "./packs/2026.10.0/pack.json"
   },
   "scripts": {
     "lint": "eslint .",

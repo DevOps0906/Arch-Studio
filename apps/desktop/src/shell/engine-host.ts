@@ -51,10 +51,9 @@ export function createEngineHost(opts: EngineHostOptions): EngineHost {
       }
       // 규칙 팩은 판정 워커만 쓴다(drafting 워커에는 control 처리기가 없다).
       if (req.op === "load_rule_pack") {
-        const fresh = !clients.engine;
+        // 판정 워커가 아직 없으면 보관만 한다(앱 시작 때 공급해도 워커는 첫 판정 요청 때 만든다, AR-06-042). 만들 때 먼저 넣는다.
         rulePack = req;
-        const c = client("engine");
-        if (!fresh) c.send(req);
+        clients.engine?.send(req);
         return;
       }
       client(kindOf(req.lane)).send(req);

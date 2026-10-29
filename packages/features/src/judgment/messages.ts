@@ -64,6 +64,13 @@ export function judgeErrorText(code: string | null): { title: string; descriptio
       return { title: "판정 엔진을 쓸 수 없습니다", description: "이 환경에서는 판정 계산기를 시작하지 못했습니다. 앱을 다시 열어 보세요." };
     case "AR050":
       return { title: "모델에 빠진 정보가 있어 판정할 수 없습니다", description: "대지 경계와 매스, 층 정보를 확인한 뒤 다시 시도하세요." };
+    // 규칙 팩 공급 상태(AR-06-042): 모델 문제(AR050)가 아니다. 문구는 제안값(03장 5.3절 확정 필요).
+    case "AR063":
+      return { title: "설치된 규칙 팩이 없습니다", description: "온라인 상태에서 라이선스를 확인하면 규칙 팩을 받습니다. 모델은 그대로 편집할 수 있습니다." };
+    case "AR064":
+      return { title: "규칙 팩을 확인하지 못했습니다", description: "규칙 팩 파일이 손상됐거나 서명이 맞지 않아 판정에 쓰지 않았습니다. 규칙 팩을 다시 받으세요." };
+    case "AR065":
+      return { title: "규칙 팩을 쓸 수 있는 기간이 아닙니다", description: "라이선스가 만료됐거나 오프라인 확인 기한이 지났습니다. 다시 연결해 라이선스를 확인하세요. 열람·내보내기는 계속됩니다." };
     case "INVALID_RESPONSE":
       return { title: "판정 결과를 읽지 못했습니다", description: "결과 형식이 맞지 않습니다. 다시 시도하세요." };
     default:

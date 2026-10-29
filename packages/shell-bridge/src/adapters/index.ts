@@ -6,6 +6,7 @@ import type { EntitlementClient } from "./entitlement.ts";
 import type { FileGateway } from "./file-gateway.ts";
 import type { ProjectStore } from "./project-store.ts";
 import type { Rasterizer } from "./rasterizer.ts";
+import type { RulePackStore } from "./rule-packs.ts";
 import type { SecureStore } from "./secure-store.ts";
 import type { Updater } from "./updater.ts";
 
@@ -27,6 +28,10 @@ export interface PlatformAdapters extends NativeBridge {
    * 없으면 NOT_SUPPORTED: 화면은 `rasterizerOf(adapters)`로 꺼낸다. 웹 PNG는 서버·워커 경로(072).
    */
   readonly rasterizer?: Rasterizer;
+  /**
+   * 서명 규칙 팩 설치·불러오기(AR-06-042, 선택 필드). 설치형만 채운다. 화면·셸은 `rulePacksOf(adapters)`로 꺼낸다(없으면 null).
+   */
+  readonly rulePacks?: RulePackStore;
 }
 
 export * from "./capabilities.ts";
@@ -37,5 +42,6 @@ export * from "./file-gateway.ts";
 export * from "./license-client.ts";
 export * from "./project-store.ts";
 export * from "./rasterizer.ts";
+export * from "./rule-packs.ts";
 export * from "./secure-store.ts";
 export * from "./updater.ts";

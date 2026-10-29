@@ -29,6 +29,8 @@ pub fn builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
             commands::license::license_verify,
             commands::license::device_hash_get,
             commands::raster::rasterize_svg,
+            commands::rule_pack::rule_pack_install,
+            commands::rule_pack::rule_pack_load,
         ])
 }
 
@@ -37,16 +39,19 @@ pub fn run() {
     builder(tauri::Builder::default())
         .setup(|app| {
             app.manage(PickerState(Arc::new(TauriPicker(app.handle().clone()))));
-            let db = match app.path().app_data_dir() {
-                Ok(dir) => LocalDb::open(&dir),
-                Err(_) => Err(AppError::new(code::DB_UNAVAILABLE, "app_data_dir")),
+            let data_dir = app.path().app_data_dir().ok();
+            let db = match &data_dir {
+                Some(dir) => LocalDb::open(dir),
+                None => Err(AppError::new(code::DB_UNAVAILABLE, "app_data_dir")),
             };
             app.manage(LocalDbState(db));
             app.manage(commands::secrets::SecretState(Arc::new(
                 commands::secrets::SecretStore::keychain(),
             )));
-            app.manage(commands::license::LicenseState(Arc::new(
-                commands::license::LicenseService::production(),
+            let license = Arc::new(commands::license::LicenseService::production());
+            app.manage(commands::license::LicenseState(license.clone()));
+            app.manage(commands::rule_pack::RulePackState(Arc::new(
+                commands::rule_pack::RulePackService::production(license, data_dir),
             )));
             Ok(())
         })

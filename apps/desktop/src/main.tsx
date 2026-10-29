@@ -6,6 +6,8 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router/dom";
 import { createAppRouter } from "./routes/index.tsx";
+import { rulePacksOf } from "@arch-studio/shell-bridge";
+import { connectRulePacks, rustRulePackProvider } from "./shell/rule-packs.ts";
 import { createDesktopRuntime } from "./shell/runtime.ts";
 import { createBrowserEngineHost } from "./shell/workers.ts";
 import "./styles.css";
@@ -17,11 +19,17 @@ const root = createRoot(el);
 async function createRuntime(): Promise<ShellRuntime> {
   const engine = createBrowserEngineHost();
   if (typeof import.meta.env !== "undefined" && import.meta.env.DEV === true && import.meta.env.VITE_DEMO_MODE === "1") {
-    const { createDemoRuntime } = await import("@arch-studio/features/demo");
-    void import("./shell/demo-rule-pack.ts").then((m) => m.loadDemoRulePack(engine));
+    const [{ createDemoRuntime }, { demoRulePackProvider }] = await Promise.all([
+      import("@arch-studio/features/demo"),
+      import("./shell/demo-rule-pack.ts"),
+    ]);
+    if (engine) void connectRulePacks(engine, demoRulePackProvider());
     return createDemoRuntime({ search: location.search, engine });
   }
-  return createDesktopRuntime(engine);
+  const runtime = createDesktopRuntime(engine);
+  // 규칙 팩 공급(AR-06-042): Rust가 서명·자격을 다시 확인한 팩만. 라이선스 파일 저장 경로는 041·074 후속(지금은 null → AR063/AR065).
+  if (engine) void connectRulePacks(engine, rustRulePackProvider(rulePacksOf(runtime.adapters), async () => null));
+  return runtime;
 }
 
 function Fatal() {

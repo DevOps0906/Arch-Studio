@@ -80,10 +80,10 @@ test("목표·모델 형식이 틀리면 AR050(본문 값 없는 고정 문구)"
   }
 });
 
-test("규칙 팩이 없으면 AR050", async () => {
+test("규칙 팩이 없으면 AR063(042: AR050과 분리)", async () => {
   const { run } = handler(false);
   await assert.rejects(
     () => Promise.resolve(run(req(), ctx)),
-    (e: unknown) => e instanceof HandlerError && e.code === "AR050",
+    (e: unknown) => e instanceof HandlerError && e.code === "AR063",
   );
 });

@@ -12,6 +12,9 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 // packages/features/src/demo/samples.ts DEMO_MARKER + 샘플 이름(같은 값을 여기 적는다: 데모 모듈을 import하면 TS라 Node가 못 읽는다).
 // 셸의 데모 띠 문구는 셸 코드(항상 번들)에 있어 표식으로 쓰지 않는다 — runtime.demo가 거짓이면 렌더되지 않을 뿐이다.
 export const DEMO_MARKERS = ["arch-demo-data-v1", "운중동 단독주택", "역삼동 다세대주택"];
+// 개발용 규칙 팩 본문(packages/rules/packs/2026.10.0/pack.json의 고유 문장, AR-06-042 P15). 릴리스 판정은 Rust 서명 검증 팩만 쓰므로
+// 엔진 번들에 팩 바이트가 0이어야 한다(ADR-001 5장). 데모 빌드(대조군)에는 있어야 한다.
+export const RULE_PACK_MARKERS = ["원문 대조 후 확정 규칙으로 바꾼다", "대지안의 공지·이격 기준 수치·조문 근거 문서에 없음"];
 const TEXT = /\.(js|mjs|cjs|css|html|json|map|txt)$/;
 
 function scan(dir, markers) {
@@ -36,16 +39,17 @@ const dir = path.resolve(process.cwd(), expectPresent ? (args[1] ?? "") : (args[
 
 if (expectPresent) {
   const hits = scan(dir, DEMO_MARKERS);
-  if (hits.length === 0) {
-    console.error(`대조군에 데모 표식이 없다(검사 조건이 깨졌다): ${dir}`);
+  const packHits = scan(dir, RULE_PACK_MARKERS);
+  if (hits.length === 0 || packHits.length === 0) {
+    console.error(`대조군에 데모·개발용 규칙 팩 표식이 없다(검사 조건이 깨졌다): ${dir}`);
     process.exit(1);
   }
-  console.log(`대조군 데모 표식 ${hits.length}건 있음 — 통과`);
+  console.log(`대조군 데모 표식 ${hits.length}건·규칙 팩 표식 ${packHits.length}건 있음 — 통과`);
 } else {
-  const hits = scan(dir, [...MOCK_MARKERS, ...DEMO_MARKERS]);
+  const hits = scan(dir, [...MOCK_MARKERS, ...DEMO_MARKERS, ...RULE_PACK_MARKERS]);
   if (hits.length) {
-    console.error(`릴리스 번들에 Mock·데모 문자열:\n${hits.join("\n")}`);
+    console.error(`릴리스 번들에 Mock·데모·개발용 규칙 팩 문자열:\n${hits.join("\n")}`);
     process.exit(1);
   }
-  console.log(`릴리스 번들 Mock·데모 문자열 0건: ${dir}`);
+  console.log(`릴리스 번들 Mock·데모·개발용 규칙 팩 문자열 0건: ${dir}`);
 }

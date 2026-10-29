@@ -156,11 +156,11 @@ test("mass_excess: 엔벨로프 표시 메시 + 매스별 초과분, 대지·규
   assert.notEqual(envelopeKeyOf(otherSite, "2026.10.0"), res.envelope_key);
 });
 
-test("mass_excess: 규칙 팩이 없으면 AR050(규칙 팩이 없습니다), 모델 형식 오류도 AR050", async () => {
+test("mass_excess: 규칙 팩이 없으면 AR063(설치된 규칙 팩이 없습니다, AR-06-042), 모델 형식 오류도 AR050", async () => {
   const { h } = handlers(false);
   await assert.rejects(
     Promise.resolve(h.mass_excess({ op: "mass_excess", req_id: "z", lane: "preview", seq: 0, model: model([]), mass_ids: null, want_envelope: true } as LaneRequest, ctx)),
-    (e: unknown) => e instanceof HandlerError && e.code === "AR050" && /규칙 팩/.test(e.message),
+    (e: unknown) => e instanceof HandlerError && e.code === "AR063" && /규칙 팩/.test(e.message),
   );
   const { h: h2 } = handlers();
   await assert.rejects(Promise.resolve(h2.mass_excess({ op: "mass_excess", req_id: "z2", lane: "preview", seq: 0, model: { bad: true }, mass_ids: null, want_envelope: true } as unknown as LaneRequest, ctx)), HandlerError);
