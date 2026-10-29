@@ -43,3 +43,14 @@ export {
   type LabelSpec,
   type UnappliedOverride,
 } from "./annotate/index.ts";
+export { buildSitePlanView, SITE_PLAN_VIEW_ID, type SitePlanExtras } from "./views/site_plan/index.ts";
+export { buildAreaPlanView, type AreaPlanInput, type AreaBreakdown } from "./views/area_plan/index.ts";
+export {
+  buildSunlightSectionView,
+  SUNLIGHT_VIEW_ID,
+  type SunlightBandInput,
+  type SunlightBasisInput,
+  type SunlightConstraintInput,
+  type SunlightEnvelopeInput,
+  type SunlightSectionOptions,
+} from "./views/sunlight_section/index.ts";
