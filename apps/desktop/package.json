@@ -17,6 +17,7 @@
     "@arch-studio/drafting": "workspace:*",
     "@arch-studio/features": "workspace:*",
     "@arch-studio/geometry": "workspace:*",
+    "@arch-studio/massing": "workspace:*",
     "@arch-studio/rules": "workspace:*",
     "@arch-studio/shell-bridge": "workspace:*",
     "@arch-studio/ui": "workspace:*",

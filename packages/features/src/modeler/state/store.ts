@@ -14,9 +14,11 @@ import {
   setRoof,
   type AddMassInput,
   type CommandResult,
+  type Mass,
   type Model,
   type RoofType,
 } from "./commands.ts";
+import { SUGGEST_LABEL, applySuggestion } from "../suggest/apply.ts";
 import { canRedo, canUndo, createHistory, pushHistory, redo, undo, type History } from "./history.ts";
 
 export type Tool = "select" | "draw";
@@ -32,7 +34,9 @@ export type Command =
   | { readonly type: "floorUse"; readonly id: string; readonly floorId: string | null; readonly use: string }
   | { readonly type: "baseLevel"; readonly id: string; readonly value: number }
   | { readonly type: "roof"; readonly id: string; readonly roof: RoofType; readonly pitch?: number }
-  | { readonly type: "delete"; readonly id: string };
+  | { readonly type: "delete"; readonly id: string }
+  /** 매스 자동 제안 적용(AR-06-028): 매스를 후보로 통째로 바꾸는 단일 명령 = 실행 취소 1단계. */
+  | { readonly type: "suggest"; readonly masses: readonly Mass[] };
 
 export const COMMAND_LABEL: Readonly<Record<Command["type"], string>> = {
   add: "매스 추가",
@@ -43,6 +47,7 @@ export const COMMAND_LABEL: Readonly<Record<Command["type"], string>> = {
   baseLevel: "바닥 높이 변경",
   roof: "지붕 변경",
   delete: "매스 삭제",
+  suggest: SUGGEST_LABEL,
 };
 
 export function runCommand(model: Model, c: Command): CommandResult {
@@ -63,6 +68,8 @@ export function runCommand(model: Model, c: Command): CommandResult {
       return setRoof(model, c.id, c.roof, c.pitch);
     case "delete":
       return deleteMass(model, c.id);
+    case "suggest":
+      return applySuggestion(model, c.masses);
   }
 }
 
