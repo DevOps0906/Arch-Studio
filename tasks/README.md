@@ -9,15 +9,15 @@
 |---|---|---|---|---|---|---|
 | AR-06-001 | DB 조각 적용·모놀리스 변환·seed·타입 | W0 | — | 높음 | challenger→builder | 완료 |
 | AR-06-003 | 모노레포·web 골격·린트 경계·env 검증 | W0 | — | 보통 | builder | 완료 |
-| AR-06-004 | 데스크톱 셸 골격(Tauri·CSP·capability) | W0 | — | 보통 | builder | 대기 |
+| AR-06-004 | 데스크톱 셸 골격(Tauri·CSP·capability) | W0 | — | 보통 | builder | 진행 |
 | AR-06-009 | 디자인 레퍼런스 확정(1단계) | W0 | — | 낮음 | codex-designer⇄designer | 완료 |
 | AR-06-013 | 도메인 계약 zod(DesignModel 등) | W0 | — | 보통 | builder | 완료 |
 | AR-06-019 | 도면 스파이크 2일(DXF·PDF, D-20·D-23) | W0 | — | 보통 | builder→사람(AutoCAD 확인) | 진행 |
 | AR-06-066 | 주장 장부·V0 질문지·V1 측정 양식 | W0 | — (V1은 060 뒤) | 낮음 | builder(인터뷰는 사람) | 완료 |
 | AR-06-071a | 웹 스튜디오 셸 Vite/Next 공유 스파이크 1주 | W0 | 003, 004 | 보통 | builder | 대기 |
 | AR-06-010 | 디자인 시스템 2단계: 토큰·컴포넌트 | W0-D | 009 | 낮음 | codex-designer⇄designer | 완료 |
-| AR-06-011 | 비주얼 검토(3단계, 판정은 사람) | W0-D | 010 | 낮음 | 사람 | 대기 |
-| AR-06-012 | 디자인 정답 확정(4단계) | W0-D | 011 | 낮음 | codex-designer⇄designer | 대기 |
+| AR-06-011 | 비주얼 검토(3단계, 판정은 사람) | W0-D | 010 | 낮음 | 사람 | 완료 |
+| AR-06-012 | 디자인 정답 확정(4단계) | W0-D | 011 | 낮음 | codex-designer⇄designer | 완료 |
 | AR-V2-01 | 공용 compliance 모듈 적용 | W1 | W0, compliance 출시 | 높음 | builder | 대기 |
 | AR-06-002 | RLS·권한 회귀 스모크 | W1 | 001 | 높음 | challenger→builder | 대기 |
 | AR-06-005 | shell-bridge·키체인·Supabase 클라이언트 | W1 | 004 | 높음 | builder | 대기 |
@@ -105,6 +105,6 @@
 | 2026-10-29 | `02_ARCHITECTURE.md` 위험 #2 ↔ AR-06-013 | 판정 필수값 누락: 위험 #2는 "입력 필요" 표시, 013은 스키마 검증 실패 | AR-06-037 판정 패널에서 검증 실패를 "입력 필요"로 표시해 양립 |
 | 2026-10-29 | `04_API.md` 4.7.3 SheetSpec `dx_mm`·`dy_mm` | 모델 mm인지 용지 단위인지 모호(현재 number, 정수 강제 없음) | AR-06-020에서 확정 |
 | 2026-10-29 | 기획 문서 전반 "task `log.md`" | `[DECISION]` 기록 경로가 저장소에 정해지지 않음 | 사용자 결정 대기(`tasks/logs/AR-06-NNN.md` 제안) |
-
+| 2026-10-29 | `~/.claude/nomad/bin/design-preview` | 글자 크기 표의 태블릿·데스크톱 열이 `[data-surface="landing"]` 미디어 블록 값으로 덮임. 컴팩트 밀도·`--line-dash-*`·`--chat-bubble-max`도 표에 없음 | NOMAD 도구 수정(저장소 밖). 앱 값 정본은 tokens.css, DESIGN.md 3.1에 주의 문구 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
