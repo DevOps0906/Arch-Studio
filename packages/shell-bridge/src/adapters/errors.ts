@@ -34,6 +34,9 @@ export type LicenseErrorCode =
 /** Updater 오류 코드(구현은 updater 작업). 서명 불일치는 설치하지 않는다. */
 export type UpdaterErrorCode = "UPDATE_NETWORK" | "UPDATE_SIGNATURE" | "UPDATE_UNAVAILABLE";
 
+/** Rasterizer 오류 코드(AR-06-080, Rust `commands/raster.rs`): AR055 상한 초과, AR056 PNG 실패·시간 초과, BUSY 래스터화 진행 중. */
+export type RasterErrorCode = "AR055" | "AR056" | "INVALID_INPUT" | "BUSY";
+
 /** Supabase 클라이언트 설정 검증 오류(키·URL 값은 메시지에 담지 않는다). */
 export type ConfigErrorCode = "SUPABASE_KEY_FORBIDDEN" | "SUPABASE_URL_INSECURE";
 
@@ -44,6 +47,7 @@ export type BridgeErrorCode =
   | ProjectErrorCode
   | LicenseErrorCode
   | UpdaterErrorCode
+  | RasterErrorCode
   | ConfigErrorCode
   | "NOT_SUPPORTED";
 

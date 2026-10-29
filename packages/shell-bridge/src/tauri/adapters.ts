@@ -6,6 +6,7 @@ import { TauriEntitlementClient } from "./entitlement.ts";
 import { TauriFileGateway } from "./file-gateway.ts";
 import { tauriInvoke, type InvokeFn } from "./invoke.ts";
 import { TauriProjectStore } from "./project-store.ts";
+import { TauriRasterizer } from "./rasterizer.ts";
 import { TauriSecureStore } from "./secure-store.ts";
 
 /** 설치형 어댑터 5종. invoke는 테스트에서만 주입한다. */
@@ -18,6 +19,7 @@ export function createTauriAdapters(invoke: InvokeFn = tauriInvoke): PlatformAda
     secrets,
     entitlement: new TauriEntitlementClient(null),
     updater: null,
+    rasterizer: new TauriRasterizer(invoke),
     clearSecrets: () => clearAllSecrets(secrets),
   });
 }

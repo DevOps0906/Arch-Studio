@@ -1,11 +1,14 @@
-// Rust 명령 9개(build.rs APP_COMMANDS)를 흉내 내는 invoke 모킹. 규칙은 apps/desktop/src-tauri/src/commands/*.rs와 같게 둔다:
+// Rust 명령(build.rs APP_COMMANDS 중 화면용 10개)을 흉내 내는 invoke 모킹. 규칙은 apps/desktop/src-tauri/src/commands/*.rs와 같게 둔다:
 // - local_db: UUIDv7 id, expected_version 규칙, 소프트 삭제, 오류 `{code, detail}`(detail에 현재 version — TS가 버려야 하는 값).
 // - fs_open_import: 대화상자가 고른 파일(`files.offerImport`)의 확장자·크기를 읽기 전에 검사(AR055 detail = 상한).
 // - export_save_file: 원시 본문 + `x-export-format` 헤더, 취소는 null, 결과는 pathHash·bytes·sha256.
+// - rasterize_svg(AR-06-080): `{svg, options}`(옵션 키 정확히 하나), 8MiB 상한 AR055, 허용 밖 요소·깨진 SVG INVALID_INPUT, 동시 호출 BUSY.
+//   결과는 원시 PNG(ArrayBuffer). 실제 렌더는 Rust `cargo test`(골든)가 확인한다.
 // 오류 detail에는 일부러 경로·값을 섞어 "TS가 원문을 버리는가"를 검사할 수 있게 한다.
 import { createHash } from "node:crypto";
 import type { BridgeCommand, InvokeArgs, InvokeFn, InvokeOptions } from "../tauri/invoke.ts";
 import { createFileFixture, type FileFixture } from "./files.ts";
+import { fakePng } from "./memory.ts";
 
 export interface RustInvokeCall {
   cmd: BridgeCommand;
@@ -48,6 +51,8 @@ const fail = (code: string, detail: string) => {
 
 export interface RustInvoke {
   invoke: InvokeFn;
+  /** rasterize_svg 응답 지연(ms, 동시 호출 BUSY 재현용). */
+  rasterDelayMs: number;
   calls: RustInvokeCall[];
   keychain: Map<string, string>;
   files: FileFixture;
@@ -59,6 +64,7 @@ export function createRustInvoke(keychain: Map<string, string> = new Map()): Rus
   const projects = new Map<string, Row>();
   const files = createFileFixture();
   let tick = 0;
+  let rasterBusy = false;
   const now = () => new Date(Date.UTC(2026, 0, 1) + ++tick * 1000).toISOString();
 
   const version = (row: Row) => row.revisions.length;
@@ -171,6 +177,35 @@ export function createRustInvoke(keychain: Map<string, string> = new Map()): Rus
         // Rust `Response::new(bytes)` → 웹뷰에서는 ArrayBuffer.
         return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
       }
+      case "rasterize_svg": {
+        const keys = Object.keys(a).sort().join(",");
+        if (keys !== "options,svg") fail("INVALID_INPUT", `invalid args: ${keys}`);
+        const svg = a.svg;
+        const o = a.options as Record<string, unknown> | null;
+        if (typeof svg !== "string") fail("INVALID_INPUT", "svg");
+        const ok =
+          o !== null &&
+          typeof o === "object" &&
+          Object.keys(o).length === 1 &&
+          ((Number.isInteger(o.widthPx) && (o.widthPx as number) >= 1) ||
+            (typeof o.dpi === "number" && o.dpi >= 10 && o.dpi <= 1200));
+        if (!ok) fail("INVALID_INPUT", "options");
+        if (new TextEncoder().encode(svg as string).byteLength > 8 * MIB) fail("AR055", "svg_bytes");
+        if (rasterBusy) fail("BUSY", "busy");
+        // 실제 Rust는 고정 토큰만 주지만, 여기서는 TS가 detail을 버리는지 보려고 원문을 섞는다.
+        if (!/^\s*<svg[\s>]/.test(svg as string)) fail("INVALID_INPUT", `parse: ${(svg as string).slice(0, 64)}`);
+        if (/<(image|use|style|foreignObject|filter|mask|pattern)\b|\bhref\s*=/i.test(svg as string)) {
+          fail("INVALID_INPUT", `element: ${(svg as string).slice(0, 64)}`);
+        }
+        rasterBusy = true;
+        try {
+          if (rust.rasterDelayMs > 0) await new Promise((r) => setTimeout(r, rust.rasterDelayMs));
+        } finally {
+          rasterBusy = false;
+        }
+        const png = fakePng();
+        return png.buffer;
+      }
       case "export_save_file": {
         const format = options?.headers?.["x-export-format"];
         if (!format || !EXPORT_FORMATS.includes(format)) fail("INVALID_INPUT", "format");
@@ -191,5 +226,6 @@ export function createRustInvoke(keychain: Map<string, string> = new Map()): Rus
       }
     }
   };
-  return { invoke, calls, keychain, files };
+  const rust: RustInvoke = { invoke, calls, keychain, files, rasterDelayMs: 0 };
+  return rust;
 }

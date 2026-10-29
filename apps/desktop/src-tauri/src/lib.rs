@@ -28,6 +28,7 @@ pub fn builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
             commands::secrets::secret_delete,
             commands::license::license_verify,
             commands::license::device_hash_get,
+            commands::raster::rasterize_svg,
         ])
 }
 

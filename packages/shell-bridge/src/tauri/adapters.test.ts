@@ -5,6 +5,7 @@ import { BridgeError, createPlatformAdapters, createWebBridge, TAURI_CAPABILITIE
 import { createRustInvoke, runAdapterContract, testProjectId } from "../testing/index.ts";
 import { errorSurface, TOKEN } from "../test-helpers.ts";
 import { createTauriAdapters } from "./adapters.ts";
+import { RASTER_QUEUE_LIMIT } from "./rasterizer.ts";
 
 runAdapterContract("tauri", () => {
   const rust = createRustInvoke();
@@ -134,4 +135,76 @@ test("createPlatformAdapters: Tauri 런타임이면 설치형, 아니면 주입�
   assert.equal(createPlatformAdapters({ scope: {}, web: () => marker }), marker);
   // 005 NativeBridge 4키는 그대로.
   assert.deepEqual(Object.keys(createWebBridge().capabilities), ["offline", "localFiles", "autoUpdate", "persistentSecrets"]);
+});
+
+const SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="10mm" height="10mm"><title>SECRET-TOKEN-VALUE</title></svg>';
+
+test("tauri rasterizer: 명령 이름 rasterize_svg, 인자 {svg, options}(검사한 키만), 원시 PNG 응답", async () => {
+  const rust = createRustInvoke();
+  const r = createTauriAdapters(rust.invoke).rasterizer!;
+  const png = await r.rasterize(SVG, { widthPx: 840 });
+  assert.deepEqual([...png.subarray(0, 4)], [0x89, 0x50, 0x4e, 0x47]);
+  await r.rasterize(SVG, { dpi: 150 });
+  assert.deepEqual(
+    rust.calls.map((c) => c.cmd),
+    ["rasterize_svg", "rasterize_svg"],
+  );
+  assert.deepEqual(rust.calls[0]!.args, { svg: SVG, options: { widthPx: 840 } });
+  assert.deepEqual(rust.calls[1]!.args, { svg: SVG, options: { dpi: 150 } });
+  assert.equal(rust.calls[0]!.options, undefined);
+});
+
+test("tauri rasterizer: 상한·옵션 오류는 invoke 전에 거부", async () => {
+  const rust = createRustInvoke();
+  const r = createTauriAdapters(rust.invoke).rasterizer!;
+  await assert.rejects(r.rasterize("x".repeat(8 * 1024 * 1024 + 1), { widthPx: 10 }), BridgeError);
+  await assert.rejects(r.rasterize(SVG, { widthPx: 10, dpi: 96 } as never), BridgeError);
+  await assert.rejects(r.rasterize(SVG, {} as never), BridgeError);
+  assert.deepEqual(rust.calls, []);
+});
+
+test("tauri rasterizer: Rust detail(SVG 조각)은 버리고 코드만, 모르는 오류·틀린 응답은 AR056", async () => {
+  const leaky = createTauriAdapters(async () => {
+    throw { code: "INVALID_INPUT", detail: `parse: ${TOKEN}` };
+  }).rasterizer!;
+  const e1 = await leaky.rasterize(SVG, { widthPx: 10 }).catch((e: unknown) => e);
+  assert.ok(e1 instanceof BridgeError && e1.code === "INVALID_INPUT");
+  assert.ok(!errorSurface(e1).includes("SECRET-TOKEN"));
+  for (const [raw, code] of [
+    [{ code: "AR052", detail: "x" }, "AR056"],
+    [new Error(`C:/${TOKEN}.png`), "AR056"],
+    [{ code: "BUSY", detail: "busy" }, "BUSY"],
+    [{ code: "AR055", detail: "pixels" }, "AR055"],
+  ] as const) {
+    const r = createTauriAdapters(async () => {
+      throw raw;
+    }).rasterizer!;
+    const e = await r.rasterize(SVG, { widthPx: 10 }).catch((x: unknown) => x);
+    assert.ok(e instanceof BridgeError && e.code === code, String(code));
+    assert.ok(!errorSurface(e).includes("SECRET-TOKEN"));
+  }
+  for (const bad of [null, { path: "C:/x.png" }, new Uint8Array([1, 2, 3]), [999]]) {
+    const r = createTauriAdapters(async () => bad).rasterizer!;
+    const e = await r.rasterize(SVG, { widthPx: 10 }).catch((x: unknown) => x);
+    assert.ok(e instanceof BridgeError && e.code === "AR056", JSON.stringify(bad));
+  }
+  const huge = createTauriAdapters(async () => new ArrayBuffer(100 * 1024 * 1024 + 1)).rasterizer!;
+  const e2 = await huge.rasterize(SVG, { widthPx: 10 }).catch((x: unknown) => x);
+  assert.ok(e2 instanceof BridgeError && e2.code === "AR055");
+});
+
+test("tauri rasterizer: 동시 호출은 줄 세워 Rust BUSY를 피하고, 대기 상한을 넘으면 BUSY", async () => {
+  const rust = createRustInvoke();
+  rust.rasterDelayMs = 5;
+  const r = createTauriAdapters(rust.invoke).rasterizer!;
+  const many = Array.from({ length: RASTER_QUEUE_LIMIT }, () => r.rasterize(SVG, { widthPx: 10 }));
+  const over = await r.rasterize(SVG, { widthPx: 10 }).catch((e: unknown) => e);
+  assert.ok(over instanceof BridgeError && over.code === "BUSY");
+  const done = await Promise.all(many);
+  assert.equal(done.length, RASTER_QUEUE_LIMIT);
+  // 앞 호출이 실패해도 줄이 멈추지 않는다.
+  const bad = r.rasterize("<html/>", { widthPx: 10 }).catch((e: unknown) => e);
+  const ok = r.rasterize(SVG, { widthPx: 10 });
+  assert.ok((await bad) instanceof BridgeError);
+  assert.ok((await ok) instanceof Uint8Array);
 });

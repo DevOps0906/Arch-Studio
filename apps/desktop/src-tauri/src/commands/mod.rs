@@ -5,6 +5,7 @@ pub mod export;
 pub mod fs;
 pub mod license;
 pub mod local_db;
+pub mod raster;
 pub mod secrets;
 
 use std::path::{Path, PathBuf};
@@ -19,6 +20,8 @@ pub mod code {
     pub const WRITE_FAILED: &str = "AR052";
     /// 파일 크기 초과(DXF 20MB, IFC/.3dm 100MB).
     pub const TOO_LARGE: &str = "AR055";
+    /// PNG(래스터화) 생성 실패(022 `png_failed`와 같은 사용자 코드). 제한 시간 초과 포함.
+    pub const PNG_FAILED: &str = "AR056";
     /// 로컬 DB 손상·열기 실패.
     pub const DB_UNAVAILABLE: &str = "AR060";
     /// 마이그레이션 중단, 읽기 전용 모드.
@@ -31,6 +34,8 @@ pub mod code {
     pub const INVALID_INPUT: &str = "INVALID_INPUT";
     /// 대상 프로젝트 없음(삭제 포함).
     pub const NOT_FOUND: &str = "NOT_FOUND";
+    /// 같은 작업이 진행 중(래스터화 동시 1건).
+    pub const BUSY: &str = "BUSY";
     /// expected_version 불일치.
     pub const VERSION_CONFLICT: &str = "VERSION_CONFLICT";
 }

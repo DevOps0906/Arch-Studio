@@ -12,6 +12,7 @@ import { IMPORT_MAX_BYTES, type ImportKind } from "../adapters/file-gateway.ts";
 import type { ExportFormat } from "../adapters/exporter.ts";
 import type { PlatformAdapters } from "../adapters/index.ts";
 import type { SaveProjectInput } from "../adapters/project-store.ts";
+import { RASTER_LIMITS, rasterizerOf, type RasterizeOptions } from "../adapters/rasterizer.ts";
 import { MAX_SECRET_BYTES, SECRET_KEYS, type SecretKey } from "../adapters/secure-store.ts";
 import type { FileFixture } from "./files.ts";
 
@@ -265,6 +266,72 @@ export function runAdapterContract(name: string, factory: ContractFactory): void
     if (!updater) return;
     const info = await updater.check();
     if (info) assert.equal(typeof info.version, "string");
+  });
+
+  // ---- Rasterizer(AR-06-080) ----------------------------------------------------------------
+  const drawing = `<svg xmlns="http://www.w3.org/2000/svg" width="100mm" height="50mm" viewBox="0 0 1000 500"><title>${LEAK}</title><line x1="0" y1="0" x2="1000" y2="500" stroke="#000"/></svg>`;
+  const PNG_SIG = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+  t("rasterizer: 없으면 NOT_SUPPORTED, 있으면 PNG 바이트·같은 입력 같은 바이트", async ({ adapters }) => {
+    const r = rasterizerOf(adapters);
+    if (!adapters.rasterizer) {
+      await rejectsWith(() => r.rasterize(drawing, { widthPx: 100 }), "NOT_SUPPORTED");
+      return;
+    }
+    const a = await r.rasterize(drawing, { widthPx: 100 });
+    assert.ok(a instanceof Uint8Array);
+    assert.deepEqual([...a.subarray(0, 8)], PNG_SIG);
+    assert.deepEqual([...(await r.rasterize(drawing, { widthPx: 100 }))], [...a]);
+    assert.ok((await r.rasterize(drawing, { dpi: 150 })) instanceof Uint8Array);
+  });
+
+  t("rasterizer: 입력 상한 초과는 AR055(UTF-8 바이트 기준, 오류에 SVG 원문 없음), 상한 정확히는 통과", async ({ adapters }) => {
+    if (!adapters.rasterizer) return;
+    const r = adapters.rasterizer;
+    const pad = (n: number) => drawing.replace("</svg>", `<!--${"x".repeat(n)}--></svg>`);
+    const base = pad(0).length;
+    const exact = pad(RASTER_LIMITS.maxSvgBytes - base);
+    assert.equal(new TextEncoder().encode(exact).byteLength, RASTER_LIMITS.maxSvgBytes);
+    assert.ok((await r.rasterize(exact, { widthPx: 10 })) instanceof Uint8Array);
+    await rejectsWith(() => r.rasterize(`${exact} `, { widthPx: 10 }), "AR055");
+    // 코드 단위 수는 상한 아래지만 UTF-8(한글 3바이트)로는 넘는다.
+    const korean = drawing.replace("</svg>", `<!--${"가".repeat(Math.ceil(RASTER_LIMITS.maxSvgBytes / 3))}--></svg>`);
+    assert.ok(korean.length < RASTER_LIMITS.maxSvgBytes);
+    await rejectsWith(() => r.rasterize(korean, { widthPx: 10 }), "AR055");
+    await rejectsWith(() => r.rasterize(drawing, { widthPx: RASTER_LIMITS.maxPixels + 1 }), "AR055");
+  });
+
+  t("rasterizer: 옵션은 widthPx·dpi 중 정확히 하나(범위 밖·경로 키는 INVALID_INPUT)", async ({ adapters }) => {
+    if (!adapters.rasterizer) return;
+    const r = adapters.rasterizer;
+    const bad: unknown[] = [
+      {},
+      null,
+      { widthPx: 0 },
+      { widthPx: 1.5 },
+      { widthPx: "100" },
+      { dpi: 9.99 },
+      { dpi: 1200.5 },
+      { dpi: Number.NaN },
+      { widthPx: 10, dpi: 96 },
+      { widthPx: 10, path: `C:/${LEAK}.png` },
+      { url: `http://${LEAK}` },
+    ];
+    for (const o of bad) await rejectsWith(() => r.rasterize(drawing, o as RasterizeOptions), "INVALID_INPUT");
+    await rejectsWith(() => r.rasterize("", { widthPx: 10 }), "INVALID_INPUT");
+    await rejectsWith(() => r.rasterize(5 as unknown as string, { widthPx: 10 }), "INVALID_INPUT");
+  });
+
+  t("rasterizer: 깨진 SVG·외부 참조(image·use·style·href)는 INVALID_INPUT, 오류에 SVG 원문 없음", async ({ adapters }) => {
+    if (!adapters.rasterizer) return;
+    const r = adapters.rasterizer;
+    const bad = [
+      `<html>${LEAK}</html>`,
+      drawing.replace("</svg>", `<image href="file:///C:/${LEAK}.png" width="1" height="1"/></svg>`),
+      drawing.replace("</svg>", `<use href="http://${LEAK}/a.svg#x"/></svg>`),
+      drawing.replace("</svg>", `<style>@import url("http://${LEAK}/a.css");</style></svg>`),
+    ];
+    for (const s of bad) await rejectsWith(() => r.rasterize(s, { widthPx: 10 }), "INVALID_INPUT");
   });
 
   // ---- 직렬화 -------------------------------------------------------------------------------
