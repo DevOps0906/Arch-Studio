@@ -457,7 +457,7 @@ Rust 쪽 HTTP(업데이터, 대용량 업로드)는 같은 두 도메인만 허�
 | `RENDER_SERVICE_URL`, `RENDER_SERVICE_TOKEN` | 공용 WeasyPrint | 워커 전용 | 기동 실패 |
 | `AI_CROSS_BORDER_NOTICE_VERSION`, `VOICE_NOTICE_VERSION`, `ARCH_RECORDING_NOTICE_VERSION` | 국외 이전·음성·상담 녹음(제3자) 고지문 버전(`01_PRD.md 6절`) | web 서버 전용 | 기동 실패 |
 | `RATE_LIMIT_IP_SALT` | 활성화 API IP당 10회/시간 등 IP 해시 | 서버 전용 | 기동 실패 |
-| `NEXT_PUBLIC_HERO3D_ENABLED`, `NEXT_PUBLIC_HERO_VIDEO_ENABLED` | 3D 히어로 킬 스위치 | 공개 | 기본 true, false면 정지 이미지 |
+| `NEXT_PUBLIC_HERO3D_ENABLED` | 히어로 CSS/SVG 연출 킬 스위치(D-37: 이름은 유지, 의미는 연출 on/off) | 공개 | 기본 true, false면 정지 이미지. `NEXT_PUBLIC_HERO_VIDEO_ENABLED`는 영상 미채택이라 읽지 않는다 |
 | `WORKER_ID`, `WORKER_CONCURRENCY` | 워커 식별·동시성 | 워커 | 기본값 |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_BASE_URL` | 데스크톱 빌드 시점 공개값(번들에 들어감) | 공개(아래 `VITE_AUTH_MODE`와 함께 4개만 허용 목록) | 빌드 실패 |
 | `VITE_AUTH_MODE` | 데스크톱 인증 단계(`mock`은 개발 빌드만) | 공개 | 기본 `live`. 릴리스 빌드에서 `mock`이면 빌드 실패(9절) |
