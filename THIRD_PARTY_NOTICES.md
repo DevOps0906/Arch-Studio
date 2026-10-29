@@ -12,6 +12,18 @@
 ## @arch-studio/domain
 - zod 3.25.76 — MIT License, Copyright (c) Colin McDonnell. https://github.com/colinhacks/zod
 
+## @arch-studio/shell-bridge (AR-06-005)
+- @supabase/supabase-js 2.118.0 — MIT License, Copyright (c) Supabase. https://github.com/supabase/supabase-js
+  전이: @supabase/auth-js·postgrest-js·realtime-js·storage-js·functions-js 2.118.0(MIT), @supabase/phoenix 0.4.5(MIT),
+  iceberg-js 0.8.x(MIT), tslib 2.8.1(0BSD).
+- @tauri-apps/api 2.12.4 — Apache License 2.0 OR MIT License, Copyright (c) Tauri Programme within The Commons Conservancy. https://github.com/tauri-apps/tauri
+
+## 데스크톱 셸 Rust — 키체인 (AR-06-005)
+- keyring 3.6.3 — MIT OR Apache-2.0, Copyright keyring-rs 기여자(배포 전 LICENSE 원문 대조). https://github.com/open-source-cooperative/keyring-rs
+  플랫폼별 전이(`cargo tree -f "{l}"` 확인): Windows windows-sys 0.60·windows-targets 0.53(MIT OR Apache-2.0), byteorder 1.5(Unlicense OR MIT),
+  zeroize 1.9(Apache-2.0 OR MIT) / macOS security-framework 3.7·core-foundation 0.10(MIT OR Apache-2.0) /
+  Linux linux-keyutils 0.2.5(Apache-2.0 OR MIT). 공통 log 0.4(MIT OR Apache-2.0).
+
 ## @arch-studio/geometry — 솔리드 래퍼 (AR-06-016)
 - manifold-3d 3.5.4 (`manifold.js` + `manifold.wasm`만 사용) — Apache License 2.0, Copyright Emmett Lalish 외 Manifold 기여자.
   https://github.com/elalish/manifold · tarball sha256 `cf57c91fcd33b6315bff28e424ac8c5f04acb5410e9dd8e9886838303910c568`.

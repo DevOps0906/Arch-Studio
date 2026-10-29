@@ -208,5 +208,5 @@ fn no_command_takes_path_or_sql_argument() {
             }
         }
     }
-    assert_eq!(commands, 6, "build.rs APP_COMMANDS와 개수 일치");
+    assert_eq!(commands, 9, "build.rs APP_COMMANDS와 개수 일치");
 }
