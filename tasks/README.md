@@ -84,7 +84,7 @@
 | AR-06-061 | 웹 E2E 페르소나·잡 흐름 통합 | W6 | 008, 032, 051, 056 | 보통 | tester | 대기 |
 | AR-V2-02 | V2 전환 점검: 모듈 계약 테스트 CI | W6 | AR-V2-01 | 보통 | tester | 대기 |
 | AR-06-065 | 랜딩 설득 칸·판정표·화면 기록 | W6 | 057, 033, 036, 037, 069, 066, D-27·D-30 | 낮음 | codex-designer⇄designer | 대기 |
-| AR-06-067 | 도입 단계 탭(/pricing) | W6 | 057, 069, D-29 | 낮음 | codex-designer⇄designer | 대기 |
+| AR-06-067 | 도입 단계 탭(/pricing) | W6 | 057, 069, D-29 | 낮음 | codex-designer⇄designer | 완료 |
 | AR-06-045 | 결제 E2E(Toss 테스트 키) → G1 자료 | W6 | 043, 044, 061 | 높음 | tester | 대기 |
 | AR-06-076 | /download 페이지·릴리스 채널(latest.json·체크섬) | W6 | 057, 058, 069 | 낮음 | codex-designer⇄designer | 대기 |
 | AR-06-079 | 웹+설치형 E2E 동등성·브라우저 매트릭스 | W6 | 060, 061, 071, 072, 074 | 보통 | tester | 대기 |
