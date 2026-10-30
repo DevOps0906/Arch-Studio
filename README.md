@@ -80,6 +80,38 @@
 
 현재 우선순위는 작업표의 미완료 선행 관계를 따릅니다. 프로그램 화면(AR-06-038)은 엔진은 있지만 화면에 필요한 목표 면적·체크리스트 및 단가 출처/기준일이 확정됐는지 확인이 필요합니다. 미정 기준은 임의로 채우지 않습니다.
 
+## 콘텐츠 바로가기
+
+설치형 앱 화면과 웹 화면별 기획 문서와 구현 코드입니다. 화면 경로는 앱 안 주소입니다(웹 스튜디오는 `app.` 아래 같은 경로). 화면 정의는 [화면설계서](docs/file/03-설계/03_SCREENS_UX.md)를 따릅니다.
+
+| 콘텐츠 | 화면 경로 | 기획·명세 문서 | 구현 코드 |
+|---|---|---|---|
+| 로그인 | `/login` | [화면설계서 3.1절](docs/file/03-설계/03_SCREENS_UX.md) | [login](packages/features/src/login/) |
+| 온보딩(약관·체험 시작) | `/onboarding` | [화면설계서 3.2절](docs/file/03-설계/03_SCREENS_UX.md) | [onboarding](packages/features/src/onboarding/) |
+| 프로젝트 목록 | `/projects` | [화면설계서 3.3절](docs/file/03-설계/03_SCREENS_UX.md) | [projects](packages/features/src/projects/) |
+| 대지 | `/projects/:id/site` | [화면설계서 3.4절](docs/file/03-설계/03_SCREENS_UX.md) | [site](packages/features/src/site/) |
+| 모델러·실시간 판정 | `/projects/:id/model` | [화면설계서 3.5절](docs/file/03-설계/03_SCREENS_UX.md) | [모델러](packages/features/src/modeler/) · [판정](packages/features/src/judgment/) |
+| 프로그램(면적표·공사비) | `/projects/:id/program` | [화면설계서 3.6절](docs/file/03-설계/03_SCREENS_UX.md) | [program](packages/features/src/program/) |
+| 평면 개략도 | `/projects/:id/plans` | [화면설계서 3.7절](docs/file/03-설계/03_SCREENS_UX.md) | [plans](packages/features/src/plans/) |
+| 도면 시트·내보내기 | `/projects/:id/sheets` | [화면설계서 3.8절](docs/file/03-설계/03_SCREENS_UX.md) | [sheets](packages/features/src/sheets/) |
+| AI 렌더 | `/projects/:id/render` | [화면설계서 3.9절](docs/file/03-설계/03_SCREENS_UX.md) | [render](packages/features/src/render/) |
+| 제안서 | `/projects/:id/proposal` | [화면설계서 3.10절](docs/file/03-설계/03_SCREENS_UX.md) | [proposal](packages/features/src/proposal/) |
+| 클라우드 법규 검토 | `/projects/:id/review` | [화면설계서 3.11절](docs/file/03-설계/03_SCREENS_UX.md) | [review](packages/features/src/review/) |
+| AI 채팅 | `/chat` | [화면설계서 3.12절](docs/file/03-설계/03_SCREENS_UX.md) | [chat](packages/features/src/chat/) |
+| 법규 해설 위키 | `/wiki` | [화면설계서 3.13절](docs/file/03-설계/03_SCREENS_UX.md) | [wiki](packages/features/src/wiki/) |
+| 설정(표제란·레이어·일반) | `/settings/drafting` · `/settings/general` | [화면설계서 3.14·3.15절](docs/file/03-설계/03_SCREENS_UX.md) | [settings](packages/features/src/settings/) |
+| 라이선스·기기 | `/license` | [화면설계서 3.16절](docs/file/03-설계/03_SCREENS_UX.md) | [license](packages/features/src/license/) |
+| 크레딧 | `/credits` | [화면설계서 3.17절](docs/file/03-설계/03_SCREENS_UX.md) | [credits](packages/features/src/credits/) |
+| 랜딩·요금·다운로드·샘플 | 웹 `/` · `/pricing` · `/download` · `/samples` | [화면설계서 1.2·3.18·4장](docs/file/03-설계/03_SCREENS_UX.md) · [ADR-001](docs/file/03-설계/ADR-001_DELIVERY_AND_LICENSING.md) | [apps/web (marketing)](apps/web/src/app/%28marketing%29/) |
+| 법적 고지 | 웹 `/legal` | [PRD](docs/file/02-요구사항/01_PRD.md) 6장 | [legal](apps/web/src/app/legal/) |
+| 판정·도면 엔진 | — | [PRD](docs/file/02-요구사항/01_PRD.md) 9장 · [구조](docs/file/03-설계/02_ARCHITECTURE.md) | [packages](packages/) (rules·geometry·drafting 등) |
+
+전체 문서 목록은 [문서 안내](docs/README.md), 디자인 명세는 [DESIGN.md](docs/file/03-설계/디자인/DESIGN.md)·[COMPONENTS.md](docs/file/03-설계/디자인/COMPONENTS.md), 구현 현황은 [실행 작업표](tasks/README.md)에서 확인합니다.
+
+## 연관·참고 저장소
+
+- [Motion Studio](https://github.com/DevOps0906/Motion-Studio): Arch Studio와 연관된 프로젝트입니다. 관련 작업을 검토할 때 함께 참고합니다.
+
 ## 다이어그램
 
 Mermaid 원본(`.mmd`)과 렌더링한 그림(`.svg`)을 `docs/diagrams/`(제품)와 `docs/diagrams/team/`(팀 운영)에 둡니다. 7개 모두 `mmd-check` 문법 검사를 통과했습니다.
@@ -146,10 +178,6 @@ docker compose down       # 중지
 ## 스택
 
 Tauri 2 + Rust(설치형) · Next.js 16 + React 19 + Tailwind CSS v4(웹·웹 스튜디오) · 순수 TS 엔진(지오메트리·판정·도면, 웹과 설치형이 공유) · Supabase(Postgres·RLS·Auth) · FastAPI + LangGraph(AI). 상세는 [docs/STACK.md](docs/STACK.md)를 보세요.
-
-## 관련 저장소
-
-- [Motion Studio](https://github.com/DevOps0906/Motion-Studio): Arch Studio와 연관된 프로젝트입니다. 관련 작업을 검토할 때 함께 참고합니다.
 
 ## 작업 방식
 
