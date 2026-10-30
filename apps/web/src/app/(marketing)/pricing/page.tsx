@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Banner } from "@arch-studio/ui";
 import { ContactCta } from "../_components/contact.tsx";
 import { CONTAINER, LinkButton, SECTION, SectionHead, Shell } from "../_components/Shell.tsx";
+import { AdoptionSteps } from "../../../features/adoption-steps/AdoptionSteps.tsx";
 
 const TITLE = "가격 | Arch Studio";
 const DESCRIPTION = "Arch Studio 라이선스 종류(영구·기간제·구독)의 개념을 안내합니다. 가격은 아직 정해지지 않아 안내를 준비 중입니다.";
@@ -61,6 +62,10 @@ export default function PricingPage() {
           <Banner tone="info" title={PRICE_NOTE}>
             금액과 사전예약 조건은 확정 전입니다. 사전예약 문의를 남기시면 확정 소식을 먼저 드립니다.
           </Banner>
+        </div>
+
+        <div className={`${CONTAINER} pt-10 xl:pt-12`}>
+          <AdoptionSteps />
         </div>
 
         <section aria-labelledby="plans" className={SECTION}>
