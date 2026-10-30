@@ -178,13 +178,13 @@ P0 작업은 대응 테스트 작업(`06_AGENT_PLAN.md` 7.1절)이 녹색이어�
 
 | 항목 | 규칙 |
 |---|---|
-| 주장 장부 | 랜딩 문장은 `docs/arch-studio/experiments/claims-ledger.md`에서 "검증"인 것만. 문구 상수와 장부가 다르면 `scripts/proof/check-claims.mjs`가 CI를 실패시킨다 |
+| 주장 장부 | 랜딩 문장은 `docs/file/05-검증/실험/claims-ledger.md`에서 "검증"인 것만. 문구 상수와 장부가 다르면 `scripts/proof/check-claims.mjs`가 CI를 실패시킨다 |
 | 비교 표시 | 대안은 범주 이름만(D-27). CAD·모델링 도구·법규 검토 서비스 이름과 로고 금지. 상표는 "파일 호환"만 |
 | 증거 | 샘플 도면은 골든 출력 CI 복사(033 기존 규칙), 화면 기록은 실제 앱의 편집 없는 녹화 |
 | 계산기·도입 단계 | 요금 값은 요금 상수 import(하드코딩 금지), 입력값 수집 금지, 시간 절감 수치는 V1 측정 전 쓰지 않는다 |
 | 외부 랜딩 자료 | 다른 회사 랜딩의 문구·수치·단계 이름과 다크 글래스 비주얼 금지(`LANDING_PERSUASION.md` 1장). 단계 이름은 01장 4장 요금 구조에서 |
 | 컴포넌트 경계 | `web/src/components/marketing/**`은 웹 `(marketing)` 경로에서만. 데스크톱 앱 공용 `packages/ui`에 넣지 않는다 |
-| 소유 경로 | 065 `web/src/features/landing-proof/**`, `web/public/proof/**`, `scripts/proof/**`. 066 `docs/arch-studio/experiments/`. 067 `web/src/features/adoption-steps/**`. 068 `web/src/app/(marketing)/tools/**`, `web/src/features/proposal-time/**`. 069 `web/src/components/marketing/**` |
+| 소유 경로 | 065 `web/src/features/landing-proof/**`, `web/public/proof/**`, `scripts/proof/**`. 066 `docs/file/05-검증/실험/`. 067 `web/src/features/adoption-steps/**`. 068 `web/src/app/(marketing)/tools/**`, `web/src/features/proposal-time/**`. 069 `web/src/components/marketing/**` |
 
 
 ## 대시보드 셸·GNB 규칙 (2026-10-19)

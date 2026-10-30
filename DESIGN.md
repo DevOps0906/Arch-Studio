@@ -1,6 +1,6 @@
 # DESIGN.md — Arch Studio
 
-> 정답은 `packages/ui/src/tokens.css`(Tailwind CSS v4 `@theme`). 이 문서는 의도·규칙만 적고 값 표는 `docs/DESIGN_TOKENS.md`(design-preview --md)에서 재생성한다.
+> 정답은 `packages/ui/src/tokens.css`(Tailwind CSS v4 `@theme`). 이 문서는 의도·규칙만 적고 값 표는 `docs/file/03-설계/디자인/DESIGN_TOKENS.md`(design-preview --md)에서 재생성한다.
 > 시안 원본: `design/reference/landing/`, `design/reference/dashboard/` (읽기 전용). 미리보기: `design/preview.html`.
 > "제안" = 시안·기획서(03_SCREENS_UX 4.3)에 없던 값. 사람이 확정하기 전까지 잠정.
 

@@ -59,7 +59,7 @@
 - [x] 작업 표를 갱신했습니다. `tasks/README.md`에 85개 작업과 담당·위험도·웨이브를 정리했습니다.
 - [x] NOMAD v3.0 규칙을 적용했습니다(2026-10-28). Codex 팀원(codex-designer·codex-reviewer)과 위험도별 검증 규칙을 작업 표에 넣었고, 디자인 작업 9개는 공동 디자인으로 바꿨습니다. `tasks/NOW.md`에는 이관용 필드(SDLC 단계·담당 모델·수정 파일·테스트 상태·남은 작업)를 추가했습니다.
 
-- [x] Codex(sol) 독립 분석과 🔴 5건을 해소했습니다(2026-10-28~29). 분석 문서는 [기획·디자인 분석](docs/reviews/codex-planning-design-2026-10-28.md)에 있습니다.
+- [x] Codex(sol) 독립 분석과 🔴 5건을 해소했습니다(2026-10-28~29). 분석 문서는 [기획·디자인 분석](docs/file/05-검증/리뷰/codex-planning-design-2026-10-28.md)에 있습니다.
   - R1 검증 게이트: G0·G-베타·G-판매 단계를 두고, 의향·약정·구매 지표를 분리했습니다.
   - R2 권한 계약: 권리를 권리 단위로 합성하고 DB 함수에서 강제합니다. 좌석에 번호를 붙이고, 재배정은 7일 냉각·30일 2회로 제한합니다.
   - R3 웹 동등성: 웹 첫 여정 5단계, 설치형 화면 17개와의 대응, 반응형 3구간을 정했습니다. 모바일은 열람·판정 확인·내보내기·AI 요청만 됩니다.
@@ -82,7 +82,7 @@
 
 ## 다이어그램
 
-Mermaid 원본(`.mmd`)과 렌더링한 그림(`.svg`)을 `docs/diagrams/`에 둡니다. 7개 모두 `mmd-check` 문법 검사를 통과했습니다.
+Mermaid 원본(`.mmd`)과 렌더링한 그림(`.svg`)을 `docs/diagrams/`(제품)와 `docs/diagrams/team/`(팀 운영)에 둡니다. 7개 모두 `mmd-check` 문법 검사를 통과했습니다.
 
 ### 제품 구조
 | 다이어그램 | 내용 |
@@ -97,11 +97,11 @@ Mermaid 원본(`.mmd`)과 렌더링한 그림(`.svg`)을 `docs/diagrams/`에 둡
 ### 팀(멀티에이전트) 업무
 | 다이어그램 | 내용 |
 |---|---|
-| [팀 조직도](docs/diagrams/team-org.svg) ([원본](docs/diagrams/team-org.mmd)) | 팀장(Opus)과 팀원 12명(Claude 10 + Codex 2)의 모델·역할, 작업 표 84개의 담당 분포 |
-| [작업 흐름](docs/diagrams/team-workflow.svg) ([원본](docs/diagrams/team-workflow.mmd)) | SDLC 9단계와 작업 하나의 흐름: 위험도 판정 → challenger(고위험) → builder → codex-reviewer(+reviewer) → tester → advisor(2회 실패 시) → 팀장 커밋. Codex를 못 쓸 때의 대체 경로와 모델 한도 대응(`handoff`)도 그렸습니다 |
-| [2026-10-28 세션](docs/diagrams/team-session-2026-10-28.svg) ([원본](docs/diagrams/team-session-2026-10-28.mmd)) | 오늘 팀원들이 실제로 한 일의 순서이고, 병렬 위임은 par 블록으로 표시했습니다. 순서는 위임 기록 기준이며 호출 시각으로 확인한 것은 아닙니다 |
+| [팀 조직도](docs/diagrams/team/team-org.svg) ([원본](docs/diagrams/team/team-org.mmd)) | 팀장(Opus)과 팀원 12명(Claude 10 + Codex 2)의 모델·역할, 작업 표 84개의 담당 분포 |
+| [작업 흐름](docs/diagrams/team/team-workflow.svg) ([원본](docs/diagrams/team/team-workflow.mmd)) | SDLC 9단계와 작업 하나의 흐름: 위험도 판정 → challenger(고위험) → builder → codex-reviewer(+reviewer) → tester → advisor(2회 실패 시) → 팀장 커밋. Codex를 못 쓸 때의 대체 경로와 모델 한도 대응(`handoff`)도 그렸습니다 |
+| [2026-10-28 세션](docs/diagrams/team/team-session-2026-10-28.svg) ([원본](docs/diagrams/team/team-session-2026-10-28.mmd)) | 오늘 팀원들이 실제로 한 일의 순서이고, 병렬 위임은 par 블록으로 표시했습니다. 순서는 위임 기록 기준이며 호출 시각으로 확인한 것은 아닙니다 |
 
-![팀 작업 흐름](docs/diagrams/team-workflow.svg)
+![팀 작업 흐름](docs/diagrams/team/team-workflow.svg)
 
 ## 로컬 실행 (Docker)
 
@@ -127,14 +127,15 @@ docker compose down       # 중지
 
 ## 폴더 구조
 
+문서별 위치와 용도는 [문서 안내](docs/README.md)에서 확인할 수 있습니다.
+
 | 경로 | 내용 |
 |---|---|
 | `AGENTS.md` · `CLAUDE.md` | AI 도구 공통 규칙(정본) · Claude Code 전용 설정 |
-| `docs/file/` | 기획·설계 정본입니다(PRD·구조·화면·API·데이터·보안·ADR·작업 계획) |
-| `docs/source/` | platform-docs 원본 사본입니다. 읽기만 합니다 |
-| `docs/wiki/` · `docs/reference/` | LLM 위키 · 이관 분석·리뷰 |
-| `docs/STACK.md` | 스택·명령·문서 지도 |
-| `docs/diagrams/` | 구조도·흐름도·ERD·팀 다이어그램(Mermaid + SVG) |
+| `docs/` | 문서 전체. 입구는 [docs/README.md](docs/README.md)입니다 |
+| `docs/file/` | 기준 문서(정본): 01 관리 · 02 요구사항 · 03 설계 · 04 구현 · 05 검증 |
+| `docs/diagrams/` · `docs/diagrams/team/` | 제품 도식(구성도·흐름도·ERD) · 팀 운영 도식(Mermaid + SVG) |
+| `docs/reference/` · `docs/wiki/` · `docs/source/` | 참고: 이관 분석·외부 검토 · LLM 위키 · platform-docs 원본(읽기 전용) |
 | `design/` | 확정 시안 원본과 토큰 미리보기 |
 | `packages/ui/src/tokens.css` · `DESIGN.md` | 디자인 토큰(정답) · 디자인 설명 |
 | `supabase/` | 마이그레이션·시드·RLS 스모크 테스트 |

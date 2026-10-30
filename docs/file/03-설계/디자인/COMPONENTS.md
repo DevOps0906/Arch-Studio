@@ -1,7 +1,7 @@
 # COMPONENTS.md — arch-studio 컴포넌트·배리언트 명세 (확정 2026-10-29, AR-06-012)
 
 > 정답 소스는 코드 컴포넌트 `packages/ui/src/components/*`(진입점 `packages/ui/src/index.ts`, Tailwind CSS v4 토큰 유틸리티만 사용). 이 표는 코드의 export에서 다시 만든 사본이고, 다르면 코드가 이긴다. 작업 지시는 `DESIGN_SYSTEM.md` 8장 템플릿으로 컴포넌트 1개씩 맡긴다.
-> 배리언트 이름은 코드의 prop 값 그대로 적는다. 토큰 이름은 `--color-`·`--spacing-`·`--radius-`·`--text-`를 뗀 유틸리티 이름이다(값은 `DESIGN.md` 2·3장, `docs/DESIGN_TOKENS.md`).
+> 배리언트 이름은 코드의 prop 값 그대로 적는다. 토큰 이름은 `--color-`·`--spacing-`·`--radius-`·`--text-`를 뗀 유틸리티 이름이다(값은 `DESIGN.md` 2·3장, `docs/file/03-설계/디자인/DESIGN_TOKENS.md`).
 > 미리보기: `/dev/components`(`apps/web/src/app/dev/components/Showcase.tsx`, production 404) — 라이트/다크 × 기본/컴팩트 네 조합. 밀도는 컴포넌트 prop이 아니라 `[data-density="compact"]`(DESIGN.md 4장)로 바뀐다.
 
 ## 1. 기본 컴포넌트 (03장 3.19절 "기본 컴포넌트" 19개)

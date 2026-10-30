@@ -1,7 +1,7 @@
 # DESIGN.md — arch-studio 디자인 토큰 (확정 2026-10-29, AR-06-012)
 
 > 정답 소스는 코드다: `packages/ui/src/tokens.css`(Tailwind CSS v4 `@theme`). 이 문서는 코드에서 갱신하고, 다르면 코드가 이긴다.
-> 수치(hex·크기)는 이 문서에 적지 않는다. 값은 자동 생성 표 [`docs/DESIGN_TOKENS.md`](../../../DESIGN_TOKENS.md)(`design-preview --md`)와 `tokens.css`에서 본다. 컴포넌트 목록은 `COMPONENTS.md`.
+> 수치(hex·크기)는 이 문서에 적지 않는다. 값은 자동 생성 표 [`DESIGN_TOKENS.md`](DESIGN_TOKENS.md)(`design-preview --md`)와 `tokens.css`에서 본다. 컴포넌트 목록은 `COMPONENTS.md`.
 > 규칙: `docs/file/03-설계/디자인/DESIGN_SYSTEM.md`. 피그마 노드 ID나 외부 파일 링크를 적지 않는다.
 
 ## 1. 레퍼런스와 방향
@@ -36,7 +36,7 @@
 
 ## 2. 색 토큰 (라이트 / 다크)
 
-값: [`DESIGN_TOKENS.md` "색"](../../../DESIGN_TOKENS.md) 표(라이트·다크 두 열). 출발점은 03장 4.3절 토큰 플랜, 랜딩은 `design/reference/landing/`. Tailwind 유틸리티는 `--color-` 뒤 이름(`bg-surface`, `text-fg-2`, `border-input`)으로 쓴다.
+값: [`DESIGN_TOKENS.md` "색"](DESIGN_TOKENS.md) 표(라이트·다크 두 열). 출발점은 03장 4.3절 토큰 플랜, 랜딩은 `design/reference/landing/`. Tailwind 유틸리티는 `--color-` 뒤 이름(`bg-surface`, `text-fg-2`, `border-input`)으로 쓴다.
 
 | 묶음 | 토큰 | 용도·규칙 |
 |---|---|---|
@@ -65,7 +65,7 @@
 
 ### 3.1 반응형 3구간 글자 크기
 
-값: [`DESIGN_TOKENS.md` "글자 크기 (반응형 3구간)"](../../../DESIGN_TOKENS.md) 표(모바일 ~767 / 태블릿 768~1199 / 데스크톱 1200~). 코드는 `tokens.css`의 `@theme`(모바일) + 태블릿·데스크톱 구간(`--breakpoint-md` · `--breakpoint-xl`) `@media` 안 `:root` 덮어쓰기(앱), 같은 구간의 `[data-surface="landing"]` 덮어쓰기(랜딩)다.
+값: [`DESIGN_TOKENS.md` "글자 크기 (반응형 3구간)"](DESIGN_TOKENS.md) 표(모바일 ~767 / 태블릿 768~1199 / 데스크톱 1200~). 코드는 `tokens.css`의 `@theme`(모바일) + 태블릿·데스크톱 구간(`--breakpoint-md` · `--breakpoint-xl`) `@media` 안 `:root` 덮어쓰기(앱), 같은 구간의 `[data-surface="landing"]` 덮어쓰기(랜딩)다.
 
 - 주의(2026-10-29 확인): 현재 자동 표의 태블릿·데스크톱 열은 랜딩 표면 값을 보여 준다(생성기가 `[data-surface="landing"]` 미디어 블록을 앱 값 위에 덮어 읽음). 앱의 태블릿·데스크톱 값은 `tokens.css`의 `:root` 미디어 블록이 정답이다. 생성기가 고쳐질 때까지 앱 값은 그 블록에서 본다.
 - 밀도와 무관하게 글자 크기는 같다(컴팩트는 간격만 줄인다).

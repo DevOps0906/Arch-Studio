@@ -28,9 +28,11 @@
 | ERD 갱신 | `~/.claude/nomad/bin/sql2erd supabase/migrations -o docs/diagrams/erd.mmd` |
 
 ## 3. 문서 지도
+
+전체 분류와 문서별 링크는 [문서 안내](README.md)를 참조한다.
 | 문서 | 내용 |
 |---|---|
-| `docs/file/_index.md` | 근거 산출물 26개 목차 |
+| `docs/file/_index.md` | 근거 산출물 27개 목차 |
 | `docs/file/03-설계/ADR-001_DELIVERY_AND_LICENSING.md` | 웹·설치형 하이브리드 제공·라이선스 3종(정본) |
 | `docs/source/develop/arch-studio/arch-studio_develop.md` | 개발서(원본) |
 | `docs/file/02-요구사항/01_PRD.md` | 기능 AR-F-001~038, 도면 9장, 린 검증 9.10절 |
@@ -39,5 +41,6 @@
 | `docs/file/01-관리/06_AGENT_PLAN.md` | 작업 71개 · 웨이브 W0~W8 · 완료 정의 |
 | `docs/source/` | platform-docs 원본(products·develop·develop_V2·Tauri) — 읽기 전용 |
 | `docs/wiki/` | LLM 위키(sources 27) |
-| `DESIGN.md` · `packages/ui/src/tokens.css` | 디자인 (정답은 토큰 파일) |
+| `DESIGN.md` · `packages/ui/src/tokens.css` · `docs/file/03-설계/디자인/DESIGN_TOKENS.md` | 디자인 (정답은 토큰 파일, 토큰 표는 자동 생성) |
+| `docs/diagrams/` · `docs/diagrams/team/` | 제품 도식 · 팀 운영 도식(Mermaid + SVG) |
 | `design/reference/landing/` · `dashboard/` | 확정 시안 원본: 랜딩(다크) · 대시보드(라이트, 트레이싱지) |
