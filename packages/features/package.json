@@ -36,6 +36,7 @@
     "@arch-studio/geometry": "workspace:*",
     "@arch-studio/io": "workspace:*",
     "@arch-studio/layout": "workspace:*",
+    "@arch-studio/program": "workspace:*",
     "@arch-studio/ui": "workspace:*",
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.2",

@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { DENY_TEXT, EmptyBlock, ErrorState, LoadingState, PageHeader, bridgeErrorCode, bridgeErrorText,
   useAdapters, useCapabilities, useEntitlement, useProject, useShellStatus } from "../shell/index.ts";
 import { draftRows, parseModel, validateRows, withRows, type DraftRow } from "./model.ts";
+import { CostPanel } from "./CostPanel.tsx";
 
 export function Screen() {
   const { load, reload } = useProject();
@@ -78,7 +79,7 @@ function ProgramScreen({ record }: { record: ProjectRecord }) {
         {issue ? <Banner tone="warn" title="입력 확인">{issue}</Banner> : null}
         <div><Button disabled={!editable} onClick={() => editable && setRows((current) => [...current, { name: "", use: "", area: "", locked: true }])}>실 추가</Button></div>
       </section>
-      <section className="rounded-panel border border-line bg-surface p-pad" aria-labelledby="program-cost"><h2 id="program-cost" className="text-h2 font-semibold">개략 공사비</h2><p className="mt-2 text-body text-fg-2">단가 자료가 연결되지 않았습니다. 출처와 기준일이 확인된 단가표를 연결하면 공사비를 계산할 수 있습니다.</p></section>
+      <CostPanel rows={rows} />
     </div>
   );
 }
