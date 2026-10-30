@@ -282,7 +282,7 @@ test("초월함수 미사용: geometry 소스의 Math는 허용 목록만, ** �
   const files = readdirSync(dir).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
   assert.ok(files.length >= 8);
   for (const f of files) {
-    const lines = readFileSync(new URL(f, dir), "utf8").split("\n");
+    const lines = readFileSync(new URL(f, dir), "utf8").split(/\r?\n/);
     lines.forEach((line, i) => {
       const codePart = line.replace(/\/\/.*$/, "").replace(/^\s*\/?\*.*$/, ""); // 주석 줄 제외
       const where = `${f}:${i + 1}: ${line.trim()}`;

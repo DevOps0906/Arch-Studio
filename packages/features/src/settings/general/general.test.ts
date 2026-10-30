@@ -32,7 +32,7 @@ test("녹음 고지 = PRD 6장 문구 그대로", () => {
 });
 
 test("오픈소스 고지 데이터 = 루트 THIRD_PARTY_NOTICES.md(UPDATE_NOTICES=1이면 다시 만든다)", () => {
-  const src = readFileSync(path.join(ROOT, "THIRD_PARTY_NOTICES.md"), "utf8");
+  const src = readFileSync(path.join(ROOT, "THIRD_PARTY_NOTICES.md"), "utf8").replace(/\r\n/g, "\n");
   if (process.env.UPDATE_NOTICES === "1" && src !== THIRD_PARTY_NOTICES) {
     const file = path.join(import.meta.dirname, "third-party-notices.ts");
     const head = readFileSync(file, "utf8").split("export const THIRD_PARTY_NOTICES")[0];

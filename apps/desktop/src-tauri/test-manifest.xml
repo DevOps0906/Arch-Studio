@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!-- 테스트 실행 파일 전용: tauri::test가 Windows에서 Common Controls v6을 찾도록 한다(앱 바이너리는 tauri-build가 넣는다). -->
+<!-- 앱·단위·통합 테스트 모두 같은 Common Controls v6 의존성을 쓴다(tauri-build 기본 매니페스트와 같음). -->
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <dependency>
     <dependentAssembly>

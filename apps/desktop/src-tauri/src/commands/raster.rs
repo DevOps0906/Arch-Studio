@@ -368,7 +368,13 @@ fn encode_png(pixmap: &Pixmap) -> Result<Vec<u8>, AppError> {
 }
 
 fn encode_png_capped(pixmap: &Pixmap, max_bytes: usize) -> Result<Vec<u8>, AppError> {
-    if pixmap.data().chunks_exact(4).any(|p| p[3] != u8::MAX) {
+    if pixmap
+        .data()
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .any(|p| p[3] != u8::MAX)
+    {
         return Err(err(code::PNG_FAILED, "alpha"));
     }
     let fail = |over: bool| {
@@ -574,7 +580,9 @@ mod tests {
 
     fn ink(p: &Pixmap) -> usize {
         p.data()
-            .chunks_exact(4)
+            .as_chunks::<4>()
+            .0
+            .iter()
             .filter(|c| c[0] < 200 || c[1] < 200 || c[2] < 200)
             .count()
     }
@@ -604,7 +612,7 @@ mod tests {
         assert_eq!(&png[..8], b"\x89PNG\r\n\x1a\n");
         let p = decode(&png);
         assert_eq!((p.width(), p.height()), (200, 100));
-        assert!(p.data().chunks_exact(4).all(|c| c[3] == 255));
+        assert!(p.data().as_chunks::<4>().0.iter().all(|c| c[3] == 255));
         assert_eq!(
             &p.data()[4 * 199..4 * 200],
             &[255, 255, 255, 255],

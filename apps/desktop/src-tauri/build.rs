@@ -49,21 +49,21 @@ fn main() {
     inject_public_keys();
     tauri_build::try_build(
         tauri_build::Attributes::new()
+            .windows_attributes(tauri_build::WindowsAttributes::new_without_app_manifest())
             .app_manifest(tauri_build::AppManifest::new().commands(APP_COMMANDS)),
     )
     .expect("tauri-build 실패");
 
-    // tauri-build는 앱 바이너리에만 매니페스트를 넣는다. 테스트 실행 파일에도 넣어야
-    // Windows에서 tauri::test가 STATUS_ENTRYPOINT_NOT_FOUND 없이 뜬다.
+    // tauri-build는 앱 바이너리에만 매니페스트를 넣는다. rustc-link-arg-tests는
+    // 통합 테스트에만 적용되므로 일반 linker 인자로 단위 테스트도 포함한다.
+    // tauri-build의 기본 삽입은 꺼서 앱 리소스와 중복되지 않게 한다.
+    // test-manifest.xml은 tauri-build 기본값과 같은 Common Controls v6 의존성이다.
     let windows_msvc = std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("windows")
         && std::env::var("CARGO_CFG_TARGET_ENV").as_deref() == Ok("msvc");
     if windows_msvc {
         let manifest = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("test-manifest.xml");
         println!("cargo:rerun-if-changed=test-manifest.xml");
-        println!("cargo:rustc-link-arg-tests=/MANIFEST:EMBED");
-        println!(
-            "cargo:rustc-link-arg-tests=/MANIFESTINPUT:{}",
-            manifest.display()
-        );
+        println!("cargo:rustc-link-arg=/MANIFEST:EMBED");
+        println!("cargo:rustc-link-arg=/MANIFESTINPUT:{}", manifest.display());
     }
 }

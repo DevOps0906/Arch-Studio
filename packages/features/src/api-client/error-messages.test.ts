@@ -55,7 +55,7 @@ test("모든 문구는 비어 있지 않은 한국어이고 서버 원문 자리
 test("03장 5.2절 문구와 첫 문장이 같다(문서 정본과 동기)", () => {
   const s52 = section(ux, "### 5.2 서버 오류 코드 문구", "### 5.3");
   let checked = 0;
-  for (const line of s52.split("\n")) {
+  for (const line of s52.split(/\r?\n/)) {
     const m = /^\| (`[^|]+?`(?: \/ `[^|]+?`)*) \| (.+) \|$/.exec(line);
     if (!m) continue;
     const codes = [...m[1]!.matchAll(/`([A-Z]{2}\d{3})`/g)].map((x) => x[1]!);

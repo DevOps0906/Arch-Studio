@@ -14,6 +14,8 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 // eslint-disable-next-line no-restricted-imports -- 테스트는 Node 테스트 러너만 쓴다
 import { test } from "node:test";
+// eslint-disable-next-line no-restricted-imports -- Windows에서도 실행 가능한 스크립트 경로
+import { fileURLToPath } from "node:url";
 import fc from "fast-check";
 import { CASES } from "../../../golden/_harness/cases.ts";
 import { DISCLAIMER, DraftingError, type SheetModel } from "../../index.ts";
@@ -283,7 +285,7 @@ test("fonts/: 번들 글꼴 1개(Noto Sans KR 부분 집합)·OFL.txt·폭 표, 
 });
 
 test("scripts/font-metrics/generate.ts: 같은 TTF → 같은 바이트, --check 일치 0·불일치 1, 잘못된 TTF 1", () => {
-  const script = new URL("../../../../../scripts/font-metrics/generate.ts", import.meta.url).pathname;
+  const script = fileURLToPath(new URL("../../../../../scripts/font-metrics/generate.ts", import.meta.url));
   const tmp = mkdtempSync(`${tmpdir()}/arch-font-metrics-`);
   try {
     const ttf = `${tmp}/Test.ttf`;

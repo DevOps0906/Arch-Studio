@@ -25,8 +25,10 @@ fn pixel_diff(a: &Pixmap, b: &Pixmap) -> (usize, usize) {
     assert_eq!((a.width(), a.height()), (b.width(), b.height()), "크기");
     let over = a
         .data()
-        .chunks_exact(4)
-        .zip(b.data().chunks_exact(4))
+        .as_chunks::<4>()
+        .0
+        .iter()
+        .zip(b.data().as_chunks::<4>().0.iter())
         .filter(|(x, y)| x.iter().zip(y.iter()).any(|(p, q)| p.abs_diff(*q) > 3))
         .count();
     (over, a.data().len() / 4)

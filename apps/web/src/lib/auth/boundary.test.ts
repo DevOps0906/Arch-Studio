@@ -6,7 +6,10 @@ import path from "node:path";
 import { test } from "node:test";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../../..");
-const SKIP_DIRS = new Set(["node_modules", ".next", "dist", "build", "coverage", "target", "src-tauri", "golden", ".turbo"]);
+const SKIP_DIRS = new Set([
+  "node_modules", ".next", "dist", "build", "coverage", "target", "src-tauri", "golden", ".turbo",
+  ".venv", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+]);
 const EXT = /\.(ts|tsx|mts|cts|js|mjs|cjs|jsx)$/;
 
 /** 검사 범위: 앱·패키지 소스, 데스크톱·웹 루트 설정 파일, scripts. */
