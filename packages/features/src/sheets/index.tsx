@@ -16,6 +16,7 @@ import {
   LoadingState,
   LockedState,
   PageHeader,
+  Workspace,
   useAdapters,
   useCapabilities,
   useEngine,
@@ -24,6 +25,7 @@ import {
   useProject,
   usePreviewState,
   useSession,
+  useWorkspaceJudgment,
 } from "../shell/index.ts";
 import { ExportDialog, type ExportRun, type ExportSelection } from "./ExportDialog.tsx";
 import {
@@ -126,6 +128,8 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
   // 판정(규칙 팩은 엔진이 가진 것). 실패하면 판정 값 없는 시트로 만든다(안내 표시).
   const judgeEnabled = model !== null && specs.length > 0 && missingInputs(model, "site_plan").length === 0;
   const judgment = useJudgment({ model, modelRev: record.sha256, enabled: judgeEnabled });
+  // 판정 요약을 셸(6단계 막대·패널 띠·상태줄)에 올린다(03장 9.3절).
+  useWorkspaceJudgment(judgment, judgeEnabled);
   const judgeSettled = !judgeEnabled || judgment.phase === "ready" || judgment.phase === "error";
   const judgeFailed = judgeEnabled && judgment.phase === "error";
 
@@ -292,101 +296,146 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
 
   // 편집 권리가 없고 보관된 시트도 없으면: 권리 거부(잠금) 상태.
   const noLegacyAndLocked = !access.edit && !access.editPending && specs.length === 0;
+  const hasSheets = !noLegacyAndLocked && specs.length > 0;
+
+  const notices =
+    access.exportState === "denied" || (access.viewOnly && access.editReason && !noLegacyAndLocked) || stale || (ar058 && selected && summary) || access.watermark ? (
+      <>
+        {access.exportState === "denied" ? <LockedState title="내보내기를 쓸 수 없습니다" reason={access.exportReason ?? "내보내기 권한을 확인하지 못했습니다."} action={<LicenseLink />} /> : null}
+        {access.viewOnly && access.editReason && !noLegacyAndLocked ? (
+          <Banner tone="info" title="마지막으로 만든 시트만 다시 내보낼 수 있습니다" action={<LicenseLink />}>
+            {access.editReason}
+          </Banner>
+        ) : null}
+        {stale ? (
+          <Banner
+            tone="warn"
+            title="이전 엔진으로 만든 시트입니다"
+            action={
+              <div className="flex gap-2">
+                <Button size="sm" disabled={!access.edit} onClick={() => engineVersionRef.current && persist({ ...stored, engine_version: engineVersionRef.current })}>
+                  다시 만들기
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setStaleDismissed(true)}>
+                  그대로 보기
+                </Button>
+              </div>
+            }
+          >
+            {AR059_TEXT}
+          </Banner>
+        ) : null}
+        {ar058 && selected && summary ? (
+          <Banner
+            tone="warn"
+            title="용지에 들어가지 않습니다"
+            action={
+              nextPaper(selected.paper) && access.edit ? (
+                <Button size="sm" onClick={() => change({ ...selected, paper: nextPaper(selected.paper) as typeof selected.paper })}>
+                  {nextPaper(selected.paper)}로 키우기
+                </Button>
+              ) : undefined
+            }
+          >
+            {ar058Text(selected.paper)}
+          </Banner>
+        ) : null}
+        {access.watermark ? (
+          <p className="rounded-control border border-line bg-surface p-2 text-caption text-fg-2" role="note">
+            체험판: 출력하면 표제란에 "체험판"이 표시됩니다. 라이선스나 구독이 있으면 표시되지 않습니다.
+          </p>
+        ) : null}
+      </>
+    ) : undefined;
+
+  // 캔버스 슬롯(03장 9.2절): 시트 미리보기. 시트 목록은 왼쪽, 시트 설정·표제란·레이어는 오른쪽 패널, 시트 이름은 아래 탭.
+  const canvas = noLegacyAndLocked ? (
+    <div className="p-pad">
+      <LockedState title="내보낼 시트가 없습니다" reason={access.editReason ?? "새 시트를 만들 권한이 없습니다."} action={<LicenseLink />} />
+    </div>
+  ) : specs.length === 0 ? (
+    <div className="p-pad">
+      <EmptyState
+        icon="inbox"
+        title="아직 시트가 없습니다"
+        description={blocked.site_plan ? `배치도를 만들려면 먼저 입력이 필요합니다. ${blocked.site_plan}` : "배치도부터 만들어 보세요."}
+        action={
+          <div className="flex flex-wrap justify-center gap-2">
+            <Button variant="primary" icon="plus" disabled={!access.edit || blocked.site_plan !== undefined} onClick={() => add("site_plan")}>
+              배치도 만들기
+            </Button>
+            {blocked.site_plan ? <MissingLinks model={model} /> : null}
+          </div>
+        }
+      />
+    </div>
+  ) : (
+    <div className="flex min-w-0 flex-col gap-gap p-2">
+      {selected ? <PreviewPane data={preview} zoom={zoom} onZoom={setZoom} name={selectedName} watermark={access.watermark} /> : null}
+      {preview.status === "error" && selected ? <PreviewErrorActions code={preview.code} model={model} kind={selected.kind} /> : null}
+    </div>
+  );
+
+  const sheetTabs = hasSheets ? (
+    <div role="group" aria-label="시트" className="flex items-center gap-1">
+      {names.map((n) => (
+        <button
+          key={n.id}
+          type="button"
+          aria-pressed={selected?.id === n.id}
+          onClick={() => setSelectedId(n.id)}
+          className={`focus-ring inline-flex h-control-sm shrink-0 items-center rounded-control px-3 text-body whitespace-nowrap ${selected?.id === n.id ? "bg-raised font-semibold text-fg" : "text-fg-2 hover:text-fg"}`}
+        >
+          {n.name}
+        </button>
+      ))}
+    </div>
+  ) : undefined;
 
   return (
-    <div className="flex min-w-0 flex-col gap-gap">
-      <PageHeader title="도면" description="시트는 이 PC에서 0 크레딧으로 만들며 오프라인에서도 됩니다." actions={headerActions} />
-
-      {access.exportState === "denied" ? <LockedState title="내보내기를 쓸 수 없습니다" reason={access.exportReason ?? "내보내기 권한을 확인하지 못했습니다."} action={<LicenseLink />} /> : null}
-      {access.viewOnly && access.editReason && !noLegacyAndLocked ? (
-        <Banner tone="info" title="마지막으로 만든 시트만 다시 내보낼 수 있습니다" action={<LicenseLink />}>
-          {access.editReason}
-        </Banner>
-      ) : null}
-      {stale ? (
-        <Banner
-          tone="warn"
-          title="이전 엔진으로 만든 시트입니다"
-          action={
-            <div className="flex gap-2">
-              <Button size="sm" disabled={!access.edit} onClick={() => engineVersionRef.current && persist({ ...stored, engine_version: engineVersionRef.current })}>
-                다시 만들기
-              </Button>
-              <Button size="sm" variant="ghost" onClick={() => setStaleDismissed(true)}>
-                그대로 보기
-              </Button>
-            </div>
-          }
-        >
-          {AR059_TEXT}
-        </Banner>
-      ) : null}
-      {ar058 && selected && summary ? (
-        <Banner
-          tone="warn"
-          title="용지에 들어가지 않습니다"
-          action={
-            nextPaper(selected.paper) && access.edit ? (
-              <Button size="sm" onClick={() => change({ ...selected, paper: nextPaper(selected.paper) as typeof selected.paper })}>
-                {nextPaper(selected.paper)}로 키우기
-              </Button>
-            ) : undefined
-          }
-        >
-          {ar058Text(selected.paper)}
-        </Banner>
-      ) : null}
-
-      {noLegacyAndLocked ? (
-        <LockedState title="내보낼 시트가 없습니다" reason={access.editReason ?? "새 시트를 만들 권한이 없습니다."} action={<LicenseLink />} />
-      ) : specs.length === 0 ? (
-        <EmptyState
-          icon="inbox"
-          title="아직 시트가 없습니다"
-          description={blocked.site_plan ? `배치도를 만들려면 먼저 입력이 필요합니다. ${blocked.site_plan}` : "배치도부터 만들어 보세요."}
-          action={
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button variant="primary" icon="plus" disabled={!access.edit || blocked.site_plan !== undefined} onClick={() => add("site_plan")}>
-                배치도 만들기
-              </Button>
-              {blocked.site_plan ? <MissingLinks model={model} /> : null}
-            </div>
-          }
-        />
-      ) : (
-        <div className="grid min-w-0 gap-gap md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] xl:grid-cols-[minmax(0,2fr)_minmax(0,6fr)_minmax(0,2.4fr)]">
-          <div className="min-w-0 md:order-1">
-            <SheetList
-              specs={specs}
-              model={model}
-              selectedId={selected?.id ?? null}
-              canEdit={access.edit && !full}
-              onSelect={setSelectedId}
-              onDelete={remove}
-              onMove={move}
-              onAdd={add}
-              blocked={blocked}
-              engineLabel={stored.engine_version}
-            />
-          </div>
-          <div className="flex min-w-0 flex-col gap-gap md:order-2">
-            {selected ? <PreviewPane data={preview} zoom={zoom} onZoom={setZoom} name={selectedName} watermark={access.watermark} /> : null}
-            {preview.status === "error" && selected ? <PreviewErrorActions code={preview.code} model={model} kind={selected.kind} /> : null}
-          </div>
-          <div className="flex min-w-0 flex-col gap-gap md:order-3 md:col-span-2 xl:col-span-1">
-            {selected ? <SettingsPanel spec={selected} name={selectedName} model={model} canEdit={access.edit} onChange={change} /> : null}
-            <TitleBlockPanel summary={summary} officeMissing={officeMissing} />
-            {profileState.status === "ready" ? <LayerPanel profile={profileState.profile} /> : null}
-          </div>
-        </div>
-      )}
-
-      {access.watermark ? (
-        <p className="rounded-control border border-line bg-surface p-pad text-caption text-fg-2" role="note">
-          체험판: 출력하면 표제란에 "체험판"이 표시됩니다. 라이선스나 구독이 있으면 표시되지 않습니다.
-        </p>
-      ) : null}
-
+    <Workspace
+      title="도면"
+      description="시트는 이 PC에서 0 크레딧으로 만들며 오프라인에서도 됩니다."
+      actions={headerActions}
+      list={
+        hasSheets ? (
+          <SheetList
+            specs={specs}
+            model={model}
+            selectedId={selected?.id ?? null}
+            canEdit={access.edit && !full}
+            onSelect={setSelectedId}
+            onDelete={remove}
+            onMove={move}
+            onAdd={add}
+            blocked={blocked}
+            engineLabel={stored.engine_version}
+          />
+        ) : undefined
+      }
+      listTitle="시트 목록"
+      canvas={canvas}
+      canvasLabel="시트 미리보기"
+      notices={notices}
+      panels={
+        hasSheets
+          ? [
+              ...(selected ? [{ id: "settings", title: "시트 설정", content: <SettingsPanel spec={selected} name={selectedName} model={model} canEdit={access.edit} onChange={change} /> }] : []),
+              { id: "titleblock", title: "표제란", content: <TitleBlockPanel summary={summary} officeMissing={officeMissing} /> },
+              ...(profileState.status === "ready" ? [{ id: "layers", title: "레이어 매핑", content: <LayerPanel profile={profileState.profile} /> }] : []),
+            ]
+          : []
+      }
+      panelsTitle="시트 설정·표제란·레이어"
+      tabs={sheetTabs}
+      status={
+        <>
+          {selected ? <span>{selectedName}</span> : null}
+          <span>확대 {zoom}%</span>
+          <span>0 크레딧 · 오프라인 출력</span>
+        </>
+      }
+    >
       <ExportDialog
         open={exportOpen}
         onClose={() => setExportOpen(false)}
@@ -403,7 +452,7 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
           <Toast tone="ok" title={toast} onClose={() => setToast(null)} />
         </ToastRegion>
       ) : null}
-    </div>
+    </Workspace>
   );
 }
 

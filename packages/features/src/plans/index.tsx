@@ -3,7 +3,7 @@
 // 편집은 불변 모델 + 실행취소 이력(editor.ts, 100단계)이다. 판정은 useJudgment(엔진 judge 레인), 도면 미리보기는 엔진 sheet 레인(floor_plan 뷰).
 // 저장은 adapters.projects.save(버전 충돌 VERSION_CONFLICT). 겹침·외곽 이탈(AR051)이 있으면 저장하지 않는다. 편집 권리가 없거나 폭이 768 미만이면 열람만.
 // 키보드: keys.ts(03장 6.1절). 포인터 전용 기능은 없다 — 끌어 놓기는 "놓기" 버튼(+Enter), 경계 끌기는 [ ] + 화살표.
-import { Badge, Banner, Button, Field, Kbd, Select, Toast, ToastRegion } from "@arch-studio/ui";
+import { Badge, Banner, Button, Kbd, Toast, ToastRegion } from "@arch-studio/ui";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import type { ProjectRecord } from "@arch-studio/shell-bridge";
@@ -14,6 +14,7 @@ import {
   LoadingState,
   LockedState,
   PageHeader,
+  Workspace,
   bridgeErrorCode,
   bridgeErrorText,
   useAdapters,
@@ -23,6 +24,7 @@ import {
   useShellStatus,
   usePreviewState,
   useProject,
+  useWorkspaceJudgment,
 } from "../shell/index.ts";
 import { NARROW_TEXT, plansAccess } from "./access.ts";
 import { PlanCanvas } from "./canvas.tsx";
@@ -130,6 +132,8 @@ function PlansScreen({ record, preview }: { record: ProjectRecord; preview: Retu
   const editedModel = useMemo(() => (model ? withLayouts(model, layouts) : null), [model, layouts]);
   const deferredModel = useDeferredValue(editedModel);
   const judge = useJudgment({ model: floors.length > 0 ? deferredModel : null, modelRev: `${record.version}:${ed.rev}`, enabled: preview !== "error" });
+  // 판정 요약을 셸(6단계 막대·패널 띠·상태줄)에 올린다(03장 9.3절).
+  useWorkspaceJudgment(judge, floors.length > 0 && preview !== "error");
 
   const blocker = analysis ? saveBlocker(analysis) : null;
   const canSave = access.edit && dirty && blocker === null && !previewEmpty && save.status !== "saving";
@@ -359,49 +363,45 @@ function PlansScreen({ record, preview }: { record: ProjectRecord; preview: Retu
     </>
   );
 
-  return (
-    <div ref={rootRef} className="flex min-w-0 flex-col gap-gap">
-      <PageHeader title="평면" description="층별 평면 위에서 실·벽·문창을 고칩니다. 면적과 겹침은 편집 즉시 다시 계산합니다." actions={actionsBar} />
+  const notices =
+    save.status === "conflict" || save.status === "failed" || access.lockReason || access.narrow || previewEmpty || ed.notice ? (
+      <>
+        {save.status === "conflict" ? (
+          <ErrorState
+            title="다른 곳에서 이 프로젝트가 먼저 저장되었습니다"
+            description="병합하지 않습니다. 서버 최신을 열면 저장하지 않은 평면 변경은 사라집니다."
+            action={
+              <Button size="sm" onClick={reload}>
+                최신 열기
+              </Button>
+            }
+          />
+        ) : null}
+        {save.status === "failed" ? <ErrorState title={save.message} /> : null}
+        {access.lockReason ? (
+          <LockedState
+            title="평면을 편집할 수 없습니다"
+            reason={access.lockReason}
+            action={
+              <Link to="/license" className="focus-ring rounded-sm text-body text-info underline">
+                라이선스 보기
+              </Link>
+            }
+          />
+        ) : access.narrow ? (
+          <Banner tone="info" title="열람 전용">
+            {NARROW_TEXT}
+          </Banner>
+        ) : null}
+        {previewEmpty ? <Banner tone="info" title="빈 상태 미리보기">이 화면은 `?state=empty` 미리보기라 저장하지 않습니다.</Banner> : null}
+        {ed.notice ? <Banner tone={ed.notice.tone === "warn" ? "warn" : "info"} title={ed.notice.text} /> : null}
+      </>
+    ) : undefined;
 
-      {save.status === "conflict" ? (
-        <ErrorState
-          title="다른 곳에서 이 프로젝트가 먼저 저장되었습니다"
-          description="병합하지 않습니다. 서버 최신을 열면 저장하지 않은 평면 변경은 사라집니다."
-          action={
-            <Button size="sm" onClick={reload}>
-              최신 열기
-            </Button>
-          }
-        />
-      ) : null}
-      {save.status === "failed" ? <ErrorState title={save.message} /> : null}
-      {access.lockReason ? (
-        <LockedState
-          title="평면을 편집할 수 없습니다"
-          reason={access.lockReason}
-          action={
-            <Link to="/license" className="focus-ring rounded-sm text-body text-info underline">
-              라이선스 보기
-            </Link>
-          }
-        />
-      ) : access.narrow ? (
-        <Banner tone="info" title="열람 전용">
-          {NARROW_TEXT}
-        </Banner>
-      ) : null}
-      {previewEmpty ? <Banner tone="info" title="빈 상태 미리보기">이 화면은 `?state=empty` 미리보기라 저장하지 않습니다.</Banner> : null}
-
-      <div className="flex flex-wrap items-end gap-2" role="toolbar" aria-label="평면 도구">
-        <Field label="층" htmlFor="plan-floor" className="w-40">
-          <Select id="plan-floor" value={ed.floor} onChange={(e) => setEd((s) => setFloor(s, e.target.value))}>
-            {floors.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
+  // 캔버스 슬롯(03장 9.2절): 도구 줄 + 평면 편집 캔버스. 층은 캔버스 아래 층 탭, 실 목록은 왼쪽, 속성·검사·미리보기는 오른쪽 패널.
+  const canvas = (
+    <div className="flex h-full min-h-0 min-w-0 flex-col gap-2 p-2">
+      <div className="flex flex-wrap items-center gap-2" role="toolbar" aria-label="평면 도구">
         <div className="flex flex-wrap gap-1">
           {TOOLS.map((t) => (
             <Button key={t.id} size="sm" variant={ed.tool === t.id ? "primary" : "secondary"} aria-pressed={ed.tool === t.id} disabled={!edit && t.id !== "select"} onClick={() => setEd((s) => setTool(s, t.id))} aria-keyshortcuts={t.key}>
@@ -416,13 +416,6 @@ function PlansScreen({ record, preview }: { record: ProjectRecord; preview: Retu
           {judge.phase === "loading" ? "법규 판정 갱신 중" : judge.phase === "error" ? "법규 판정 실패" : judge.data ? `법규 판정 ${judge.data.result.items.length}개 항목` : "법규 판정 대기"}
         </Badge>
       </div>
-
-      <p className="sr-only" role="status" aria-live="polite">
-        {announce}
-      </p>
-      {ed.notice ? (
-        <Banner tone={ed.notice.tone === "warn" ? "warn" : "info"} title={ed.notice.text} />
-      ) : null}
 
       {layout.rooms.length === 0 ? (
         <EmptyBlock
@@ -442,63 +435,104 @@ function PlansScreen({ record, preview }: { record: ProjectRecord; preview: Retu
         />
       ) : null}
 
-      <div className="grid min-w-0 gap-gap md:grid-cols-2 xl:grid-cols-[var(--sidebar-w)_minmax(0,1fr)_var(--sidebar-w)]">
-        <div className="order-2 min-w-0 xl:order-1">
-          <RoomList layout={layout} analysis={analysis} sel={ed.sel} edit={edit} actions={actions} mergeMode={ed.tool === "merge"} />
-        </div>
-        <div className="order-1 col-span-full min-w-0 xl:order-2 xl:col-span-1">
-          <PlanCanvas
-            outline={outline}
-            layout={layout}
-            analysis={analysis}
-            sel={ed.sel}
-            tool={ed.tool}
-            draw={ed.draw}
-            cursor={ed.cursor}
-            grid={gridMm(ed)}
-            edit={edit}
-            label={canvasLabel}
-            onPick={(sel) => setEd((s) => select(s, sel))}
-            onDrawPoint={(p) => mut((s) => drawAdd(s, p))}
-            onPlace={(hit, kind) => mut((s) => ({ ...applyOp(s, (l) => addOpeningAt(l, hit.room_id, hit.edge_index, hit.offset_mm, kind)), tool: "select" }))}
-            onSplitAt={(id, p) =>
-              mut((s) =>
-                toSelect(
-                  applyOp(s, (l) => {
-                    const c = pointerSplit(l, id, p);
-                    return splitRoom(l, id, c.axis, c.at);
-                  }),
-                  s,
-                ),
-              )
-            }
-            onMergeWith={(id) => {
-              if (ed.sel.kind === "room" && ed.sel.id !== id) merge(ed.sel.id, id);
-              else setEd((s) => select(s, { kind: "room", id, edge: null }));
-            }}
-            onDragStart={() => mut((s) => ({ ...s, dragSeq: s.dragSeq + 1 }))}
-            onDragEdge={(dx, dy) =>
-              mut((s) => {
-                if (s.sel.kind !== "room" || s.sel.edge === null) return s;
-                const sel = s.sel;
-                const next = applyOp(s, (l) => moveRoomEdge(l, sel.id, sel.edge as number, dx, dy), `drag:${s.dragSeq}`);
-                return next.rev === s.rev ? s : next;
-              })
-            }
-          />
-          <p className="mt-1 text-caption text-fg-2">
-            키보드: <Kbd>[</Kbd> <Kbd>]</Kbd> 변 고르기 · 화살표 100mm(<Kbd>Shift</Kbd> 1,000mm) 이동 · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> 실행취소 · <Kbd>Esc</Kbd> 도구 해제
-          </p>
-        </div>
-        <div className="order-3 flex min-w-0 flex-col gap-gap">
-          <Inspector layout={layout} analysis={analysis} sel={ed.sel} tool={ed.tool} draw={ed.draw} cursor={ed.cursor} edit={edit} actions={actions} />
-        </div>
+      {/* 캔버스가 본문 높이를 채운다(SVG 4:3 고정 비율 해제, 내용은 preserveAspectRatio로 맞춤). */}
+      <div className="min-h-64 flex-1 [&>svg]:aspect-auto [&>svg]:h-full">
+        <PlanCanvas
+          outline={outline}
+          layout={layout}
+          analysis={analysis}
+          sel={ed.sel}
+          tool={ed.tool}
+          draw={ed.draw}
+          cursor={ed.cursor}
+          grid={gridMm(ed)}
+          edit={edit}
+          label={canvasLabel}
+          onPick={(sel) => setEd((s) => select(s, sel))}
+          onDrawPoint={(p) => mut((s) => drawAdd(s, p))}
+          onPlace={(hit, kind) => mut((s) => ({ ...applyOp(s, (l) => addOpeningAt(l, hit.room_id, hit.edge_index, hit.offset_mm, kind)), tool: "select" }))}
+          onSplitAt={(id, p) =>
+            mut((s) =>
+              toSelect(
+                applyOp(s, (l) => {
+                  const c = pointerSplit(l, id, p);
+                  return splitRoom(l, id, c.axis, c.at);
+                }),
+                s,
+              ),
+            )
+          }
+          onMergeWith={(id) => {
+            if (ed.sel.kind === "room" && ed.sel.id !== id) merge(ed.sel.id, id);
+            else setEd((s) => select(s, { kind: "room", id, edge: null }));
+          }}
+          onDragStart={() => mut((s) => ({ ...s, dragSeq: s.dragSeq + 1 }))}
+          onDragEdge={(dx, dy) =>
+            mut((s) => {
+              if (s.sel.kind !== "room" || s.sel.edge === null) return s;
+              const sel = s.sel;
+              const next = applyOp(s, (l) => moveRoomEdge(l, sel.id, sel.edge as number, dx, dy), `drag:${s.dragSeq}`);
+              return next.rev === s.rev ? s : next;
+            })
+          }
+        />
       </div>
+      <p className="text-caption text-fg-2">
+        키보드: <Kbd>[</Kbd> <Kbd>]</Kbd> 변 고르기 · 화살표 100mm(<Kbd>Shift</Kbd> 1,000mm) 이동 · <Kbd>Ctrl</Kbd>+<Kbd>Z</Kbd> 실행취소 · <Kbd>Esc</Kbd> 도구 해제
+      </p>
+    </div>
+  );
 
-      <CheckBar layout={layout} analysis={analysis} blocker={blocker} onPick={(id) => setEd((s) => select(s, { kind: "room", id, edge: null }))} />
-      <PreviewPanel view={view} floorLabel={floorInfo?.label ?? ""} />
+  // 층 탭(캔버스 아래): 기존 층 선택과 같은 setFloor.
+  const floorTabs = (
+    <div role="group" aria-label="층" className="flex items-center gap-1">
+      {floors.map((f) => (
+        <button
+          key={f.id}
+          type="button"
+          aria-pressed={ed.floor === f.id}
+          onClick={() => setEd((s) => setFloor(s, f.id))}
+          className={`focus-ring inline-flex h-control-sm shrink-0 items-center rounded-control px-3 text-body ${ed.floor === f.id ? "bg-raised font-semibold text-fg" : "text-fg-2 hover:text-fg"}`}
+        >
+          {f.label}
+        </button>
+      ))}
+    </div>
+  );
 
-      <ToastRegion>{toast ? <Toast tone="ok" title={toast} onClose={() => setToast(null)} /> : null}</ToastRegion>
+  return (
+    <div ref={rootRef} className="contents">
+      <Workspace
+        title="평면"
+        description="층별 평면 위에서 실·벽·문창을 고칩니다. 면적과 겹침은 편집 즉시 다시 계산합니다."
+        actions={actionsBar}
+        list={<RoomList layout={layout} analysis={analysis} sel={ed.sel} edit={edit} actions={actions} mergeMode={ed.tool === "merge"} />}
+        listTitle="실 목록"
+        canvas={canvas}
+        canvasLabel={`${floorInfo?.label ?? ""} 평면`}
+        notices={notices}
+        panels={[
+          { id: "inspector", title: "속성", content: <Inspector layout={layout} analysis={analysis} sel={ed.sel} tool={ed.tool} draw={ed.draw} cursor={ed.cursor} edit={edit} actions={actions} /> },
+          { id: "check", title: "검사", content: <CheckBar layout={layout} analysis={analysis} blocker={blocker} onPick={(id) => setEd((s) => select(s, { kind: "room", id, edge: null }))} /> },
+          { id: "preview", title: "도면 미리보기", content: <PreviewPanel view={view} floorLabel={floorInfo?.label ?? ""} /> },
+        ]}
+        panelsTitle="속성·검사·미리보기"
+        tabs={floorTabs}
+        status={
+          <>
+            <span>{floorInfo?.label ?? ""}</span>
+            <span>그리드 {ed.grid ? "100mm" : "끔"}</span>
+            <span>
+              실 {layout.rooms.length}개 · 문·창 {layout.openings.length}개
+            </span>
+          </>
+        }
+      >
+        <p className="sr-only" role="status" aria-live="polite">
+          {announce}
+        </p>
+        <ToastRegion>{toast ? <Toast tone="ok" title={toast} onClose={() => setToast(null)} /> : null}</ToastRegion>
+      </Workspace>
     </div>
   );
 }

@@ -36,7 +36,10 @@
 - `src/<feature>/index.tsx`는 `export function Screen()` 하나를 내보낸다(인자 없음). 경로 파라미터는 `useParams`, 열린 프로젝트는 `useProject()`.
 - `apps/desktop/src/routes/screens/<경로>.tsx`는 `export { Screen as Component } from "@arch-studio/features/<feature>"` 한 줄 래퍼다. 로직을 넣지 않는다.
 - 새 하위 모듈은 자기 폴더 안에 둔다. 다른 feature 폴더를 import하지 않는다(판정 패널처럼 공유가 필요하면 그 폴더의 공개 파일 하나만, 소유 작업과 합의).
-- 프로젝트 탭 화면은 `ProjectShell` 안에서 그려진다: 헤더(← 프로젝트·이름·탭 8개)·열람 모드 배너·없는 프로젝트 처리는 셸이 한다. 화면은 `PageHeader`부터 그린다.
+- 프로젝트 화면은 통합 작업공간 셸(`ProjectShell`, 03장 9장) 안에서 그려진다: 상단 바(☰·← 프로젝트·이름·저장 상태·다음 단계)·6단계 막대(렌더·제안서 아래 렌더·제안서·검토 하위 탭)·열람 모드 배너·먹색 상태줄(오른쪽 판정 요약)·없는 프로젝트 처리는 셸이 한다. 본문은 화면 높이 전체이고 페이지 스크롤이 없다.
+  - 작업공간 화면(모델·평면·도면)은 `<Workspace>`에 슬롯을 넘긴다: `title`(sr-only h1)·`actions`(상단 바)·`rail`·`list`·`canvas`·`notices`·`panels`(절 접기, 패널 접기 `]`)·`tabs`(층·시트)·`status`(상태줄 왼쪽). 3구간 배치(태블릿 목록 서랍, 모바일 아래 시트)는 셸이 한다. 슬롯에 넣은 구성요소의 카드 테두리·첫 h2는 셸이 지운다(절 머리가 제목).
+  - 판정하는 화면은 `useWorkspaceJudgment(judgment, active)`로 판정 요약을 올린다(판정 중은 이전 값 유지, 판정 없음·오류는 지움). 패널 안 입력에 포커스할 때는 `useWorkspaceReveal()(절 id, 요소 id)`.
+  - 아직 슬롯을 쓰지 않는 화면(대지·프로그램·렌더·제안서·검토)은 `PageHeader`부터 그리고 본문 안에서 스크롤된다.
 
 ## 3. 데이터·파일·권한은 훅으로만
 

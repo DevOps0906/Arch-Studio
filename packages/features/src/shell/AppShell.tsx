@@ -4,15 +4,27 @@
 //   768~1199  64px 아이콘 레일(--sidebar-w-collapsed), 이름은 툴팁
 //   1200~     펼침 248px(--sidebar-w). 프로젝트 화면(/projects/:id/*)은 레일로 자동 접힘(D-31 a), 사용자가 접을 수도 있다.
 // 설치형 창은 최소 1024px(tauri.conf)라 서랍 구간은 웹 스튜디오(071)·좁은 창 스크린샷용이다.
-import { Badge, LicenseStatusBadge, OfflineIndicator, cn, formatInt, type LicenseStatus } from "@arch-studio/ui";
-import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+// 프로젝트 화면은 통합 작업공간(03장 9장)이라 이 상단 바 대신 ProjectShell의 상단 바를 쓰고 본문 여백·페이지 스크롤이 없다.
+import { Badge, Dialog, LicenseStatusBadge, OfflineIndicator, cn, formatInt, type LicenseStatus } from "@arch-studio/ui";
+import { Fragment, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { Link, Navigate, Outlet, useLocation } from "react-router";
-import { useDemoMode, useDisplayPrefs, useEntitlement, useEntitlementStatus, useOnline, useSession } from "./context.tsx";
+import { useAdapters, useCapabilities, useDemoMode, useDisplayPrefs, useEntitlement, useEntitlementStatus, useOnline, useSession } from "./context.tsx";
 import { decideRoute } from "./guard.ts";
 import { ShellIcon } from "./icons.tsx";
 import { NAV_GROUP_LABEL, NAV_ITEMS, isActive, lockOf, projectIdOf, type NavGroup, type NavItem } from "./nav.ts";
 import { FullScreenLoading } from "./states.tsx";
 import { licenseBadgeOf } from "./entitlement-state.ts";
+import {
+  P1_AVAILABLE,
+  WORKSPACE_MENU,
+  loadRecentProject,
+  segmentOf,
+  stageHref,
+  workspaceMenuTarget,
+  type ProjectBrief,
+  type WorkspaceMenuItem,
+  type WorkspaceMenuTarget,
+} from "./workspace.ts";
 
 /* ---------- 라우트 가드 ---------- */
 /** 루트 레이아웃: 008 상태기계로 /login·/onboarding 이동을 정한다. */
@@ -46,6 +58,8 @@ interface ShellStatusValue {
   readonly saveLabel: string | null;
   /** 프로젝트 화면이 저장 상태 문구(03장 5.1절 "이 PC에만 저장됨 · 서버에 없음" 등)를 올린다. 화면을 떠나면 null. */
   setSaveLabel(label: string | null): void;
+  /** GNB 서랍 열기(~767). 프로젝트 작업공간 상단 바의 ☰가 쓴다. */
+  openNav(): void;
 }
 const ShellStatusContext = createContext<ShellStatusValue | null>(null);
 
@@ -111,16 +125,16 @@ function NavList({ pathname, expandable, onNavigate }: { pathname: string; expan
         {groups.map((g) => {
           const label = NAV_GROUP_LABEL[g];
           return (
-            <ul key={g} aria-label={label ?? undefined} className="flex flex-col gap-1">
-              {label ? (
-                <li aria-hidden="true" className={cn("px-3 pt-2 text-caption font-medium text-fg-3", expandable || onNavigate ? (onNavigate ? "" : "hidden xl:block") : "hidden")}>
-                  {label}
-                </li>
-              ) : null}
-              {body(g).map((item) => (
-                <NavEntry key={item.id} item={item} pathname={pathname} expandable={expandable} onNavigate={onNavigate} />
-              ))}
-            </ul>
+            <Fragment key={g}>
+              {/* 묶음 "작업공간"은 프로젝트와 법규 사이(8.3·9.5절) */}
+              {g === "law" ? <WorkspaceGroup pathname={pathname} expandable={expandable} onNavigate={onNavigate} /> : null}
+              <ul aria-label={label ?? undefined} className="flex flex-col gap-1">
+                {label ? <NavGroupLabel label={label} expandable={expandable} onNavigate={onNavigate} /> : null}
+                {body(g).map((item) => (
+                  <NavEntry key={item.id} item={item} pathname={pathname} expandable={expandable} onNavigate={onNavigate} />
+                ))}
+              </ul>
+            </Fragment>
           );
         })}
       </div>
@@ -131,6 +145,191 @@ function NavList({ pathname, expandable, onNavigate }: { pathname: string; expan
         ))}
       </ul>
     </div>
+  );
+}
+
+function NavGroupLabel({ label, expandable, onNavigate }: { label: string; expandable: boolean; onNavigate?: () => void }) {
+  return (
+    <li aria-hidden="true" className={cn("px-3 pt-2 text-caption font-medium text-fg-3", expandable || onNavigate ? (onNavigate ? "" : "hidden xl:block") : "hidden")}>
+      {label}
+    </li>
+  );
+}
+
+/* ---------- GNB 작업공간 묶음(9.5절): 모델링 · 평면 · 도면 ---------- */
+const WS_ICON: Readonly<Record<WorkspaceMenuItem["segment"], "box" | "pentagon" | "section">> = { model: "box", plans: "pentagon", sheets: "section" };
+
+interface WorkspaceSources {
+  readonly projects: readonly ProjectBrief[] | null;
+  readonly failed: boolean;
+  readonly lastId: string | null;
+  retry(): void;
+}
+/** GNB가 레일·서랍 두 곳에 그려져도 목록은 AppShell에서 한 번만 읽는다. */
+const WorkspaceSourcesContext = createContext<WorkspaceSources | null>(null);
+
+/** 프로젝트 목록(이름·최근 수정)과 최근 연 프로젝트. 경로가 바뀔 때마다 다시 읽는다(로컬 목록, 설계 모델 본문 없음). */
+function useWorkspaceSources(pathname: string): WorkspaceSources {
+  const { projects } = useAdapters();
+  const [list, setList] = useState<readonly ProjectBrief[] | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [lastId, setLastId] = useState<string | null>(null);
+  const [tick, setTick] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    setLastId(loadRecentProject());
+    projects.list().then(
+      (rows) => {
+        if (!alive) return;
+        setFailed(false);
+        setList(rows.map((r) => ({ id: r.id, name: r.name, siteLabel: r.siteLabel, updatedAt: r.updatedAt })));
+      },
+      // 읽기 실패는 빈 목록·읽는 중과 따로 둔다(빈 목록으로 보면 "먼저 만드세요"로 잘못 보인다).
+      () => {
+        if (!alive) return;
+        setFailed(true);
+        setList(null);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [projects, pathname, tick]);
+  const retry = useCallback(() => setTick((t) => t + 1), []);
+  return useMemo(() => ({ projects: list, failed, lastId, retry }), [list, failed, lastId, retry]);
+}
+
+function WorkspaceGroup({ pathname, expandable, onNavigate }: { pathname: string; expandable: boolean; onNavigate?: () => void }) {
+  const sources = useContext(WorkspaceSourcesContext);
+  const { by } = useCapabilities();
+  const edit = useEntitlement(by("localProjects", "desktop_edit", "web_edit"));
+  const currentProjectId = projectIdOf(pathname);
+  const currentSegment = segmentOf(pathname);
+  const readOnly = edit !== undefined && !edit.allowed;
+  return (
+    <ul aria-label="작업공간" className="flex flex-col gap-1">
+      <NavGroupLabel label="작업공간" expandable={expandable} onNavigate={onNavigate} />
+      {WORKSPACE_MENU.map((item) => (
+        <WorkspaceEntry
+          key={item.id}
+          item={item}
+          target={workspaceMenuTarget({
+            item,
+            currentProjectId,
+            currentSegment,
+            lastProjectId: sources?.lastId ?? null,
+            projects: sources?.projects ?? null,
+            listFailed: sources?.failed ?? false,
+            p1Available: P1_AVAILABLE,
+            readOnly,
+          })}
+          onRetry={sources?.retry}
+          expandable={expandable}
+          onNavigate={onNavigate}
+        />
+      ))}
+    </ul>
+  );
+}
+
+function WorkspaceEntry({
+  item,
+  target,
+  onRetry,
+  expandable,
+  onNavigate,
+}: {
+  item: WorkspaceMenuItem;
+  target: WorkspaceMenuTarget;
+  onRetry?: () => void;
+  expandable: boolean;
+  onNavigate?: () => void;
+}) {
+  const [picking, setPicking] = useState(false);
+  const closePicker = useCallback(() => setPicking(false), []);
+  const disabled = target.kind === "disabled" || target.kind === "pending" || target.kind === "failed";
+  const reason = target.kind === "disabled" || target.kind === "failed" ? target.reason : target.kind === "pending" ? "프로젝트 목록을 읽는 중" : null;
+  const hint = target.kind === "go" ? target.hint : reason;
+  const current = target.kind === "go" && target.current;
+  const cls = cn(
+    "group focus-ring relative flex min-h-10 w-full items-center gap-3 rounded-control px-3 text-left text-body text-fg-2 transition-colors hover:bg-raised hover:text-fg",
+    current && "bg-raised font-semibold text-fg before:absolute before:inset-y-1.5 before:left-0 before:w-0.75 before:rounded-full before:bg-accent",
+    disabled && "cursor-not-allowed text-fg-3 hover:bg-transparent hover:text-fg-3",
+  );
+  const inner = (
+    <>
+      <ShellIcon name={WS_ICON[item.segment]} className="size-5" />
+      <span className={cn("min-w-0 flex-1 flex-col", expandable ? "hidden xl:flex" : "hidden", onNavigate && "flex!")}>
+        <span className="truncate">{item.label}</span>
+        {/* 비활성 이유는 메뉴 옆 글자로도 보인다(9.5절) */}
+        {reason ? <span className="truncate text-caption font-normal text-fg-3">{reason}</span> : null}
+      </span>
+      {!onNavigate ? (
+        <span
+          aria-hidden="true"
+          className={cn(
+            "pointer-events-none absolute top-1/2 left-full z-40 ml-2 hidden -translate-y-1/2 rounded-control bg-fg px-2 py-1 text-caption whitespace-nowrap text-bg shadow-pop group-hover:block group-focus-visible:block",
+            expandable && !hint && "xl:hidden!",
+          )}
+        >
+          {hint ? `${item.label} · ${hint}` : item.label}
+        </span>
+      ) : null}
+    </>
+  );
+  const label = hint ? `${item.label} (${hint})` : item.label;
+  const pickDone = () => {
+    closePicker();
+    onNavigate?.();
+  };
+  return (
+    <li className="flex flex-col">
+      {target.kind === "go" ? (
+        <Link to={target.to} onClick={onNavigate} aria-current={current ? "page" : undefined} aria-label={label} className={cls}>
+          {inner}
+        </Link>
+      ) : target.kind === "pick" ? (
+        <button type="button" onClick={() => setPicking(true)} aria-haspopup="dialog" aria-label={`${item.label} (프로젝트 고르기)`} className={cls}>
+          {inner}
+        </button>
+      ) : (
+        // 비활성도 포커스는 받는다(aria-disabled, 6.1절 키보드)
+        <button type="button" aria-disabled="true" aria-label={label} className={cls}>
+          {inner}
+        </button>
+      )}
+      {(target.kind === "disabled" || target.kind === "failed") && target.action && (expandable || onNavigate) ? (
+        <span className={cn("ml-11 flex flex-wrap gap-x-3", !onNavigate && "hidden xl:flex")}>
+          <Link to={target.action.to} onClick={onNavigate} className="focus-ring rounded-sm text-caption text-info underline">
+            {target.action.label}
+          </Link>
+          {target.kind === "failed" && onRetry ? (
+            <button type="button" onClick={onRetry} className="focus-ring rounded-sm text-caption text-info underline">
+              다시 시도
+            </button>
+          ) : null}
+        </span>
+      ) : null}
+      {target.kind === "pick" ? (
+        <Dialog open={picking} onClose={closePicker} title="프로젝트 고르기" description={`${item.label}을 열 프로젝트를 고르세요. 최근 수정한 ${target.candidates.length}개입니다.`}>
+          <ul className="flex flex-col gap-1">
+            {target.candidates.map((c) => (
+              <li key={c.id}>
+                <Link to={stageHref(c.id, item.segment)} onClick={pickDone} className="focus-ring flex min-h-10 flex-col justify-center rounded-control px-3 py-1 text-body text-fg hover:bg-raised">
+                  <span className="truncate font-medium">{c.name}</span>
+                  <span className="truncate text-caption text-fg-2">
+                    {c.siteLabel ?? "대지 미입력"} · 수정 {c.updatedAt.slice(0, 10)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <Link to="/projects" onClick={pickDone} className="focus-ring mt-gap inline-flex rounded-sm text-body text-info underline">
+            모든 프로젝트 보기
+          </Link>
+        </Dialog>
+      ) : null}
+    </li>
   );
 }
 
@@ -165,7 +364,8 @@ function NavDrawer({ open, onClose, pathname }: { open: boolean; onClose: () => 
 }
 
 /* ---------- 상단 바 ---------- */
-function HeaderStatus({ saveLabel }: { saveLabel: string | null }) {
+/** 상단 바 오른쪽 상태. 프로젝트 작업공간 상단 바도 같이 쓴다(1200~에서만). */
+export function HeaderStatus({ saveLabel }: { saveLabel: string | null }) {
   const online = useOnline();
   const { state } = useSession();
   const status = useEntitlementStatus();
@@ -196,13 +396,16 @@ export function AppShell() {
   const [saveLabel, setSaveLabel] = useState<string | null>(null);
   const inProject = projectIdOf(pathname) !== null;
   const expandable = !inProject && !prefs.gnbCollapsed;
-  const status = useMemo(() => ({ saveLabel, setSaveLabel }), [saveLabel]);
+  const openNav = useCallback(() => setDrawer(true), []);
+  const wsSources = useWorkspaceSources(pathname);
+  const status = useMemo(() => ({ saveLabel, setSaveLabel, openNav }), [saveLabel, openNav]);
 
   // 경로가 바뀌면 서랍을 닫는다.
   useEffect(() => setDrawer(false), [pathname]);
 
   return (
     <ShellStatusContext.Provider value={status}>
+      <WorkspaceSourcesContext.Provider value={wsSources}>
       <div className="flex min-h-dvh bg-bg text-fg">
         <a href="#main" className="focus-ring sr-only z-50 rounded-control bg-surface px-3 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2">
           본문으로 건너뛰기
@@ -225,6 +428,7 @@ export function AppShell() {
         <NavDrawer open={drawer} onClose={() => setDrawer(false)} pathname={pathname} />
 
         <div className="flex min-w-0 flex-1 flex-col">
+          {!inProject ? (
           <header className="sticky top-0 z-30 flex h-(--gnb-h) items-center gap-2 border-b border-line bg-bg/95 px-3 md:px-pad">
             <button
               type="button"
@@ -262,11 +466,17 @@ export function AppShell() {
               <HeaderStatus saveLabel={saveLabel} />
             </div>
           </header>
-          <main id="main" tabIndex={-1} className="flex min-w-0 flex-1 flex-col gap-gap p-3 outline-none md:p-pad xl:p-6">
+          ) : null}
+          <main
+            id="main"
+            tabIndex={-1}
+            className={cn("flex min-w-0 flex-1 flex-col outline-none", inProject ? "h-dvh min-h-0 overflow-hidden" : "gap-gap p-3 md:p-pad xl:p-6")}
+          >
             <Outlet />
           </main>
         </div>
       </div>
+      </WorkspaceSourcesContext.Provider>
     </ShellStatusContext.Provider>
   );
 }

@@ -5,14 +5,15 @@
 // - Manifold는 엔진 워커에서만(mass_meshes·mass_excess). 드래그 중에는 mesh 위치만 바꾸고, 초과분은 움직인 매스 1개만 합쳐서 요청, 놓으면 전체.
 // - 열람(체험·구독 만료)·좁은 화면(~767)은 편집 잠금: 도구 막대 숨김 + 리듀서 거부(이중 차단).
 import type { ProjectRecord } from "@arch-studio/shell-bridge";
-import { Banner, Button, Tabs, Toast, ToastRegion } from "@arch-studio/ui";
+import { Banner, Button, Toast, ToastRegion } from "@arch-studio/ui";
 import { useSearchParams } from "react-router";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from "react";
-import { JudgmentPanel, StatusBadge, useJudgment } from "../judgment/index.ts";
+import { JudgmentPanel, useJudgment } from "../judgment/index.ts";
 import {
   ErrorState,
   LoadingState,
   PageHeader,
+  Workspace,
   bridgeErrorCode,
   bridgeErrorText,
   useAdapters,
@@ -23,12 +24,14 @@ import {
   usePreviewState,
   useProject,
   useShellStatus,
+  useWorkspaceJudgment,
+  useWorkspaceReveal,
 } from "../shell/index.ts";
 import { ModelerEngineClient } from "./engine/client.ts";
 import { nextJudgeInput } from "./engine/coalesce.ts";
 import { Inspector, FLOOR_HEIGHT_INPUT_ID } from "./panels/Inspector.tsx";
 import { LayerPanel } from "./panels/LayerPanel.tsx";
-import { StatusBar, statusSummary, verdictSummary } from "./panels/StatusBar.tsx";
+import { statusSummary } from "./panels/StatusBar.tsx";
 import { PENDING_TOOL_TEXT, Toolbar } from "./panels/Toolbar.tsx";
 import { useLayoutKind } from "./panels/layout.ts";
 import { modelerAccess } from "./state/access.ts";
@@ -152,6 +155,8 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
   const judgeRev = useMemo(() => `${record.version}:${(rev.current += 1)}`, [judgeInput, record.version]);
   const judgment = useJudgment({ model: judgeInput.masses.length > 0 ? judgeInput : null, modelRev: judgeRev });
   const busy = judgment.phase === "loading";
+  // 판정 요약을 셸(6단계 막대·패널 띠·상태줄)에 올린다(03장 9.3절).
+  useWorkspaceJudgment(judgment, judgeInput.masses.length > 0);
   useEffect(() => {
     const next = nextJudgeInput(preview, judgeInput, busy);
     if (next !== judgeInput) setJudgeInput(next);
@@ -186,11 +191,14 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
   }, [s.editable, dirty, save.status, projects, record, present, reload]);
 
   // 단축키(03장 6.1절). 입력칸에서는 Ctrl 조합만.
-  const keyState = useRef({ s, onSave });
-  keyState.current = { s, onSave };
+  // 압출(E·버튼): 오른쪽 패널과 '속성' 절을 펼친 뒤 층고 입력에 포커스(접혀 있으면 입력이 숨어 있다).
+  const reveal = useWorkspaceReveal();
+  const focusExtrude = useCallback(() => reveal("inspector", FLOOR_HEIGHT_INPUT_ID), [reveal]);
+  const keyState = useRef({ s, onSave, focusExtrude });
+  keyState.current = { s, onSave, focusExtrude };
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const { s: st, onSave: save } = keyState.current;
+      const { s: st, onSave: save, focusExtrude: extrude } = keyState.current;
       const a = keyAction(
         { key: e.key, ctrl: e.ctrlKey || e.metaKey, shift: e.shiftKey, alt: e.altKey },
         { tool: st.tool, drawing: st.tool === "draw" && st.draft.length > 0, hasSelection: st.selection !== null, typing: isTypingTarget(e.target as HTMLElement | null) },
@@ -213,7 +221,7 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
           d({ type: "tool", tool: a.tool });
           return;
         case "extrude":
-          document.getElementById(FLOOR_HEIGHT_INPUT_ID)?.focus();
+          extrude();
           return;
         case "pending":
           d({ type: "notice", text: PENDING_TOOL_TEXT[a.what] });
@@ -303,8 +311,9 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
     />
   ) : null;
 
+  // 캔버스 슬롯(03장 9.2절): 도구 막대 + 3D 보기가 캔버스 높이를 채운다. 매스 제안은 오른쪽 패널 절로 옮긴다.
   const view = (
-    <section aria-labelledby="modeler-view-title" className="flex min-w-0 flex-col gap-2 rounded-panel border border-line bg-surface p-pad">
+    <section aria-labelledby="modeler-view-title" className="flex h-full min-h-0 min-w-0 flex-col gap-2 p-2">
       <h2 id="modeler-view-title" className="sr-only">
         3D 보기
       </h2>
@@ -317,7 +326,7 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
         undoLabel={undoLabel}
         redoLabel={redoLabel}
         onTool={(tool) => dispatch({ type: "tool", tool })}
-        onExtrude={() => document.getElementById(FLOOR_HEIGHT_INPUT_ID)?.focus()}
+        onExtrude={focusExtrude}
         onToggleEnvelope={() => dispatch({ type: "toggleLayer", layer: "envelope" })}
         onCamera={(mode) => dispatch({ type: "camera", mode })}
         onFit={() => dispatch({ type: "fit" })}
@@ -329,7 +338,7 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
           바닥 꼭짓점을 차례로 찍습니다(100mm 격자). 첫 점을 다시 찍거나 Enter로 닫고, Backspace로 마지막 점을 지우고, Esc로 취소합니다. 찍은 점 {s.draft.length}개 · 새 매스 {s.draftFloors}층 × {s.draftFloorHeight.toLocaleString("ko-KR")}mm
         </p>
       ) : null}
-      <div className="relative aspect-4/3 w-full overflow-hidden rounded-control border border-line bg-viewport md:aspect-auto md:h-144 xl:h-160">
+      <div className="relative min-h-64 w-full flex-1 overflow-hidden rounded-control border border-line bg-viewport">
         {!webgl ? (
           <div className="flex h-full items-center justify-center p-pad text-center text-body text-fg-2">
             이 환경에서는 3D 보기를 열 수 없습니다(WebGL2 필요). 레이어·속성·판정은 그대로 볼 수 있습니다.
@@ -364,15 +373,6 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
     </section>
   );
 
-  // 3D 보기 아래에 매스 제안 패널을 붙인다(3구간 모두 같은 자리).
-  const viewWithSuggest = (
-    <div className="flex min-w-0 flex-col gap-gap">
-      {view}
-      {suggest}
-    </div>
-  );
-
-  const verdict = verdictSummary(judgment.data);
   // 권리 잠금 배너("열람 모드: …")는 ProjectShell이 이미 그린다. 여기서는 화면 폭 잠금(6.4절)만 알린다.
   const lockBanner =
     access.kind === "narrow" ? (
@@ -381,95 +381,76 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
       </Banner>
     ) : null;
 
+  const notices =
+    lockBanner || save.status !== "idle" || s.notice?.tone === "warn" ? (
+      <>
+        {lockBanner}
+        {save.status === "conflict" ? (
+          <ErrorState
+            title="다른 곳에서 이 프로젝트가 먼저 저장되었습니다"
+            description="병합하지 않습니다. 최신을 열면 저장하지 않은 모델 변경은 사라집니다."
+            action={
+              <Button size="sm" onClick={reload}>
+                최신 열기
+              </Button>
+            }
+          />
+        ) : null}
+        {save.status === "failed" ? <ErrorState title="모델을 저장하지 못했습니다" description={save.message} /> : null}
+        {s.notice?.tone === "warn" ? (
+          <Banner tone="warn" title="확인하세요">
+            {s.notice.text}
+          </Banner>
+        ) : null}
+      </>
+    ) : undefined;
+
   return (
-    <div ref={rootRef} className="flex min-w-0 flex-col gap-gap">
-      <PageHeader
+    <div ref={rootRef} className="contents">
+      <Workspace
         title="모델·판정"
         description="엔벨로프 안에서 매스를 그리고 움직이며 판정을 봅니다. 판정은 참고 자료이며 최종 판단은 건축사와 허가권자가 합니다."
         actions={
           <>
-            <Button icon="sparkles" aria-expanded={suggestOpen} onClick={() => setSuggestOpen((v) => !v)}>
+            <Button size="sm" icon="sparkles" aria-expanded={suggestOpen} onClick={() => setSuggestOpen((v) => !v)}>
               매스 제안
             </Button>
             {s.editable ? (
-              <Button variant="primary" icon="check" onClick={() => void onSave()} loading={save.status === "saving"} disabled={!dirty} aria-keyshortcuts="Control+S">
+              <Button size="sm" variant="primary" icon="check" onClick={() => void onSave()} loading={save.status === "saving"} disabled={!dirty} aria-keyshortcuts="Control+S">
                 저장
               </Button>
             ) : null}
           </>
         }
-      />
-      <p role="status" aria-live="polite" className="sr-only">
-        {s.notice?.text ?? ""}
-      </p>
-      {lockBanner}
-      {save.status === "conflict" ? (
-        <ErrorState
-          title="다른 곳에서 이 프로젝트가 먼저 저장되었습니다"
-          description="병합하지 않습니다. 최신을 열면 저장하지 않은 모델 변경은 사라집니다."
-          action={
-            <Button size="sm" onClick={reload}>
-              최신 열기
-            </Button>
-          }
-        />
-      ) : null}
-      {save.status === "failed" ? <ErrorState title="모델을 저장하지 못했습니다" description={save.message} /> : null}
-      {s.notice?.tone === "warn" ? (
-        <Banner tone="warn" title="확인하세요">
-          {s.notice.text}
-        </Banner>
-      ) : null}
-
-      {layout === "wide" ? (
-        <div className="grid min-w-0 grid-cols-[var(--sidebar-w)_minmax(0,1fr)_calc(var(--sidebar-w)*1.3)] items-start gap-gap">
-          <div className="rounded-panel border border-line bg-surface p-pad">{layers}</div>
-          {viewWithSuggest}
-          <div className="flex min-w-0 flex-col gap-gap">
-            <div className="rounded-panel border border-line bg-surface p-pad">{inspector}</div>
-            <div className="min-w-0">{judgmentPanel}</div>
-          </div>
-        </div>
-      ) : layout === "medium" ? (
-        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_calc(var(--sidebar-w)*1.3)] items-start gap-gap">
-          {viewWithSuggest}
-          <div className="min-w-0 rounded-panel border border-line bg-surface p-pad">
-            <Tabs
-              label="모델러 패널"
-              defaultId="inspector"
-              items={[
-                { id: "inspector", label: "속성", content: inspector },
-                { id: "judgment", label: "판정", content: judgmentPanel },
-                { id: "layers", label: "레이어", content: layers },
-              ]}
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="flex min-w-0 flex-col gap-gap">
-          {viewWithSuggest}
-          <details className="rounded-panel border border-line bg-surface" open={false}>
-            <summary className="focus-ring flex cursor-pointer flex-wrap items-center gap-2 rounded-panel p-pad text-body font-medium text-fg">
-              판정
-              {verdict.worst ? <StatusBadge status={verdict.worst} /> : null}
-              <span className="text-caption text-fg-2 tabular-nums">
-                통과 {verdict.pass} · 확인 필요 {verdict.warn} · 기준 초과 {verdict.fail} · 미확인 {verdict.unverified}
-              </span>
-            </summary>
-            <div className="border-t border-line p-pad">{judgmentPanel}</div>
-          </details>
-          <div className="rounded-panel border border-line bg-surface p-pad">{layers}</div>
-          <div className="rounded-panel border border-line bg-surface p-pad">{inspector}</div>
-        </div>
-      )}
-
-      <StatusBar summary={summary} notice={s.notice?.tone === "info" ? s.notice.text : null} />
-
-      {toast ? (
-        <ToastRegion>
-          <Toast tone="ok" title={toast} onClose={() => setToast(null)} />
-        </ToastRegion>
-      ) : null}
+        list={layers}
+        listTitle="객체·레이어"
+        canvas={view}
+        canvasLabel="3D 보기"
+        notices={notices}
+        panels={[
+          ...(suggest ? [{ id: "suggest", title: "매스 제안", content: suggest }] : []),
+          { id: "inspector", title: "속성", content: inspector },
+          { id: "judgment", title: "판정", content: judgmentPanel, defaultOpen: true },
+        ]}
+        panelsTitle="속성·판정"
+        status={
+          <>
+            <span>매스 {summary.masses}개</span>
+            <span>지상 최고 {summary.maxLevel}층</span>
+            <span>판정은 참고 자료입니다</span>
+            {s.notice?.tone === "info" ? <span className="min-w-0 truncate">{s.notice.text}</span> : null}
+          </>
+        }
+      >
+        <p role="status" aria-live="polite" className="sr-only">
+          {s.notice?.text ?? ""}
+        </p>
+        {toast ? (
+          <ToastRegion>
+            <Toast tone="ok" title={toast} onClose={() => setToast(null)} />
+          </ToastRegion>
+        ) : null}
+      </Workspace>
     </div>
   );
 }

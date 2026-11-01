@@ -23,3 +23,5 @@ export { decideRoute, type GuardDecision } from "./guard.ts";
 export { DENY_TEXT, NAV_ITEMS, PROJECT_TABS, lockOf, projectIdOf, type LockState, type NavItem, type ProjectTab } from "./nav.ts";
 export { DEFAULT_PREFS, type DensityPref, type DisplayPrefs, type ThemePref } from "./prefs.ts";
 export type { ApiConfig, AuthPort, EngineHost, EngineRequestLike, EngineResponseLike, ShellAdapters, ShellRuntime, SignInOutcome } from "./types.ts";
+export { Workspace, useWorkspaceJudgment, useWorkspaceLayout, useWorkspaceReveal, type WorkspaceLayout, type WorkspacePanel, type WorkspaceProps } from "./Workspace.tsx";
+export { NEXT_STEP, WORKSPACE_MENU, WORKSPACE_STAGES, workspaceMenuTarget, type WorkspaceMenuTarget, type WorkspaceStage, type WorkspaceVerdict } from "./workspace.ts";
