@@ -1,0 +1,104 @@
+/* 시안 공통 스타일. 색·글자 크기는 tokens.css 변수만 쓴다.
+   아래 --ws-* 는 "시안 후보 토큰"(정본 아님): 기존 --spacing 배수로만 만들었고, 채택되면 정본 tokens.css로 옮길 이름 후보다. */
+:root {
+  --hairline: calc(var(--spacing) / 4);          /* 1 단위 구분선 */
+  --ws-topbar-h: calc(var(--spacing) * 12);       /* 작업공간 상단 바 */
+  --ws-stagebar-h: calc(var(--spacing) * 10);     /* 단계 내비 */
+  --ws-rail-w: calc(var(--spacing) * 12);         /* 도구 레일 */
+  --ws-panel-w: calc(var(--spacing) * 60);        /* 왼쪽 레이어·목록 패널 */
+  --ws-dock-w: calc(var(--spacing) * 80);         /* 오른쪽 도킹 패널 */
+  --ws-tabs-h: calc(var(--spacing) * 8);          /* 시트·층 탭 */
+  --ws-status-h: var(--spacing-control-sm);       /* 상태줄 */
+  --ws-icon: calc(var(--spacing) * 5);
+  --ws-sheet-max: calc(var(--spacing) * 260);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-sans); font-size: var(--text-body); line-height: 1.43;
+  color: var(--color-fg); background: var(--color-bg);
+}
+h1, h2, h3, p { margin: 0; }
+h1 { font-size: var(--text-h1); line-height: 1.3; }
+h2 { font-size: var(--text-h2); line-height: 1.35; }
+.cap { font-size: var(--text-caption); color: var(--color-fg-3); }
+.num { font-family: var(--font-mono); font-size: var(--text-num); font-variant-numeric: tabular-nums; }
+.muted { color: var(--color-fg-3); }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: var(--focus-ring-width) solid var(--color-focus); outline-offset: var(--focus-ring-offset); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+.btn {
+  display: inline-flex; align-items: center; gap: calc(var(--spacing) * 1.5);
+  height: var(--spacing-control-sm); padding: 0 calc(var(--spacing) * 3);
+  border: var(--hairline) solid var(--color-input); border-radius: var(--radius-control);
+  background: var(--color-surface); cursor: pointer; white-space: nowrap; font-size: var(--text-caption);
+}
+.btn.primary { background: var(--color-accent); color: var(--color-accent-fg); border-color: var(--color-accent); }
+.btn.ghost { border-color: transparent; background: transparent; }
+.icon-btn {
+  display: inline-grid; place-items: center; width: var(--spacing-control); height: var(--spacing-control);
+  border: var(--hairline) solid transparent; border-radius: var(--radius-control); background: transparent; cursor: pointer;
+  color: var(--color-fg-2);
+}
+.icon-btn:hover { background: var(--color-raised); }
+.icon-btn[aria-pressed="true"] { background: var(--color-accent); color: var(--color-accent-fg); }
+.icon-btn svg, .ico { width: var(--ws-icon); height: var(--ws-icon); fill: none; stroke: currentColor; stroke-width: 1.6; }
+
+.badge {
+  display: inline-flex; align-items: center; gap: var(--spacing); padding: 0 calc(var(--spacing) * 2);
+  height: calc(var(--spacing) * 5); border-radius: var(--radius-control); font-size: var(--text-caption); font-weight: 600;
+  white-space: nowrap;
+}
+.badge.ok { background: var(--color-ok); color: var(--color-ok-fg); }
+.badge.warn { background: var(--color-warn); color: var(--color-warn-fg); }
+.badge.fail { background: var(--color-danger); color: var(--color-danger-fg); }
+.badge.info { background: var(--color-info); color: var(--color-info-fg); }
+.badge.line { border: var(--hairline) solid var(--color-input); color: var(--color-fg-2); }
+.example { color: var(--color-warn); font-weight: 600; }
+
+.panel { background: var(--color-surface); border: var(--hairline) solid var(--color-line); border-radius: var(--radius-panel); }
+.panel-h {
+  display: flex; align-items: center; justify-content: space-between; gap: var(--spacing-gap);
+  min-height: var(--spacing-row); padding: 0 var(--spacing-pad); border-bottom: var(--hairline) solid var(--color-line);
+  font-size: var(--text-caption); font-weight: 700; color: var(--color-fg-2); letter-spacing: 0.02em;
+}
+.panel-b { padding: var(--spacing-pad); }
+.kv { display: grid; grid-template-columns: 1fr auto; gap: var(--spacing) var(--spacing-gap); align-items: center; }
+.field {
+  display: flex; align-items: center; gap: var(--spacing); height: var(--spacing-control-sm);
+  padding: 0 calc(var(--spacing) * 2); border: var(--hairline) solid var(--color-input); border-radius: var(--radius-control);
+  background: var(--color-bg); min-width: 0;
+}
+.field input { border: 0; background: transparent; width: 100%; min-width: 0; text-align: right; }
+.row {
+  display: flex; align-items: center; gap: var(--spacing-gap); min-height: var(--spacing-row);
+  padding: 0 var(--spacing-pad); border-bottom: var(--hairline) solid var(--color-line);
+}
+.row:last-child { border-bottom: 0; }
+.grow { flex: 1; min-width: 0; }
+.sr { position: absolute; width: var(--hairline); height: var(--hairline); overflow: hidden; clip: rect(0 0 0 0); }
+body[data-state="plan"] [data-only="sheet"], body[data-state="sheet"] [data-only="plan"] { display: none !important; }
+.scrim { position: fixed; inset: 0; background: var(--color-overlay); z-index: 30; display: none; }
+.scrim.open { display: block; }
+
+/* ===== 도면·평면 SVG 공통 (stroke-width는 viewBox 사용자 단위) ===== */
+.cv-bg { fill: var(--color-viewport); }
+.cv-grid { fill: none; stroke: var(--color-grid); stroke-width: 0.5; }
+.site { fill: none; stroke: var(--color-site-line); stroke-width: 1.2; stroke-dasharray: var(--line-dash-site); }
+.setback { fill: none; stroke: var(--color-setback); stroke-width: 0.8; stroke-dasharray: var(--line-dash-setback); }
+.envelope { fill: var(--color-envelope); fill-opacity: var(--envelope-fill-opacity); stroke: var(--color-envelope); stroke-width: 0.8; }
+.mass { fill: var(--color-mass); stroke: var(--color-mass-edge); stroke-width: 1; }
+.room { fill: var(--color-room); stroke: var(--color-fg); stroke-width: 2.4; }
+.wall-in { stroke: var(--color-fg); stroke-width: 1.2; }
+.room.sel { stroke: var(--color-selection); stroke-width: 3; }
+.handle { fill: var(--color-surface); stroke: var(--color-selection); stroke-width: 1.2; }
+.dim { stroke: var(--color-fg-2); stroke-width: 0.6; fill: none; }
+.dim-t, .room-t { fill: var(--color-fg); font-family: var(--font-sans); }
+.room-a { fill: var(--color-fg-3); font-family: var(--font-mono); }
+.fail-mark { fill: none; stroke: var(--color-danger); stroke-width: 1.4; }
+.fail-t { fill: var(--color-danger); font-weight: 700; font-family: var(--font-sans); }
+.paper { fill: var(--color-sheet-paper); stroke: var(--color-line); stroke-width: 1; }
+.ink { stroke: var(--color-sheet-ink); fill: none; }
+.ink-t { fill: var(--color-sheet-ink); font-family: var(--font-sans); }
+.ink-fill { fill: var(--color-concrete); fill-opacity: 0.35; stroke: var(--color-sheet-ink); }

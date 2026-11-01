@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시안 A — 고정 도킹형 작업공간 (Arch Studio)</title>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="common.css">
+<style>
+/* 시안 A: 고정 도킹형(CAD·BIM 관례). 단계 = 상단 번호 단계 막대(탭 전환), 왼쪽 레일+목록, 오른쪽 속성·판정·레이어 세로 적층(항상 보임). */
+body { overflow: hidden; }
+.ws {
+  display: grid; height: 100dvh;
+  grid-template-columns: var(--ws-rail-w) var(--ws-panel-w) minmax(0, 1fr) var(--ws-dock-w);
+  grid-template-rows: var(--ws-topbar-h) var(--ws-stagebar-h) minmax(0, 1fr) var(--ws-tabs-h) var(--ws-status-h);
+  grid-template-areas: "top top top top" "stage stage stage stage" "rail left canvas dock" "rail left tabs dock" "status status status status";
+}
+.topbar { grid-area: top; display: flex; align-items: center; gap: var(--spacing-gap); padding: 0 var(--spacing-pad); background: var(--color-nav); border-bottom: var(--hairline) solid var(--color-line); }
+.brand { display: grid; place-items: center; width: calc(var(--spacing) * 8); height: calc(var(--spacing) * 8); border-radius: var(--radius-control); background: var(--color-accent); color: var(--color-accent-fg); font-weight: 800; font-size: var(--text-caption); }
+.proj { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-r { margin-left: auto; display: flex; align-items: center; gap: var(--spacing-gap); }
+
+/* 단계 막대: 번호·상태를 가진 6단계. 누르면 작업공간 전체(도구·패널)가 바뀐다 */
+.stagebar { grid-area: stage; display: flex; align-items: stretch; background: var(--color-surface); border-bottom: var(--hairline) solid var(--color-line); overflow-x: auto; scrollbar-width: none; }
+.stagebar ol { display: flex; margin: 0; padding: 0 var(--spacing-pad); list-style: none; gap: 0; }
+.step { display: flex; align-items: center; gap: calc(var(--spacing) * 2); height: 100%; padding: 0 var(--spacing-gap); border: 0; border-bottom: calc(var(--hairline) * 2) solid transparent; background: none; cursor: pointer; color: var(--color-fg-3); white-space: nowrap; }
+.step .n { display: grid; place-items: center; width: calc(var(--spacing) * 5); height: calc(var(--spacing) * 5); border-radius: 50%; border: var(--hairline) solid var(--color-input); font-size: var(--text-caption); font-family: var(--font-mono); }
+.step.done .n { background: var(--color-ok); color: var(--color-ok-fg); border-color: var(--color-ok); }
+.step[aria-current] { color: var(--color-fg); font-weight: 700; border-bottom-color: var(--color-accent); }
+.step[aria-current] .n { background: var(--color-accent); color: var(--color-accent-fg); border-color: var(--color-accent); }
+.step .flag { font-size: var(--text-caption); color: var(--color-danger); font-weight: 700; }
+.sep { align-self: center; color: var(--color-line); }
+
+.rail { grid-area: rail; display: flex; flex-direction: column; align-items: center; gap: var(--spacing); padding: calc(var(--spacing) * 2) 0; background: var(--color-nav); border-right: var(--hairline) solid var(--color-line); }
+.rail hr { width: 60%; border: 0; border-top: var(--hairline) solid var(--color-line); margin: var(--spacing) 0; }
+.left { grid-area: left; overflow: auto; background: var(--color-surface); border-right: var(--hairline) solid var(--color-line); }
+.dock { grid-area: dock; overflow: auto; background: var(--color-surface); border-left: var(--hairline) solid var(--color-line); }
+.dock details { border-bottom: var(--hairline) solid var(--color-line); }
+.dock summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: var(--spacing-gap); min-height: var(--spacing-row); padding: 0 var(--spacing-pad); font-size: var(--text-caption); font-weight: 700; color: var(--color-fg-2); background: var(--color-raised); }
+.dock summary::-webkit-details-marker { display: none; }
+.dock summary .ico { width: calc(var(--spacing) * 4); height: calc(var(--spacing) * 4); }
+.dock summary .r { margin-left: auto; display: flex; gap: var(--spacing); }
+
+.canvas { grid-area: canvas; position: relative; overflow: hidden; background: var(--color-viewport); }
+.canvas > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.float { position: absolute; display: flex; gap: var(--spacing); padding: var(--spacing); background: var(--color-surface); border: var(--hairline) solid var(--color-line); border-radius: var(--radius-control); }
+.f-tr { top: var(--spacing-gap); right: var(--spacing-gap); flex-direction: column; }
+.f-tl { top: var(--spacing-gap); left: var(--spacing-gap); align-items: center; padding: var(--spacing) calc(var(--spacing) * 2); font-size: var(--text-caption); }
+.f-bl { bottom: var(--spacing-gap); left: var(--spacing-gap); align-items: center; padding: var(--spacing) calc(var(--spacing) * 2); font-size: var(--text-caption); }
+.tip { position: absolute; padding: var(--spacing) calc(var(--spacing) * 2); background: var(--color-accent); color: var(--color-accent-fg); border-radius: var(--radius-control); font-size: var(--text-caption); pointer-events: none; }
+
+.tabs { grid-area: tabs; display: flex; align-items: stretch; gap: 0; background: var(--color-nav); border-top: var(--hairline) solid var(--color-line); overflow-x: auto; }
+.tab { display: flex; align-items: center; gap: var(--spacing); padding: 0 var(--spacing-pad); border: 0; border-right: var(--hairline) solid var(--color-line); background: transparent; color: var(--color-fg-3); font-size: var(--text-caption); cursor: pointer; white-space: nowrap; }
+.tab[aria-selected="true"] { background: var(--color-viewport); color: var(--color-fg); font-weight: 700; }
+.status { grid-area: status; display: flex; align-items: center; gap: var(--spacing-pad); padding: 0 var(--spacing-gap); background: var(--color-accent); color: var(--color-accent-fg); font-size: var(--text-caption); overflow-x: auto; white-space: nowrap; }
+.status .tg { display: inline-flex; align-items: center; gap: var(--spacing); padding: 0 calc(var(--spacing) * 1.5); border: var(--hairline) solid currentColor; border-radius: var(--radius-control); opacity: 0.95; }
+.status .tg.off { opacity: 0.55; text-decoration: line-through; }
+.status .dot { display: inline-block; width: calc(var(--spacing) * 2); height: calc(var(--spacing) * 2); border-radius: 50%; }
+.status .judg { margin-left: auto; display: flex; gap: var(--spacing-gap); }
+
+.list-item { display: grid; grid-template-columns: 1fr auto; gap: 0 var(--spacing); padding: calc(var(--spacing) * 2) var(--spacing-pad); border-bottom: var(--hairline) solid var(--color-line); cursor: pointer; }
+.list-item[aria-selected="true"] { background: var(--color-raised); box-shadow: inset calc(var(--hairline) * 3) 0 0 var(--color-selection); }
+.diff-neg { color: var(--color-danger); } .diff-pos { color: var(--color-ok); }
+.sheet-thumb { display: grid; grid-template-columns: calc(var(--spacing) * 16) 1fr; gap: var(--spacing-gap); align-items: center; padding: calc(var(--spacing) * 2) var(--spacing-pad); border-bottom: var(--hairline) solid var(--color-line); cursor: pointer; }
+.sheet-thumb svg { width: 100%; aspect-ratio: 420 / 297; display: block; }
+.sheet-thumb[aria-selected="true"] { background: var(--color-raised); box-shadow: inset calc(var(--hairline) * 3) 0 0 var(--color-selection); }
+.jrow { display: grid; grid-template-columns: 1fr auto; gap: 0 var(--spacing); padding: calc(var(--spacing) * 2) var(--spacing-pad); border-bottom: var(--hairline) solid var(--color-line); }
+.jrow .cap { grid-column: 1 / -1; }
+.note { padding: var(--spacing-gap) var(--spacing-pad); font-size: var(--text-caption); color: var(--color-fg-3); background: var(--color-raised); }
+.lyr { display: flex; align-items: center; gap: calc(var(--spacing) * 2); min-height: var(--spacing-control-sm); padding: 0 var(--spacing-pad); font-size: var(--text-caption); }
+.lyr .sw { width: calc(var(--spacing) * 3); height: calc(var(--spacing) * 3); border-radius: calc(var(--spacing) / 2); }
+.lyr .grow { font-family: var(--font-mono); }
+.mobile-bar, .sheet-head { display: none; }
+
+/* ===== 태블릿 768~1199: 왼쪽 목록은 서랍, 레일·캔버스·도킹 3열 ===== */
+@media (width < 1200px) {
+  .ws { grid-template-columns: var(--ws-rail-w) minmax(0, 1fr) calc(var(--spacing) * 72); grid-template-areas: "top top top" "stage stage stage" "rail canvas dock" "rail tabs dock" "status status status"; }
+  .left { position: fixed; z-index: 40; top: 0; bottom: 0; left: 0; width: var(--ws-dock-w); transform: translateX(-100%); transition: transform 0.2s var(--ease-out); box-shadow: var(--shadow-pop); }
+  .left.open { transform: none; }
+  .sheet-head.l { display: flex; }
+  .only-desk { display: none; }
+}
+/* ===== 모바일 ~767: 캔버스 전면, 레일은 아래 가로 도구줄, 패널은 아래 시트 ===== */
+@media (width < 768px) {
+  .ws { grid-template-columns: minmax(0, 1fr); grid-template-rows: var(--ws-topbar-h) var(--ws-stagebar-h) minmax(0, 1fr) var(--ws-tabs-h) auto var(--ws-status-h); grid-template-areas: "top" "stage" "canvas" "tabs" "rail" "status"; }
+  .rail { flex-direction: row; overflow-x: auto; padding: var(--spacing) calc(var(--spacing) * 2); border-right: 0; border-top: var(--hairline) solid var(--color-line); }
+  .rail hr { width: auto; height: 60%; border-top: 0; border-left: var(--hairline) solid var(--color-line); margin: 0 var(--spacing); }
+  .dock { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; top: auto; max-height: 70dvh; border-left: 0; border-radius: var(--radius-panel) var(--radius-panel) 0 0; transform: translateY(100%); transition: transform 0.2s var(--ease-out); box-shadow: var(--shadow-pop); }
+  .dock.open { transform: none; }
+  .left { width: 85vw; }
+  .sheet-head.d { display: flex; }
+  .mobile-only { display: inline-flex; }
+  .step .lbl { display: none; } .step[aria-current] .lbl { display: inline; }
+  .hide-m { display: none; }
+  .f-tr { flex-direction: row; }
+}
+@media (width >= 768px) { .mobile-only { display: none; } }
+@media (width >= 1200px) { .not-desk { display: none; } }
+</style>
+</head>
+<body data-state="plan">
+<div class="ws">
+  <header class="topbar">
+    <span class="brand" aria-hidden="true">AS</span>
+    <button class="icon-btn not-desk" data-open="left" aria-label="목록 열기"><svg><use href="#i-menu"/></svg></button>
+    <span class="proj">[예시] 단독주택 A</span>
+    <span class="badge line hide-m">저장됨</span>
+    <div class="top-r">
+      <span class="cap hide-m">온라인 · 크레딧 <b class="num">30</b></span>
+      <button class="btn hide-m"><svg class="ico"><use href="#i-undo"/></svg>실행취소</button>
+      <button class="btn primary" data-only="sheet">내보내기</button>
+      <button class="btn primary" data-only="plan">저장</button>
+    </div>
+  </header>
+
+  <nav class="stagebar" aria-label="설계 단계">
+    <ol>
+      <li><button class="step done" title="대지"><span class="n">1</span><span class="lbl">대지</span></button></li>
+      <li><button class="step done" title="모델·판정"><span class="n">2</span><span class="lbl">모델·판정</span> <span class="flag" aria-label="기준 초과 1건">FAIL 1</span></button></li>
+      <li><button class="step done" title="프로그램"><span class="n">3</span><span class="lbl">프로그램</span></button></li>
+      <li><button class="step" data-go="plan" aria-current="step"><span class="n">4</span><span class="lbl">평면</span></button></li>
+      <li><button class="step" data-go="sheet"><span class="n">5</span><span class="lbl">도면</span></button></li>
+      <li><button class="step" title="렌더·제안서"><span class="n">6</span><span class="lbl">렌더·제안서</span></button></li>
+    </ol>
+  </nav>
+
+  <!-- 도구 레일: 단계마다 도구 세트가 바뀐다 -->
+  <nav class="rail" aria-label="도구">
+    <button class="icon-btn" aria-pressed="false" title="선택 V"><svg><use href="#i-select"/></svg></button>
+    <span data-only="plan" style="display:contents">
+      <button class="icon-btn" aria-pressed="true" title="실 그리기 R"><svg><use href="#i-room"/></svg></button>
+      <button class="icon-btn" title="분할 X"><svg><use href="#i-split"/></svg></button>
+      <button class="icon-btn" title="병합 J"><svg><use href="#i-merge"/></svg></button>
+      <hr>
+      <button class="icon-btn" title="문 D"><svg><use href="#i-door"/></svg></button>
+      <button class="icon-btn" title="창 W"><svg><use href="#i-window"/></svg></button>
+    </span>
+    <span data-only="sheet" style="display:contents">
+      <button class="icon-btn" title="이동 H"><svg><use href="#i-pan"/></svg></button>
+      <hr>
+      <button class="icon-btn" aria-pressed="true" title="치수 주석"><svg><use href="#i-dim"/></svg></button>
+      <button class="icon-btn" title="문자"><svg><use href="#i-text"/></svg></button>
+      <button class="icon-btn" title="지시선"><svg><use href="#i-leader"/></svg></button>
+      <button class="icon-btn" title="구름 표시"><svg><use href="#i-cloud"/></svg></button>
+    </span>
+    <hr>
+    <button class="icon-btn" title="측정 M"><svg><use href="#i-measure"/></svg></button>
+    <button class="icon-btn mobile-only" data-open="dock" data-sec="d-props" title="속성"><svg><use href="#i-props"/></svg></button>
+    <button class="icon-btn mobile-only" data-open="dock" data-sec="d-judge" title="판정"><svg><use href="#i-judge"/></svg></button>
+    <button class="icon-btn mobile-only" data-open="dock" data-sec="d-layer" title="레이어"><svg><use href="#i-layers"/></svg></button>
+  </nav>
+
+  <!-- 왼쪽 목록: 평면=실 목록(목표 대비), 도면=시트 목록 -->
+  <aside class="left" id="left" aria-label="목록">
+    <div class="panel-h sheet-head l"><span>목록</span><button class="icon-btn" data-close aria-label="닫기"><svg><use href="#i-close"/></svg></button></div>
+    <div data-only="plan">
+      <div class="panel-h"><span>실 목록 1F</span><span class="num">120.70 / 129.50㎡</span></div>
+      <div class="list-item"><span>거실·주방</span><span class="num">38.50</span><span class="cap">목표 38.00</span><span class="num cap diff-pos">+0.50</span></div>
+      <div class="list-item"><span>안방</span><span class="num">18.00</span><span class="cap">목표 18.00</span><span class="num cap">0.00</span></div>
+      <div class="list-item" aria-selected="true"><span><b>아이방 1</b></span><span class="num">10.20</span><span class="cap">목표 12.00</span><span class="num cap diff-neg">−1.80 (−15.0%) 부족</span></div>
+      <div class="list-item"><span>계단·홀</span><span class="num">19.80</span><span class="cap">목표 18.00</span><span class="num cap diff-pos">+1.80</span></div>
+      <div class="list-item"><span>드레스룸</span><span class="num">9.00</span><span class="cap">목표 9.00</span><span class="num cap">0.00</span></div>
+      <div class="list-item"><span>현관 · 욕실</span><span class="num">15.00</span><span class="cap">목표 15.00</span><span class="num cap">0.00</span></div>
+      <div class="list-item"><span class="muted">아이방 2 (미배치)</span><button class="btn">놓기</button></div>
+    </div>
+    <div data-only="sheet">
+      <div class="panel-h"><span>시트 4</span><button class="btn ghost">+ 시트</button></div>
+      <div class="sheet-thumb" aria-selected="true"><svg viewBox="0 0 420 297"><rect class="paper" x="0" y="0" width="420" height="297"/><polygon class="ink" stroke-width="3" points="60,50 175,42 185,140 55,150"/><rect class="ink-fill" x="85" y="70" width="65" height="42"/></svg><div><b>배치도</b><div class="cap">A3 가로 · 1/200</div></div></div>
+      <div class="sheet-thumb"><svg viewBox="0 0 420 297"><rect class="paper" x="0" y="0" width="420" height="297"/><rect class="ink" stroke-width="3" x="90" y="70" width="200" height="130"/></svg><div><b>면적 산정도</b><div class="cap">A3 가로 · 1/200</div></div></div>
+      <div class="sheet-thumb"><svg viewBox="0 0 420 297"><rect class="paper" x="0" y="0" width="420" height="297"/><path class="ink" stroke-width="3" d="M60 220h300M120 220v-110h120v110M240 110l60-60"/></svg><div><b>일조사선 단면</b><div class="cap">A3 가로 · 1/200 · <span class="diff-neg">검토 필요 1</span></div></div></div>
+      <div class="sheet-thumb"><svg viewBox="0 0 420 297"><rect class="paper" x="0" y="0" width="420" height="297"/><rect class="ink" stroke-width="3" x="80" y="60" width="260" height="170"/><path class="ink" stroke-width="2" d="M220 60v110h120"/></svg><div><b>1F 평면</b><div class="cap">A3 가로 · 1/100</div></div></div>
+    </div>
+  </aside>
+
+  <!-- 캔버스 -->
+  <main class="canvas" aria-label="작업 캔버스">
+    <svg data-only="plan" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet" role="img" aria-label="1층 평면 편집 화면">
+      <defs><pattern id="gA" width="20" height="20" patternUnits="userSpaceOnUse"><path class="cv-grid" d="M20 0H0V20"/></pattern></defs>
+      <rect class="cv-bg" width="800" height="520"/><rect width="800" height="520" fill="url(#gA)"/>
+      <!-- 실 -->
+      <rect class="room" x="120" y="80" width="280" height="220"/>
+      <rect class="room" x="400" y="80" width="160" height="180"/>
+      <rect class="room" x="560" y="80" width="80" height="180"/>
+      <rect class="room" x="120" y="300" width="100" height="120"/>
+      <rect class="room" x="220" y="300" width="100" height="120"/>
+      <polygon class="room" points="400,260 640,260 640,420 456,420 456,300 400,300"/>
+      <rect class="room sel" x="320" y="300" width="136" height="120"/>
+      <!-- 문(호)·창(겹선) -->
+      <path class="wall-in" d="M150 420v-30a30 30 0 0 1 30 30" fill="none"/>
+      <path class="wall-in" d="M360 300v28a28 28 0 0 0 28-28" fill="none"/>
+      <path class="wall-in" d="M440 260v-28a28 28 0 0 1 28 28" fill="none"/>
+      <path class="wall-in" d="M180 80h120M180 84h120M450 80h70M450 84h70M640 300v80M636 300v80"/>
+      <!-- 실 이름·면적 -->
+      <text class="room-t" x="260" y="186" font-size="15" text-anchor="middle">거실·주방</text><text class="room-a" x="260" y="206" font-size="12" text-anchor="middle">38.50㎡</text>
+      <text class="room-t" x="480" y="166" font-size="15" text-anchor="middle">안방</text><text class="room-a" x="480" y="186" font-size="12" text-anchor="middle">18.00㎡</text>
+      <text class="room-t" x="600" y="166" font-size="12" text-anchor="middle">드레스</text>
+      <text class="room-t" x="170" y="356" font-size="13" text-anchor="middle">현관</text>
+      <text class="room-t" x="270" y="356" font-size="13" text-anchor="middle">욕실</text>
+      <text class="room-t" x="560" y="346" font-size="14" text-anchor="middle">계단·홀</text><text class="room-a" x="560" y="366" font-size="12" text-anchor="middle">19.80㎡</text>
+      <text class="room-t" x="388" y="356" font-size="14" text-anchor="middle" font-weight="700">아이방 1</text><text class="room-a" x="388" y="376" font-size="12" text-anchor="middle">10.20㎡</text>
+      <!-- 선택 핸들·치수 -->
+      <rect class="handle" x="316" y="296" width="8" height="8"/><rect class="handle" x="452" y="296" width="8" height="8"/><rect class="handle" x="316" y="416" width="8" height="8"/><rect class="handle" x="452" y="416" width="8" height="8"/>
+      <rect class="handle" x="452" y="356" width="8" height="8"/>
+      <path class="dim" d="M120 50h520M120 44v12M400 44v12M560 44v12M640 44v12"/>
+      <text class="dim-t" x="260" y="44" font-size="11" text-anchor="middle">7,000</text><text class="dim-t" x="480" y="44" font-size="11" text-anchor="middle">4,000</text><text class="dim-t" x="600" y="44" font-size="11" text-anchor="middle">2,000</text>
+      <path class="dim" d="M90 80v340M84 80h12M84 300h12M84 420h12"/>
+      <text class="dim-t" x="80" y="194" font-size="11" text-anchor="middle" transform="rotate(-90 80 194)">5,500</text><text class="dim-t" x="80" y="364" font-size="11" text-anchor="middle" transform="rotate(-90 80 364)">3,000</text>
+      <path class="dim" style="stroke:var(--color-selection)" d="M320 450h136M320 444v12M456 444v12"/>
+      <text class="dim-t" x="388" y="468" font-size="12" text-anchor="middle" style="fill:var(--color-selection)">3,400 (끌어서 조정)</text>
+      <!-- 스냅 커서 -->
+      <path class="dim" style="stroke:var(--color-selection)" d="M456 340v40M436 360h40"/>
+    </svg>
+
+    <svg data-only="sheet" viewBox="0 0 420 297" preserveAspectRatio="xMidYMid meet" role="img" aria-label="배치도 시트 미리보기">
+      <rect class="cv-bg" width="420" height="297"/>
+      <g transform="translate(14 10) scale(0.93)">
+        <rect class="paper" width="420" height="297"/>
+        <rect class="ink" stroke-width="0.7" x="10" y="10" width="400" height="277"/>
+        <path class="ink" stroke-width="0.4" d="M20 168h200" stroke-dasharray="4 2"/><text class="ink-t" x="120" y="178" font-size="5" text-anchor="middle">도로 폭 6.0m [예시]</text>
+        <polygon class="site" points="60,50 175,42 185,140 55,150"/>
+        <polygon class="setback" points="70,58 167,51 176,132 65,141"/>
+        <rect class="ink-fill" stroke-width="0.6" x="85" y="70" width="65" height="42"/>
+        <path class="dim" d="M85 62h65M85 59v6M150 59v6"/><text class="dim-t" x="117" y="58" font-size="4.5" text-anchor="middle">13,000</text>
+        <path class="dim" d="M160 70v42M157 70h6M157 112h6"/><text class="dim-t" x="166" y="93" font-size="4.5">8,500</text>
+        <circle class="fail-mark" cx="150" cy="70" r="7"/><text class="fail-t" x="158" y="80" font-size="4.5">검토 필요: 일조사선</text>
+        <text class="ink-t" x="110" y="95" font-size="5" text-anchor="middle">매스 1 (3층)</text>
+        <g transform="translate(230 50)"><circle class="ink" stroke-width="0.5" r="9"/><path d="M0 -9L3 3 0 1 -3 3z" class="ink-t"/><text class="ink-t" y="-12" font-size="5" text-anchor="middle">N</text></g>
+        <g class="ink" stroke-width="0.4"><rect x="220" y="120" width="70" height="40"/><path d="M220 130h70M220 140h70M220 150h70M260 120v40"/></g>
+        <text class="ink-t" x="223" y="127" font-size="4">대지 면적</text><text class="ink-t" x="263" y="127" font-size="4">330.00㎡</text>
+        <text class="ink-t" x="223" y="137" font-size="4">건축 면적</text><text class="ink-t" x="263" y="137" font-size="4">110.50㎡</text>
+        <text class="ink-t" x="223" y="147" font-size="4">건폐율</text><text class="ink-t" x="263" y="147" font-size="4">33.5%</text>
+        <text class="ink-t" x="223" y="157" font-size="4">용적률</text><text class="ink-t" x="263" y="157" font-size="4">100.5%</text>
+        <!-- 사람 주석(A-ANNO-USER) -->
+        <path d="M60 50l-20 -18h-14" fill="none" style="stroke:var(--color-info)" stroke-width="0.6"/><text x="26" y="29" font-size="4.5" style="fill:var(--color-info)">경계점 확인 필요(측량)</text>
+        <!-- 표제란 -->
+        <g class="ink" stroke-width="0.5"><rect x="290" y="232" width="120" height="55"/><path d="M290 244h120M290 256h120M290 268h120M350 244v43"/></g>
+        <text class="ink-t" x="294" y="240" font-size="4.5" font-weight="700">[예시] 사무소명 · 건축사 [예시]</text>
+        <text class="ink-t" x="294" y="252" font-size="4">프로젝트 [예시] 단독주택 A</text><text class="ink-t" x="354" y="252" font-size="4">도면 배치도</text>
+        <text class="ink-t" x="294" y="264" font-size="4">축척 1/200 · A3</text><text class="ink-t" x="354" y="264" font-size="4">규칙 팩 2026.10</text>
+        <text class="ink-t" x="294" y="277" font-size="3.6">기획설계 검토용 자료이며</text><text class="ink-t" x="294" y="283" font-size="3.6">인허가 설계도서가 아닙니다</text>
+      </g>
+    </svg>
+
+    <div class="float f-tl" data-only="plan"><span class="badge info">실 그리기</span><span class="hide-m">경계를 끌면 100mm 단위로 붙습니다 · Esc 취소</span></div>
+    <div class="float f-tl" data-only="sheet"><span class="badge line"><svg class="ico"><use href="#i-lock"/></svg>자동 작도 잠김</span><span class="hide-m">주석만 편집 · 레이어 A-ANNO-USER</span></div>
+    <div class="float f-tr">
+      <button class="icon-btn" aria-label="확대"><svg><use href="#i-plus"/></svg></button>
+      <button class="icon-btn" aria-label="축소"><svg><use href="#i-minus"/></svg></button>
+      <button class="icon-btn" aria-label="맞춤"><svg><use href="#i-fit"/></svg></button>
+    </div>
+    <div class="tip" data-only="plan" style="left:58%;top:66%">끝점 스냅 · 3,400 × 3,000</div>
+  </main>
+
+  <!-- 오른쪽 도킹: 속성·판정·레이어 세로 적층(접기 가능, 항상 함께 보임) -->
+  <aside class="dock" id="dock" aria-label="속성·판정·레이어">
+    <div class="panel-h sheet-head d"><span>패널</span><button class="icon-btn" data-close aria-label="닫기"><svg><use href="#i-close"/></svg></button></div>
+    <details open id="d-props">
+      <summary><svg class="ico"><use href="#i-props"/></svg><span data-only="plan">속성 · 아이방 1</span><span data-only="sheet">시트 설정 · 배치도</span></summary>
+      <div class="panel-b kv" data-only="plan">
+        <span class="cap">이름</span><span class="field" style="width:calc(var(--spacing)*36)"><input value="아이방 1" aria-label="이름"></span>
+        <span class="cap">용도</span><span class="field" style="width:calc(var(--spacing)*36)"><input value="침실" aria-label="용도"></span>
+        <span class="cap">가로</span><span class="field num" style="width:calc(var(--spacing)*36)"><input value="3,400" aria-label="가로">mm</span>
+        <span class="cap">세로</span><span class="field num" style="width:calc(var(--spacing)*36)"><input value="3,000" aria-label="세로">mm</span>
+        <span class="cap">면적 / 목표</span><span class="num">10.20 / 12.00㎡</span>
+        <span class="cap">차이</span><span class="num diff-neg">−1.80㎡ (−15.0%) 부족</span>
+        <span class="cap">벽</span><span class="cap">외벽 200 · 내벽 100 (고정)</span>
+      </div>
+      <div class="panel-b kv" data-only="sheet">
+        <span class="cap">용지</span><span class="field" style="width:calc(var(--spacing)*36)"><input value="A3" aria-label="용지"></span>
+        <span class="cap">방향</span><span class="field" style="width:calc(var(--spacing)*36)"><input value="가로" aria-label="방향"></span>
+        <span class="cap">축척</span><span class="field num" style="width:calc(var(--spacing)*36)"><input value="자동 (1/200)" aria-label="축척"></span>
+        <span class="cap">건축주 이름 표시</span><span class="cap">끔</span>
+        <span class="cap">제안서에 넣기</span><span class="cap">켬</span>
+      </div>
+    </details>
+    <details open id="d-judge">
+      <summary><svg class="ico"><use href="#i-judge"/></svg>판정 <span class="r"><span class="badge ok">통과 4</span><span class="badge warn">확인 1</span><span class="badge fail">초과 1</span></span></summary>
+      <div class="jrow"><span>건폐율</span><span class="badge ok">통과</span><span class="cap num">33.5 / 60%</span></div>
+      <div class="jrow"><span>용적률</span><span class="badge ok">통과</span><span class="cap num">100.5 / 150%</span></div>
+      <div class="jrow"><span>일조사선(정북)</span><span class="badge fail">기준 초과</span><span class="cap">0.4m 초과 · 근거 건축법 시행령 [조항 예시] · 캔버스에서 보기</span></div>
+      <div class="jrow"><span>주차</span><span class="badge warn">확인 필요</span><span class="cap">2 / 2대 · 조례 미확인</span></div>
+      <div class="jrow" data-only="plan"><span>실 면적(평면 검사)</span><span class="badge ok">겹침 없음</span><span class="cap">외곽 이탈 0 · 저장 가능</span></div>
+      <p class="note">판정은 설계 검토를 돕는 참고 자료입니다. 최종 판단은 건축사와 허가권자가 합니다.</p>
+    </details>
+    <details open id="d-layer">
+      <summary><svg class="ico"><use href="#i-layers"/></svg>레이어</summary>
+      <div data-only="plan">
+        <div class="lyr"><svg class="ico"><use href="#i-eye"/></svg><span class="sw" style="background:var(--color-site-line)"></span><span class="grow">대지</span><svg class="ico muted"><use href="#i-lock"/></svg></div>
+        <div class="lyr"><svg class="ico"><use href="#i-eye"/></svg><span class="sw" style="background:var(--color-mass)"></span><span class="grow">층 외곽(매스)</span><svg class="ico muted"><use href="#i-lock"/></svg></div>
+        <div class="lyr"><svg class="ico"><use href="#i-eye"/></svg><span class="sw" style="background:var(--color-fg)"></span><span class="grow">실·벽</span></div>
+        <div class="lyr"><svg class="ico"><use href="#i-eye"/></svg><span class="sw" style="background:var(--color-fg-2)"></span><span class="grow">문·창</span></div>
+        <div class="lyr"><svg class="ico"><use href="#i-eye"/></svg><span class="sw" style="background:var(--color-fg-3)"></span><span class="grow">치수</span></div>
+      </div>
+      <div data-only="sheet">
+        <div class="lyr"><svg class="ico"><use href="#i-eye"/></svg><span class="sw" style="background:var(--color-concrete)"></span><span class="grow">A-SITE-BNDY</span><span class="cap">자동</span><svg class="ico muted"><use href="#i-lock"/></svg></div>
+        <div class="lyr"><svg class="ico"><use href="#i-eye"/></svg><span class="sw" style="background:var(--color-concrete)"></span><span class="grow">A-MASS</span><span class="cap">자동</span><svg class="ico muted"><use href="#i-lock"/></svg></div>
+        <div class="lyr"><svg class="ico"><use href="#i-eye"/></svg><span class="sw" style="background:var(--color-concrete)"></span><span class="grow">A-DIMS</span><span class="cap">자동</span><svg class="ico muted"><use href="#i-lock"/></svg></div>
+        <div class="lyr"><svg class="ico"><use href="#i-eye"/></svg><span class="sw" style="background:var(--color-info)"></span><span class="grow"><b>A-ANNO-USER</b></span><span class="cap">편집</span></div>
+      </div>
+    </details>
+  </aside>
+
+  <!-- 층·시트 탭 -->
+  <div class="tabs" role="tablist" aria-label="층·시트">
+    <button class="tab not-desk" data-open="left" aria-label="목록"><svg class="ico"><use href="#i-list"/></svg></button>
+    <span data-only="plan" style="display:contents">
+      <button class="tab" role="tab" aria-selected="true">1F</button><button class="tab" role="tab" aria-selected="false">2F</button><button class="tab" role="tab" aria-selected="false">3F</button><button class="tab" role="tab" aria-selected="false">+ 층</button>
+    </span>
+    <span data-only="sheet" style="display:contents">
+      <button class="tab" role="tab" aria-selected="true">배치도</button><button class="tab" role="tab" aria-selected="false">면적 산정도</button><button class="tab" role="tab" aria-selected="false">일조사선 단면</button><button class="tab" role="tab" aria-selected="false">1F 평면</button>
+    </span>
+  </div>
+
+  <!-- 상태줄 -->
+  <footer class="status" aria-label="상태">
+    <span class="num">X 12,400 · Y 8,300 mm</span>
+    <span class="num" data-only="plan">축척 1/100</span><span class="num" data-only="sheet">축척 1/200 · A3</span>
+    <span class="tg"><svg class="ico"><use href="#i-snap"/></svg>스냅 100mm</span>
+    <span class="tg hide-m">직교</span><span class="tg off hide-m">극좌표</span>
+    <span class="judg">
+      <span><span class="dot" style="background:var(--color-ok-fg)"></span> 통과 4</span>
+      <span>확인 1</span>
+      <span><b>초과 1</b></span>
+      <span class="hide-m">엔진 1.0.0 · 규칙 팩 2026.10 · 38ms</span>
+    </span>
+  </footer>
+</div>
+<div class="scrim"></div>
+<script src="icons.js"></script>
+</body>
+</html>
