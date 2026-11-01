@@ -6,3 +6,4 @@ packages/drafting/golden/** text eol=lf
 packages/drafting/fonts/*.metrics.json text eol=lf
 packages/drafting/golden/**/*.dxf -text
 apps/web/public/samples/** -text
+packages/io/src/**/golden/** -text
