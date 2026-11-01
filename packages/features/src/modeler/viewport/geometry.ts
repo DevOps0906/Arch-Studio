@@ -98,6 +98,30 @@ export function massOutline(mass: Mass): Float32Array {
   return out;
 }
 
+/** 층 판 윤곽선(층별 표시·분해도, AR-06-085): 아래·위 바닥 변(외곽·구멍) + 꼭짓점 세로선. */
+export function slabOutline(mass: Mass, z0: number, z1: number): Float32Array {
+  const rings = [mass.footprint.outer, ...(mass.footprint.holes ?? [])];
+  let n = 0;
+  for (const r of rings) n += r.length * 3;
+  const out = new Float32Array(n * 6);
+  let o = 0;
+  for (const r of rings) {
+    for (let i = 0; i < r.length; i++) {
+      const a = r[i] as Point;
+      const b = r[(i + 1) % r.length] as Point;
+      out.set([a[0], a[1], z0, b[0], b[1], z0, a[0], a[1], z1, b[0], b[1], z1, a[0], a[1], z0, a[0], a[1], z1], o);
+      o += 18;
+    }
+  }
+  return out;
+}
+
+/** 층 라벨 자리(mm): 바닥 상자의 남동쪽 모서리(maxX, minY), 층 가운데 높이. */
+export function floorLabelAnchor(mass: Mass, z0: number, z1: number): [number, number, number] {
+  const b = massBounds(mass);
+  return [b.maxX, b.minY, Math.round((z0 + z1) / 2)];
+}
+
 /** 대지 경계 닫힌 선(mm xyz, z = 0). */
 export function siteLoop(model: Model): Float32Array {
   const r = model.site.boundary.outer;

@@ -4,6 +4,7 @@
 // - 기하는 결정적 순수 함수만(state/commands.ts, 엔진 워커). 판정은 useJudgment(judge 레인, 최신만 유효)로만 요청하고 이 화면은 계산하지 않는다.
 // - Manifold는 엔진 워커에서만(mass_meshes·mass_excess). 드래그 중에는 mesh 위치만 바꾸고, 초과분은 움직인 매스 1개만 합쳐서 요청, 놓으면 전체.
 // - 열람(체험·구독 만료)·좁은 화면(~767)은 편집 잠금: 도구 막대 숨김 + 리듀서 거부(이중 차단).
+// - 표시 절·층 탭(AR-06-085): 표시 값은 리듀서 display에만 두고 이 PC(display/settings.ts)에 기억한다. 모델·판정 입력과 무관.
 import type { ProjectRecord } from "@arch-studio/shell-bridge";
 import { Banner, Button, Toast, ToastRegion } from "@arch-studio/ui";
 import { useSearchParams } from "react-router";
@@ -33,6 +34,8 @@ import { Inspector, FLOOR_HEIGHT_INPUT_ID } from "./panels/Inspector.tsx";
 import { LayerPanel } from "./panels/LayerPanel.tsx";
 import { statusSummary } from "./panels/StatusBar.tsx";
 import { MeasureList, SectionControls } from "./panels/MeasureSection.tsx";
+import { DisplaySection, FloorTabs } from "./panels/DisplaySection.tsx";
+import { loadDisplay, saveDisplay } from "./display/settings.ts";
 import { Toolbar } from "./panels/Toolbar.tsx";
 import { useLayoutKind } from "./panels/layout.ts";
 import { modelerAccess } from "./state/access.ts";
@@ -95,7 +98,7 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
   const { setSaveLabel } = useShellStatus();
   const layout = useLayoutKind();
   const access = modelerAccess(useEntitlement(by("localProjects", "desktop_edit", "web_edit")), layout !== "narrow");
-  const [s, dispatch] = useReducer(modelerReducer, initial, (m) => createModelerState(m, { editable: access.editable, reason: access.reason }));
+  const [s, dispatch] = useReducer(modelerReducer, initial, (m) => createModelerState(m, { editable: access.editable, reason: access.reason }, loadDisplay()));
   const present = s.history.present;
   const preview = useMemo(() => previewModel(s), [s]);
   const [save, setSave] = useState<SaveState>({ status: "idle" });
@@ -128,6 +131,12 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
     else dispatch({ type: "reset", model: next.model });
     // present는 비교용으로만 읽는다(기록이 바뀔 때만 실행).
   }, [record]);
+
+  // 표시 값은 바뀔 때만 이 PC에 남긴다(층 숨김 제외, 저장·이력과 무관).
+  const firstDisplay = useRef(s.display);
+  useEffect(() => {
+    if (s.display !== firstDisplay.current) saveDisplay(s.display);
+  }, [s.display]);
 
   const dirty = isDirty(s);
   useEffect(() => {
@@ -381,6 +390,7 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
               section={s.section}
               sectionDraft={s.sectionDraft}
               sectionView={s.sectionView}
+              display={s.display}
               engine={engine}
               colors={colors}
               dispatch={dispatch}
@@ -454,8 +464,10 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
         panels={[
           ...(suggest ? [{ id: "suggest", title: "매스 제안", content: suggest }] : []),
           { id: "inspector", title: "속성", content: inspector },
+          { id: "display", title: "레이어/표시", content: <DisplaySection model={present} display={s.display} onChange={(patch) => dispatch({ type: "display", patch })} />, defaultOpen: false },
           { id: "judgment", title: "판정", content: judgmentPanel, defaultOpen: true },
         ]}
+        tabs={<FloorTabs model={present} display={s.display} onPick={(level) => dispatch({ type: "display", patch: { floorOnly: level } })} />}
         panelsTitle="속성·판정"
         status={
           <>

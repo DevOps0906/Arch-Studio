@@ -2,6 +2,7 @@
 // 열람 상태(체험·구독 만료, 화면 폭 768 미만)에서는 편집 동작을 여기서 한 번 더 거부한다(도구 막대 숨김과 별도의 이중 차단, [DECISION] 6절).
 // 드래그 중에는 모델을 바꾸지 않고 오프셋(drag)만 바꾼다. 놓을 때(dragEnd) 이동 명령 1개로 기록한다.
 // 측정(D)·단면(S)은 화면 표시 상태다(AR-06-084): 이력에 넣지 않으므로 실행 취소 대상이 아니고, 모델(저장 바이트)을 바꾸지 않는다.
+// 표시 값(조명·그림자·재질·층 라벨·층 숨김·분해도, AR-06-085)도 같다: display에만 두고 열람 모드에서도 바꿀 수 있다.
 import type { Point } from "@arch-studio/domain";
 import {
   DEFAULT_FLOOR_HEIGHT,
@@ -22,6 +23,7 @@ import {
 import { SUGGEST_LABEL, applySuggestion } from "../suggest/apply.ts";
 import { measureDistance, measureText, type Measurement, type Point3 } from "../tools/measure.ts";
 import { northSection, sectionPlane, type SectionLine } from "../tools/section.ts";
+import { DEFAULT_DISPLAY, EXPLODE_MEASURE_TEXT, explodeActive, type DisplaySettings } from "../display/settings.ts";
 import { canRedo, canUndo, createHistory, pushHistory, redo, undo, type History } from "./history.ts";
 
 export type Tool = "select" | "draw" | "measure" | "section";
@@ -116,6 +118,8 @@ export interface ModelerState {
   readonly sectionDraft: Point | null;
   /** 단면 보기(카메라를 단면선에 직각으로). */
   readonly sectionView: boolean;
+  /** 표시 값(저장·실행 취소와 무관, display/settings.ts). */
+  readonly display: DisplaySettings;
 }
 
 export type Action =
@@ -150,11 +154,16 @@ export type Action =
   | { readonly type: "sectionPreset" }
   | { readonly type: "sectionClear" }
   | { readonly type: "sectionView"; readonly on: boolean }
+  | { readonly type: "display"; readonly patch: Partial<DisplaySettings> }
   | { readonly type: "notice"; readonly text: string; readonly tone?: Notice["tone"] };
 
 export const LOCKED_DEFAULT = "열람 모드: 편집하려면 라이선스나 구독이 필요합니다.";
 
-export function createModelerState(model: Model, access: { editable: boolean; reason: string | null } = { editable: true, reason: null }): ModelerState {
+export function createModelerState(
+  model: Model,
+  access: { editable: boolean; reason: string | null } = { editable: true, reason: null },
+  display: DisplaySettings = DEFAULT_DISPLAY,
+): ModelerState {
   return {
     history: createHistory(model),
     saved: model,
@@ -177,6 +186,7 @@ export function createModelerState(model: Model, access: { editable: boolean; re
     section: null,
     sectionDraft: null,
     sectionView: false,
+    display,
   };
 }
 
@@ -231,6 +241,8 @@ export function modelerReducer(s: ModelerState, a: Action): ModelerState {
     }
     case "tool":
       if (a.tool === s.tool) return s;
+      // 분해도 중에는 띄운 판이 모델 위치와 달라 측정을 막는다(층 숨김만이면 허용, 팀장 결정 2026-11-02).
+      if (a.tool === "measure" && explodeActive(s.history.present, s.display)) return notify(s, EXPLODE_MEASURE_TEXT, "warn");
       return notify({ ...s, tool: a.tool, draft: [], drag: null, measureStart: null, sectionDraft: null }, TOOL_NOTICE[a.tool]);
     case "draftPoint": {
       if (s.tool !== "draw") return s;
@@ -279,7 +291,7 @@ export function modelerReducer(s: ModelerState, a: Action): ModelerState {
       return { ...s, editable: a.editable, lockReason, ...(a.editable ? {} : { tool: s.tool === "draw" ? ("select" as const) : s.tool, draft: [], drag: null }) };
     }
     case "reset":
-      return { ...createModelerState(a.model, { editable: s.editable, reason: s.lockReason }), hidden: s.hidden, camera: s.camera };
+      return { ...createModelerState(a.model, { editable: s.editable, reason: s.lockReason }, s.display), hidden: s.hidden, camera: s.camera };
     case "saved":
       return { ...s, saved: a.model };
     case "highlight":
@@ -288,6 +300,7 @@ export function modelerReducer(s: ModelerState, a: Action): ModelerState {
       return notify(s, a.text, a.tone);
     case "measurePoint": {
       if (s.tool !== "measure") return s;
+      if (explodeActive(s.history.present, s.display)) return notify({ ...s, measureStart: null }, EXPLODE_MEASURE_TEXT, "warn");
       if (!s.measureStart) return notify({ ...s, measureStart: a.point }, "측정 첫 점을 찍었습니다. 두 번째 점을 찍으세요.");
       const m: Measurement = { id: s.measureN, a: s.measureStart, b: a.point };
       return notify({ ...s, measures: [...s.measures, m], measureStart: null, measureN: s.measureN + 1 }, `측정 ${m.id}: ${measureText(measureDistance(m.a, m.b))}`);
@@ -320,6 +333,14 @@ export function modelerReducer(s: ModelerState, a: Action): ModelerState {
     case "sectionView":
       if (!s.section || a.on === s.sectionView) return s;
       return notify({ ...s, sectionView: a.on, fitN: s.fitN + 1 }, a.on ? "단면 보기" : "단면 보기를 끕니다.");
+    case "display": {
+      const next = { ...s.display, ...a.patch };
+      const same = (Object.keys(next) as (keyof DisplaySettings)[]).every((k) => next[k] === s.display[k]);
+      if (same) return s;
+      // 측정 도구 중에 분해도가 켜지면 선택 도구로 돌린다(측정 결과는 유지).
+      if (s.tool === "measure" && explodeActive(s.history.present, next)) return notify({ ...s, display: next, tool: "select", measureStart: null }, EXPLODE_MEASURE_TEXT, "warn");
+      return { ...s, display: next };
+    }
   }
 }
 

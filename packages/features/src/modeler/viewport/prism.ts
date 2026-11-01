@@ -8,6 +8,12 @@ import type { MeshData } from "./geometry.ts";
 export function prismMesh(mass: Mass): MeshData | null {
   const h = massHeight(mass);
   if (mass.floors.length === 0 || h <= 0) return null;
+  return slabMesh(mass, mass.base_level_mm, mass.base_level_mm + h);
+}
+
+/** 바닥 다각형 × [z0, z1] 판(층별 표시·분해도, AR-06-085). 삼각형 수 = display/settings.ts slabTriangles. 실패하면 null. */
+export function slabMesh(mass: Mass, z0: number, z1: number): MeshData | null {
+  if (z1 <= z0) return null;
   const outer = mass.footprint.outer;
   const holes = mass.footprint.holes ?? [];
   const contour = outer.map(([x, y]) => new Vector2(x, y));
@@ -17,8 +23,6 @@ export function prismMesh(mass: Mass): MeshData | null {
   const faces = ShapeUtils.triangulateShape(contour, holeV);
   if (faces.length === 0) return null;
   const flat = [...contour, ...holeV.flat()];
-  const z0 = mass.base_level_mm;
-  const z1 = z0 + h;
   const nv = flat.length;
   const positions = new Float32Array(nv * 2 * 3);
   flat.forEach((p, i) => {

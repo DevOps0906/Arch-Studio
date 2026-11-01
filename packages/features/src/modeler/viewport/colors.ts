@@ -4,6 +4,8 @@ export interface SceneColors {
   readonly grid: string;
   readonly siteLine: string;
   readonly mass: string;
+  /** 재질 프리셋 "모형(무광)" 면(AR-06-085). */
+  readonly modelSurface: string;
   readonly massEdge: string;
   readonly selection: string;
   readonly envelope: string;
@@ -17,6 +19,7 @@ export const SCENE_TOKENS = {
   grid: "--color-grid",
   siteLine: "--color-site-line",
   mass: "--color-mass",
+  modelSurface: "--color-surface",
   massEdge: "--color-mass-edge",
   selection: "--color-selection",
   envelope: "--color-envelope",
@@ -33,6 +36,7 @@ export function sceneColors(get: (name: string) => string): SceneColors {
     grid: v(SCENE_TOKENS.grid, "silver"),
     siteLine: v(SCENE_TOKENS.siteLine, "black"),
     mass: v(SCENE_TOKENS.mass, "gray"),
+    modelSurface: v(SCENE_TOKENS.modelSurface, "white"),
     massEdge: v(SCENE_TOKENS.massEdge, "dimgray"),
     selection: v(SCENE_TOKENS.selection, "navy"),
     envelope: v(SCENE_TOKENS.envelope, "teal"),
