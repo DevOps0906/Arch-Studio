@@ -243,3 +243,78 @@ export function saveRecentProject(id: string): void {
     // 표시 값이라 실패해도 무시한다.
   }
 }
+
+/* ---------- 프로젝트별 마지막 단계·판정 요약(대시보드 표시 값, AR-06-082) ---------- */
+// 키 `arch.workspace.project.v1.<id>` = { stage?, verdict? }. 화면 표시 값이고 권한·판정을 정하지 않는다. 실패는 무시한다.
+// 쓰기는 ProjectShell의 effect만 부른다(렌더·리듀서 경로에서 부르지 않는다).
+export interface StoredVerdict {
+  readonly pass: number;
+  readonly warn: number;
+  readonly fail: number;
+  /** 판정 시각(ISO 8601). */
+  readonly at: string;
+  readonly rulePack: string | null;
+}
+export interface ProjectMemo {
+  readonly stage: string | null;
+  readonly verdict: StoredVerdict | null;
+}
+const MEMO_PREFIX = "arch.workspace.project.v1.";
+const STAGE_SEGMENTS = new Set(WORKSPACE_STAGES.flatMap((s) => s.segments));
+
+export function projectMemoKey(id: string): string {
+  return `${MEMO_PREFIX}${id}`;
+}
+
+const isCount = (v: unknown): v is number => typeof v === "number" && Number.isSafeInteger(v) && v >= 0;
+
+/** 저장 문자열 → 값. 모르는 단계·정수 아닌 수·형식 오류는 버린다(신뢰하지 않는다). */
+export function parseProjectMemo(raw: string | null): ProjectMemo {
+  const empty: ProjectMemo = { stage: null, verdict: null };
+  if (!raw || raw.length > 2048) return empty;
+  let o: unknown;
+  try {
+    o = JSON.parse(raw);
+  } catch {
+    return empty;
+  }
+  if (o === null || typeof o !== "object" || Array.isArray(o)) return empty;
+  const r = o as Record<string, unknown>;
+  const stage = typeof r.stage === "string" && STAGE_SEGMENTS.has(r.stage) ? r.stage : null;
+  const v = r.verdict as Record<string, unknown> | null | undefined;
+  const verdict =
+    v && typeof v === "object" && isCount(v.pass) && isCount(v.warn) && isCount(v.fail) && typeof v.at === "string" && !Number.isNaN(Date.parse(v.at)) && (v.rulePack === null || (typeof v.rulePack === "string" && v.rulePack.length <= 64))
+      ? { pass: v.pass, warn: v.warn, fail: v.fail, at: v.at, rulePack: v.rulePack as string | null }
+      : null;
+  return { stage, verdict };
+}
+
+export function loadProjectMemo(id: string): ProjectMemo {
+  try {
+    return parseProjectMemo(storage()?.getItem(projectMemoKey(id)) ?? null);
+  } catch {
+    return { stage: null, verdict: null };
+  }
+}
+
+function writeMemo(id: string, patch: Partial<ProjectMemo>): void {
+  try {
+    const st = storage();
+    if (!st) return;
+    st.setItem(projectMemoKey(id), JSON.stringify({ ...loadProjectMemo(id), ...patch }));
+  } catch {
+    // 표시 값이라 실패해도 무시한다.
+  }
+}
+
+/** 이 프로젝트에서 마지막으로 연 단계(경로 조각). 모르는 단계·긴 id는 무시. */
+export function saveProjectStage(id: string, segment: string): void {
+  if (id.length > 64 || !STAGE_SEGMENTS.has(segment)) return;
+  writeMemo(id, { stage: segment });
+}
+
+/** 이 프로젝트의 마지막 판정 요약(at = 판정 시각 ISO). */
+export function saveProjectVerdict(id: string, v: WorkspaceVerdict, at: string): void {
+  if (id.length > 64) return;
+  writeMemo(id, { verdict: { pass: v.pass, warn: v.warn, fail: v.fail, at, rulePack: v.rulePack } });
+}

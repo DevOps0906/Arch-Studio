@@ -267,36 +267,6 @@ test("버전 이력 원천: 저장소에 리비전 메서드가 없으면 null, 
 
 const html = (node: ReactNode) => renderToStaticMarkup(h(MemoryRouter, null, node));
 
-test("구조: 표는 열 5개(이름·대지·저장·수정일·작업), 이름은 모델 탭 링크, 저장 칩은 5.1절 문구, 행 작업은 관리 하나", () => {
-  const rows = [
-    { id: ID1, name: "운중동 단독주택", siteLabel: "제1종", updatedAt: "2026-10-28T00:00:00Z", version: 3, cloudVersion: 2 },
-    { id: ID2, name: "송도", siteLabel: null, updatedAt: "2026-10-27T00:00:00Z", version: 1, cloudVersion: null },
-    { id: ID3, name: "역삼", siteLabel: null, updatedAt: "2026-10-26T00:00:00Z", version: 1, cloudVersion: undefined },
-  ];
-  const out = html(h(parts.ProjectTable, { rows, onManage: () => {} }));
-  assert.equal((out.match(/<th /g) ?? []).length, 5);
-  assert.match(out, new RegExp(`href="/projects/${ID1}/model"`));
-  assert.match(out, /이 PC v3 · 클라우드 사본 v2/);
-  assert.match(out, /이 PC에만 · v1/);
-  assert.match(out, /이 PC · v1/, "클라우드 미확인 행은 '이 PC에만'이라고 단정하지 않는다");
-  assert.equal((out.match(/<button[^>]*>관리<\/button>/g) ?? []).length, 3, "행 작업은 관리 하나(삭제는 시트 안쪽)");
-  assert.match(out, /aria-label="운중동 단독주택 관리"/);
-  assert.doesNotMatch(out, />삭제</);
-  assert.doesNotMatch(out, /판정|시트 수/, "조회 경로가 없는 열은 두지 않는다");
-});
-
-test("구조: 오늘 처리할 일 — 빈 상태 한 줄, 항목은 아이콘+글자, 충돌은 버튼, 열람은 라이선스 링크, h2 하나", () => {
-  const empty = html(h(parts.TodayBlock, { items: [], cloudNote: TEXT.cloudSignedOut, onConflict: () => {} }));
-  assert.match(empty, /오늘 처리할 일이 없습니다/);
-  assert.match(empty, /로그인하면\(인터넷 연결 후\) 클라우드 작업이 보입니다/);
-  assert.equal((empty.match(/<h2/g) ?? []).length, 1);
-  const items = todayItems({ edit: { allowed: false, reason: "expired" }, cloudReview: undefined, openConflicts: 1 });
-  const out = html(h(parts.TodayBlock, { items, cloudNote: null, onConflict: () => {} }));
-  assert.match(out, /<button[^>]*>고르기<\/button>/);
-  assert.match(out, /href="\/license"/);
-  assert.equal((out.match(/<svg/g) ?? []).length, 2, "항목마다 아이콘");
-});
-
 test("구조: 필터 바 라벨 3개·검색 role, 충돌 대화상자 두 선택만, 삭제 대화상자 버전 표시, 새 프로젝트 필드 5개", () => {
   const filter = html(h(parts.FilterBar, { query: { sort: "name", dir: "desc", q: "운중", store: "cloud" }, onChange: () => {} }));
   assert.match(filter, /role="search"/);

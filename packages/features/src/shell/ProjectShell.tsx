@@ -14,7 +14,7 @@ import { DENY_TEXT, PROJECT_TABS, lockOf, type ProjectTab } from "./nav.ts";
 import { ProjectProvider, useProject } from "./project.tsx";
 import { EmptyBlock, ErrorState, LoadingState } from "./states.tsx";
 import { NO_SCROLLBAR, VerdictCounts, WorkspaceContext, type WorkspaceContextValue } from "./Workspace.tsx";
-import { INITIAL_WORKSPACE, NEXT_STEP, WORKSPACE_STAGES, saveRecentProject, segmentOf, stageHref, stageOf, workspaceReducer, type WorkspaceStage, type WorkspaceVerdict } from "./workspace.ts";
+import { INITIAL_WORKSPACE, NEXT_STEP, WORKSPACE_STAGES, saveProjectStage, saveProjectVerdict, saveRecentProject, segmentOf, stageHref, stageOf, workspaceReducer, type WorkspaceStage, type WorkspaceVerdict } from "./workspace.ts";
 
 /** 편집 권리: 설치형 desktop_edit(로컬 라이선스 파일), 웹 web_edit(서버) — ADR-001 4.7. 플랫폼 이름 대신 capabilities로 고른다. */
 function useEditDecision() {
@@ -109,6 +109,16 @@ function ProjectFrame() {
   useEffect(() => {
     if (load.status === "ready") saveRecentProject(load.record.id);
   }, [load]);
+
+  // 대시보드 카드(03장 3.3절, AR-06-082): 프로젝트별 마지막 단계·판정 요약. 표시 값이고 권한·판정을 정하지 않는다.
+  const projectId = load.status === "ready" ? load.record.id : null;
+  useEffect(() => {
+    if (projectId && segment) saveProjectStage(projectId, segment);
+  }, [projectId, segment]);
+  useEffect(() => {
+    // 판정 없음(null)은 지우지 않는다(마지막 기록 유지). 같은 요약이면 리듀서가 같은 객체를 돌려 다시 쓰지 않는다.
+    if (projectId && verdict) saveProjectVerdict(projectId, verdict, new Date().toISOString());
+  }, [projectId, verdict]);
 
   return (
     <WorkspaceContext.Provider value={ctx}>

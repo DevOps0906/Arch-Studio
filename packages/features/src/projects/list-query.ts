@@ -1,8 +1,8 @@
 // 프로젝트 목록 정렬·필터(DASHBOARD_PATTERNS B "필터·정렬 상태를 URL에 남김"). 순수 함수만(node --test 대상).
-// URL 키: sort(updated|name) · dir(asc|desc) · q(이름·대지 검색, 80자) · store(all|local|cloud). 기본값은 URL에 쓰지 않는다.
+// URL 키: sort(updated|name|violations — 초과 많은 순은 판정 기록으로 dashboard.ts sortCards가 정렬) · dir(asc|desc) · q(이름·대지 검색, 80자) · store(all|local|cloud). 기본값은 URL에 쓰지 않는다.
 // 다른 쿼리(?state=·?demo-*)는 그대로 둔다.
 
-export const SORT_KEYS = ["updated", "name"] as const;
+export const SORT_KEYS = ["updated", "name", "violations"] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
 export const STORE_FILTERS = ["all", "local", "cloud"] as const;
 export type StoreFilter = (typeof STORE_FILTERS)[number];
@@ -19,7 +19,7 @@ export const DEFAULT_QUERY: ListQuery = Object.freeze({ sort: "updated", dir: "d
 
 /** 정렬 키별 기본 방향: 수정일은 최근 먼저, 이름은 가나다순. */
 export function defaultDir(sort: SortKey): "asc" | "desc" {
-  return sort === "updated" ? "desc" : "asc";
+  return sort === "name" ? "asc" : "desc";
 }
 
 const pick = <T extends string>(allowed: readonly T[], v: string | null): T | null =>

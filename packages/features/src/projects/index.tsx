@@ -1,9 +1,11 @@
-// `/projects` 홈(03장 3.3·8.5절, D-33). 소유: AR-06-034.
-// 위에서 아래: 머리(주 행동 "새 프로젝트") → 저장소 배너(AR061) → 오늘 처리할 일 → 프로젝트 목록(넓게) + 새로 시작(좁게).
+// `/projects` 홈(03장 3.3·8.5절, D-33). 소유: AR-06-034, 대시보드 강화 AR-06-082.
+// 위에서 아래: 머리(날짜·"오늘 이어서 할 작업"·주 행동) → 저장소 배너(AR061) → 요약 4칸 → 프로젝트 카드(정렬) + 오른쪽 열
+// (오늘 할 일 → 크레딧 → 클라우드 작업·최근 활동 → 법규 개정 알림). 3구간: 모바일 1열(요약 2×2), 태블릿 카드 2열 + 오른쪽 열 2열, 데스크톱 카드 2열 + 오른쪽 열 1열.
 // 데이터는 useAdapters().projects(070 ProjectStore)로만 읽고 쓴다. 쓰기는 모두 expectedVersion을 보낸다:
 // 새 = null, 이름 바꾸기·복원 = 목록에서 본 버전, 삭제 = 목록에서 본 버전 → 다르면 VERSION_CONFLICT(병합 없음·저장 안 됨) → 2선택 대화상자.
 // 클라우드 사본은 표시(칩)와 충돌 대화상자 골격까지(업로드·내려받기 버튼은 AR-06-077).
 // 편집 권리(desktop_edit)가 없으면 새 프로젝트·이름 바꾸기·삭제·복원을 막고 열람만(5.1절). 설치형은 041·074 전까지 unverified로 잠기는 게 정상.
+import type { DesignModelV1, SheetSpec } from "@arch-studio/domain";
 import type { ProjectSummary, SaveProjectInput } from "@arch-studio/shell-bridge";
 import { Banner, Button, Toast, ToastRegion } from "@arch-studio/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -23,7 +25,7 @@ import {
   useSession,
 } from "../shell/index.ts";
 import { cloudVersionByLocalId, cloudVersionOf, parseCloudList, type CloudList } from "./cloud.ts";
-import { demoCloudList, parsePreview } from "./demo-fixture.ts";
+import { demoCloudList, demoVerdicts, parsePreview } from "./demo-fixture.ts";
 import { requestSiteLookup } from "../site/lookup.ts";
 import type { SiteMapSource } from "./site-map-style.ts";
 import { requestSiteSearch } from "./site-search.ts";
@@ -31,11 +33,17 @@ import { siteAccess } from "../site/access.ts";
 import { ConflictDialog, DeleteDialog, NewProjectDialog, RenameDialog, type SiteLookupPort } from "./dialogs.tsx";
 import { renameInput, restoreInput, revisionSourceOf, SessionHistory, type RevisionSource } from "./history.ts";
 import { HistorySheet, type HistoryLoad } from "./HistorySheet.tsx";
-import { applyListQuery, isFiltered, parseListQuery, writeListQuery, type ListQuery } from "./list-query.ts";
 import { classifyStoreError, localError, storeErrorText, TEXT, viewOnlyReason } from "./messages.ts";
 import { copyName, newProjectInput, uuidV7, type NewProjectValues } from "./new-project.ts";
-import { FilterBar, ProjectTable, TodayBlock, type TableRow } from "./parts.tsx";
 import { todayItems } from "./today.ts";
+import { parseDesignModel } from "../site/model.ts";
+import { parseStored, storeKey } from "../sheets/model.ts";
+import { buildCard, projectTodos, sortCards, summarize, type VerdictFacts } from "./dashboard.ts";
+import { CloudActivityCard, CreditCard, DASH_TEXT, ProjectCard, ProjectCardSkeleton, RevisionCard, SummaryStrip, TodoPanel } from "./cards.tsx";
+import { applyListQuery, isFiltered, parseListQuery, writeListQuery, type ListQuery } from "./list-query.ts";
+import { FilterBar } from "./parts.tsx";
+import { loadProjectMemo, type ProjectMemo } from "../shell/workspace.ts";
+import { useCreditBalance } from "./useCreditBalance.ts";
 
 type Load = { status: "loading" } | { status: "error"; error: unknown } | { status: "ready"; items: readonly ProjectSummary[] };
 
@@ -108,6 +116,77 @@ function useCloudList(localIds: readonly string[] | null, demo: boolean) {
   return { list: result.list, note };
 }
 
+/** 카드 한 장의 사실: 저장된 모델(열어서 검증)·시트 목록(도면 화면 저장소)·셸이 남긴 마지막 단계와 판정 요약(shell/workspace.ts). */
+interface Facts {
+  readonly model: DesignModelV1 | null;
+  readonly sheets: readonly SheetSpec[];
+  readonly memo: ProjectMemo;
+}
+
+function readSheets(id: string): readonly SheetSpec[] {
+  try {
+    return parseStored(globalThis.localStorage?.getItem(storeKey(id)) ?? null).specs;
+  } catch {
+    return [];
+  }
+}
+
+const factsKey = (p: ProjectSummary) => `${p.id}:${p.version}`;
+
+/**
+ * 목록의 프로젝트마다 최신 리비전을 열어 모델을 검증한다. 이미 연(또는 여는 중인) id:version은 다시 열지 않고,
+ * 목록에 없는 키는 지운다(이름 바꾸기 한 건이면 그 카드만 다시 연다). 열기 실패·형식 오류는 model null.
+ */
+function useProjectFacts(items: readonly ProjectSummary[] | null) {
+  const { projects } = useAdapters();
+  const [facts, setFacts] = useState<ReadonlyMap<string, Facts>>(new Map());
+  const requested = useRef(new Set<string>());
+  const live = useRef(new Set<string>());
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const key = items?.map(factsKey).join(",") ?? "";
+  useEffect(() => {
+    if (!items) return;
+    live.current = new Set(items.map(factsKey));
+    for (const k of [...requested.current]) if (!live.current.has(k)) requested.current.delete(k);
+    setFacts((m) => {
+      const stale = [...m.keys()].filter((k) => !live.current.has(k));
+      if (stale.length === 0) return m;
+      const next = new Map(m);
+      for (const k of stale) next.delete(k);
+      return next;
+    });
+    const put = (k: string, id: string, model: DesignModelV1 | null) => {
+      if (!mounted.current || !live.current.has(k)) return;
+      setFacts((m) => new Map(m).set(k, { model, sheets: readSheets(id), memo: loadProjectMemo(id) }));
+    };
+    for (const p of items) {
+      const k = factsKey(p);
+      if (requested.current.has(k)) continue;
+      requested.current.add(k);
+      projects.open(p.id).then(
+        (rec) => {
+          const parsed = rec ? parseDesignModel(rec.designModel) : null;
+          put(k, p.id, parsed?.ok ? parsed.model : null);
+        },
+        () => put(k, p.id, null),
+      );
+    }
+    // key: 목록 구성·버전이 바뀔 때만(items 배열은 렌더마다 새로 만들어질 수 있다).
+  }, [projects, key]);
+  return facts;
+}
+
+function todayLabel(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${"일월화수목금토"[d.getDay()]}요일`;
+}
+
 const GRID_MAP: SiteMapSource = Object.freeze({ kind: "grid" });
 
 export function Screen() {
@@ -118,6 +197,8 @@ export function Screen() {
   const preview = demo ? parsePreview(params.get("state")) : null;
   const query = parseListQuery(params);
   const setQuery = (next: ListQuery) => setParams(writeListQuery(params, next), { replace: true });
+  const credit = useCreditBalance();
+  const [doneTodos, setDoneTodos] = useState<ReadonlySet<string>>(new Set());
 
   const { load, reload } = useProjectList();
   const edit = useEntitlement("desktop_edit");
@@ -157,6 +238,9 @@ export function Screen() {
   const items = effective.status === "ready" ? effective.items : null;
   const cloud = useCloudList(items ? items.map((p) => p.id) : null, demo);
   const cloudMap = cloudVersionByLocalId(cloud.list);
+  const facts = useProjectFacts(items);
+  // 판정 기록: 셸이 남긴 마지막 요약(기준 시각). 없으면 "판정 기록 없음". 데모는 기록이 없을 때만 [예시].
+  const demoVerdictMap: ReadonlyMap<string, VerdictFacts> = useMemo(() => (demo && items ? demoVerdicts(items.map((p) => p.id)) : new Map()), [demo, items]);
 
   // 미리보기: 충돌 대화상자(데모 전용).
   useEffect(() => {
@@ -355,6 +439,42 @@ export function Screen() {
     </Button>
   );
 
+  const loaded = effective.status === "ready" ? effective.items.map((p) => ({ p, f: facts.get(`${p.id}:${p.version}`) ?? null })) : [];
+  const allCards = loaded.flatMap(({ p, f }) => {
+    if (!f) return [];
+    const v = f.memo.verdict;
+    const verdict: VerdictFacts | null = v ? { pass: v.pass, warn: v.warn, fail: v.fail, example: false, at: v.at } : (demoVerdictMap.get(p.id) ?? null);
+    return [buildCard({ ...p, cloudVersion: cloudVersionOf(cloudMap, p.id), model: f.model, sheets: f.sheets, verdict, lastStage: f.memo.stage })];
+  });
+  // 검색·저장 위치·최근 수정·이름순은 applyListQuery, 초과 많은 순은 판정 기록으로 sortCards.
+  const filtered = applyListQuery(allCards, query);
+  const cards = query.sort === "violations" ? sortCards(filtered, "violations") : filtered;
+  const pending = loaded.filter(({ f }) => f === null).map(({ p }) => p).filter((p) => applyListQuery([{ ...p, cloudVersion: cloudVersionOf(cloudMap, p.id) }], query).length > 0);
+  const summary = effective.status === "ready" && loaded.every(({ f }) => f !== null) ? summarize(allCards) : null;
+  const todos = projectTodos(sortCards(allCards, "updated"));
+  const fallback = cloudReview !== undefined && !cloudReview.allowed && cloudReview.reason === "fallback";
+
+  const newTile = viewOnly ? (
+    <LockedState
+      title={TEXT.newLocked}
+      reason={viewOnly}
+      action={
+        <Link to="/license" className="focus-ring rounded-sm text-body text-info underline">
+          라이선스 보기
+        </Link>
+      }
+    />
+  ) : (
+    <div className="flex flex-col justify-center gap-2 rounded-panel border border-dashed border-line p-pad">
+      <p className="text-body font-semibold text-fg">{TEXT.newProject}</p>
+      <p className="text-caption text-fg-2">{storeReadOnly || corrupt ? "저장소 문제로 지금은 새로 만들 수 없습니다." : "지번·도로명으로 대지를 조회하거나 가로·세로를 직접 입력합니다."}</p>
+      <div className="flex flex-wrap gap-2">
+        {newButton}
+        {sampleButton}
+      </div>
+    </div>
+  );
+
   let list;
   if (effective.status === "loading") list = <LoadingState label={TEXT.loading} />;
   else if (corrupt) list = <ErrorState title={TEXT.corruptTitle} description={TEXT.corruptBody} onRetry={reload} />;
@@ -362,27 +482,28 @@ export function Screen() {
     list = <ErrorState title={TEXT.listErrorTitle} description={bridgeErrorText(effective.error)} onRetry={reload} />;
   else if (effective.items.length === 0)
     list = (
-      <EmptyBlock
-        icon="box"
-        title={TEXT.emptyTitle}
-        description={TEXT.emptyDescription}
-        action={
-          <div className="flex flex-wrap justify-center gap-2">
-            {sampleButton}
-            {newButton}
-          </div>
-        }
-      />
+      <>
+        <EmptyBlock
+          icon="box"
+          title={TEXT.emptyTitle}
+          description={TEXT.emptyDescription}
+          action={
+            viewOnly ? undefined : (
+              <div className="flex flex-wrap justify-center gap-2">
+                {sampleButton}
+                {newButton}
+              </div>
+            )
+          }
+        />
+        {viewOnly ? newTile : null}
+      </>
     );
-  else {
-    const rows: TableRow[] = applyListQuery(
-      effective.items.map((p) => ({ ...p, cloudVersion: cloudVersionOf(cloudMap, p.id) })),
-      query,
-    );
+  else
     list = (
       <>
         <FilterBar query={query} onChange={setQuery} />
-        {rows.length === 0 && isFiltered(query) ? (
+        {cards.length === 0 && pending.length === 0 && isFiltered(query) ? (
           <EmptyBlock
             icon="inbox"
             title={TEXT.filteredEmptyTitle}
@@ -390,54 +511,68 @@ export function Screen() {
             action={<Button onClick={() => setQuery({ ...query, q: "", store: "all" })}>필터 지우기</Button>}
           />
         ) : (
-          <ProjectTable rows={rows} onManage={(id) => setDialog({ kind: "history", id })} />
+          <div className="grid grid-cols-1 gap-gap md:grid-cols-2">
+            {cards.map((c) => (
+              <ProjectCard key={c.id} card={c} onManage={(id) => setDialog({ kind: "history", id })} />
+            ))}
+            {pending.map((p) => (
+              <ProjectCardSkeleton key={p.id} name={p.name} />
+            ))}
+            {newTile}
+          </div>
         )}
         <p className="text-caption text-fg-2" aria-live="polite">
-          {rows.length}개 표시 · 전체 {effective.items.length}개
+          {cards.length + pending.length}개 표시 · 전체 {effective.items.length}개
         </p>
       </>
     );
-  }
 
   const active = dialog.kind === "rename" || dialog.kind === "delete" || dialog.kind === "history" ? rowOf(dialog.id) : null;
 
   return (
     <div className="flex flex-col gap-gap">
-      <PageHeader title={TEXT.title} description={TEXT.description} actions={newButton} />
+      <PageHeader
+        title={DASH_TEXT.heading}
+        description={`${todayLabel(new Date())} · ${TEXT.description}`}
+        actions={
+          <>
+            {sampleButton}
+            {newButton}
+          </>
+        }
+      />
       {storeReadOnly ? <Banner tone="danger" title={TEXT.readOnlyTitle}>{TEXT.readOnlyBody}</Banner> : null}
-      {corrupt ? null : <TodayBlock items={today} cloudNote={cloud.note} onConflict={() => setConflictOpen(true)} />}
-      <div className="grid grid-cols-1 gap-gap xl:grid-cols-4">
-        <section aria-labelledby="projects-list-title" className="flex min-w-0 flex-col gap-2 xl:col-span-3">
-          <h2 id="projects-list-title" className="text-h2 font-semibold text-fg">
-            최근 프로젝트
-          </h2>
+      {corrupt || effective.status === "error" ? null : <SummaryStrip summary={summary} credit={credit} onViolations={() => setQuery({ ...query, sort: "violations", dir: "desc" })} />}
+      <div className="flex flex-col gap-gap xl:flex-row xl:items-start">
+        <section aria-labelledby="projects-list-title" className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="projects-list-title" className="text-h2 font-semibold text-fg">
+              {TEXT.title}
+            </h2>
+          </div>
           {list}
         </section>
-        {/* 데이터 없음 빈 상태가 같은 두 버튼을 이미 보이면 옆 칸은 생략(잠금 안내는 남긴다). */}
-        {effective.status === "ready" && effective.items.length === 0 && !viewOnly ? null : (
-          <aside aria-labelledby="projects-start-title" className="flex flex-col gap-2">
-            <h2 id="projects-start-title" className="text-h2 font-semibold text-fg">
-              새로 시작
-            </h2>
-            {viewOnly ? (
-              <LockedState
-                title={TEXT.newLocked}
-                reason={viewOnly}
-                action={
-                  <Link to="/license" className="focus-ring rounded-sm text-body text-info underline">
-                    라이선스 보기
-                  </Link>
-                }
-              />
-            ) : (
-              <div className="flex flex-col gap-2 rounded-panel border border-line bg-surface p-pad md:flex-row md:flex-wrap md:items-center xl:flex-col xl:items-stretch">
-                {newButton}
-                {sampleButton}
-                <p className="text-caption text-fg-2">{storeReadOnly || corrupt ? "저장소 문제로 지금은 새로 만들 수 없습니다." : TEXT.sampleLater}</p>
-              </div>
-            )}
-          </aside>
-        )}
+        <aside aria-label="오늘" className="grid grid-cols-1 gap-gap md:grid-cols-2 xl:w-80 xl:shrink-0 xl:grid-cols-1">
+          {corrupt ? null : (
+            <TodoPanel
+              system={today}
+              todos={todos}
+              done={doneTodos}
+              onToggle={(k, checked) =>
+                setDoneTodos((prev) => {
+                  const next = new Set(prev);
+                  if (checked) next.add(k);
+                  else next.delete(k);
+                  return next;
+                })
+              }
+              onConflict={() => setConflictOpen(true)}
+            />
+          )}
+          <CreditCard view={credit} />
+          <CloudActivityCard cloudNote={cloud.note} />
+          <RevisionCard fallback={fallback} />
+        </aside>
       </div>
 
       {dialog.kind === "new" ? <NewProjectDialog open busy={busy} error={dialogError} lookup={siteLookup} onClose={closeDialog} onSubmit={(v) => void createProject(v)} /> : null}
