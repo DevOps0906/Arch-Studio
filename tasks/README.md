@@ -1,6 +1,6 @@
 # 작업 표
 
-정본: `docs/file/01-관리/06_AGENT_PLAN.md` 2장(작업 상세)·3장(웨이브)·8장·9장(ADR-001 웹·설치형 하이브리드). 이 표는 NOMAD 팀 구성(담당·위험도)으로 옮긴 실행 표다. 85개(기존 71 + ADR-001 신규 13 + 추가 1 [080], 2026-10-29).
+정본: `docs/file/01-관리/06_AGENT_PLAN.md` 2장(작업 상세)·3장(웨이브)·8장·9장(ADR-001 웹·설치형 하이브리드)·11장(화면 구조 개편). 이 표는 NOMAD 팀 구성(담당·위험도)으로 옮긴 실행 표다. 92개(기존 71 + ADR-001 신규 13 + 추가 1 [080] + 화면 개편 7 [081~087], 2026-11-02).
 담당: `challenger→builder` = 착수 전 계획 공격 후 구현(원 모델 Fable). `사람` = 대표님 판정.
 변경 후 검증(NOMAD v3.0, 2026-10-28): 낮음 = builder 자가 검증(`q`), 화면이면 `codex-reviewer(design)` · 보통 = `codex-reviewer(code)` · 높음 = 착수 전 `challenger` + `codex-reviewer(code)` + `reviewer(security/contract)` → 필요 시 `tester`. Codex 불가 시 codex-reviewer → reviewer, codex-designer → designer·planner.
 `codex-designer⇄designer` = 공동 디자인(초안 한쪽, 상대는 변경분 교차 검토 1회). 기획 문서 작업은 `planner⇄codex-designer`.
@@ -79,6 +79,13 @@
 | AR-06-057 | 랜딩·요금·다운로드·법적 고지 | W5 | 003, 012, 023 | 낮음 | codex-designer⇄designer | 완료 |
 | AR-06-077 | 로컬↔클라우드 수동 업로드·내려받기 | W5 | 034, 072, 073 | 보통 | builder | 대기 |
 | AR-06-078 | Excel/CSV 내보내기(AR-F-044) | W5 | 015, 038, 072 | 보통 | builder | 대기 |
+| AR-06-081 | 통합 작업공간 셸·GNB 작업공간 메뉴(3구간) | W5 | 027, 030, 034, 036, 037 | 보통 | builder | 대기 |
+| AR-06-082 | 대시보드 강화(프로젝트 카드·요약·오늘 할 일·크레딧 카드) | W5 | 081, 034 | 보통 | builder | 대기 |
+| AR-06-083 | 모델러 코어·발코니(DesignModel 선택 필드) | W5 | 036, 081, 사람(면적 산입 규칙) | 높음 | challenger→builder | 대기 |
+| AR-06-084 | 단면·측정 도구 | W5 | 036, 081 | 보통 | builder | 대기 |
+| AR-06-085 | 3D 표시 품질(조명·그림자·재질·층 라벨·층 숨김/분해도) | W5 | 036, 081 | 보통 | builder | 대기 |
+| AR-06-086 | 도면 주석 편집층(annotations[] 계약 변경·고아 주석 출력 제외) | W5 | 020, 021, 022, 030, 081 | 높음 | challenger→builder | 대기 |
+| AR-06-087 | 새 프로젝트 지도 운영 연결(VWorld D-14·셸, 지금은 mock) | W5 | 035, 081, D-14(사람) | 높음 | challenger→builder | 대기 |
 | AR-06-059 | 보안 점검(리뷰 전용, 위험 14건) | W6 | 005, 006, 040, 041, 042, 058 | 높음 | reviewer(security) | 대기 |
 | AR-06-060 | 데스크톱 E2E 시나리오 5개+ | W6 | 030, 036, 041, 044 | 보통 | tester | 대기 |
 | AR-06-061 | 웹 E2E 페르소나·잡 흐름 통합 | W6 | 008, 032, 051, 056 | 보통 | tester | 대기 |

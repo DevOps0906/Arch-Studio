@@ -381,3 +381,29 @@ MVP·P1 기능 29개가 모두 1개 이상의 작업에 매핑된다. 열린 결
 | 070 | `rasterize` 어댑터 항목 1건 요청(080이 채움) |
 | 임시안 | 080 전에 데스크톱에서 PNG가 필요하면 WebView canvas를 미리보기 용도로만 쓴다(바이트 결정성 요구 없음) |
 
+## 11. 화면 구조 개편 작업 (2026-11-02)
+
+1~10장을 고치지 않고 추가분만 둔다(줄 번호 인용 보호). 작업 합계는 기존 85개 + 7개 = 92개다. 근거는 사용자 결정 2026-11-02(작업공간 A+B 혼합·대시보드 크레딧 카드·주석 통합·고아 주석 출력 제외·GNB 작업공간 메뉴·지도 운영 연결은 mock으로 미룸)과 `03_SCREENS_UX.md` 3.3·3.5·3.8절·9장, 모델러 격차 `tasks/logs/UX-3d-modeler-gap.md`.
+
+### 11.1 작업 목록 (2절과 같은 열)
+
+| ID | 작업 | 소유 파일/디렉토리 | 선행 작업 | 우선순위 | 규모 | 권장 모델 | 수용 기준 | 출처 |
+|---|---|---|---|---|---|---|---|---|
+| AR-06-081 | 통합 작업공간 셸(상단 바·6단계 막대·도구 레일·왼쪽 목록·캔버스·오른쪽 적층 패널 접기·층/시트 탭·먹색 상태줄·맥락 도구줄 자리·다음 단계 버튼, 3구간) + GNB 작업공간 묶음(모델링·평면·도면) | `packages/features/src/shell/**`, `packages/features/src/{modeler,plans,sheets}/`의 배치 컴포넌트, `packages/ui/src/tokens.css`의 `--ws-*`(9.8절 채택분) | 027, 030, 034, 036, 037 | P0 | L | Opus | `pnpm --filter @arch-studio/features test` 통과: 작업공간 메뉴 대상 판정 순수 함수 6상황(9.5절 표) 단위 테스트, 단계 전환 시 판정 요약 값 동일·URL 변경. `pnpm -r lint`·`typecheck` 통과, hex·px 직접 0. `shot` 375·768·1280에서 모델·평면·도면 3상태 캡처(가로 스크롤 0, 접힌 띠에 판정 수 보임). 기존 모델·평면·도면 화면 테스트 회귀 0 | `03_SCREENS_UX.md` 9.2~9.5절, 8.3절 |
+| AR-06-082 | 대시보드 강화: 프로젝트 카드(대지 썸네일·최근 시트 축소본·판정 배지·6칸 진척)·요약 4칸·정렬·오늘 할 일·크레딧 카드·법규 개정 알림 | `packages/features/src/projects/**` | 081, 034 | P1 | M | Opus | `pnpm --filter @arch-studio/features test` 통과: 진척 단계·오늘 할 일 생성·"초과 많은 순" 정렬 순수 함수 테스트. 썸네일은 엔진 SVG 축소(새 그리기 코드 0, 검색으로 확인). 크레딧 카드 고정 문구 "도면 작도·판정·내보내기는 0 크레딧입니다." 존재, 오프라인이면 마지막 값 + 기준 시각. `shot` 3구간(모바일 1열·요약 2×2). 크레딧 잔액 조회 클라이언트를 044와 공유할지 `[DECISION]` | `03_SCREENS_UX.md` 3.3절 |
+| AR-06-083 | 모델러 코어·발코니: `DesignModel`에 코어·발코니(선택 필드, mm 정수) 추가, 도구 C·B, 객체 트리·속성 절, 엔벨로프 초과 윤곽 | `packages/domain/src/**`(DesignModel), `packages/features/src/modeler/**`, `apps/api/tests/contract/corpus/design_model.json` | 036, 081, 사람 결정(코어·발코니 면적 산입 규칙) | P0 | M | Opus (challenger + reviewer contract) | 기존 corpus·저장 파일이 새 스키마를 통과(하위 호환, 계약 테스트). 명령 추가·삭제가 실행취소 100단계에 들어감(단위 테스트). 산입 규칙은 `tasks/logs/AR-06-083.md` `[DECISION]` 근거와 함께, 판정 골든 갱신 시 이유를 커밋 본문에. `pnpm test` 통과 | `03_SCREENS_UX.md` 3.5절, PRD AR-F-003 |
+| AR-06-084 | 단면·측정 도구: 수직 단면선 잘라 보기(화면 표시용), 두 점 거리·높이차(mm 정수, 저장 안 함) | `packages/features/src/modeler/**` | 036, 081 | P1 | M | Opus | 측정·단면 계산이 결정적 순수 함수(같은 입력 같은 값, mm 정수) 단위 테스트. 모델 저장 바이트 변화 0(측정·단면 사용 전후 저장 결과 비교). 시트 단면선(AR-F-031)과 상태 공유 0. `pnpm --filter @arch-studio/features test` 통과 | `03_SCREENS_UX.md` 3.5절 |
+| AR-06-085 | 3D 표시 품질: 조명 프리셋·그림자·재질 프리셋·층 라벨·층 숨김(층 탭)·분해도. 표시 값은 `local_settings`만 | `packages/features/src/modeler/**` | 036, 081 | P1 | M | Opus | 표시 토글 전후 모델 저장·판정 결과 동일(테스트). Motion Studio 코드 복사 0(패턴만, LICENSE 없음). 삼각형 상한(MAX_TRIANGLES) 유지, 소프트웨어 GL fps 측정값을 로그에 기록(실기 GPU 60fps는 사람 측정). `shot` 1280 캡처 | `03_SCREENS_UX.md` 3.5절 표시 절, `tasks/logs/UX-3d-modeler-gap.md` |
+| AR-06-086 | 도면 주석 편집층: `SheetSpec.annotation_overrides` → `annotations[]`(override·dim·text·leader·cloud, 앵커 + 용지 mm 오프셋), `A-ANNO-USER` 레이어, 고아 주석 출력 제외·편집 화면 표시·내보내기 안내, 이행 변환 | `packages/domain/src/sheet.ts`, `packages/drafting/**`, `packages/features/src/sheets/**`, `apps/api/tests/contract/corpus/sheet_spec.json`, 04장 4.7.3 SheetSpec | 020, 021, 022, 030, 081 | P0 | L | Opus (challenger + reviewer contract) | 주석 없는 시트의 DXF·SVG·PDF·PNG 출력이 기존 골든과 바이트 동일. 주석 포함·고아 포함 골든 추가, 그리기 순서 `id` 사전순(배열 섞어도 같은 바이트). 기존 `annotation_overrides` 저장본 1:1 이행 테스트. 고아 주석이 출력에 0건, `unapplied` 보고 경로로 개수 반환. 계약 corpus 갱신 후 `pnpm test` 통과 | `03_SCREENS_UX.md` 9.6절, 3.8절 |
+| AR-06-087 | 새 프로젝트 지도 운영 연결: VWorld 실키·배경 타일 운영 켜기(D-14), 출처 표기, 9장 셸 연결. 사용자 결정 2026-11-02: 지금은 건너뛰고 mock 데이터 사용 | `apps/web/src/server/site/**`, `packages/features/src/projects/**`의 새 프로젝트 창 | 035, 081, D-14(사람) | P1 | S | Opus (challenger + reviewer security) | D-14 확인 기록 후 착수. 운영 스위치 켠 상태에서 검색·조회·타일 스모크 통과, 키가 클라이언트 번들·로그에 0(`secscan`), 출처 표기 문구가 화면에 표시. mock 경로(외부 요청 0) 테스트 유지 | `03_SCREENS_UX.md` 3.3절 새 프로젝트 창, 3.4절 |
+
+### 11.2 웨이브와 기존 작업 영향
+
+| 대상 | 내용 |
+|---|---|
+| 웨이브 | W5. 081 먼저(셸), 그 뒤 082·083·084·085·086 병렬. 087은 D-14 전까지 대기 |
+| 8.4절 상단 탭(AR-06-004 셸) | 081이 대지~렌더·제안서 탭을 6단계 막대로 대체. 검토 탭 위치는 팀장 결정 필요(03장 8.4절) |
+| 020·030 | `annotation_overrides`를 쓰는 코드는 086이 이행. 086 전까지 기존 동작 유지 |
+| 036 | 코어·발코니 사유 문구(`CORE_BALCONY_REASON`)는 083이 실제 도구로 바꿈 |
+| 044 | 082 크레딧 카드와 잔액 조회 공유 여부 `[DECISION]` |
+
