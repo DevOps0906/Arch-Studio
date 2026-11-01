@@ -51,3 +51,4 @@
 - 039 착수: AR-02-D2 확인값 rhino3dm 8.35.0 MIT · web-ifc 0.0.78 MPL-2.0 · three 0.187.0 MIT(npm). challenger 검토 중.
 - Codex 사용량 한도(재개 2026-11-04 17:54) → 리뷰는 reviewer(Opus)로 대체.
 - 작업 표: 85개 중 완료 49 · 진행 1(038) · 대기 35.
+- 039 코드 완료(로컬 커밋, push 전): glTF·IFC4 자체 작성기(바이트 결정적), .3dm 내보내기·가져오기 후보(rhino3dm 8.35.0, `@arch-studio/io/rhino` 서브경로, 의미 골든 — rhino3dm이 id·시각 고정 불가). 남음: 무료 IFC 뷰어 수동 점검(사람), 앱 연결 시 .3dm 가져오기 워커+terminate+메모리 상한, 058에 THIRD_PARTY_NOTICES(rhino3dm MIT·openNURBS·Draco Apache NOTICE·zlib). 상한 제안값 20MB·객체 1만·꼭짓점 200만·면 400만·메모리 512MB.

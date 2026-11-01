@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./rhino": "./src/rhino/index.ts"
   },
   "scripts": {
     "lint": "eslint .",
@@ -13,7 +14,8 @@
   },
   "dependencies": {
     "@arch-studio/domain": "workspace:*",
-    "@arch-studio/geometry": "workspace:*"
+    "@arch-studio/geometry": "workspace:*",
+    "rhino3dm": "8.35.0"
   },
   "devDependencies": {
     "web-ifc": "0.0.78"

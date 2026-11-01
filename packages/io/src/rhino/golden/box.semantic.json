@@ -1,0 +1,28 @@
+{
+  "unit": {
+    "unit": "Millimeters",
+    "source": "file",
+    "declared": "Millimeters"
+  },
+  "objects": 2,
+  "candidates": [
+    {
+      "name": "매스 A",
+      "key": "mass-a",
+      "id": "bf0a9087-847c-5052-7316-9d3306062ab1",
+      "closed": true,
+      "vertices": 8,
+      "triangles": 12,
+      "mesh_hash": "b064b7248c401161"
+    },
+    {
+      "name": "mass-b",
+      "key": "mass-b",
+      "id": "bf0a9089-fa7c-5052-7316-9d330607ae4a",
+      "closed": true,
+      "vertices": 8,
+      "triangles": 12,
+      "mesh_hash": "5c5e7f07b75b0e91"
+    }
+  ]
+}

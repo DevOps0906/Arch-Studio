@@ -235,6 +235,9 @@ importers:
       '@arch-studio/geometry':
         specifier: workspace:*
         version: link:../geometry
+      rhino3dm:
+        specifier: 8.35.0
+        version: 8.35.0
     devDependencies:
       web-ifc:
         specifier: 0.0.78
@@ -2103,6 +2106,9 @@ packages:
     resolution: {integrity: sha512-9aZLIrhRaD97sgVhtJOW6ckOEh6/GnvQtdVNfdZ6s67+3/XwLS9lBcQYzEEhYVeUowN7pRzMLsyGhK2i/xvWbw==}
     engines: {node: '>= 0.8.15'}
 
+  rhino3dm@8.35.0:
+    resolution: {integrity: sha512-YcMDgOT7m132Zd/Nw1AAMFkrtpx2SD30V7Mq3P7jfab6ItURXCOdS8dHe+bMGiNQPRJuYEX+Nvos6c9T1xJ6tA==}
+
   rolldown@1.2.15:
     resolution: {integrity: sha512-6odND+fel5zVw3I4Yc2e69gvguDnX0CAAGiNDZSq4ik5WUcaLrkD2GLuog0XcODbor31hZ5ayEMgVDno+KPV5g==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -3895,6 +3901,8 @@ snapshots:
 
   rgbcolor@1.0.1:
     optional: true
+
+  rhino3dm@8.35.0: {}
 
   rolldown@1.2.15:
     dependencies:
