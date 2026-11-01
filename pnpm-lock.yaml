@@ -49,7 +49,7 @@ importers:
         version: link:../../packages/ui
       manifold-3d:
         specifier: 3.5.4
-        version: 3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1)(esbuild-wasm@0.27.7)
+        version: 3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1(@types/node@24.19.2))(esbuild-wasm@0.27.7)
       react:
         specifier: 19.2.9
         version: 19.2.9
@@ -221,7 +221,7 @@ importers:
         version: link:../domain
       manifold-3d:
         specifier: 3.5.4
-        version: 3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1)(esbuild-wasm@0.27.7)
+        version: 3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1(@types/node@24.19.2))(esbuild-wasm@0.27.7)
     devDependencies:
       fast-check:
         specifier: 4.10.2
@@ -235,6 +235,10 @@ importers:
       '@arch-studio/geometry':
         specifier: workspace:*
         version: link:../geometry
+    devDependencies:
+      web-ifc:
+        specifier: 0.0.78
+        version: 0.0.78
 
   packages/layout:
     dependencies:
@@ -2323,6 +2327,9 @@ packages:
       yaml:
         optional: true
 
+  web-ifc@0.0.78:
+    resolution: {integrity: sha512-LGKMNYFVNyz9vVERN0iz+zvPQJqT7MEGBxslzcuuhwDDOA116LmJLKkg8sZ5SEvQJSc5NRVMWgpRNkDmuoQoJg==}
+
   webgl-constants@1.1.1:
     resolution: {integrity: sha512-LkBXKjU5r9vAW7Gcu3T5u+5cvSvh5WwINdr0C+9jpzVB41cjQAP5ePArDtk/WHYdVj0GefCgM73BA7FlIiNtdg==}
 
@@ -3699,7 +3706,7 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  manifold-3d@3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1)(esbuild-wasm@0.27.7):
+  manifold-3d@3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1(@types/node@24.19.2))(esbuild-wasm@0.27.7):
     dependencies:
       '@gltf-transform/core': 4.5.1
       '@gltf-transform/extensions': 4.5.1
@@ -4132,6 +4139,8 @@ snapshots:
       '@types/node': 24.19.2
       fsevents: 2.3.3
       jiti: 2.7.0
+
+  web-ifc@0.0.78: {}
 
   webgl-constants@1.1.1: {}
 

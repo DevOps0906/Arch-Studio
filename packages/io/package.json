@@ -14,5 +14,8 @@
   "dependencies": {
     "@arch-studio/domain": "workspace:*",
     "@arch-studio/geometry": "workspace:*"
+  },
+  "devDependencies": {
+    "web-ifc": "0.0.78"
   }
 }

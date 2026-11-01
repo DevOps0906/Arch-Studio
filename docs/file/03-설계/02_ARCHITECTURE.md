@@ -11,7 +11,7 @@
 | 3D 뷰포트 | three.js + React Three Fiber + drei. WebGL2 기준, WebGPU 미사용 | React 19 호환(구현 시 확인) | `D:/WorkSpace/platform/docs/Tauri/README.md:258`, `01_PRD.md 3절` |
 | 지오메트리 | Manifold WASM(Apache-2.0, 3D 불리언·압출). 2D 다각형 연산은 Clipper2 계열 후보(라이선스 미확인, AR-02-D1) | 구현 시 고정 | `01_PRD.md 6절`, `D:/WorkSpace/platform/docs/Tauri/README.md:290`(1주 스파이크) |
 | 도면 엔진 | 자체 TS 패키지 `packages/drafting`: 시트 모델 + 자체 DXF 작성기(D-20 (a)) + SVG 작성기 + 로컬 벡터 PDF(후보 jsPDF + svg2pdf.js, 라이선스 미확인, D-23) + PNG(WebView 캔버스 래스터화) | 자체 코드 | `01_PRD.md 9.9절`, `:482` |
-| 파일 입출력 | web-ifc(MPL-2.0), rhino3dm(.3dm, 라이선스 미확인, AR-02-D2), glTF(three.js GLTFExporter), DXF 가져오기 자체 파서(P1, 엔티티 부분집합) | 구현 시 고정 | `01_PRD.md 3절`, `:232` |
+| 파일 입출력 | `packages/io` 자체 작성기: glTF 2.0(.gltf, 버퍼 data URI)·IFC4 STEP(IfcTriangulatedFaceSet) — 결정적 순수 함수, 런타임 의존성 없음. web-ifc 0.0.78(MPL-2.0)은 번들 제외·테스트 왕복 검증 전용. rhino3dm 8.35.0(.3dm, MIT, AR-02-D2 확인)은 다음 단계. DXF 가져오기 자체 파서(P1, 엔티티 부분집합) | AR-06-039 고정 | `01_PRD.md 3절`, `:232` |
 | 로컬 DB | SQLite(`rusqlite` bundled). 화면은 이름 붙은 Rust 명령 `local_db_*`만 | 구현 시 고정 | `D:/WorkSpace/platform/docs/Tauri/README.md:111` |
 | 클라우드 웹 | Next.js 16.2.x App Router + React 19.2(`apps/web`), Tailwind CSS v4, three.js 히어로 | 16.2.x | 확정 결정 3, `D:/WorkSpace/platform/docs/Tauri/README.md:218` |
 | 웹 스튜디오 셸 (추가 2026-10-28) | `apps/web`의 `src/app/(studio)/**`를 `app.` 서브도메인으로 배포(출처·쿠키·스토리지를 마케팅 도메인과 분리, 같은 출처는 팀장 승인 예외). 엔진은 웹 워커에서 그대로 실행. 라우팅·워커 생성·CSP는 이 셸이 소유. 공유 가능성은 W0 스파이크 AR-06-071a로 확인(아래) | 위 Next.js 16.2.x | `ADR-001_DELIVERY_AND_LICENSING.md` 2·5장 |
