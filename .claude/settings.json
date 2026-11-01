@@ -3,7 +3,12 @@
   "permissions": {
     "deny": [
       "Read(./.env)",
-      "Read(./.env.*)",
+      "Read(./.env.local)",
+      "Read(./.env.*.local)",
+      "Read(./.env.development)",
+      "Read(./.env.production)",
+      "Read(./.env.test)",
+      "Read(./.env.staging)",
       "Read(./**/*.pem)",
       "Read(./**/*.key)",
       "Read(./**/*.p12)",
@@ -20,7 +25,12 @@
       "Read(./**/pnpm-lock.yaml)",
       "Read(./**/package-lock.json)",
       "Read(./**/.env)",
-      "Read(./**/.env.*)",
+      "Read(./**/.env.local)",
+      "Read(./**/.env.*.local)",
+      "Read(./**/.env.development)",
+      "Read(./**/.env.production)",
+      "Read(./**/.env.test)",
+      "Read(./**/.env.staging)",
       "Read(./**/target/**)",
       "Read(./**/.venv/**)"
     ]
