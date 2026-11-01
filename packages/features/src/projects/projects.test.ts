@@ -413,10 +413,12 @@ test("대지 조회 실패(AR021·형식 오류) → 직접 입력 안내, 가�
 });
 
 test("구조: 새 프로젝트 창 조회 칸(조회 버튼·오프라인 안내)·조회 결과(SVG 경계·치수·북쪽, 값 표)", async () => {
-  const port = (state: "ok" | "offline" | "locked") => ({ state, run: async () => ({ ok: false as const, failure: { message: "", toDraw: true } }) });
+  const no = async () => ({ ok: false as const, failure: { message: "", toDraw: true } });
+  const port = (state: "ok" | "offline" | "locked") => ({ state, search: no, run: no, map: null });
   const ok = html(h(dialogs.NewProjectDialog, { open: true, busy: false, error: null, lookup: port("ok"), onClose: () => {}, onSubmit: () => {} }));
   assert.match(ok, /대지 조회/);
-  assert.match(ok, />조회<\/button>/);
+  assert.match(ok, />검색<\/button>/);
+  assert.doesNotMatch(ok, /role="listbox"/, "검색 전에는 후보 목록 없음(자동완성 없음)");
   assert.equal((ok.match(/<label/g) ?? []).length, 7, "기존 5 + 찾는 방법·지번·도로명");
   const off = html(h(dialogs.NewProjectDialog, { open: true, busy: false, error: null, lookup: port("offline"), onClose: () => {}, onSubmit: () => {} }));
   assert.match(off, /인터넷 연결 후 씁니다/);
@@ -481,4 +483,234 @@ test("조회 값 반영 규칙: A→B 연속 조회·실패·결과 지우기 �
   const direct = save({ ...st.form, useDistrict: "준주거지역", widthM: "10", depthM: "12" }, null);
   assert.deepEqual(direct?.parcel, {});
   assert.deepEqual(direct?.zoning, { use_district: "준주거지역", districts: [] });
+});
+
+/* ---------- 주소 검색 → 후보 → 조회 · 지도(표시 전용 좌표 변환) ---------- */
+
+const { lookupArgsFor, parseSearchData, requestSiteSearch, SEARCH_MAX } = await import("./site-search.ts");
+const { epsg5186ToLngLat, tmInverse } = await import("./geo5186.ts");
+const { buildSiteMapStyle, siteGeometry } = await import("./site-map-style.ts");
+
+test("좌표 변환(EPSG:5186 → 경위도): 원점·자오선 기준점·EPSG 지침 7-2 횡메르카토르 예제", () => {
+  const [lon0, lat0] = epsg5186ToLngLat([200000, 600000]);
+  assert.ok(Math.abs(lon0 - 127) < 1e-9 && Math.abs(lat0 - 38) < 1e-9, "원점(가산 200,000 / 600,000) = 127°E 38°N");
+  // 중앙 경선 위 1° 남쪽: GRS80 자오선 호 37°~38° ≈ 110,987.05m(근사식) → 37°N(1m 이내).
+  const [lon1, lat1] = epsg5186ToLngLat([200000, 600000 - 110987.05]);
+  assert.ok(Math.abs(lon1 - 127) < 1e-9 && Math.abs(lat1 - 37) < 1e-5);
+  // EPSG Guidance Note 7-2 TM 예제(OSGB 1936 / British National Grid): E 577274.99, N 69740.50 → 50°30'N, 0°30'E.
+  const [lon2, lat2] = tmInverse({ a: 6377563.396, invF: 299.3249646, lat0: 49, lon0: -2, k0: 0.9996012717, falseE: 400000, falseN: -100000 }, 577274.99, 69740.5);
+  assert.ok(Math.abs(lon2 - 0.5) < 1e-6 && Math.abs(lat2 - 50.5) < 1e-6, `${lon2}, ${lat2}`);
+  // 동쪽으로 가면 경도 증가, 북쪽으로 가면 위도 증가.
+  const [lonE] = epsg5186ToLngLat([210000, 550000]);
+  const [, latN] = epsg5186ToLngLat([200000, 560000]);
+  assert.ok(lonE > 127 && latN > lat1);
+});
+
+test("좌표 변환은 표시 전용: mToMm·모델 저장 경로에서 import 0, 변환 모듈은 아무것도 import하지 않는다, maplibre는 동적 import만", () => {
+  const SRC = path.join(DIR, "..");
+  const files: string[] = [];
+  const walk = (d: string) => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const full = path.join(d, e.name);
+      if (e.isDirectory()) walk(full);
+      else if (/\.(ts|tsx)$/.test(e.name) && !e.name.endsWith(".test.ts")) files.push(full);
+    }
+  };
+  walk(SRC);
+  const saving = new Set(["new-project.ts", "site-lookup.ts", "cloud.ts", "history.ts", "model.ts"]);
+  let checked = 0;
+  for (const f of files) {
+    const text = readFileSync(f, "utf8");
+    if (!/mToMm/.test(text) && !saving.has(path.basename(f))) continue;
+    checked += 1;
+    // 정적 import·export … from·동적 import(…) 모두.
+    assert.doesNotMatch(text, /(?:from|import\s*\()\s*["'`][^"'`]*(geo5186|site-map-style|SiteMap|map-lifecycle|tile-auth)[^"'`]*["'`]/, `${path.relative(SRC, f)}: 표시 전용 좌표 변환 import 금지`);
+  }
+  assert.ok(checked >= 5, `검사 대상 ${checked}`);
+  assert.doesNotMatch(readFileSync(path.join(DIR, "geo5186.ts"), "utf8"), /^import /m);
+  for (const f of files) {
+    const text = readFileSync(f, "utf8");
+    for (const m of text.matchAll(/^import\s+(type\s+)?[^;]*?from\s+"(maplibre-gl[^"]*)"/gms)) assert.ok(m[1], `${path.relative(SRC, f)}: maplibre 정적 import 금지(${m[2]})`);
+  }
+});
+
+test("주소 검색 응답 검증: 최대 10건, 형식이 틀린 후보·PNU는 버림, 조회 값은 PNU 우선", () => {
+  const many = Array.from({ length: 14 }, (_, i) => ({ label: `가상동 ${i}`, kind: "jibun", pnu: "9999999999100010001" }));
+  assert.equal(parseSearchData({ candidates: many })?.length, SEARCH_MAX);
+  const mixed = parseSearchData({ candidates: [{ label: "", kind: "jibun" }, { label: "a", kind: "pnu" }, null, { label: "가상로 1", kind: "road", pnu: "12" }, { label: "가상로 2", kind: "address" }, { label: "가상동 1", kind: "jibun", pnu: "9999999999100010001" }] });
+  assert.deepEqual(mixed, [
+    { label: "가상로 1", kind: "road", pnu: null },
+    { label: "가상동 1", kind: "jibun", pnu: "9999999999100010001" },
+  ]);
+  assert.equal(parseSearchData({}), null);
+  assert.deepEqual(lookupArgsFor({ label: "가상동 1", kind: "jibun", pnu: "9999999999100010001" }), { kind: "pnu", value: "9999999999100010001" });
+  assert.deepEqual(lookupArgsFor({ label: "가상로 1", kind: "road", pnu: null }), { kind: "address", value: "가상로 1" }, "도로명 후보 → 조회 kind address");
+  assert.deepEqual(lookupArgsFor({ label: "가상동 2", kind: "jibun", pnu: null }), { kind: "jibun", value: "가상동 2" });
+});
+
+test("주소 검색(데모 응답): 후보 → 고르면 조회 성공, 빈 목록, 503 스위치 꺼짐 → 직접 입력 안내", async () => {
+  const api = demoApi();
+  const r = await requestSiteSearch(api, "jibun", "가상동 1");
+  assert.ok(r.ok && r.candidates.length === 2);
+  if (!r.ok) return;
+  for (const c of r.candidates) {
+    const a = lookupArgsFor(c);
+    const l = await requestSiteLookup(api, a.kind, a.value);
+    assert.ok(l.ok, `${c.label} 조회`);
+    if (l.ok) assert.equal(l.data.boundary_m.length, 4);
+  }
+  const none = await requestSiteSearch(api, "jibun", "없음동 1");
+  assert.ok(none.ok && none.candidates.length === 0);
+  const off = await requestSiteSearch(api, "road", "꺼짐로 1");
+  assert.ok(!off.ok && off.failure.toDraw);
+  if (!off.ok) assert.match(off.failure.message, /주소 검색을 쓸 수 없습니다/);
+  const bad = await requestSiteSearch(api, "jibun", "a");
+  assert.ok(!bad.ok && bad.failure.message.includes("형식"));
+});
+
+test("지도 스타일: 모눈은 외부 요청 0, 타일은 넘긴 URL만, 대지 채움(반투명)·굵은 경계, 경계에 맞춘 범위", () => {
+  const ring: [number, number][] = [
+    [200100, 550100],
+    [200117.2, 550105.26],
+    [200111.5, 550126.3],
+    [200094.3, 550120.1],
+  ];
+  const colors = { background: "var-bg", grid: "var-grid", fill: "var-fill", line: "var-line" };
+  const grid = buildSiteMapStyle(ring, { kind: "grid" }, "base", colors);
+  assert.doesNotMatch(JSON.stringify(grid), /https?:|glyphs|sprite|"raster"/, "모눈 모드: URL 없음");
+  assert.deepEqual(
+    grid.layers.map((l) => l.id),
+    ["background", "grid", "site-fill", "site-line"],
+  );
+  const fill = grid.layers.find((l) => l.id === "site-fill");
+  assert.ok(fill?.type === "fill" && fill.paint?.["fill-opacity"] === 0.35 && fill.paint["fill-color"] === "var-fill");
+  const tiles = buildSiteMapStyle(ring, { kind: "tiles", tileUrl: (l) => `/api/site/tiles/${l}/{z}/{x}/{y}`, token: async () => "t" }, "base", colors);
+  const src = tiles.sources["tiles"];
+  assert.ok(src?.type === "raster");
+  if (src?.type === "raster") assert.deepEqual(src.tiles, ["/api/site/tiles/base/{z}/{x}/{y}"]);
+  const { ring: ll, bounds } = siteGeometry(ring);
+  assert.equal(ll.length, 5, "닫힌 고리");
+  assert.deepEqual(ll[0], ll[4]);
+  for (const [x, y] of ll) assert.ok(x >= bounds[0][0] && x <= bounds[1][0] && y >= bounds[0][1] && y <= bounds[1][1]);
+  assert.ok(bounds[0][0] > 126.9 && bounds[1][0] < 127.1 && bounds[0][1] > 37.5 && bounds[1][1] < 37.6);
+});
+
+test("구조: 조회 결과 — 지도 원천 있으면 지도 칸(불러오는 중), 없으면 경계 그림 SVG", async () => {
+  const r = await requestSiteLookup(demoApi(), "pnu", "9999999999100010001");
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  const summary = summarizeLookup(r.candidate, r.data.notice);
+  const withMap = html(h(dialogs.LookupResult, { summary, onClear: () => {}, ringM: r.data.boundary_m, map: { kind: "grid" } }));
+  assert.match(withMap, /role="img" aria-label="지도에 칠한 대지/);
+  assert.match(withMap, /지도를 불러오는 중입니다/);
+  assert.match(withMap, /모눈 한 칸 10m/);
+  assert.doesNotMatch(withMap, /<svg/);
+  const noMap = html(h(dialogs.LookupResult, { summary, onClear: () => {}, ringM: r.data.boundary_m, map: null }));
+  assert.match(noMap, /<svg[^>]*aria-label="대지 경계 그림/);
+});
+
+test("타일 인증: 요청마다 현재 토큰(주기 갱신·만료 뒤 새 토큰), 401 연속·403 → 배경만 포기, 404는 무시", async () => {
+  const { createTileAuth } = await import("./tile-auth.ts");
+  let n = 0;
+  const auth = createTileAuth(async () => `t${++n}`, 1000, 2);
+  assert.equal(auth.headers(), undefined);
+  assert.ok(auth.due(0));
+  await auth.refresh(0);
+  assert.deepEqual(auth.headers(), { Authorization: "Bearer t1" });
+  assert.ok(!auth.due(999) && auth.due(1000), "갱신 주기");
+  await auth.refresh(1000);
+  assert.deepEqual(auth.headers(), { Authorization: "Bearer t2" }, "오래 열어 둔 창도 새 토큰");
+  assert.equal(auth.onError(404), "ignore", "범위 밖 타일");
+  assert.equal(auth.onError(401), "refresh");
+  assert.equal(auth.onError(401), "ignore", "같은 토큰으로 동시에 실패한 타일은 한 번만 센다");
+  await auth.refresh(1100);
+  assert.equal(auth.onError(401), "refresh");
+  auth.onOk();
+  await auth.refresh(1200);
+  assert.equal(auth.onError(401), "refresh", "정상 타일이 오면 연속 횟수 초기화");
+  await auth.refresh(1300);
+  assert.equal(auth.onError(401), "refresh");
+  await auth.refresh(1400);
+  assert.equal(auth.onError(401), "give-up", "새 토큰으로도 401이 이어짐 → 배경만 비움");
+  assert.equal(auth.onError(401), "ignore");
+  const denied = createTileAuth(async () => "t");
+  assert.equal(denied.onError(403), "give-up", "member+·권리 없음 403");
+  const none = createTileAuth(async () => {
+    throw new Error("x");
+  });
+  assert.equal(await none.refresh(0), null);
+  assert.equal(none.headers(), undefined);
+});
+
+test("site_map_disabled(503): 알려진 코드라 자동 재시도 0회, 문구는 지도 꺼짐·직접 입력 안내", async () => {
+  let calls = 0;
+  const api = createApiClient({
+    baseUrl: "http://demo.invalid",
+    getAccessToken: async () => "t",
+    sleep: async () => {},
+    fetch: async () => {
+      calls += 1;
+      return { status: 503, headers: { get: () => null }, text: async () => JSON.stringify({ ok: false, error: { code: "site_map_disabled", message: "" } }) };
+    },
+  });
+  const r = await requestSiteSearch(api, "road", "가상로 1");
+  assert.equal(calls, 1, "재시도하지 않는다");
+  assert.ok(!r.ok && r.failure.toDraw);
+  const { errorMessageFor } = await import("../api-client/index.ts");
+  assert.match(errorMessageFor("site_map_disabled"), /지도 기능이 꺼져 있습니다.*직접/);
+});
+
+test("지도 생명 주기: 시간 초과(실패) 뒤 늦게 온 load는 되살리지 않고, 지도는 한 번만 지운다", async () => {
+  const { createMapLifecycle } = await import("./map-lifecycle.ts");
+  const phases: string[] = [];
+  let removed = 0;
+  const life = createMapLifecycle((p) => phases.push(p));
+  life.attach(() => (removed += 1));
+  life.fail(); // 시간 초과
+  life.ready(); // 늦게 온 load
+  life.fail();
+  life.dispose();
+  assert.deepEqual(phases, ["fallback"]);
+  assert.equal(removed, 1, "WebGL 컨텍스트 반납(한 번)");
+  assert.equal(life.alive(), false);
+  // 실패 뒤에 만들어진 지도는 붙자마자 지운다.
+  life.attach(() => (removed += 1));
+  assert.equal(removed, 2);
+  const ok = createMapLifecycle((p) => phases.push(p));
+  ok.ready();
+  assert.equal(phases.at(-1), "ready");
+});
+
+test("타일 인증: 갱신 실패 시 이전 토큰 유지, 갱신 전 토큰으로 보낸 요청의 401은 새 세대 실패로 세지 않는다", async () => {
+  const { createTileAuth } = await import("./tile-auth.ts");
+  let n = 0;
+  let broken = false;
+  const auth = createTileAuth(async () => {
+    if (broken) throw new Error("x");
+    return `t${++n}`;
+  }, 1000, 1);
+  await auth.refresh(0);
+  broken = true;
+  assert.equal(await auth.refresh(1000), "t1");
+  assert.deepEqual(auth.headers(), { Authorization: "Bearer t1" }, "이전 토큰 유지");
+  broken = false;
+  auth.headers("/api/site/tiles/base/1/1/1"); // 세대 1로 보냄
+  auth.headers("/api/site/tiles/base/1/1/2");
+  assert.equal(auth.onError(401, "/api/site/tiles/base/1/1/1"), "refresh");
+  await auth.refresh(2000); // 세대 2
+  assert.equal(auth.onError(401, "/api/site/tiles/base/1/1/2"), "ignore", "갱신 전 요청의 401");
+  auth.headers("/api/site/tiles/base/1/1/3");
+  assert.equal(auth.onError(401, "/api/site/tiles/base/1/1/3"), "give-up", "새 토큰으로 보낸 요청의 401");
+});
+
+test("지도 칸: 지도 컨테이너는 크기만 채우고(h-full w-full) 위치는 바깥 칸이 잡는다 — MapLibre CSS의 position: relative가 absolute를 덮어 높이 0이 되던 문제", async () => {
+  const { SiteMap } = await import("./SiteMap.tsx");
+  const ring: [number, number][] = [
+    [200100, 550100],
+    [200117.2, 550105.26],
+    [200111.5, 550126.3],
+  ];
+  const out = html(h(SiteMap, { ringM: ring, source: { kind: "grid" }, label: "대지", fallback: null }));
+  assert.match(out, /<div class="absolute inset-0"><div role="img" aria-label="대지" class="h-full w-full"><\/div><\/div>/);
+  assert.doesNotMatch(out, /role="img"[^>]*class="[^"]*absolute/, "지도 컨테이너 자체에 absolute 금지");
 });

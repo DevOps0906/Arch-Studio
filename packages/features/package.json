@@ -40,6 +40,7 @@
     "@arch-studio/ui": "workspace:*",
     "@react-three/drei": "10.7.9",
     "@react-three/fiber": "9.8.2",
+    "maplibre-gl": "6.16.0",
     "three": "0.186.1",
     "three-mesh-bvh": "0.8.3"
   },

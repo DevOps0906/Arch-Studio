@@ -37,3 +37,27 @@ export function demoSiteLookup(body: unknown): { status: number; body: unknown }
     },
   };
 }
+
+/**
+ * 데모 주소 검색 응답(POST /api/site/search 계약 모양): [예시] 후보 2건(PNU 있는 지번 1 + PNU 없는 도로명 1 — 고르면 각각 pnu·원래 종류로 조회).
+ * 입력에 "없음"이면 빈 목록, "꺼짐"이면 503 site_map_disabled(스위치 꺼짐)로 직접 입력 경로를 보인다.
+ */
+export function demoSiteSearch(body: unknown): { status: number; body: unknown } {
+  const value = typeof body === "object" && body !== null ? (body as { query?: { value?: unknown } }).query?.value : undefined;
+  if (typeof value === "string" && value.includes("꺼짐")) {
+    return { status: 503, body: { ok: false, error: { code: "site_map_disabled", message: "" } } };
+  }
+  if (typeof value === "string" && value.includes("없음")) return { status: 200, body: { ok: true, data: { candidates: [] } } };
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      data: {
+        candidates: [
+          { label: "(예시) 가상시 가상동 1-1", kind: "jibun", pnu: DEMO_PNU },
+          { label: "(예시) 가상시 가상로 11", kind: "road" },
+        ],
+      },
+    },
+  };
+}

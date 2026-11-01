@@ -25,6 +25,8 @@ import {
 import { cloudVersionByLocalId, cloudVersionOf, parseCloudList, type CloudList } from "./cloud.ts";
 import { demoCloudList, parsePreview } from "./demo-fixture.ts";
 import { requestSiteLookup } from "../site/lookup.ts";
+import type { SiteMapSource } from "./site-map-style.ts";
+import { requestSiteSearch } from "./site-search.ts";
 import { siteAccess } from "../site/access.ts";
 import { ConflictDialog, DeleteDialog, NewProjectDialog, RenameDialog, type SiteLookupPort } from "./dialogs.tsx";
 import { renameInput, restoreInput, revisionSourceOf, SessionHistory, type RevisionSource } from "./history.ts";
@@ -106,6 +108,8 @@ function useCloudList(localIds: readonly string[] | null, demo: boolean) {
   return { list: result.list, note };
 }
 
+const GRID_MAP: SiteMapSource = Object.freeze({ kind: "grid" });
+
 export function Screen() {
   const { projects } = useAdapters();
   const demo = useDemoMode();
@@ -121,7 +125,16 @@ export function Screen() {
   // 새 프로젝트 창 대지 조회(03장 3.3절): 대지 화면과 같은 호출(site/lookup.ts)·같은 잠금 규칙(siteAccess).
   const api = useApi();
   const online = useOnline();
-  const siteLookup: SiteLookupPort = useMemo(() => ({ state: siteAccess(edit, online).lookup, run: (kind, value) => requestSiteLookup(api, kind, value) }), [api, edit, online]);
+  // 지도 배경: 데모는 로컬 모눈(외부 요청 0). 운영 타일(GET /api/site/tiles, Bearer)은 셸이 타일 원천(baseUrl·토큰)을 내줄 때 연결한다 — 그 전과 설치형은 경계 그림(SVG).
+  const siteLookup: SiteLookupPort = useMemo(
+    () => ({
+      state: siteAccess(edit, online).lookup,
+      search: (kind, value) => requestSiteSearch(api, kind, value),
+      run: (kind, value) => requestSiteLookup(api, kind, value),
+      map: demo ? GRID_MAP : null,
+    }),
+    [api, edit, online, demo],
+  );
 
   const [readOnly, setReadOnly] = useState(false);
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });

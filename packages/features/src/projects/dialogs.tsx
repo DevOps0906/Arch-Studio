@@ -1,28 +1,41 @@
 // /projects 대화상자: 새 프로젝트·이름 바꾸기·삭제 확인·저장 충돌(2선택). ui Dialog(네이티브 <dialog>, 포커스 가둠·Esc).
 // 입력 검증은 new-project.ts(순수), 문구는 messages.ts. 저장 호출은 index.tsx가 한다(여기는 값만 올린다).
 import { Banner, Button, Dialog, Field, Input, Select } from "@arch-studio/ui";
-import { useId, useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { LOOKUP_TEXT } from "../site/access.ts";
 import type { LookupKind, LookupOutcome } from "../site/lookup.ts";
 import { formatM } from "../site/model.ts";
 import { TEXT } from "./messages.ts";
 import { applyLookupFill, NO_FILL, summarizeLookup, type LookupFill, type LookupSummary } from "./site-lookup.ts";
+import type { SiteMapSource } from "./site-map-style.ts";
+import { lookupArgsFor, type SearchCandidate, type SearchKind, type SearchOutcome } from "./site-search.ts";
+import { SiteMap } from "./SiteMap.tsx";
 import { SitePreview } from "./SitePreview.tsx";
 import { EMPTY_FORM, NAME_MAX_CHARS, USE_DISTRICTS, validateName, validateNewProject, type FormErrors, type NewProjectForm, type NewProjectValues } from "./new-project.ts";
 
-/** 새 프로젝트 창의 대지 조회 연결(index.tsx가 useApi·권리·온라인으로 만든다). 없으면 조회 칸을 그리지 않는다. */
+/** 새 프로젝트 창의 대지 찾기 연결(index.tsx가 useApi·권리·온라인으로 만든다). 없으면 찾기 칸을 그리지 않는다. */
 export interface SiteLookupPort {
-  /** siteAccess().lookup: ok면 조회, offline·locked면 버튼 잠금 + 안내. */
+  /** siteAccess().lookup: ok면 검색·조회, offline·locked면 버튼 잠금 + 안내. */
   readonly state: "ok" | "offline" | "locked";
-  readonly run: (kind: NewLookupKind, value: string) => Promise<LookupOutcome>;
+  /** 주소 검색(POST /api/site/search, 명시 제출만) → 후보 목록. */
+  readonly search: (kind: SearchKind, value: string) => Promise<SearchOutcome>;
+  /** 고른 후보 조회(POST /api/site/lookup). */
+  readonly run: (kind: LookupKind, value: string) => Promise<LookupOutcome>;
+  /** 지도 배경. null이면 지도 없이 경계 그림(SVG)만(설치형·스위치 꺼짐·타일 원천 없음). */
+  readonly map: SiteMapSource | null;
 }
 
-export type NewLookupKind = Extract<LookupKind, "jibun" | "address">;
-type LookupView = { status: "idle" } | { status: "loading" } | { status: "done"; summary: LookupSummary } | { status: "failed"; message: string };
+export type NewLookupKind = SearchKind;
+type Picked = { status: "loading" } | { status: "done"; summary: LookupSummary; ringM: readonly (readonly [number, number])[] } | { status: "failed"; message: string };
+type LookupView =
+  | { status: "idle" }
+  | { status: "searching" }
+  | { status: "failed"; message: string }
+  | { status: "list"; candidates: readonly SearchCandidate[]; active: number; picked: { index: number; state: Picked } | null };
 
-const LOOKUP_KIND_LABEL: Readonly<Record<NewLookupKind, string>> = { jibun: "지번", address: "도로명 주소" };
-const LOOKUP_PLACEHOLDER: Readonly<Record<NewLookupKind, string>> = { jibun: "예: 성남시 분당구 운중동 12-4", address: "예: 경기도 성남시 분당구 운중로 135" };
-const LOOKUP_LOCKED = "편집 권리가 확인되어야 대지를 조회합니다. 가로·세로를 직접 넣으세요.";
+const LOOKUP_KIND_LABEL: Readonly<Record<NewLookupKind, string>> = { jibun: "지번", road: "도로명 주소" };
+const LOOKUP_PLACEHOLDER: Readonly<Record<NewLookupKind, string>> = { jibun: "예: 성남시 분당구 운중동 12-4", road: "예: 경기도 성남시 분당구 운중로 135" };
+const LOOKUP_LOCKED = "편집 권리가 확인되어야 대지를 찾습니다. 가로·세로를 직접 넣으세요.";
 
 export function NewProjectDialog({
   open,
@@ -46,30 +59,67 @@ export function NewProjectDialog({
   const setForm = (fn: (f: NewProjectForm) => NewProjectForm) => setState((st) => ({ ...st, form: fn(st.form) }));
   /** 조회 결과 반영·되돌리기(applyLookupFill): 이전 조회가 채운 값만 바꾸고 사용자가 고친 값은 둔다. */
   const refill = (s: LookupSummary | null) => setState((st) => applyLookupFill(st.form, st.fill, s));
+  const listRef = useRef<HTMLUListElement>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [kind, setKind] = useState<NewLookupKind>("jibun");
   const [query, setQuery] = useState("");
   const [view, setView] = useState<LookupView>({ status: "idle" });
-  const summary = view.status === "done" ? view.summary : null;
+  const picked = view.status === "list" ? view.picked : null;
+  const summary = picked?.state.status === "done" ? picked.state.summary : null;
+  const ringM = picked?.state.status === "done" ? picked.state.ringM : null;
+  const working = view.status === "searching" || picked?.state.status === "loading";
   const lookupLocked = !lookup || lookup.state !== "ok";
-  const runLookup = async () => {
-    if (!lookup || lookup.state !== "ok" || view.status === "loading") return;
-    setView({ status: "loading" });
-    const r = await lookup.run(kind, query);
+  /** 검색(명시 제출만 — 입력 중 요청 없음): 이전 조회 결과는 버리고 후보 목록을 새로 받는다. */
+  const runSearch = async () => {
+    if (!lookup || lookup.state !== "ok" || working) return;
+    if (summary) refill(null);
+    setView({ status: "searching" });
+    const r = await lookup.search(kind, query);
+    setView(r.ok ? { status: "list", candidates: r.candidates, active: 0, picked: null } : { status: "failed", message: r.failure.message });
+  };
+  /** 후보 고르기 → 조회(PNU 우선). 결과는 이전 조회가 채운 값만 바꾼다. */
+  const pick = async (index: number) => {
+    if (!lookup || lookup.state !== "ok" || working || view.status !== "list") return;
+    const c = view.candidates[index];
+    if (!c) return;
+    const setPicked = (st: Picked) => setView((v) => (v.status === "list" ? { ...v, active: index, picked: { index, state: st } } : v));
+    setPicked({ status: "loading" });
+    const a = lookupArgsFor(c);
+    const r = await lookup.run(a.kind, a.value);
     if (!r.ok) {
-      setView({ status: "failed", message: r.failure.message });
+      setPicked({ status: "failed", message: r.failure.message });
       refill(null);
       return;
     }
     const s = summarizeLookup(r.candidate, r.data.notice);
-    setView({ status: "done", summary: s });
+    setPicked({ status: "done", summary: s, ringM: r.data.boundary_m });
     refill(s);
   };
-  /** 조회 결과를 버린다(결과 지우기·조회 종류·입력값 변경): 이전 필지로 만들지 않게. */
+  /** 검색·조회 결과를 버린다(결과 지우기·찾는 방법·입력값 변경): 이전 필지로 만들지 않게. */
   const dropResult = () => {
-    if (view.status === "loading") return;
+    if (working) return;
     if (view.status !== "idle") setView({ status: "idle" });
-    if (view.status === "done") refill(null);
+    if (summary) refill(null);
+  };
+  const onListKey = (e: KeyboardEvent<HTMLUListElement>) => {
+    if (view.status !== "list" || view.candidates.length === 0) return;
+    const last = view.candidates.length - 1;
+    const move = (to: number) => {
+      e.preventDefault();
+      const next = Math.min(last, Math.max(0, to));
+      setView({ ...view, active: next });
+      // 활성 후보가 목록 스크롤 밖이면 보이게.
+      document.getElementById(`${id}-cand-${next}`)?.scrollIntoView({ block: "nearest" });
+    };
+    if (e.key === "ArrowDown") move(view.active + 1);
+    else if (e.key === "ArrowUp") move(view.active - 1);
+    else if (e.key === "Home") move(0);
+    else if (e.key === "End") move(last);
+    else if (e.key === "Enter" || e.key === " ") {
+      // 목록의 Enter는 프로젝트 만들기가 아니라 후보 고르기다.
+      e.preventDefault();
+      void pick(view.active);
+    }
   };
   // 값은 이벤트 처리 중에 읽는다(갱신 함수 안에서는 currentTarget이 이미 null).
   const set = (k: keyof NewProjectForm) => (e: { currentTarget: { value: string } }) => {
@@ -78,7 +128,7 @@ export function NewProjectDialog({
   };
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    if (view.status === "loading") return;
+    if (working) return;
     const r = validateNewProject(form, summary);
     if (!r.ok) {
       setErrors(r.errors);
@@ -104,7 +154,7 @@ export function NewProjectDialog({
       footer={
         <>
           <Button onClick={close}>취소</Button>
-          <Button variant="primary" type="submit" form={`${id}-form`} loading={busy} disabled={view.status === "loading"}>
+          <Button variant="primary" type="submit" form={`${id}-form`} loading={busy} disabled={working}>
             {summary ? "이 대지로 만들기" : "만들기"}
           </Button>
         </>
@@ -125,7 +175,7 @@ export function NewProjectDialog({
             </h3>
             <div className="flex flex-col gap-2 md:flex-row md:items-end">
               <Field label="찾는 방법" htmlFor={`${id}-lookup-kind`} className="md:w-32">
-                <Select id={`${id}-lookup-kind`} value={kind} disabled={lookupLocked || view.status === "loading"} onChange={(e) => {
+                <Select id={`${id}-lookup-kind`} value={kind} disabled={lookupLocked || working} onChange={(e) => {
                     setKind(e.currentTarget.value as NewLookupKind);
                     dropResult();
                   }}
@@ -144,32 +194,72 @@ export function NewProjectDialog({
                   maxLength={200}
                   autoComplete="off"
                   placeholder={LOOKUP_PLACEHOLDER[kind]}
-                  disabled={lookupLocked || view.status === "loading"}
+                  disabled={lookupLocked || working}
                   onChange={(e) => {
                     setQuery(e.currentTarget.value);
                     dropResult();
                   }}
                   onKeyDown={(e) => {
-                    // 조회 칸의 Enter는 프로젝트 만들기가 아니라 조회다.
+                    // 검색 칸의 Enter는 프로젝트 만들기가 아니라 검색이다. 아래 화살표는 후보 목록으로.
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      void runLookup();
+                      void runSearch();
+                    } else if (e.key === "ArrowDown" && view.status === "list" && view.candidates.length > 0) {
+                      e.preventDefault();
+                      listRef.current?.focus();
                     }
                   }}
                 />
               </Field>
-              <Button icon="send" loading={view.status === "loading"} disabled={lookupLocked || query.trim() === ""} onClick={() => void runLookup()}>
-                조회
+              <Button icon="send" loading={view.status === "searching"} disabled={lookupLocked || working || query.trim() === ""} onClick={() => void runSearch()}>
+                검색
               </Button>
             </div>
             {lookup.state === "offline" ? <p className="text-caption text-fg-2">{LOOKUP_TEXT.offline}</p> : null}
             {lookup.state === "locked" ? <p className="text-caption text-fg-2">{LOOKUP_LOCKED}</p> : null}
             {view.status === "failed" ? (
-              <Banner tone="warn" title="대지를 불러오지 못했습니다">
+              <Banner tone="warn" title="대지를 찾지 못했습니다">
                 {view.message} 아래 가로·세로를 직접 넣어 만들 수 있습니다.
               </Banner>
             ) : null}
-            {summary ? <LookupResult summary={summary} onClear={dropResult} /> : null}
+            <p role="status" className="text-caption text-fg-2">
+              {view.status === "searching" ? "검색 중입니다" : view.status === "list" ? (view.candidates.length > 0 ? `후보 ${view.candidates.length}건 — 하나를 고르면 지도에 대지를 표시합니다` : "찾은 후보가 없습니다. 표기를 바꿔 다시 검색하거나 아래 가로·세로를 직접 넣으세요.") : ""}
+            </p>
+            {view.status === "list" && view.candidates.length > 0 ? (
+              <ul
+                ref={listRef}
+                role="listbox"
+                tabIndex={0}
+                aria-label="검색한 대지 후보"
+                aria-activedescendant={`${id}-cand-${view.active}`}
+                aria-busy={working}
+                onKeyDown={onListKey}
+                className="focus-ring flex max-h-48 flex-col overflow-y-auto rounded-control border border-line"
+              >
+                {view.candidates.map((c, i) => (
+                  <li
+                    key={`${i}-${c.label}`}
+                    id={`${id}-cand-${i}`}
+                    role="option"
+                    aria-selected={picked?.index === i}
+                    onClick={() => void pick(i)}
+                    className={`flex cursor-pointer flex-col px-pad py-1 text-body ${i === view.active ? "bg-raised" : ""} hover:bg-raised ${picked?.index === i ? "font-semibold text-fg" : "text-fg-2"}`}
+                  >
+                    <span className="break-words">{c.label}</span>
+                    <span className="text-caption text-fg-3">
+                      {LOOKUP_KIND_LABEL[c.kind]}
+                      {picked?.index === i ? (picked.state.status === "loading" ? " · 불러오는 중" : picked.state.status === "done" ? " · 선택함" : " · 불러오지 못함") : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+            {picked?.state.status === "failed" ? (
+              <Banner tone="warn" title="대지를 불러오지 못했습니다">
+                {picked.state.message} 다른 후보를 고르거나 아래 가로·세로를 직접 넣어 만들 수 있습니다.
+              </Banner>
+            ) : null}
+            {summary ? <LookupResult summary={summary} onClear={dropResult} ringM={ringM} map={lookup.map} /> : null}
           </section>
         ) : null}
         <Field
@@ -208,8 +298,8 @@ export function NewProjectDialog({
   );
 }
 
-/** 조회 결과: 경계 그림 + 주소·PNU·용도지역·면적·가로·세로. 값은 입력 후보(판정 기준 아님). */
-export function LookupResult({ summary, onClear }: { summary: LookupSummary; onClear: () => void }) {
+/** 조회 결과: 지도(대지 색칠, 없으면 경계 그림 SVG) + 주소·PNU·용도지역·면적·가로·세로. 값은 입력 후보(판정 기준 아님). */
+export function LookupResult({ summary, onClear, ringM = null, map = null }: { summary: LookupSummary; onClear: () => void; ringM?: readonly (readonly [number, number])[] | null; map?: SiteMapSource | null }) {
   const rows: [string, string][] = [
     ["주소", summary.site.addressLabel ?? "조회한 필지"],
     ["PNU", summary.site.pnu ?? "-"],
@@ -218,9 +308,14 @@ export function LookupResult({ summary, onClear }: { summary: LookupSummary; onC
     ["가로", `${formatM(summary.widthMm)}m`],
     ["세로", `${formatM(summary.depthMm)}m`],
   ];
+  const preview = <SitePreview outer={summary.site.outer} rect={summary.rect} widthMm={summary.widthMm} depthMm={summary.depthMm} />;
   return (
     <div className="flex flex-col gap-2">
-      <SitePreview outer={summary.site.outer} rect={summary.rect} widthMm={summary.widthMm} depthMm={summary.depthMm} />
+      {ringM && map ? (
+        <SiteMap ringM={ringM} source={map} label={`지도에 칠한 대지: ${summary.site.addressLabel ?? "조회한 필지"}, 가로 ${formatM(summary.widthMm)}m, 세로 ${formatM(summary.depthMm)}m`} fallback={preview} />
+      ) : (
+        preview
+      )}
       <dl className="grid grid-cols-1 gap-x-gap gap-y-1 text-caption md:grid-cols-2">
         {rows.map(([k, v]) => (
           <div key={k} className="flex min-w-0 flex-col">

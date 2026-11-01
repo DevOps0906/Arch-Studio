@@ -2,7 +2,7 @@
 // 실제 토큰·시드 계정·비밀번호는 없다(가짜 토큰 문자열만, 아무 이메일·비밀번호나 통과). Mock 로그인(008)과는 별개다.
 import type { FetchLike, FetchResponseLike } from "../api-client/index.ts";
 import type { AuthPort } from "../shell/types.ts";
-import { demoSiteLookup } from "./site-lookup.ts";
+import { demoSiteLookup, demoSiteSearch } from "./site-lookup.ts";
 
 export interface DemoAuthOptions {
   /** 처음부터 로그인돼 있는가(`?demo-session=none`이면 false). */
@@ -58,14 +58,14 @@ export function createDemoAuth(options: DemoAuthOptions): { auth: AuthPort; fetc
         },
       });
     }
-    if (init.method === "POST" && path === "/api/site/lookup") {
+    if (init.method === "POST" && (path === "/api/site/lookup" || path === "/api/site/search")) {
       let body: unknown = null;
       try {
         body = JSON.parse(init.body ?? "null");
       } catch {
         body = null;
       }
-      const r = demoSiteLookup(body);
+      const r = path === "/api/site/search" ? demoSiteSearch(body) : demoSiteLookup(body);
       return respond(r.status, r.body);
     }
     return respond(404, { ok: false, error: { code: "not_found", message: "데모 모드에 없는 API입니다." } });
