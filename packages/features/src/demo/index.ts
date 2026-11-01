@@ -6,6 +6,8 @@ import type { EngineHost, ShellRuntime } from "../shell/types.ts";
 import { createDemoAdapters, type DemoLicense } from "./adapters.ts";
 import { createDemoAuth } from "./auth.ts";
 import { DEMO_MARKER } from "./samples.ts";
+import { provideProgramChecklist } from "../program/rules.ts";
+import { DEV_PROGRAM_CHECKLIST } from "./program-rules.ts";
 
 export { DEMO_MARKER, DEMO_PROJECTS, type DemoProject } from "./samples.ts";
 export { createDemoAdapters, DemoBridgeError, DemoProjectStore, type DemoLicense } from "./adapters.ts";
@@ -30,6 +32,8 @@ export function createDemoRuntime({ search, engine }: DemoRuntimeOptions): Shell
     needsOnboarding: q.get("demo-onboarding") === "1",
     role,
   });
+  // 개발용 체크리스트·규칙 세트(AR-06-038): 데모에서만 공급한다. 운영은 미공급 → 프로그램 화면이 '규칙 세트 미연결' 안내.
+  provideProgramChecklist(DEV_PROGRAM_CHECKLIST);
   return {
     adapters: createDemoAdapters(license),
     auth,

@@ -7,6 +7,9 @@ import { DENY_TEXT, EmptyBlock, ErrorState, LoadingState, PageHeader, bridgeErro
   useAdapters, useCapabilities, useEntitlement, useProject, useShellStatus } from "../shell/index.ts";
 import { draftRows, parseModel, validateRows, withRows, type DraftRow } from "./model.ts";
 import { CostPanel } from "./CostPanel.tsx";
+import { ChecklistSection } from "./Checklist.tsx";
+import { programChecklist, recalcRows } from "./rules.ts";
+import type { ChecklistAnswer } from "@arch-studio/program";
 
 export function Screen() {
   const { load, reload } = useProject();
@@ -19,6 +22,10 @@ function ProgramScreen({ record }: { record: ProjectRecord }) {
   const model = useMemo(() => parseModel(record.designModel), [record.designModel]);
   const initial = useMemo(() => model ? draftRows(model) : [], [model]);
   const [rows, setRows] = useState<DraftRow[]>(initial);
+  const savedAnswers = model?.program.checklist_answers ?? {};
+  const [answers, setAnswers] = useState(savedAnswers);
+  const [recalcError, setRecalcError] = useState<string | null>(null);
+  const checklist = programChecklist();
   const [saving, setSaving] = useState(false);
   const [conflict, setConflict] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +36,7 @@ function ProgramScreen({ record }: { record: ProjectRecord }) {
   const decision = useEntitlement(by("localProjects", "desktop_edit", "web_edit"));
   const editable = decision?.allowed === true && !saving && !conflict;
   const { setSaveLabel } = useShellStatus();
-  const dirty = JSON.stringify(rows) !== JSON.stringify(initial);
+  const dirty = JSON.stringify(rows) !== JSON.stringify(initial) || JSON.stringify(answers) !== JSON.stringify(savedAnswers);
   const issue = validateRows(rows);
   useEffect(() => {
     setSaveLabel(dirty ? "저장하지 않은 변경 있음" : null);
@@ -37,6 +44,18 @@ function ProgramScreen({ record }: { record: ProjectRecord }) {
   }, [dirty, setSaveLabel]);
   function change(index: number, value: Partial<DraftRow>) {
     if (editable) setRows((current) => current.map((row, i) => i === index ? { ...row, ...value, locked: value.locked ?? true } : row));
+  }
+  function answer(id: string, value: ChecklistAnswer | undefined): boolean {
+    if (!editable || !checklist) return false;
+    const next = { ...answers };
+    if (value === undefined) delete next[id];
+    else next[id] = value;
+    const result = recalcRows(next, rows, checklist.ruleSet);
+    if (result.kind === "error") { setRecalcError(result.message); return false; }
+    setRecalcError(null);
+    setAnswers(next);
+    setRows(result.rows);
+    return true;
   }
   async function save() {
     if (!editable || !dirty || issue || !model || busy.current) return;
@@ -47,7 +66,7 @@ function ProgramScreen({ record }: { record: ProjectRecord }) {
       await projects.save({ id: record.id, name: record.name, siteLabel: record.siteLabel,
         clientName: record.clientName, clientContact: record.clientContact,
         schemaVersion: record.schemaVersion, engineVersion: record.engineVersion,
-        designModel: JSON.stringify(withRows(model, rows)), note: "프로그램 면적표 수정", expectedVersion: record.version });
+        designModel: JSON.stringify(withRows(model, rows, answers)), note: "프로그램 체크리스트·면적표 수정", expectedVersion: record.version });
       reload();
     } catch (e) {
       if (bridgeErrorCode(e) === "VERSION_CONFLICT") setConflict(true);
@@ -61,14 +80,10 @@ function ProgramScreen({ record }: { record: ProjectRecord }) {
       {decision && !decision.allowed ? <Banner tone="info" title="열람 모드">{DENY_TEXT[decision.reason] ?? DENY_TEXT.unverified}</Banner> : null}
       {conflict ? <ErrorState title="다른 곳에서 프로젝트가 변경되었습니다" description="최신 버전을 다시 열면 저장하지 않은 입력은 사라집니다." action={<Button onClick={reload}>최신 버전 다시 열기</Button>} /> : null}
       {error ? <ErrorState title="면적표를 저장하지 못했습니다" description={error} onRetry={() => void save()} /> : null}
-      <section className="rounded-panel border border-line bg-surface p-pad" aria-labelledby="program-checklist">
-        <h2 id="program-checklist" className="text-h2 font-semibold">요구 체크리스트</h2>
-        {Object.keys(model.program.checklist_answers).length ? <dl className="mt-3 grid grid-cols-1 gap-2 md:grid-cols-2">{Object.entries(model.program.checklist_answers).map(([key, value]) => <div key={key} className="min-w-0 break-words"><dt className="text-caption text-fg-3">{key}</dt><dd className="text-body">{Array.isArray(value) ? value.join(", ") : typeof value === "boolean" ? value ? "예" : "아니요" : String(value)}</dd></div>)}</dl> : <p className="mt-2 text-body text-fg-2">저장된 요구 사항이 없습니다.</p>}
-        <p className="mt-3 text-caption text-fg-3">체크리스트 자동 계산 기준은 준비 중입니다. 면적표는 직접 입력할 수 있습니다.</p>
-      </section>
+      <ChecklistSection answers={answers} checklist={checklist} editable={editable} error={recalcError} onAnswer={answer} />
       <section className="flex flex-col gap-gap" aria-labelledby="program-targets">
         <h2 id="program-targets" className="text-h2 font-semibold">목표 면적표</h2>
-        <p className="text-caption text-fg-2">직접 수정한 행은 자동으로 잠깁니다. 잠긴 행은 향후 자동 재계산에서도 유지됩니다.</p>
+        <p className="text-caption text-fg-2">직접 수정한 행은 자동으로 잠깁니다. 잠긴 행은 체크리스트 재계산에서도 유지됩니다.</p>
         {rows.length ? <div className="flex flex-col gap-gap">{rows.map((row, index) => <fieldset key={index} disabled={!editable} className="grid min-w-0 grid-cols-1 gap-gap rounded-panel border border-line bg-surface p-pad md:grid-cols-2 xl:grid-cols-4">
           <legend className="text-caption">실 {index + 1}</legend>
           <label className="text-body">실 이름<Input value={row.name} onChange={(e) => change(index, { name: e.currentTarget.value })} /></label>

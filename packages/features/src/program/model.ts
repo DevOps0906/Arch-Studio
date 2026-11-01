@@ -25,10 +25,11 @@ export function validateRows(rows: readonly DraftRow[]): string | null {
   return null;
 }
 
-export function withRows(model: DesignModelV1, rows: readonly DraftRow[]): DesignModelV1 {
+export function withRows(model: DesignModelV1, rows: readonly DraftRow[],
+  answers: DesignModelV1["program"]["checklist_answers"] = model.program.checklist_answers): DesignModelV1 {
   const issue = validateRows(rows);
   if (issue) throw new Error(issue);
-  return { ...model, program: { ...model.program,
+  return { ...model, program: { ...model.program, checklist_answers: answers,
     targets: rows.map((r) => ({ name: r.name.trim(), use: r.use.trim(), target_area_m2: Number(r.area) })),
     user_locked_rows: rows.filter((r) => r.locked).map((r) => r.name.trim()),
   } };
