@@ -22,3 +22,30 @@ export function loadRenderConfig(env: Readonly<Record<string, string | undefined
   const provider = env[RENDER_PROVIDER_ENV] === "mock" && DEV_ENVS.has(env["NODE_ENV"] ?? "") ? "mock" : null;
   return { enabled, provider };
 }
+
+// 제안서 PDF 실패 닫힘 스위치: 웹(apps/web/src/server/ai/proposal/config.ts)과 같은 이름·같은 해석(테스트 표 PROPOSAL_CONFIG_CASES).
+// 제공자 = PDF 렌더러 + 서술 클라이언트 묶음. 지금은 모의("mock", NODE_ENV development·test)만 — 공용 WeasyPrint(R-A5)·서술 경로 연결 전.
+export const PROPOSAL_ENABLED_ENV = "ARCH_AI_PROPOSAL_ENABLED";
+export const PROPOSAL_PROVIDER_ENV = "ARCH_PROPOSAL_PROVIDER";
+/** 서술 경로. 웹 isNarrativeCrossBorder와 같은 해석: 정확히 "oss"일 때만 국외 아님, 그 밖(값 없음 포함)은 국외(실패 닫힘). 테스트 표 NARRATIVE_ROUTE_CASES. */
+export const PROPOSAL_NARRATIVE_ROUTE_ENV = "ARCH_PROPOSAL_NARRATIVE_ROUTE";
+
+export type ProposalProviderName = "mock";
+
+export interface ProposalConfig {
+  enabled: boolean;
+  /** null = 쓸 수 있는 제공자 없음(핸들러 미등록 → arch.proposal_pdf 큐 claim 안 함). */
+  provider: ProposalProviderName | null;
+  /** 서술이 국외 제공자로 가도 되는 설정인가(웹은 이때만 국외 이전 동의를 확인했다). */
+  narrativeCrossBorder: boolean;
+}
+
+export function isNarrativeCrossBorder(env: Readonly<Record<string, string | undefined>>): boolean {
+  return env[PROPOSAL_NARRATIVE_ROUTE_ENV] !== "oss";
+}
+
+export function loadProposalConfig(env: Readonly<Record<string, string | undefined>>): ProposalConfig {
+  const enabled = env[PROPOSAL_ENABLED_ENV] === "true";
+  const provider = env[PROPOSAL_PROVIDER_ENV] === "mock" && DEV_ENVS.has(env["NODE_ENV"] ?? "") ? "mock" : null;
+  return { enabled, provider, narrativeCrossBorder: isNarrativeCrossBorder(env) };
+}
