@@ -106,6 +106,12 @@ export function siteLoop(model: Model): Float32Array {
   return out;
 }
 
+/** 단면선(mm xyz, z = 0, 선분 1개). hover가 있으면 첫 점에서 hover까지 미리보기. 점이 없으면 빈 버퍼. */
+export function sectionLineSegments(a: Point | null, b: Point | null): Float32Array {
+  if (!a || !b) return new Float32Array(0);
+  return new Float32Array([a[0], a[1], 0, b[0], b[1], 0]);
+}
+
 /** 그리는 중인 바닥 선(mm xyz, z = 0). hover가 있으면 마지막 점에서 이어 그린다. */
 export function draftLine(points: readonly Point[], hover: Point | null): Float32Array {
   const all = hover ? [...points, hover] : points;
@@ -148,6 +154,25 @@ export function cameraPose(mode: "perspective" | "plan" | "section", b: Bounds, 
   }
   const p = modelToWorld(cx + span * 0.9, cy - span * 1.2, span * 0.9);
   return { position: p, target: t, rotate: true };
+}
+
+/**
+ * 단면 보기 카메라(AR-06-084): 단면선 a→b의 오른쪽(잘라 낸 쪽)에서 수평으로 단면을 본다. 대상은 장면 중심.
+ * 두 점이 같으면 null(호출 쪽이 cameraPose로 대신). 표시 전용.
+ */
+export function sectionViewPose(a: Point, bPt: Point, b: Bounds, topMm: number, aspect = 1): CameraPose | null {
+  const dx = bPt[0] - a[0];
+  const dy = bPt[1] - a[1];
+  const len = Math.hypot(dx, dy);
+  if (len === 0) return null;
+  const cx = (b.minX + b.maxX) / 2;
+  const cy = (b.minY + b.maxY) / 2;
+  const fit = 1 / Math.max(0.4, Math.min(1, aspect));
+  const span = Math.max(b.maxX - b.minX, b.maxY - b.minY, topMm, 10_000) * fit;
+  const z = Math.min(topMm, span) / 3;
+  const rx = dy / len;
+  const ry = -dx / len;
+  return { position: modelToWorld(cx + rx * span * 1.6, cy + ry * span * 1.6, z), target: modelToWorld(cx, cy, z), rotate: true };
 }
 
 /** 화면 거리 허용 안에서 첫 점 근처를 찍으면 다각형을 닫는다(mm 거리). */

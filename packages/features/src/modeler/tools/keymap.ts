@@ -1,5 +1,5 @@
 // 모델러 단축키(03장 6.1절, 순수): 키 입력 → 화면 동작. 입력칸·선택 상자·글 편집 중에는 Ctrl 조합만 받는다(호출 쪽이 typing 표시).
-// V 선택, M 매스 그리기, E 압출(층고 칸으로), D 측정·S 단면(후속 안내), H 엔벨로프, 1/2/3 투시·평면·정북 단면, F 맞춤,
+// V 선택, M 매스 그리기, E 압출(층고 칸으로), D 측정·S 단면(AR-06-084, 측정 중 Delete·Backspace = 마지막 측정 지우기), H 엔벨로프, 1/2/3 투시·평면·정북 단면, F 맞춤,
 // Delete 삭제, 화살표 이동 100mm(Shift 1,000·Alt 10), Ctrl+화살표 카메라 회전, Ctrl+Z/Ctrl+Shift+Z·Ctrl+Y, Ctrl+S, Esc, Enter·Backspace(그리기).
 import type { CameraMode, Tool } from "../state/store.ts";
 
@@ -24,7 +24,7 @@ export type KeyAction =
   | { readonly type: "save" }
   | { readonly type: "tool"; readonly tool: Tool }
   | { readonly type: "extrude" }
-  | { readonly type: "pending"; readonly what: "measure" | "section" }
+  | { readonly type: "measurePop" }
   | { readonly type: "toggleEnvelope" }
   | { readonly type: "camera"; readonly mode: CameraMode }
   | { readonly type: "fit" }
@@ -62,6 +62,8 @@ export function keyAction(k: KeyInput, c: KeyContext): KeyAction | null {
     if (key === "Enter") return { type: "draftClose" };
     if (key === "Backspace") return { type: "draftPop" };
   }
+  // 측정 중 지우기 키는 매스가 아니라 마지막 측정을 지운다(선택된 매스를 실수로 지우지 않게).
+  if (c.tool === "measure" && (key === "Delete" || key === "Backspace")) return { type: "measurePop" };
   switch (key) {
     case "v":
       return { type: "tool", tool: "select" };
@@ -70,9 +72,9 @@ export function keyAction(k: KeyInput, c: KeyContext): KeyAction | null {
     case "e":
       return c.hasSelection ? { type: "extrude" } : null;
     case "d":
-      return { type: "pending", what: "measure" };
+      return { type: "tool", tool: "measure" };
     case "s":
-      return { type: "pending", what: "section" };
+      return { type: "tool", tool: "section" };
     case "h":
       return { type: "toggleEnvelope" };
     case "1":

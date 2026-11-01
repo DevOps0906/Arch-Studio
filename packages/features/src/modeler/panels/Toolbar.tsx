@@ -1,11 +1,8 @@
 // 모델러 도구 막대(03장 3.5절): [선택 V][매스 M][압출 E][측정 D][단면 S][엔벨로프 H] + 실행 취소·다시 실행 + 보기 전환.
-// 열람 상태에서는 편집 도구를 숨기고(3.5절 "도구 막대 숨김") 보기 동작(엔벨로프·보기 전환·맞춤)만 남긴다.
-// 측정·단면은 이번 범위 밖이라 비활성 + 이유(aria-describedby).
+// 열람 상태에서는 편집 도구를 숨기고(3.5절 "도구 막대 숨김") 보기 동작(측정·단면·엔벨로프·보기 전환·맞춤)만 남긴다.
+// 측정 D·단면 S(AR-06-084)는 표시 전용 도구(모델 저장·실행 취소와 무관).
 import { Button, Kbd, ViewCube } from "@arch-studio/ui";
-import { useId } from "react";
 import type { CameraMode, Tool } from "../state/store.ts";
-
-export const PENDING_TOOL_TEXT = { measure: "측정 도구(D)는 다음 단계에서 제공합니다.", section: "단면 도구(S)는 다음 단계에서 제공합니다. 정북 단면 보기(3)는 지금 쓸 수 있습니다." } as const;
 
 export interface ToolbarProps {
   readonly editable: boolean;
@@ -25,7 +22,6 @@ export interface ToolbarProps {
 }
 
 export function Toolbar(p: ToolbarProps) {
-  const pendingId = useId();
   return (
     <div role="toolbar" aria-label="모델러 도구" className="flex flex-wrap items-center gap-2">
       {p.editable ? (
@@ -40,18 +36,6 @@ export function Toolbar(p: ToolbarProps) {
             <Button size="sm" icon="box" onClick={p.onExtrude} disabled={!p.hasSelection} aria-keyshortcuts="E" title={p.hasSelection ? "층고 칸으로 이동해 높이를 넣습니다" : "매스를 먼저 선택하세요"}>
               압출 <Kbd>E</Kbd>
             </Button>
-            <Button size="sm" icon="ruler" disabled aria-describedby={`${pendingId}-m`} aria-keyshortcuts="D">
-              측정 <Kbd>D</Kbd>
-            </Button>
-            <Button size="sm" icon="section" disabled aria-describedby={`${pendingId}-s`} aria-keyshortcuts="S">
-              단면 <Kbd>S</Kbd>
-            </Button>
-            <span id={`${pendingId}-m`} className="sr-only">
-              {PENDING_TOOL_TEXT.measure}
-            </span>
-            <span id={`${pendingId}-s`} className="sr-only">
-              {PENDING_TOOL_TEXT.section}
-            </span>
           </div>
           <div role="group" aria-label="실행 취소" className="flex items-center gap-1">
             <Button size="sm" variant="ghost" onClick={p.onUndo} disabled={!p.undoLabel} aria-keyshortcuts="Control+Z" title={p.undoLabel ? `실행 취소: ${p.undoLabel}` : "되돌릴 작업이 없습니다"}>
@@ -63,6 +47,15 @@ export function Toolbar(p: ToolbarProps) {
           </div>
         </>
       ) : null}
+      {/* 측정·단면은 표시 전용이라 열람 모드에서도 보인다(모델을 바꾸지 않음). */}
+      <div role="group" aria-label="측정·단면" className="flex flex-wrap items-center gap-1">
+        <Button size="sm" icon="ruler" variant={p.tool === "measure" ? "primary" : "secondary"} aria-pressed={p.tool === "measure"} onClick={() => p.onTool(p.tool === "measure" ? "select" : "measure")} aria-keyshortcuts="D" title="두 점 거리·수평·높이차(화면 표시만, 저장 안 함)">
+          측정 <Kbd>D</Kbd>
+        </Button>
+        <Button size="sm" icon="section" variant={p.tool === "section" ? "primary" : "secondary"} aria-pressed={p.tool === "section"} onClick={() => p.onTool(p.tool === "section" ? "select" : "section")} aria-keyshortcuts="S" title="수직 단면선으로 잘라 보기(화면 표시만, 저장 안 함)">
+          단면 <Kbd>S</Kbd>
+        </Button>
+      </div>
       <div className="flex flex-wrap items-center gap-1">
         <Button size="sm" icon={p.envelopeVisible ? "eye" : "eye-off"} aria-pressed={p.envelopeVisible} onClick={p.onToggleEnvelope} aria-keyshortcuts="H">
           엔벨로프 <Kbd>H</Kbd>

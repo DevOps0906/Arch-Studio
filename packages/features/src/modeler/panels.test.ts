@@ -1,6 +1,6 @@
 // 모델러 소스 규칙·패널 서버 렌더·보조 순수 함수 테스트(AR-06-036).
 // - 소스: hex·px 0, HTML 주입 0, blob 워커를 만드는 drei Text·Draco 0, EdgesGeometry 0, Manifold import 0(워커 전용), 첫 청크(three 없음) 경계.
-// - 패널: 열람이면 편집 도구 숨김, 측정·단면 비활성 + 이유, 코어·발코니 비활성 + 이유, 레이어 목록 키보드 선택 경로.
+// - 패널: 열람이면 편집 도구 숨김, 측정·단면 켜기(AR-06-084), 코어·발코니 비활성 + 이유, 레이어 목록 키보드 선택 경로.
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { register } from "node:module";
@@ -145,17 +145,20 @@ const toolbar = (editable: boolean) =>
     }),
   );
 
-test("도구 막대: 편집 가능하면 선택·매스·압출·실행 취소, 측정·단면은 비활성 + 이유. 열람이면 편집 도구를 숨기고 보기만", () => {
+test("도구 막대: 편집 가능하면 선택·매스·압출·측정 D·단면 S·실행 취소. 열람이면 편집 도구를 숨기고 보기만", () => {
   const on = toolbar(true);
   assert.match(on, /role="toolbar"/);
   assert.match(on, /aria-pressed="true"[^>]*>.*선택/);
   assert.match(on, /aria-keyshortcuts="M"/);
-  assert.match(on, /disabled=""[^>]*aria-describedby="[^"]+-m"/);
-  assert.match(on, /측정 도구\(D\)는 다음 단계에서 제공합니다/);
+  assert.match(on, /aria-pressed="false"[^>]*aria-keyshortcuts="D"/);
+  assert.match(on, /aria-pressed="false"[^>]*aria-keyshortcuts="S"/);
+  assert.doesNotMatch(on, /다음 단계에서 제공합니다/);
   assert.match(on, /title="실행 취소: 매스 이동"/);
   const off = toolbar(false);
   assert.doesNotMatch(off, /매스 <kbd|압출|실행 취소|aria-keyshortcuts="M"/);
   assert.match(off, /엔벨로프/);
+  assert.match(off, /aria-keyshortcuts="D"/, "측정·단면은 표시 전용이라 열람에서도 보임");
+  assert.match(off, /aria-keyshortcuts="S"/);
   assert.match(off, /aria-label="보기 전환"/);
 });
 

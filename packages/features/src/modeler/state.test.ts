@@ -315,7 +315,11 @@ test("단축키(6.1절): 도구·뷰·실행 취소·이동량·입력칸 무시
   assert.deepEqual(keyAction(k("m"), ctx()), { type: "tool", tool: "draw" });
   assert.deepEqual(keyAction(k("e"), ctx()), { type: "extrude" });
   assert.equal(keyAction(k("e"), ctx({ hasSelection: false })), null);
-  assert.deepEqual(keyAction(k("d"), ctx()), { type: "pending", what: "measure" });
+  assert.deepEqual(keyAction(k("d"), ctx()), { type: "tool", tool: "measure" });
+  assert.deepEqual(keyAction(k("S"), ctx()), { type: "tool", tool: "section" });
+  assert.deepEqual(keyAction(k("Delete"), ctx({ tool: "measure" })), { type: "measurePop" }, "측정 중 Delete는 매스가 아니라 마지막 측정");
+  assert.deepEqual(keyAction(k("Backspace"), ctx({ tool: "measure" })), { type: "measurePop" });
+  assert.deepEqual(keyAction(k("Escape"), ctx({ tool: "section" })), { type: "escape" });
   assert.deepEqual(keyAction(k("h"), ctx()), { type: "toggleEnvelope" });
   assert.deepEqual(keyAction(k("3"), ctx()), { type: "camera", mode: "section" });
   assert.deepEqual(keyAction(k("Delete"), ctx()), { type: "delete" });

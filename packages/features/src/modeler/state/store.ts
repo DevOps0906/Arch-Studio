@@ -1,6 +1,7 @@
 // 모델러 상태기계(순수 리듀서). 모델 편집은 명령(commands.ts) → 이력(history.ts)으로만 바뀐다.
 // 열람 상태(체험·구독 만료, 화면 폭 768 미만)에서는 편집 동작을 여기서 한 번 더 거부한다(도구 막대 숨김과 별도의 이중 차단, [DECISION] 6절).
 // 드래그 중에는 모델을 바꾸지 않고 오프셋(drag)만 바꾼다. 놓을 때(dragEnd) 이동 명령 1개로 기록한다.
+// 측정(D)·단면(S)은 화면 표시 상태다(AR-06-084): 이력에 넣지 않으므로 실행 취소 대상이 아니고, 모델(저장 바이트)을 바꾸지 않는다.
 import type { Point } from "@arch-studio/domain";
 import {
   DEFAULT_FLOOR_HEIGHT,
@@ -19,9 +20,11 @@ import {
   type RoofType,
 } from "./commands.ts";
 import { SUGGEST_LABEL, applySuggestion } from "../suggest/apply.ts";
+import { measureDistance, measureText, type Measurement, type Point3 } from "../tools/measure.ts";
+import { northSection, sectionPlane, type SectionLine } from "../tools/section.ts";
 import { canRedo, canUndo, createHistory, pushHistory, redo, undo, type History } from "./history.ts";
 
-export type Tool = "select" | "draw";
+export type Tool = "select" | "draw" | "measure" | "section";
 export type CameraMode = "perspective" | "plan" | "section";
 /** 레이어 표시 키: 대지·엔벨로프·초과분·매스별(`mass:<id>`). */
 export type LayerKey = "site" | "envelope" | "excess" | `mass:${string}`;
@@ -101,6 +104,18 @@ export interface ModelerState {
   readonly notice: Notice | null;
   /** 판정 패널 "매스 강조". */
   readonly highlight: readonly string[];
+  /** 측정 결과(표시 전용, 여러 개 유지). */
+  readonly measures: readonly Measurement[];
+  /** 측정 첫 점(두 번째 점을 기다리는 중). */
+  readonly measureStart: Point3 | null;
+  /** 다음 측정 번호. */
+  readonly measureN: number;
+  /** 단면선(표시 전용 클리핑). */
+  readonly section: SectionLine | null;
+  /** 단면선 첫 점. */
+  readonly sectionDraft: Point | null;
+  /** 단면 보기(카메라를 단면선에 직각으로). */
+  readonly sectionView: boolean;
 }
 
 export type Action =
@@ -125,6 +140,16 @@ export type Action =
   | { readonly type: "reset"; readonly model: Model }
   | { readonly type: "saved"; readonly model: Model }
   | { readonly type: "highlight"; readonly ids: readonly string[] }
+  | { readonly type: "measurePoint"; readonly point: Point3 }
+  | { readonly type: "measureCancel" }
+  | { readonly type: "measureDelete"; readonly id: number }
+  | { readonly type: "measurePop" }
+  | { readonly type: "measureClear" }
+  | { readonly type: "sectionPoint"; readonly point: Point }
+  | { readonly type: "sectionCancel" }
+  | { readonly type: "sectionPreset" }
+  | { readonly type: "sectionClear" }
+  | { readonly type: "sectionView"; readonly on: boolean }
   | { readonly type: "notice"; readonly text: string; readonly tone?: Notice["tone"] };
 
 export const LOCKED_DEFAULT = "열람 모드: 편집하려면 라이선스나 구독이 필요합니다.";
@@ -146,6 +171,12 @@ export function createModelerState(model: Model, access: { editable: boolean; re
     lockReason: access.editable ? null : (access.reason ?? LOCKED_DEFAULT),
     notice: null,
     highlight: [],
+    measures: [],
+    measureStart: null,
+    measureN: 1,
+    section: null,
+    sectionDraft: null,
+    sectionView: false,
   };
 }
 
@@ -168,9 +199,17 @@ function applyCommand(s: ModelerState, command: Command): ModelerState {
   return notify({ ...s, history, selection }, `${COMMAND_LABEL[command.type]}했습니다.`);
 }
 
+const TOOL_NOTICE: Readonly<Record<Tool, string>> = {
+  select: "선택 도구",
+  draw: "매스 그리기: 바닥 꼭짓점을 차례로 찍고 Enter로 닫습니다.",
+  measure: "측정: 두 점을 찍습니다(꼭짓점·변·바닥 100mm 스냅). Esc로 끝냅니다.",
+  section: "단면: 평면에서 두 점을 찍어 단면선을 정합니다(100mm 격자). Esc로 끝냅니다.",
+};
+
 export function modelerReducer(s: ModelerState, a: Action): ModelerState {
   if (!s.editable && EDIT_ACTIONS.has(a.type)) return notify(s, s.lockReason ?? LOCKED_DEFAULT, "warn");
-  if (!s.editable && a.type === "tool" && a.tool !== "select") return notify(s, s.lockReason ?? LOCKED_DEFAULT, "warn");
+  // 측정·단면은 표시 전용이라 열람 모드에서도 허용(팀장 결정 2026-11-02). 모델을 바꾸는 도구(매스 그리기)만 잠근다.
+  if (!s.editable && a.type === "tool" && a.tool === "draw") return notify(s, s.lockReason ?? LOCKED_DEFAULT, "warn");
   switch (a.type) {
     case "command":
       return applyCommand(s, a.command);
@@ -192,7 +231,7 @@ export function modelerReducer(s: ModelerState, a: Action): ModelerState {
     }
     case "tool":
       if (a.tool === s.tool) return s;
-      return notify({ ...s, tool: a.tool, draft: [], drag: null }, a.tool === "draw" ? "매스 그리기: 바닥 꼭짓점을 차례로 찍고 Enter로 닫습니다." : "선택 도구");
+      return notify({ ...s, tool: a.tool, draft: [], drag: null, measureStart: null, sectionDraft: null }, TOOL_NOTICE[a.tool]);
     case "draftPoint": {
       if (s.tool !== "draw") return s;
       const last = s.draft[s.draft.length - 1];
@@ -231,13 +270,13 @@ export function modelerReducer(s: ModelerState, a: Action): ModelerState {
       return { ...s, hidden };
     }
     case "camera":
-      return { ...s, camera: a.mode, fitN: s.fitN + 1 };
+      return { ...s, camera: a.mode, fitN: s.fitN + 1, sectionView: false };
     case "fit":
       return { ...s, fitN: s.fitN + 1 };
     case "access": {
       const lockReason = a.editable ? null : (a.reason ?? LOCKED_DEFAULT);
       if (a.editable === s.editable && lockReason === s.lockReason) return s;
-      return { ...s, editable: a.editable, lockReason, ...(a.editable ? {} : { tool: "select" as const, draft: [], drag: null }) };
+      return { ...s, editable: a.editable, lockReason, ...(a.editable ? {} : { tool: s.tool === "draw" ? ("select" as const) : s.tool, draft: [], drag: null }) };
     }
     case "reset":
       return { ...createModelerState(a.model, { editable: s.editable, reason: s.lockReason }), hidden: s.hidden, camera: s.camera };
@@ -247,6 +286,40 @@ export function modelerReducer(s: ModelerState, a: Action): ModelerState {
       return { ...s, highlight: a.ids };
     case "notice":
       return notify(s, a.text, a.tone);
+    case "measurePoint": {
+      if (s.tool !== "measure") return s;
+      if (!s.measureStart) return notify({ ...s, measureStart: a.point }, "측정 첫 점을 찍었습니다. 두 번째 점을 찍으세요.");
+      const m: Measurement = { id: s.measureN, a: s.measureStart, b: a.point };
+      return notify({ ...s, measures: [...s.measures, m], measureStart: null, measureN: s.measureN + 1 }, `측정 ${m.id}: ${measureText(measureDistance(m.a, m.b))}`);
+    }
+    case "measureCancel":
+      return s.measureStart ? notify({ ...s, measureStart: null }, "측정 첫 점을 취소했습니다.") : s;
+    case "measureDelete": {
+      if (!s.measures.some((m) => m.id === a.id)) return s;
+      return notify({ ...s, measures: s.measures.filter((m) => m.id !== a.id) }, `측정 ${a.id}을 지웠습니다.`);
+    }
+    case "measurePop": {
+      const last = s.measures[s.measures.length - 1];
+      return last ? notify({ ...s, measures: s.measures.slice(0, -1) }, `측정 ${last.id}을 지웠습니다.`) : s;
+    }
+    case "measureClear":
+      return s.measures.length === 0 && !s.measureStart ? s : notify({ ...s, measures: [], measureStart: null }, "측정을 모두 지웠습니다.");
+    case "sectionPoint": {
+      if (s.tool !== "section") return s;
+      if (!s.sectionDraft) return notify({ ...s, sectionDraft: a.point }, "단면선 첫 점을 찍었습니다. 두 번째 점을 찍으세요.");
+      const line: SectionLine = { a: s.sectionDraft, b: a.point };
+      if (!sectionPlane(line)) return s;
+      return notify({ ...s, section: line, sectionDraft: null, fitN: s.sectionView ? s.fitN + 1 : s.fitN }, "단면선을 정했습니다. 선의 오른쪽을 잘라 보입니다.");
+    }
+    case "sectionCancel":
+      return s.sectionDraft ? notify({ ...s, sectionDraft: null }, "단면선 첫 점을 취소했습니다.") : s;
+    case "sectionPreset":
+      return notify({ ...s, section: northSection(s.history.present), sectionDraft: null, sectionView: true, fitN: s.fitN + 1 }, "정북 단면으로 잘라 봅니다.");
+    case "sectionClear":
+      return s.section || s.sectionDraft ? notify({ ...s, section: null, sectionDraft: null, sectionView: false, fitN: s.sectionView ? s.fitN + 1 : s.fitN }, "단면을 해제했습니다.") : s;
+    case "sectionView":
+      if (!s.section || a.on === s.sectionView) return s;
+      return notify({ ...s, sectionView: a.on, fitN: s.fitN + 1 }, a.on ? "단면 보기" : "단면 보기를 끕니다.");
   }
 }
 

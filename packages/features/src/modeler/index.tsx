@@ -32,7 +32,8 @@ import { nextJudgeInput } from "./engine/coalesce.ts";
 import { Inspector, FLOOR_HEIGHT_INPUT_ID } from "./panels/Inspector.tsx";
 import { LayerPanel } from "./panels/LayerPanel.tsx";
 import { statusSummary } from "./panels/StatusBar.tsx";
-import { PENDING_TOOL_TEXT, Toolbar } from "./panels/Toolbar.tsx";
+import { MeasureList, SectionControls } from "./panels/MeasureSection.tsx";
+import { Toolbar } from "./panels/Toolbar.tsx";
 import { useLayoutKind } from "./panels/layout.ts";
 import { modelerAccess } from "./state/access.ts";
 import { parseModelJson, sameModelJson } from "./state/load.ts";
@@ -223,8 +224,8 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
         case "extrude":
           extrude();
           return;
-        case "pending":
-          d({ type: "notice", text: PENDING_TOOL_TEXT[a.what] });
+        case "measurePop":
+          d({ type: "measurePop" });
           return;
         case "toggleEnvelope":
           d({ type: "toggleLayer", layer: "envelope" });
@@ -244,6 +245,8 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
         case "escape":
           if (st.drag) d({ type: "dragCancel" });
           else if (st.draft.length > 0) d({ type: "draftCancel" });
+          else if (st.measureStart) d({ type: "measureCancel" });
+          else if (st.sectionDraft) d({ type: "sectionCancel" });
           else if (st.tool !== "select") d({ type: "tool", tool: "select" });
           else d({ type: "select", id: null });
           return;
@@ -338,6 +341,22 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
           바닥 꼭짓점을 차례로 찍습니다(100mm 격자). 첫 점을 다시 찍거나 Enter로 닫고, Backspace로 마지막 점을 지우고, Esc로 취소합니다. 찍은 점 {s.draft.length}개 · 새 매스 {s.draftFloors}층 × {s.draftFloorHeight.toLocaleString("ko-KR")}mm
         </p>
       ) : null}
+      <MeasureList
+        measures={s.measures}
+        start={s.measureStart}
+        active={s.tool === "measure"}
+        onDelete={(id) => dispatch({ type: "measureDelete", id })}
+        onClear={() => dispatch({ type: "measureClear" })}
+      />
+      <SectionControls
+        section={s.section}
+        draft={s.sectionDraft !== null}
+        active={s.tool === "section"}
+        view={s.sectionView}
+        onPreset={() => dispatch({ type: "sectionPreset" })}
+        onView={(on) => dispatch({ type: "sectionView", on })}
+        onClear={() => dispatch({ type: "sectionClear" })}
+      />
       <div className="relative min-h-64 w-full flex-1 overflow-hidden rounded-control border border-line bg-viewport">
         {!webgl ? (
           <div className="flex h-full items-center justify-center p-pad text-center text-body text-fg-2">
@@ -357,6 +376,11 @@ function Modeler({ record, initial }: { record: ProjectRecord; initial: Model })
               camera={s.camera}
               fitN={s.fitN}
               editable={s.editable}
+              measures={s.measures}
+              measureStart={s.measureStart}
+              section={s.section}
+              sectionDraft={s.sectionDraft}
+              sectionView={s.sectionView}
               engine={engine}
               colors={colors}
               dispatch={dispatch}

@@ -86,6 +86,11 @@ export function RenderView({ designModel, handleRef }: { designModel: string; ha
             camera="perspective"
             fitN={0}
             editable={false}
+            measures={NONE}
+            measureStart={null}
+            section={null}
+            sectionDraft={null}
+            sectionView={false}
             engine={EMPTY_ENGINE}
             colors={colors}
             dispatch={noop}
