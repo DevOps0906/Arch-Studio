@@ -27,6 +27,13 @@
     check: '<path d="M5 12l5 5 9-10"/>', undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
     snap: '<circle cx="12" cy="12" r="2"/><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/>',
     sheet: '<rect x="3" y="5" width="18" height="14"/><path d="M14 15h7M14 15v4"/>',
+    cube: '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M4 7.5l8 4.5 8-4.5M12 12v9"/>',
+    extrude: '<path d="M5 15l7 4 7-4"/><path d="M12 4v11M8 8l4-4 4 4"/>',
+    core: '<rect x="5" y="5" width="14" height="14"/><rect x="9" y="9" width="6" height="6"/><path d="M9 12h6M12 9v6"/>',
+    balcony: '<path d="M3 10h18M5 10v8M9 10v8M13 10v8M17 10v8M3 18h18"/><path d="M6 10V5h12v5"/>',
+    section: '<path d="M4 20V4M20 20V4" stroke-dasharray="2 2"/><path d="M4 12h16M14 8l6 4-6 4"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2"/>',
+    tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.5"/>',
     anchor: '<circle cx="12" cy="5" r="2"/><path d="M12 7v14M5 14a7 7 0 0 0 14 0M8 11h8"/>'
   };
   var s = '<svg xmlns="http://www.w3.org/2000/svg" style="display:none">';
@@ -34,7 +41,8 @@
   document.body.insertAdjacentHTML('afterbegin', s + '</svg>');
 
   // 주소 끝 #sheet 이면 도면 상태로 연다(캡처용)
-  if (location.hash === '#sheet') setTimeout(function () { var b = document.querySelector('[data-go="sheet"]'); if (b) b.click(); });
+  var h = location.hash.slice(1);
+  if (h === 'sheet' || h === 'model' || h === 'plan') setTimeout(function () { var b = document.querySelector('[data-go="' + h + '"]'); if (b) b.click(); });
   // 상태 전환: [data-go="plan|sheet"]
   document.addEventListener('click', function (e) {
     var go = e.target.closest('[data-go]');

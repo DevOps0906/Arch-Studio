@@ -78,7 +78,9 @@ button, select, input { font: inherit; color: inherit; }
 .row:last-child { border-bottom: 0; }
 .grow { flex: 1; min-width: 0; }
 .sr { position: absolute; width: var(--hairline); height: var(--hairline); overflow: hidden; clip: rect(0 0 0 0); }
-body[data-state="plan"] [data-only="sheet"], body[data-state="sheet"] [data-only="plan"] { display: none !important; }
+body:not([data-state="plan"]) [data-only="plan"], body:not([data-state="sheet"]) [data-only="sheet"], body:not([data-state="model"]) [data-only="model"] { display: none !important; }
+/* 가로 넘침 줄(상태줄·탭)은 스크롤바가 높이를 먹어 글자를 가리지 않게 숨김 스크롤 */
+.status, .tabs, .stagebar, .rail, .bottom .st { scrollbar-width: none; }
 .scrim { position: fixed; inset: 0; background: var(--color-overlay); z-index: 30; display: none; }
 .scrim.open { display: block; }
 

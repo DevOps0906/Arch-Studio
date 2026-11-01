@@ -53,7 +53,15 @@ B 장단점
 ## 시안 전용 후보 토큰 (정본 아님, `common.css` 머리)
 `--ws-topbar-h` 48 · `--ws-stagebar-h` 40 · `--ws-rail-w` 48 · `--ws-panel-w` 240 · `--ws-dock-w` 320 · `--ws-tabs-h` 32 · `--ws-status-h` = `--spacing-control-sm`(28) · `--hairline` 1. 모두 `--spacing` 배수로 만들었다. 채택되면 정본 `tokens.css`로 옮긴다.
 
-## 사람 확인 필요
+## 2차 (2026-11-02, 사용자 결정 반영)
+결정: 작업공간 A+B 혼합(A 6단계 막대·오른쪽 적층·먹색 상태줄 + B 맥락 도구줄·다음 단계 버튼·패널 접기), 대시보드 크레딧 카드 넣기, 주석 제안 2·5 채택.
+- `docs/design/mockups/workspace-final.html`: 모델(기본, 3D 뷰포트 자리: 매스·엔벨로프·코어·발코니·단면·측정, 조명·층 라벨 토글) / 평면(`#plan`) / 도면(`#sheet`) 3상태. 패널을 접어도 띠에 판정 수가 남는다.
+- 캡처: `shots/workspace-final-{375,768,1280}.png`(모델), `shots/final-plan-*.png`, `shots/final-sheet-*.png`(평면·도면 상태는 iframe 래퍼로 찍음).
+- 재캡처: `shots/dashboard-375.png`(모바일 `≡` 메뉴), `shots/drawing-annotate-375.png`. 상태줄 글자가 안 보이던 원인은 가로 스크롤바가 28 높이를 먹은 것이었다. `common.css`에 스크롤바 숨김을 넣고 모바일에서 스냅 문구를 숨겨 고쳤다.
+- `common.css`의 상태 숨김 규칙을 plan·sheet·model 3상태로 일반화했다(A·B 시안 동작 유지).
+- 03장 반영 초안: `docs/design/WORKSPACE_SPEC_DRAFT.md`(셸 레이아웃·영역 표·단계 전환·3구간, 대시보드 카드·크레딧 정정 문안, `annotations[]` 스키마·고아 주석·결정성).
+
+## 사람 확인 필요 (1차, 2차에서 결정됨)
 - A / B 중 하나, 또는 섞을지(예: A의 오른쪽 적층 + B의 판정 HUD·다음 단계 버튼).
 - 작업공간 상태줄을 먹색 바탕(A·주석 화면)으로 할지 밝은 바탕(B)으로 할지.
 - 주석 층 결정성 제안 2(`annotation_overrides` 통합)와 5(고아 주석은 출력에서 제외) 채택 여부.
