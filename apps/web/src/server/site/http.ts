@@ -12,6 +12,9 @@ export type SiteErrorCode =
   | "payload_too_large"
   | "rate_limited"
   | "site_lookup_unavailable"
+  | "site_map_disabled"
+  | "method_not_allowed"
+  | "invalid_tile"
   | "AR020"
   | "AR021"
   | "42501"
@@ -42,6 +45,9 @@ export const SITE_ERRORS: Readonly<Record<SiteErrorCode, ErrorSpec>> = {
   payload_too_large: { status: 413, message: "요청 본문이 너무 큽니다." },
   rate_limited: { status: 429, message: "요청이 너무 많습니다. 잠시 후 다시 시도하세요." },
   site_lookup_unavailable: { status: 503, message: "지금은 대지 조회를 쓸 수 없습니다. 직접 그리기로 이어 가세요." },
+  site_map_disabled: { status: 503, message: "지금은 지도·주소 검색을 쓸 수 없습니다. 직접 그리기로 이어 가세요." },
+  method_not_allowed: { status: 405, message: "허용하지 않는 요청 방식입니다." },
+  invalid_tile: { status: 404, message: "지도 타일 범위를 벗어났습니다." },
   AR020: { status: 429, message: "오늘 대지 조회 한도를 모두 썼습니다. 직접 그리기로 이어 가세요." },
   AR021: { status: 502, message: "공공 데이터 서비스가 응답하지 않습니다. 잠시 뒤 다시 조회하거나 직접 그리세요." },
   "42501": { status: 403, message: "이 작업을 할 권한이 없습니다." },

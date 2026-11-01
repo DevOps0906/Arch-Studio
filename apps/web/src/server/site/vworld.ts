@@ -8,7 +8,7 @@ import { PNU_RE, type SiteQuery } from "./schema.ts";
 
 /** 허용 출처(고정). 이 밖의 호스트로는 요청하지 않는다. */
 export const VWORLD_ORIGIN = "https://api.vworld.kr";
-export const VWORLD_PATHS = { geocode: "/req/address", data: "/req/data" } as const;
+export const VWORLD_PATHS = { geocode: "/req/address", data: "/req/data", search: "/req/search" } as const;
 /** 응답 좌표계: Korea 2000 / Central Belt 2010(미터, 투영). 화면이 원점을 빼고 mm 정수로 바꾼다(packages/domain mToMm). */
 export const VWORLD_CRS = "EPSG:5186";
 /** 데이터 API 레이어: 연속지적도(필지 경계), 용도지역(도시지역). 이름은 공개 목록 기준(미확인). */
@@ -237,9 +237,14 @@ function bboxCenter(ring: readonly PointM[]): PointM {
 
 /** 본문을 상한까지만 읽는다. 넘으면 too_large(읽기 중단). */
 async function readLimited(res: Response, max: number): Promise<string> {
+  return new TextDecoder("utf-8", { fatal: false }).decode(await readLimitedBytes(res, max));
+}
+
+/** 본문 바이트를 상한까지만 읽는다(검색·타일 공용). 넘으면 too_large(읽기 중단). */
+export async function readLimitedBytes(res: Response, max: number): Promise<Uint8Array<ArrayBuffer>> {
   const declared = Number(res.headers.get("content-length") ?? "0");
   if (Number.isFinite(declared) && declared > max) throw providerError("too_large");
-  if (!res.body) return "";
+  if (!res.body) return new Uint8Array(0);
   const reader = res.body.getReader();
   const chunks: Uint8Array[] = [];
   let total = 0;
@@ -259,7 +264,7 @@ async function readLimited(res: Response, max: number): Promise<string> {
     all.set(c, off);
     off += c.byteLength;
   }
-  return new TextDecoder("utf-8", { fatal: false }).decode(all);
+  return all;
 }
 
 /** 요청 URL 조립: 출처·경로는 상수, 값은 searchParams.set(인코딩). 조립 결과의 출처·경로가 상수와 다르면 throw. */

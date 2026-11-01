@@ -56,3 +56,27 @@ export function parseLookupBody(body: unknown): SiteQuery | null {
   if (!parsed.success) return null;
   return validateQuery(parsed.data.query.kind, parsed.data.query.value);
 }
+
+// ── POST /api/site/search(새 프로젝트 지도 검색): `{ query: { kind: 'jibun' | 'road', value } }` ──
+export const SITE_SEARCH_KINDS = ["jibun", "road"] as const;
+export type SiteSearchKind = (typeof SITE_SEARCH_KINDS)[number];
+export type SiteSearchQuery = { kind: SiteSearchKind; value: string };
+
+export const siteSearchBodySchema = z
+  .object({
+    query: z
+      .object({
+        kind: z.enum(SITE_SEARCH_KINDS),
+        value: z.string().max(QUERY_MAX_CHARS * 2),
+      })
+      .strict(),
+  })
+  .strict();
+
+/** 검색어는 입력 중인 앞부분이라 지번 본번(숫자)을 요구하지 않는다. 문자·길이(2~200) 규칙은 주소와 같다. */
+export function parseSearchBody(body: unknown): SiteSearchQuery | null {
+  const parsed = siteSearchBodySchema.safeParse(body);
+  if (!parsed.success) return null;
+  const valid = validateQuery("address", parsed.data.query.value);
+  return valid ? { kind: parsed.data.query.kind, value: valid.value } : null;
+}
