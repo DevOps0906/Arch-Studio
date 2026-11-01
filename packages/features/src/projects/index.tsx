@@ -24,7 +24,9 @@ import {
 } from "../shell/index.ts";
 import { cloudVersionByLocalId, cloudVersionOf, parseCloudList, type CloudList } from "./cloud.ts";
 import { demoCloudList, parsePreview } from "./demo-fixture.ts";
-import { ConflictDialog, DeleteDialog, NewProjectDialog, RenameDialog } from "./dialogs.tsx";
+import { requestSiteLookup } from "../site/lookup.ts";
+import { siteAccess } from "../site/access.ts";
+import { ConflictDialog, DeleteDialog, NewProjectDialog, RenameDialog, type SiteLookupPort } from "./dialogs.tsx";
 import { renameInput, restoreInput, revisionSourceOf, SessionHistory, type RevisionSource } from "./history.ts";
 import { HistorySheet, type HistoryLoad } from "./HistorySheet.tsx";
 import { applyListQuery, isFiltered, parseListQuery, writeListQuery, type ListQuery } from "./list-query.ts";
@@ -116,6 +118,10 @@ export function Screen() {
   const { load, reload } = useProjectList();
   const edit = useEntitlement("desktop_edit");
   const cloudReview = useEntitlement("cloud_review");
+  // 새 프로젝트 창 대지 조회(03장 3.3절): 대지 화면과 같은 호출(site/lookup.ts)·같은 잠금 규칙(siteAccess).
+  const api = useApi();
+  const online = useOnline();
+  const siteLookup: SiteLookupPort = useMemo(() => ({ state: siteAccess(edit, online).lookup, run: (kind, value) => requestSiteLookup(api, kind, value) }), [api, edit, online]);
 
   const [readOnly, setReadOnly] = useState(false);
   const [dialog, setDialog] = useState<DialogState>({ kind: "none" });
@@ -421,7 +427,7 @@ export function Screen() {
         )}
       </div>
 
-      {dialog.kind === "new" ? <NewProjectDialog open busy={busy} error={dialogError} onClose={closeDialog} onSubmit={(v) => void createProject(v)} /> : null}
+      {dialog.kind === "new" ? <NewProjectDialog open busy={busy} error={dialogError} lookup={siteLookup} onClose={closeDialog} onSubmit={(v) => void createProject(v)} /> : null}
       {dialog.kind === "rename" && active ? (
         <RenameDialog open initial={active.name} busy={busy} error={dialogError} onClose={closeDialog} onSubmit={(n) => void renameProject(active.id, n)} />
       ) : null}

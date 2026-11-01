@@ -7,6 +7,7 @@ export { area, area2 } from "./area.ts";
 export { union } from "./boolean.ts";
 export { offset, type OffsetJoin, type OffsetOptions } from "./offset.ts";
 export { compareDistance, distance, type DistanceResult } from "./distance.ts";
+export { minAreaRect, type OrientedRect } from "./rect.ts";
 export {
   SolidError,
   canonicalMesh,

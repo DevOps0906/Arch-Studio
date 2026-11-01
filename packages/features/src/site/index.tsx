@@ -9,7 +9,6 @@ import type { Point } from "@arch-studio/domain";
 import { Banner, Button, Checkbox, Field, Input, Select, Toast, ToastRegion } from "@arch-studio/ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
-import { isApiError } from "../api-client/index.ts";
 import {
   EmptyBlock,
   ErrorState,
@@ -27,12 +26,11 @@ import {
   useProject,
   useShellStatus,
 } from "../shell/index.ts";
-import { LOOKUP_TEXT, lookupFailure, lookupInputOk, siteAccess, type LookupFailure } from "./access.ts";
+import { LOOKUP_TEXT, siteAccess, type LookupFailure } from "./access.ts";
 import { DXF_TEXT, candidateFromDxf, confirmUnit, dxfNext, type DxfFlow } from "./dxf-flow.ts";
 import {
   USE_DISTRICTS,
   applyDraft,
-  candidateFromLookup,
   draftFromModel,
   draftWithCandidate,
   formatMm,
@@ -40,7 +38,6 @@ import {
   outlineIssue,
   parseAngleInput,
   parseDesignModel,
-  parseLookupData,
   parseMmInput,
   roadsAfterRemove,
   sameDraft,
@@ -48,6 +45,7 @@ import {
   type SiteCandidateView,
   type SiteDraft,
 } from "./model.ts";
+import { requestSiteLookup, type LookupKind } from "./lookup.ts";
 import { CandidateList, CoordinateTable, MetricsReadout, SiteCanvas, UnitDialog } from "./parts.tsx";
 
 /** 저장 직후 reload()로 화면이 다시 그려져도 성공 알림을 보이기 위한 표시(프로젝트 id·버전). */
@@ -60,7 +58,6 @@ export function Screen() {
   return <SiteScreen key={`${load.record.id}:${load.record.version}`} record={load.record} preview={preview} />;
 }
 
-type LookupKind = "address" | "jibun" | "pnu";
 type LookupState = { status: "idle" } | { status: "loading" } | { status: "failed"; failure: LookupFailure };
 type SaveState = { status: "idle" } | { status: "saving" } | { status: "conflict" } | { status: "failed"; message: string; issues?: string[] };
 type Candidates = { items: SiteCandidateView[]; selected: number; notice: string; warning: string | null };
@@ -126,35 +123,16 @@ function SiteScreen({ record, preview }: { record: ProjectRecord; preview: Retur
   const update = (patch: Partial<SiteDraft>) => setDraft((d) => (d ? { ...d, ...patch } : d));
 
   async function runLookup() {
-    if (!lookupInputOk(lookupKind, lookupValue)) {
-      setLookup({ status: "failed", failure: { message: LOOKUP_TEXT.invalid, toDraw: false } });
+    setLookup({ status: "loading" });
+    const r = await requestSiteLookup(api, lookupKind, lookupValue);
+    if (r.ok) setRemaining(r.data.remaining_today);
+    else if (r.remaining !== undefined) setRemaining(r.remaining);
+    if (!r.ok) {
+      setLookup({ status: "failed", failure: r.failure });
       return;
     }
-    setLookup({ status: "loading" });
-    try {
-      const data = await api.request({
-        method: "POST",
-        path: "/api/site/lookup",
-        body: { query: { kind: lookupKind, value: lookupValue } },
-        idempotencyKey: api.newIdempotencyKey(),
-        parse: (d) => {
-          const v = parseLookupData(d);
-          if (!v) throw new Error("invalid");
-          return v;
-        },
-      });
-      setRemaining(data.remaining_today);
-      const c = candidateFromLookup(data);
-      if (!c) {
-        setLookup({ status: "failed", failure: { message: LOOKUP_TEXT.badCandidate, toDraw: true } });
-        return;
-      }
-      setLookup({ status: "idle" });
-      setCandidates({ items: [c], selected: 0, notice: data.notice, warning: null });
-    } catch (e) {
-      const failure = isApiError(e) ? lookupFailure(e.code, e.details?.reason, e.userMessage) : { message: LOOKUP_TEXT.AR021, toDraw: true };
-      setLookup({ status: "failed", failure });
-    }
+    setLookup({ status: "idle" });
+    setCandidates({ items: [r.candidate], selected: 0, notice: r.data.notice, warning: null });
   }
 
   /** 새 경계 그리기: 지금 초안 경계·도로 지정을 비우고 클릭으로 다시 찍는다(저장 전이면 [변경 취소]로 되돌릴 수 있다). */

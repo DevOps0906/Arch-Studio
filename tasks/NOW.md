@@ -52,3 +52,9 @@
 - Codex 사용량 한도(재개 2026-11-04 17:54) → 리뷰는 reviewer(Opus)로 대체.
 - 작업 표: 85개 중 완료 49 · 진행 1(038) · 대기 35.
 - 039 코드 완료(로컬 커밋, push 전): glTF·IFC4 자체 작성기(바이트 결정적), .3dm 내보내기·가져오기 후보(rhino3dm 8.35.0, `@arch-studio/io/rhino` 서브경로, 의미 골든 — rhino3dm이 id·시각 고정 불가). 남음: 무료 IFC 뷰어 수동 점검(사람), 앱 연결 시 .3dm 가져오기 워커+terminate+메모리 상한, 058에 THIRD_PARTY_NOTICES(rhino3dm MIT·openNURBS·Draco Apache NOTICE·zlib). 상한 제안값 20MB·객체 1만·꼭짓점 200만·면 400만·메모리 512MB.
+
+## 갱신 (2026-11-02 재개)
+- 완료·push: 056 0·1단계(fa93a40)·3단계 화면(48ee3c8, 설치형은 어댑터 없어 '지원 안 함'), .env.example 렌더 2줄 + .claude/settings.json 읽기 차단을 .env.example만 예외(2cbeb8a). 작업 표 039·056=진행.
+- 032 제안서 PDF: feat/ar-06-032 브랜치(ed5c08b·8a13cd3) push, R-A5(공용 WeasyPrint app_id arch) 전 main 병합 보류.
+- 진행 중: 새 프로젝트 창 대지 조회(사용자 추가 요청, 작업 표 밖) — 조회 버튼·용도지역·가로세로(최소 회전 직사각형)·경계 SVG(배경 지도는 D-14 뒤), 데모 예시 대지. builder 작업 중(미커밋).
+- 사람 결정 대기: 056 2단계 6건·032 7건(tasks/logs), 038 규칙 세트 정본, 039 IFC 뷰어 수동 점검, D-14(VWorld 이용 조건).

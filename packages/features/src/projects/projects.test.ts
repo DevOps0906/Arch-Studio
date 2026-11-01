@@ -362,3 +362,123 @@ test("소스: 금지 문구 0(PRD 6.1절 보장·완전성·전문가 대체), �
     assert.doesNotMatch(text, /arch-demo-data-v1/, f);
   }
 });
+
+/* ---------- 새 프로젝트 창 대지 조회 ---------- */
+
+const { createApiClient } = await import("../api-client/index.ts");
+const { createDemoAuth } = await import("../demo/auth.ts");
+const { requestSiteLookup } = await import("../site/lookup.ts");
+const { summarizeLookup } = await import("./site-lookup.ts");
+
+function demoApi() {
+  const { fetch } = createDemoAuth({ signedIn: true, needsOnboarding: false });
+  let n = 0;
+  return createApiClient({ baseUrl: "http://demo.invalid", getAccessToken: async () => "demo-access-token", fetch, sleep: async () => {}, genId: () => `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}` });
+}
+
+test("대지 조회 성공(데모 응답) → 요약(PNU·용도지역·면적·회전 직사각형 가로·세로) → 조회 경계로 첫 모델", async () => {
+  const r = await requestSiteLookup(demoApi(), "jibun", "데모동 1-1");
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  const s = summarizeLookup(r.candidate, r.data.notice);
+  assert.equal(s.site.pnu, "9999999999100010001");
+  assert.equal(s.useDistrict, "제2종일반주거지역");
+  assert.ok(s.widthMm > 0 && s.depthMm > 0 && Number.isSafeInteger(s.widthMm) && Number.isSafeInteger(s.depthMm));
+  assert.match(s.notice, /입력 후보/);
+  // 가로·세로 입력이 비어 있어도 조회 대지면 통과하고, 대지 이름이 비면 조회 주소 라벨을 쓴다.
+  const v = validateNewProject({ name: "조회 대지", siteLabel: "", useDistrict: "제2종일반주거지역", widthM: "", depthM: "" }, s);
+  assert.ok(v.ok);
+  if (!v.ok) return;
+  assert.equal(v.values.siteLabel, "[예시] 가상동 1-1");
+  const model = buildInitialModel(v.values);
+  assert.ok(designModelV1Schema.safeParse(model).success);
+  assert.deepEqual(model.site.boundary.outer, r.candidate.outer, "임시 직사각형이 아니라 조회 경계");
+  assert.equal(model.site.boundary.outer.length, 4);
+  assert.deepEqual(model.site.parcel, { pnu: "9999999999100010001", address_label: "[예시] 가상동 1-1" });
+  assert.equal(model.site.zoning.use_district, "제2종일반주거지역");
+  assert.equal(newProjectInput(ID1, v.values).designModel, newProjectInput(ID1, v.values).designModel, "같은 입력 → 같은 바이트");
+});
+
+test("대지 조회 실패(AR021·형식 오류) → 직접 입력 안내, 가로·세로 입력 경로는 그대로", async () => {
+  const fail = await requestSiteLookup(demoApi(), "jibun", "없음동 1-1");
+  assert.ok(!fail.ok);
+  if (!fail.ok) assert.match(fail.failure.message, /필지를 찾지 못했습니다/);
+  const bad = await requestSiteLookup(demoApi(), "jibun", "a");
+  assert.ok(!bad.ok && bad.failure.message.includes("형식"));
+  const noLookup = validateNewProject({ name: "x", siteLabel: "", useDistrict: "준주거지역", widthM: "", depthM: "" }, null);
+  assert.ok(!noLookup.ok && noLookup.errors.widthM && noLookup.errors.depthM, "조회 없으면 가로·세로 필수");
+  const direct = validateNewProject({ name: "x", siteLabel: "", useDistrict: "준주거지역", widthM: "12", depthM: "15" }, null);
+  assert.ok(direct.ok && direct.values.site === null);
+  if (direct.ok) assert.deepEqual(buildInitialModel(direct.values).site.parcel, {});
+});
+
+test("구조: 새 프로젝트 창 조회 칸(조회 버튼·오프라인 안내)·조회 결과(SVG 경계·치수·북쪽, 값 표)", async () => {
+  const port = (state: "ok" | "offline" | "locked") => ({ state, run: async () => ({ ok: false as const, failure: { message: "", toDraw: true } }) });
+  const ok = html(h(dialogs.NewProjectDialog, { open: true, busy: false, error: null, lookup: port("ok"), onClose: () => {}, onSubmit: () => {} }));
+  assert.match(ok, /대지 조회/);
+  assert.match(ok, />조회<\/button>/);
+  assert.equal((ok.match(/<label/g) ?? []).length, 7, "기존 5 + 찾는 방법·지번·도로명");
+  const off = html(h(dialogs.NewProjectDialog, { open: true, busy: false, error: null, lookup: port("offline"), onClose: () => {}, onSubmit: () => {} }));
+  assert.match(off, /인터넷 연결 후 씁니다/);
+  const r = await requestSiteLookup(demoApi(), "jibun", "데모동 1-1");
+  assert.ok(r.ok);
+  if (!r.ok) return;
+  const out = html(h(dialogs.LookupResult, { summary: summarizeLookup(r.candidate, r.data.notice), onClear: () => {} }));
+  assert.match(out, /<svg[^>]*role="img"[^>]*aria-label="대지 경계 그림/);
+  assert.match(out, /가로 \d+\.\d{2}m/);
+  assert.match(out, /세로 \d+\.\d{2}m/);
+  assert.match(out, />N<\/text>/);
+  assert.match(out, /9999999999100010001/);
+  assert.match(out, /지적도 기준/);
+  assert.match(out, /㎡/);
+  assert.doesNotMatch(out, /<image|tile|vworld/i, "배경 지도 없음");
+});
+
+test("조회 값 반영 규칙: A→B 연속 조회·실패·결과 지우기 뒤 저장 모델의 pnu·주소·용도지역이 같은 필지", async () => {
+  const { applyLookupFill, NO_FILL } = await import("./site-lookup.ts");
+  const cand = (pnu: string, label: string, use: string | null) => ({
+    origin: "lookup" as const,
+    outer: [
+      [0, 0],
+      [10000, 0],
+      [10000, 12000],
+      [0, 12000],
+    ] as [number, number][],
+    area_mm2: 120_000_000,
+    perimeter_mm: 44000,
+    label,
+    use_district: use,
+    districts: [],
+    parcel: { pnu, address_label: label },
+    notes: [],
+  });
+  const A = summarizeLookup(cand("9999999999100010001", "[예시] 가상동 1-1", "제1종일반주거지역"), "후보");
+  const B = summarizeLookup(cand("9999999999100020002", "[예시] 가상동 2-2", "목록에없는지역"), "후보");
+  const C = summarizeLookup(cand("9999999999100030003", "[예시] 가상동 3-3", "준주거지역"), "후보");
+  const save = (form: typeof EMPTY_FORM, s: typeof A | null) => {
+    const v = validateNewProject(form, s);
+    assert.ok(v.ok, JSON.stringify(!v.ok && v.errors));
+    return v.ok ? buildInitialModel(v.values).site : null;
+  };
+  let st = { form: { ...EMPTY_FORM, name: "p" }, fill: NO_FILL };
+  st = applyLookupFill(st.form, st.fill, A);
+  assert.deepEqual([st.form.siteLabel, st.form.useDistrict], ["[예시] 가상동 1-1", "제1종일반주거지역"]);
+  // A → B: A가 채운 값은 B로 바뀌고, B 용도지역이 목록 밖이면 빈 값(직접 선택)
+  st = applyLookupFill(st.form, st.fill, B);
+  assert.deepEqual([st.form.siteLabel, st.form.useDistrict], ["[예시] 가상동 2-2", ""]);
+  const b = save({ ...st.form, useDistrict: "제2종일반주거지역" }, B);
+  assert.deepEqual(b?.parcel, { pnu: "9999999999100020002", address_label: "[예시] 가상동 2-2" });
+  // 사용자가 고친 값은 다음 조회에서도 유지
+  st = applyLookupFill({ ...st.form, siteLabel: "내 대지", useDistrict: "일반상업지역" }, st.fill, C);
+  assert.deepEqual([st.form.siteLabel, st.form.useDistrict], ["내 대지", "일반상업지역"]);
+  assert.deepEqual(save(st.form, C)?.parcel, { pnu: "9999999999100030003", address_label: "내 대지" });
+  // 실패(또는 결과 지우기) → 조회가 채운 값만 되돌림, 직접 입력 경로로 저장하면 PNU 없음
+  st = applyLookupFill({ ...EMPTY_FORM, name: "p" }, NO_FILL, C);
+  assert.equal(st.form.useDistrict, "준주거지역");
+  st = applyLookupFill(st.form, st.fill, null);
+  assert.deepEqual([st.form.siteLabel, st.form.useDistrict], ["", ""]);
+  assert.deepEqual(st.fill, NO_FILL);
+  const direct = save({ ...st.form, useDistrict: "준주거지역", widthM: "10", depthM: "12" }, null);
+  assert.deepEqual(direct?.parcel, {});
+  assert.deepEqual(direct?.zoning, { use_district: "준주거지역", districts: [] });
+});
