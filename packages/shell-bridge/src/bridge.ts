@@ -40,7 +40,7 @@ export function createTauriBridge(invoke: InvokeFn = tauriInvoke): NativeBridge 
   return bridgeOf(TAURI_BRIDGE_CAPABILITIES, new TauriSecureStore(invoke));
 }
 
-/** 웹 대체 브리지: 비밀은 메모리만(영속 웹 스토리지 미사용). 웹 본 구현(httpOnly 쿠키)은 072. */
+/** 웹 대체 브리지: 비밀은 메모리만(영속 웹 스토리지 미사용). 웹 본 구현(072 `web/`)도 메모리 보관 + Bearer(D-071a, 쿠키·영속 웹 스토리지 없음). */
 export function createWebBridge(): NativeBridge {
   return bridgeOf(WEB_BRIDGE_CAPABILITIES, new MemorySecureStore());
 }
