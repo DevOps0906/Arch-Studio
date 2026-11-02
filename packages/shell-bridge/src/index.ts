@@ -131,6 +131,7 @@ export {
   type CloudLinkStore,
   type CloudProjectStore,
   type CloudUploadOptions,
+  type SourcedRecord,
 } from "./adapters/cloud-link.ts";
 export { createBrowserFileHost, type PickedFile, type WebFileHost } from "./web/file-gateway.ts";
 export { createIndexedDbReadCache, NO_READ_CACHE, type ReadCache } from "./web/read-cache.ts";

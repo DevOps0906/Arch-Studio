@@ -5,6 +5,7 @@ import { errorFrom, type ProjectErrorCode } from "../adapters/errors.ts";
 import { assertProjectId, isProjectId } from "../adapters/project-store.ts";
 import type { CloudLinkCommand, InvokeFn } from "./invoke.ts";
 
+// AR060 = Rust code::DB_UNAVAILABLE, AR061 = code::DB_READ_ONLY(읽기 전용 모드에서 연결 기록 거부).
 const CODES: readonly ProjectErrorCode[] = ["NOT_FOUND", "VERSION_CONFLICT", "INVALID_INPUT", "AR060", "AR061"];
 
 export class TauriCloudLinkStore implements CloudLinkStore {

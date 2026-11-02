@@ -3,7 +3,7 @@
 // IndexedDB는 읽기 캐시뿐이다: list·open이 읽은 결과를 넣고, 서버에 닿지 못할 때만 되돌려 준다. save·delete는 캐시를 읽지 않는다.
 // 서버가 사본을 하드 삭제하므로 "삭제된 id로 다시 저장 = NOT_FOUND"는 이 인스턴스(세션) 안에서만 지킨다(메모리 묘비).
 // 오류에는 코드만(이름·모델·버전 값 없음). 입력 검사는 070 공용 함수(Rust와 같은 한도).
-import type { CloudCopyRef, CloudProjectStore, CloudUploadOptions } from "../adapters/cloud-link.ts";
+import type { CloudCopyRef, CloudProjectStore, CloudUploadOptions, SourcedRecord } from "../adapters/cloud-link.ts";
 import { BridgeError, type ProjectErrorCode } from "../adapters/errors.ts";
 import {
   assertExpectedVersion,
@@ -204,6 +204,18 @@ export class WebProjectStore implements CloudProjectStore {
   }
 
   async open(id: string): Promise<ProjectRecord | null> {
+    return (await this.openSourced(id))?.record ?? null;
+  }
+
+  async openSourced(id: string): Promise<SourcedRecord | null> {
+    let cached = false;
+    const record = await this.#open(id, () => {
+      cached = true;
+    });
+    return record ? { record, cached } : null;
+  }
+
+  async #open(id: string, fromCache: () => void): Promise<ProjectRecord | null> {
     const epoch = this.#cache.epoch();
     assertProjectId(id);
     if (this.#deleted.has(id)) return null;
@@ -214,7 +226,10 @@ export class WebProjectStore implements CloudProjectStore {
       // 서버에 닿지 못할 때만 읽기 캐시(읽기 전용). 그 밖의 오류는 그대로.
       if (e instanceof Unreachable) {
         const cached = await this.#cache.getRecord(id);
-        if (cached) return cached;
+        if (cached) {
+          fromCache();
+          return cached;
+        }
       }
       throw e;
     }

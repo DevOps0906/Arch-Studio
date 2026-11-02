@@ -4,9 +4,13 @@ export {
   CONFLICT_CHOICES,
   CONFLICT_MESSAGE,
   OFFLINE_COPY_LABEL,
+  LINK_FAILED_MESSAGE,
   OFFLINE_NOTICE,
+  RECREATE_CONFIRM_MESSAGE,
+  SERVER_LATEST_NOTICE,
   type CloudOpenResult,
   type CloudSyncDeps,
   type ConflictChoice,
   type SyncOutcome,
+  type UploadOptions,
 } from "./sync.ts";

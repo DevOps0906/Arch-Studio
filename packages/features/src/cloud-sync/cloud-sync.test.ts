@@ -8,15 +8,16 @@ import {
   type SaveProjectInput,
 } from "@arch-studio/shell-bridge";
 import { createFakeCloud, createFakeIdb, createRustInvoke, createTauriAdapters, FAKE_CLOUD_BASE, testProjectId, type FakeCloud } from "@arch-studio/shell-bridge/testing";
-import { CloudSync, CONFLICT_CHOICES, OFFLINE_NOTICE } from "./index.ts";
+import type { CloudLinkStore } from "@arch-studio/shell-bridge";
+import { CloudSync, CONFLICT_CHOICES, LINK_FAILED_MESSAGE, OFFLINE_NOTICE, RECREATE_CONFIRM_MESSAGE, SERVER_LATEST_NOTICE } from "./index.ts";
 
 let seq = 100;
 const nextId = () => testProjectId(seq++);
 
-async function harness(opts: { online?: () => boolean; cloud?: FakeCloud } = {}) {
+async function harness(opts: { online?: () => boolean; cloud?: FakeCloud; wrapLinks?: (l: CloudLinkStore) => CloudLinkStore } = {}) {
   const rust = createRustInvoke();
   const adapters = createTauriAdapters(rust.invoke);
-  const links = cloudLinksOf(adapters)!;
+  const links = opts.wrapLinks ? opts.wrapLinks(cloudLinksOf(adapters)!) : cloudLinksOf(adapters)!;
   const cloud = opts.cloud ?? createFakeCloud();
   const cloudStore = createCloudProjectStore({
     baseUrl: FAKE_CLOUD_BASE,
@@ -123,7 +124,7 @@ test("충돌: 서버가 앞서 있으면 저장하지 않고 2선택 → '서버
   assert.equal(cloud.rows.get(up.projectUuid)?.version, 2, "충돌 업로드는 저장되지 않는다");
 
   const opened = await sync.resolveConflict(localId, "open_server_latest");
-  assert.deepEqual(opened, { kind: "downloaded", localId, localVersion: 3, projectUuid: up.projectUuid, version: 2 });
+  assert.deepEqual(opened, { kind: "downloaded", localId, localVersion: 3, projectUuid: up.projectUuid, version: 2, notice: SERVER_LATEST_NOTICE });
   assert.equal((await local.open(localId))?.designModel, JSON.stringify({ v: "other-device" }));
   assert.deepEqual(await links.get(localId), { projectUuid: up.projectUuid, cloudVersion: 2 });
   // 이후 업로드는 같은 행 version+1.
@@ -168,14 +169,18 @@ test("연결 기록이 없는데 같은 local_id 사본이 서버에 있으면(2
   assert.deepEqual(await b.links.get(localId), { projectUuid: up.projectUuid, cloudVersion: 1 });
 });
 
-test("서버 사본이 지워졌으면 업로드가 새 project_uuid로 다시 만들고 다시 연결", async () => {
+test("서버 사본이 없으면(NOT_FOUND) 자동 생성 없이 확인 상태 → 확인 뒤에만 새 project_uuid로 다시 만들고 다시 연결", async () => {
   const { local, links, cloud, cloudStore, sync } = await harness();
   const localId = testProjectId(7);
   await local.save(localInput(localId));
   const up = await sync.upload(localId);
   assert.ok(up.kind === "uploaded");
   await cloudStore.delete(up.projectUuid, 1);
-  const again = await sync.upload(localId);
+  const asked = await sync.upload(localId);
+  assert.deepEqual(asked, { kind: "needs_recreate_confirm", projectUuid: up.projectUuid, message: RECREATE_CONFIRM_MESSAGE });
+  assert.equal(cloud.rows.size, 0, "확인 전에는 만들지 않는다");
+  assert.deepEqual(await links.get(localId), { projectUuid: up.projectUuid, cloudVersion: 1 });
+  const again = await sync.upload(localId, { confirmRecreate: true });
   assert.ok(again.kind === "uploaded" && again.created && again.projectUuid !== up.projectUuid);
   assert.deepEqual(await links.get(localId), { projectUuid: again.projectUuid, cloudVersion: 1 });
   assert.equal(cloud.rows.size, 1);
@@ -227,4 +232,117 @@ test("소스: shell-bridge는 타입으로만 가져온다(런타임 의존 0)",
   const { readFile } = await import("node:fs/promises");
   const text = await readFile(new URL("./sync.ts", import.meta.url), "utf8");
   for (const m of text.matchAll(/^import\s+(type\s+)?[^;]*?from\s+"(@arch-studio\/shell-bridge[^"]*)"/gms)) assert.ok(m[1], m[2]);
+});
+
+const withClient = (id: string, patch: Partial<SaveProjectInput> = {}) =>
+  localInput(id, { clientName: "홍길동", clientContact: "010-0000-0000", ...patch });
+
+test("건축주 정보: 업로드 사본에서 기본 제외, includeClientInfo: true일 때만 포함(사본 저장도 같음)", async () => {
+  const { local, cloudStore, sync } = await harness();
+  const a = testProjectId(20);
+  await local.save(withClient(a));
+  const up = await sync.upload(a);
+  assert.ok(up.kind === "uploaded");
+  const plain = await cloudStore.open(up.projectUuid);
+  assert.equal(plain?.clientName, null);
+  assert.equal(plain?.clientContact, null);
+  assert.equal((await local.open(a))?.clientName, "홍길동", "로컬은 그대로");
+
+  const b = testProjectId(21);
+  await local.save(withClient(b));
+  const on = await sync.upload(b, { includeClientInfo: true });
+  assert.ok(on.kind === "uploaded");
+  assert.equal((await cloudStore.open(on.projectUuid))?.clientContact, "010-0000-0000");
+
+  // 재업로드·사본 저장도 기본 제외.
+  await local.save(withClient(b, { expectedVersion: 1 }));
+  const re = await sync.upload(b);
+  assert.ok(re.kind === "uploaded");
+  assert.equal((await cloudStore.open(on.projectUuid))?.clientName, null);
+  await cloudStore.save({ ...localInput(on.projectUuid), expectedVersion: 2 });
+  assert.equal((await sync.upload(b)).kind, "conflict");
+  const copy = await sync.resolveConflict(b, "save_as_copy");
+  assert.ok(copy.kind === "uploaded");
+  assert.equal((await cloudStore.open(copy.projectUuid))?.clientName, null);
+  const copyOn = await sync.resolveConflict(b, "save_as_copy", { includeClientInfo: true });
+  assert.ok(copyOn.kind === "uploaded");
+  assert.equal((await cloudStore.open(copyOn.projectUuid))?.clientName, "홍길동");
+});
+
+test("서버 최신 열기: 이름·대지 라벨·설계 모델은 서버 값, 건축주 정보는 로컬 값 유지", async () => {
+  const { local, cloudStore, sync } = await harness();
+  const localId = testProjectId(22);
+  await local.save(withClient(localId));
+  const up = await sync.upload(localId);
+  assert.ok(up.kind === "uploaded");
+  await cloudStore.save({ ...localInput(up.projectUuid), name: "서버 이름", siteLabel: "부산", designModel: JSON.stringify({ v: "server" }), expectedVersion: 1 });
+  await local.save(withClient(localId, { designModel: JSON.stringify({ v: "mine" }), expectedVersion: 1 }));
+  assert.equal((await sync.upload(localId)).kind, "conflict");
+  const r = await sync.resolveConflict(localId, "open_server_latest");
+  assert.ok(r.kind === "downloaded" && r.notice === SERVER_LATEST_NOTICE);
+  const now = await local.open(localId);
+  assert.equal(now?.name, "서버 이름");
+  assert.equal(now?.siteLabel, "부산");
+  assert.equal(now?.designModel, JSON.stringify({ v: "server" }));
+  assert.equal(now?.clientName, "홍길동");
+  assert.equal(now?.clientContact, "010-0000-0000");
+  assert.equal(now?.version, 3, "이전 로컬 리비전은 이력에 남는다");
+});
+
+test("클라우드 모드 충돌 2선택(project_uuid 기준): 사본 저장 = 새 uuid, 서버 최신 = 다시 열기", async () => {
+  const { cloud, cloudStore, sync } = await harness();
+  const uuid = testProjectId(23);
+  await cloudStore.save(localInput(uuid));
+  await cloudStore.save({ ...localInput(uuid), designModel: JSON.stringify({ v: "other" }), expectedVersion: 1 });
+  const mine = { ...localInput(uuid), designModel: JSON.stringify({ v: "mine" }), expectedVersion: 1 };
+  assert.deepEqual(await sync.saveCloud(mine), { kind: "conflict", projectUuid: uuid, choices: ["save_as_copy", "open_server_latest"] });
+  const copy = await sync.resolveCloudConflict(mine, "save_as_copy");
+  assert.ok(copy.kind === "uploaded" && copy.created && copy.projectUuid !== uuid && copy.version === 1);
+  assert.equal((await cloudStore.open(copy.projectUuid))?.designModel, JSON.stringify({ v: "mine" }));
+  assert.equal(cloud.rows.get(uuid)?.version, 2, "원래 사본은 그대로");
+  const opened = await sync.resolveCloudConflict(mine, "open_server_latest");
+  assert.ok(opened.kind === "opened");
+  assert.equal(opened.open.record.version, 2);
+  assert.equal(opened.open.record.designModel, JSON.stringify({ v: "other" }));
+  assert.equal(opened.open.readOnly, false);
+});
+
+test("읽기 전용: 온라인 표시여도 서버 미도달로 읽기 캐시를 받으면 readOnly", async () => {
+  const { cloud, cloudStore, sync } = await harness({ online: () => true });
+  const uuid = testProjectId(24);
+  await cloudStore.save(localInput(uuid));
+  assert.equal((await sync.openCloud(uuid))?.readOnly, false);
+  cloud.online = false;
+  const r = await sync.openCloud(uuid);
+  assert.equal(r?.readOnly, true);
+  assert.equal(r?.notice, OFFLINE_NOTICE);
+});
+
+test("연결 기록 실패: 내려받기·서버 최신 열기는 로컬 저장 후 link_failed로 구분해 알린다", async () => {
+  let failSet = false;
+  const { local, cloudStore, sync } = await harness({
+    wrapLinks: (l) => ({
+      get: (id) => l.get(id),
+      set: async (id, link) => {
+        if (failSet) throw Object.assign(new Error("shell-bridge: AR061"), { code: "AR061" });
+        return l.set(id, link);
+      },
+    }),
+  });
+  const uuid = testProjectId(25);
+  await cloudStore.save(localInput(uuid));
+  failSet = true;
+  const d = await sync.download(uuid);
+  assert.ok(d.kind === "link_failed" && d.message === LINK_FAILED_MESSAGE && d.projectUuid === uuid);
+  assert.equal((await local.open(d.localId))?.version, 1, "로컬에는 저장됐다");
+
+  failSet = false;
+  const localId = testProjectId(26);
+  await local.save(localInput(localId));
+  const up = await sync.upload(localId);
+  assert.ok(up.kind === "uploaded");
+  await cloudStore.save({ ...localInput(up.projectUuid), expectedVersion: 1 });
+  failSet = true;
+  const r = await sync.resolveConflict(localId, "open_server_latest");
+  assert.ok(r.kind === "link_failed" && r.localVersion === 2);
 });
