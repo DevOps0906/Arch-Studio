@@ -1,6 +1,7 @@
 // 클라우드 사본 API 본체(04_API.md 2.1절 `GET|POST /api/cloud-projects`, `POST /api/cloud-projects/{id}/upload-url`, ADR-001 3장).
 // 조직은 세션에서만(본문·쿼리에 org_id 없음, strict). DB 접근은 주입한 저장소(CloudProjectRepo)로만: 스키마(project_uuid 정본 키,
-// local_id nullable, (org_id, project_uuid) 업서트)와 arch.save_cloud_project 새 시그니처는 AR-06-073 소유라 아직 연결하지 않는다(deps.ts).
+// local_id nullable, (org_id, project_uuid) 업서트)와 arch.save_cloud_project 새 시그니처는 2402_cloud_projects.sql(AR-06-073),
+// Supabase 구현은 supabase-repo.ts. 업로드 폴더 키는 항상 project_uuid. 저장 성공 뒤 교체된 이전 객체를 지운다(최신 1개 보존, 실패는 로그만).
 // 동시성: POST는 expected_version을 그대로 RPC에 넘기고, 불일치는 DB가 AR041로 거절한다(저장 안 됨). 서버는 응답 version이
 // expected_version+1이 아니면 성공으로 보지 않는다(조용한 덮어쓰기 방어). 새 사본은 expected_version=0, 조직 상한 초과는 AR040.
 // 다른 조직: RLS는 DB 몫이지만 서버도 세션 조직과 행 org_id·업로드 경로 첫 폴더를 대조한다(맞지 않는 행은 버리고 개수만 로그).
@@ -34,20 +35,22 @@ export interface SaveCloudProjectArgs {
 }
 
 /**
- * 사용자 JWT 저장소(RLS). AR-06-073이 구현한다: list = SELECT arch.cloud_projects(조직 updated_at desc, 커서),
+ * 사용자 JWT 저장소(RLS, supabase-repo.ts): list = SELECT arch.cloud_projects(조직 updated_at desc, 커서),
  * usage = count + cloud_projects_max + retention_until, find = (org, project_uuid) 1행, save = arch.save_cloud_project(...).
- * save의 DB 오류는 CloudDbError(코드: AR040·AR041·23514·42501·22023, AR041은 currentVersion, AR040은 max)로 던진다.
+ * save의 DB 오류는 CloudDbError(코드: AR031·AR040·AR041·23505·23514·42501·22023, AR041은 currentVersion, AR040은 max)로 던진다.
+ * save의 previous_path = 교체된 이전 객체 경로(새 사본·같은 경로면 null).
  */
 export interface CloudProjectRepo {
   list(orgId: string, opts: { cursor: string | null; limit: number }): Promise<{ rows: CloudProjectRow[]; next: string | null }>;
   usage(orgId: string): Promise<{ count: number; max: number; retentionUntil: string | null }>;
   find(orgId: string, projectUuid: string): Promise<{ version: number } | null>;
-  save(args: SaveCloudProjectArgs): Promise<{ project_uuid: string; version: number }>;
+  save(args: SaveCloudProjectArgs): Promise<{ project_uuid: string; version: number; previous_path?: string | null }>;
 }
 
-/** 업로드 객체 재검사(04_API 2.1 "업로드 객체 재검사"). 없으면 null. service_role Storage(073 구현). */
+/** 업로드 객체(service_role Storage). inspect = 재검사(04_API 2.1, 없으면 null), remove = 교체된 이전 객체 삭제. */
 export interface SnapshotInspector {
   inspect(path: string): Promise<{ bytes: number } | null>;
+  remove(path: string): Promise<void>;
 }
 
 export type WebEditDecision = "allowed" | "fallback" | "denied";
@@ -172,9 +175,9 @@ export async function handleListCloudProjects(req: Request, deps: CloudDeps): Pr
   }
 }
 
-/** 업로드 경로의 프로젝트 폴더(로컬에서 올린 사본은 local_id, 웹 프로젝트는 project_uuid). */
-export function snapshotFolder(input: { project_uuid: string; local_id?: string | undefined }): string {
-  return input.local_id ?? input.project_uuid;
+/** 업로드 경로의 프로젝트 폴더: 항상 project_uuid(DB 경로 CHECK와 같은 키, upload-url의 project_ref). */
+export function snapshotFolder(input: { project_uuid: string }): string {
+  return input.project_uuid;
 }
 
 /** 경로 검사: 서버 형식(uploads/policy) + 첫 폴더 = 세션 조직 + 프로젝트 폴더 일치. */
@@ -208,7 +211,7 @@ export async function handleSaveCloudProject(req: Request, deps: CloudDeps): Pro
     if (object.bytes > SNAPSHOT_MAX_BYTES) throw new CloudApiError("AR031", { max_bytes: SNAPSHOT_MAX_BYTES });
 
     const repo = deps.repo(session);
-    let saved: { project_uuid: string; version: number };
+    let saved: { project_uuid: string; version: number; previous_path?: string | null };
     try {
       saved = await db(() =>
         repo.save({
@@ -233,6 +236,15 @@ export async function handleSaveCloudProject(req: Request, deps: CloudDeps): Pro
       throw new CloudApiError("internal");
     }
     cloudLog.info("cloud_projects.saved", { route: "cloud_projects_save", project_uuid: saved.project_uuid, version: saved.version });
+    // 이전 버전은 보존하지 않는다(최신 1개). 같은 조직·같은 프로젝트 폴더 경로만 지우고, 실패해도 저장은 성공(경로는 로그 0).
+    const prev = saved.previous_path;
+    if (typeof prev === "string" && prev !== input.storage_path && isOwnSnapshotPath(session.orgId, snapshotFolder(input), prev)) {
+      try {
+        await deps.snapshots().remove(prev);
+      } catch {
+        cloudLog.warn("cloud_projects.previous_remove_failed", { route: "cloud_projects_save", project_uuid: saved.project_uuid, version: saved.version, reason: "storage" });
+      }
+    }
     return cloudOk({ project_uuid: saved.project_uuid, version: saved.version });
   } catch (error) {
     cloudLog.warn("cloud_projects.save_rejected", { route: "cloud_projects_save", code: codeOf(error), ...(projectUuid ? { project_uuid: projectUuid } : {}) });

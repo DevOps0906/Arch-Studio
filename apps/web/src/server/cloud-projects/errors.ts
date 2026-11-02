@@ -20,6 +20,7 @@ export type CloudErrorCode =
   | "AR041"
   | "42501"
   | "22023"
+  | "23505"
   | "23514"
   | "internal";
 
@@ -45,6 +46,7 @@ export const CLOUD_ERRORS: Readonly<Record<CloudErrorCode, ErrorSpec>> = {
   AR041: { status: 409, message: "다른 곳에서 이 프로젝트가 먼저 저장되었습니다. 병합하지 않습니다. 저장하지 않았습니다." },
   "42501": { status: 403, message: "이 작업을 할 권한이 없습니다." },
   "22023": { status: 422, message: "입력 형식이 올바르지 않습니다." },
+  "23505": { status: 409, message: "이 로컬 프로젝트의 클라우드 사본이 이미 있습니다. 목록에서 기존 사본을 여세요." },
   "23514": { status: 422, message: "업로드 경로가 올바르지 않습니다." },
   internal: { status: 500, message: "요청을 처리하지 못했습니다." },
 };
@@ -79,7 +81,7 @@ export class CloudDbError extends Error {
   }
 }
 
-const DB_CODES = new Set<CloudErrorCode>(["AR040", "AR041", "42501", "22023", "23514"]);
+const DB_CODES = new Set<CloudErrorCode>(["AR031", "AR040", "AR041", "42501", "22023", "23505", "23514"]);
 
 /** PostgREST 오류 객체({ code: SQLSTATE }) → 코드. P0002는 not_found, 모르는 코드는 internal. */
 export function mapCloudDbError(error: unknown): CloudErrorCode {

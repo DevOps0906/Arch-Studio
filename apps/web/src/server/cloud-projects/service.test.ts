@@ -5,7 +5,7 @@ import { test, type TestContext } from "node:test";
 import { GatewayError } from "../ai/gateway/http.ts";
 import type { GatewaySession } from "../ai/gateway/session.ts";
 import { MemoryRateLimitStore } from "../licenses/rate-limit.ts";
-import { CloudDbError, mapCloudDbError } from "./errors.ts";
+import { CloudApiError, CloudDbError, mapCloudDbError } from "./errors.ts";
 import { sanitizeCloudLog } from "./log.ts";
 import {
   handleCloudUploadUrl,
@@ -19,6 +19,7 @@ import {
   type CloudProjectRow,
   type SaveCloudProjectArgs,
 } from "./service.ts";
+import { decodeCursor, encodeCursor, toCloudDbError } from "./supabase-repo.ts";
 
 const ORG = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const OTHER_ORG = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
@@ -41,8 +42,10 @@ interface World {
   signed: Request[];
   webEdit?: "allowed" | "fallback" | "denied";
   /** 저장소 이상 동작 흉내. */
-  saveOverride?: (args: SaveCloudProjectArgs) => Promise<{ project_uuid: string; version: number }>;
+  saveOverride?: (args: SaveCloudProjectArgs) => Promise<{ project_uuid: string; version: number; previous_path?: string | null }>;
   leakRows?: CloudProjectRow[];
+  removed: string[];
+  removeFails?: boolean;
 }
 
 function row(org: string, uuid: string, version: number, over: Partial<CloudProjectRow> = {}): CloudProjectRow {
@@ -57,6 +60,7 @@ function world(over: Partial<World> = {}): World {
     objects: new Map([[pathFor(ORG, P1), 5000], [pathFor(ORG, P2), 5000], [pathFor(ORG, LOCAL), 5000]]),
     saves: [],
     signed: [],
+    removed: [],
     ...over,
   };
   return w;
@@ -105,7 +109,13 @@ function deps(w: World, rate = new MemoryRateLimitStore()): CloudDeps {
       },
     },
     repo: () => fakeRepo(w),
-    snapshots: () => ({ inspect: async (p) => (w.objects.has(p) ? { bytes: w.objects.get(p) as number } : null) }),
+    snapshots: () => ({
+      inspect: async (p) => (w.objects.has(p) ? { bytes: w.objects.get(p) as number } : null),
+      remove: async (p) => {
+        if (w.removeFails) throw new Error(`remove failed ${p}`);
+        w.removed.push(p);
+      },
+    }),
     signUpload: async (req) => {
       w.signed.push(req);
       return new Response(JSON.stringify({ ok: true, data: { signed_upload_url: "https://x/sign", path: "p", expires_at: "t" } }), { status: 200 });
@@ -249,11 +259,15 @@ test("저장: 업로드 경로 — 다른 조직 폴더·다른 프로젝트 폴
   assert.equal(big.status, 413);
   assert.equal(big.json.error.code, "AR031");
   assert.equal(w.saves.length, 0);
-  // 설치형에서 올린 사본: 경로 폴더 = local_id.
-  const local = await save(world(), newBody({ local_id: LOCAL, storage_path: pathFor(ORG, LOCAL) }));
+  // 설치형에서 올린 사본도 경로 폴더 = project_uuid(local_id 폴더는 422, 저장소 호출 0).
+  const local = await save(world(), newBody({ local_id: LOCAL }));
   assert.equal(local.status, 200);
-  assert.ok(isOwnSnapshotPath(ORG, LOCAL, pathFor(ORG, LOCAL)));
-  assert.ok(!isOwnSnapshotPath(ORG, LOCAL, pathFor(OTHER_ORG, LOCAL)));
+  const wl = world();
+  const byLocal = await save(wl, newBody({ local_id: LOCAL, storage_path: pathFor(ORG, LOCAL) }));
+  assert.equal(byLocal.status, 422);
+  assert.equal(wl.saves.length, 0);
+  assert.ok(isOwnSnapshotPath(ORG, P1, pathFor(ORG, P1)));
+  assert.ok(!isOwnSnapshotPath(ORG, P1, pathFor(OTHER_ORG, P1)));
 });
 
 test("저장: 권리 — viewer 403, entitled=false 402(can_download), web_edit 폴백 402(reason fallback), 저장소 호출 0", async () => {
@@ -387,4 +401,60 @@ test("DB 오류 매핑·로그 허용 목록", () => {
     { route: "cloud_projects_save", code: "AR041", project_uuid: P1, version: 2 },
   );
   assert.deepEqual(sanitizeCloudLog({ route: "x" as never, project_uuid: pathFor(ORG, P1) }), { route: "unknown" });
+});
+
+test("저장: 교체된 이전 객체를 지운다(같은 프로젝트 폴더만), 삭제 실패해도 200·경로 로그 0", async (t) => {
+  const OLD = `${ORG}/arch/project_snapshot/${P1}/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa.arch`;
+  const ok = world({ saveOverride: async () => ({ project_uuid: P1, version: 1, previous_path: OLD }) });
+  assert.equal((await save(ok, newBody())).status, 200);
+  assert.deepEqual(ok.removed, [OLD]);
+
+  const foreign = world({ saveOverride: async () => ({ project_uuid: P1, version: 1, previous_path: pathFor(OTHER_ORG, P1) }) });
+  assert.equal((await save(foreign, newBody())).status, 200);
+  assert.deepEqual(foreign.removed, [], "다른 조직 경로는 지우지 않는다");
+  const same = world({ saveOverride: async () => ({ project_uuid: P1, version: 1, previous_path: pathFor(ORG, P1) }) });
+  assert.equal((await save(same, newBody())).status, 200);
+  assert.deepEqual(same.removed, [], "새 경로와 같으면 지우지 않는다");
+
+  const lines = spy(t);
+  const fail = world({ removeFails: true, saveOverride: async () => ({ project_uuid: P1, version: 1, previous_path: OLD }) });
+  const r = await save(fail, newBody());
+  assert.equal(r.status, 200);
+  assert.ok(lines.some((l) => l.includes("previous_remove_failed")));
+  assert.ok(lines.every((l) => !l.includes(OLD) && !l.includes(`${ORG}/`)));
+});
+
+test("저장: DB 23505(같은 local_id·다른 project_uuid) 409, DB AR031 413", async () => {
+  const dup = world({
+    saveOverride: async () => {
+      throw new CloudDbError("23505");
+    },
+  });
+  const r = await save(dup, newBody({ local_id: LOCAL }));
+  assert.equal(r.status, 409);
+  assert.equal(r.json.error.code, "23505");
+  const big = world({
+    saveOverride: async () => {
+      throw new CloudDbError("AR031");
+    },
+  });
+  assert.equal((await save(big, newBody())).status, 413);
+});
+
+test("supabase 저장소: 커서 왕복·깨진 커서 invalid_input, PostgREST 오류 detail → current_version·max", () => {
+  const c = encodeCursor("2026-11-02T01:02:03.123456+00:00", P1);
+  assert.match(c, /^[A-Za-z0-9_-]{1,200}$/);
+  assert.deepEqual(decodeCursor(c), { updatedAt: "2026-11-02T01:02:03.123456+00:00", id: P1 });
+  const injected = Buffer.from(JSON.stringify(["2026-11-02T00:00:00Z\",id.gt.0", P1])).toString("base64url");
+  for (const bad of ["xx", Buffer.from('["x","y"]').toString("base64url"), injected]) {
+    assert.throws(() => decodeCursor(bad), (e: unknown) => e instanceof CloudApiError && e.code === "invalid_input");
+  }
+  const conflict = toCloudDbError({ code: "AR041", message: "save_cloud_project: version conflict", details: '{"current_version": 3}' });
+  assert.equal(conflict.code, "AR041");
+  assert.equal(conflict.currentVersion, 3);
+  assert.equal(toCloudDbError({ code: "AR040", details: '{"max": 3}' }).max, 3);
+  assert.equal(toCloudDbError({ code: "AR041", details: "not json" }).currentVersion, undefined);
+  assert.equal(toCloudDbError({ code: "23505" }).code, "23505");
+  assert.equal(toCloudDbError({ code: "AR031" }).code, "AR031");
+  assert.equal(toCloudDbError({ code: "XX000", details: SECRET_NAME }).code, "internal");
 });
