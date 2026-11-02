@@ -126,5 +126,8 @@
 | 2026-11-02 | AR-06-053 음성 | 상담 녹음은 mock만(워커 voice 토큰 발급 경로 없음), oss-voice /stt 계약 가정, 10분 분할·ElevenLabs 대체 미구현, 차감 후 원장 재조회·환불 실패 시 409로 회복 불가(🟡) | DB: consume_credits가 inserted 반환·전사본 24h 삭제·voice_jobs 상태·차감+enqueue 한 트랜잭션(tasks/logs/AR-06-053.md). 사람: voice 토큰 경로·디코더 의존성·국외 이전 동의 |
 | 2026-11-02 | Storage `arch-user/<org>/arch/project_snapshot/` (AR-06-073) | 서명 업로드 후 저장이 거절(AR041·AR040·23505)되거나 중단된 객체가 행 없이 남는다(교체된 이전 객체는 저장 성공 뒤 삭제) | 정리 크론: `cloud_projects.storage_path`에 없는 project_snapshot 객체 중 N시간 지난 것 삭제(service_role, 후속 작업) |
 | 2026-11-02 | 설치형 클라우드 업로드(AR-06-077) | 서버는 업로드 폴더 키를 항상 `project_uuid`로 대조한다. 설치형이 `local_id` 폴더로 올리면 POST가 422(23514) | 077에서 upload-url의 `{id}` = `project_uuid`로 고정, `local_id`는 본문 필드로만 보내는지 테스트로 대조 |
+| 2026-11-02 | CI(AR-06-049 → 058) | `pnpm test:ai-routing`(DB 없음)과 `node scripts/ai-routing/run-sql.mjs`(로컬 Supabase 필요)는 CI에 연결돼 있지 않다. `start-run.ts:168` "AR-06-049가 CI에서 막는다" 주석은 사실과 다르다 | 058에서 CI 연결(DB 단계는 supabase start 후). 연결 전까지 주석을 "pricing.test.ts·test:ai-routing이 막는다(CI 연결은 058)"로 정정 |
+| 2026-11-02 | 그래프 등록(AR-06-049) | 웹이 `graph:arch.proposal_narrative` 잡 토큰을 발급하지만(ai-token `arch.proposal_pdf`) apps/api `PRODUCT.graphs`에 그 그래프가 없어 404 | 제안서 서술 그래프 작업에서 PRODUCT에 추가하거나, 그 전까지 발급 scope에서 제외. 추가되면 `tests/arch/security` scope 매트릭스가 자동으로 포함 |
+| 2026-11-02 | `arch.knowledge` 라우팅(AR-06-049) | seed force=false라 국외 동의 조직의 org override가 상용 임베딩(voyage)을 고를 수 있다. 문서 "아니오(컬렉션 모델 고정)"와 현재 동작은 일치(컬렉션 모델은 ai_collections.embedding_provider가 고정) | 플랫폼 공통 지식 검색이 운영자 org 상수로만 돈다면 변경 불필요. 사용자 org 컬렉션에도 쓰게 되면 force 여부를 사람 판정 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
