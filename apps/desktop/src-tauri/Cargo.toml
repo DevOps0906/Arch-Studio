@@ -31,7 +31,7 @@ ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std
 # resvg·usvg MPL-2.0(수정 없이 사용), tiny-skia BSD-3-Clause, png·fontdb·roxmltree MIT OR Apache-2.0 계열.
 # 기능 최소화: text만(system-fonts·memmap-fonts·raster-images 끔). fontdb는 fs 기능 없이 → 시스템 글꼴·글꼴 파일 로드 함수가 없다.
 # png =0.17.5: resvg-js가 쓴 버전. 최신 0.17.x는 기본 필터·압축이 달라 PNG 바이트가 달라진다(픽셀은 같음).
-resvg = { version = "=0.34.0", default-features = false, features = ["text"] }
+resvg = { version = "=0.49.0", default-features = false, features = ["text"] }
 usvg = { version = "=0.34.1", default-features = false, features = ["text"] }
 tiny-skia = "=0.10.0"
 fontdb = { version = "=0.14.1", default-features = false }
