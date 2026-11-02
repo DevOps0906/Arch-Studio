@@ -12,6 +12,6 @@ export function settleStt(reserved: number, actualSeconds: number): { charged: n
   return { charged, refund: reserved - charged };
 }
 
-export function voiceSettleKey(requestId: string): string {
-  return `voice:${requestId}:settle`;
+export function voiceSettleKey(orgId: string, requestId: string): string {
+  return `voice:${orgId}:${requestId}:settle`;
 }

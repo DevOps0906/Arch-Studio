@@ -12,6 +12,8 @@ import { handleStt, type ConsultEnqueueInput, type VoiceDeps } from "./service.t
 
 const ORG = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const USER = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const OTHER_USER = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+const OTHER_ORG = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
 const PROJECT = "11111111-1111-4111-8111-111111111111";
 const REQ = "22222222-2222-4222-8222-222222222222";
 const REQ2 = "33333333-3333-4333-8333-333333333333";
@@ -20,8 +22,17 @@ const NOW = Date.UTC(2026, 10, 2, 3, 0, 0);
 
 const WEBM = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3]);
 
+interface Row {
+  id: number;
+  amount: number;
+  orgId: string;
+  actorId: string;
+  mode: string;
+  nonce: string;
+}
+
 interface Ledger {
-  consumes: Map<string, { id: number; amount: number }>;
+  consumes: Map<string, Row>;
   refunds: Map<string, { ledgerId: number; amount: number; reason: string }>;
   balance: number;
 }
@@ -35,6 +46,8 @@ interface World {
   providerCalls: SttRequest[];
   enqueued: ConsultEnqueueInput[];
   objects: Map<string, Uint8Array>;
+  /** 저장소가 돌려주는 원장 사실을 바꿔 본다(방어 검사용). */
+  tamper?: (row: Row) => Partial<Row>;
 }
 
 function fakeProvider(w: { providerCalls: SttRequest[] }, out: { seconds: number; fail?: boolean }): SttProvider {
@@ -77,19 +90,21 @@ function deps(w: World): VoiceDeps {
     },
     org: () => ({ orgFeatures: async () => w.features }),
     credits: () => ({
-      async reserve({ requestId, amount }) {
-        const key = voiceIdempotencyKey(requestId);
+      async reserve({ orgId, actorId, requestId, amount, mode, nonce }) {
+        // consume_credits와 같은 규칙: 같은 키면 기존 행을 그대로(새 차감·새 metadata 없음).
+        const key = voiceIdempotencyKey(orgId, requestId);
         const hit = w.ledger.consumes.get(key);
-        const refunded = (id: number) => [...w.ledger.refunds.values()].filter((r) => r.ledgerId === id).reduce((s, r) => s + r.amount, 0);
-        if (hit) return { ledgerId: hit.id, refunded: refunded(hit.id) };
-        if (w.ledger.balance < amount) throw Object.assign(new Error("db"), { code: "CR001" });
-        w.ledger.balance -= amount;
-        const row = { id: w.ledger.consumes.size + 1, amount };
-        w.ledger.consumes.set(key, row);
-        return { ledgerId: row.id, refunded: 0 };
+        const row = hit ?? { id: w.ledger.consumes.size + 1, amount, orgId, actorId, mode, nonce };
+        if (!hit) {
+          if (w.ledger.balance < amount) throw Object.assign(new Error("db"), { code: "CR001" });
+          w.ledger.balance -= amount;
+          w.ledger.consumes.set(key, row);
+        }
+        const r = { ...row, ...(w.tamper ? w.tamper(row) : {}) };
+        return { ledgerId: r.id, orgId: r.orgId, actorId: r.actorId, amount: r.amount, mode: r.mode, nonce: r.nonce };
       },
-      async refund({ ledgerId, requestId, amount, reason }) {
-        const key = voiceSettleKey(requestId);
+      async refund({ ledgerId, orgId, requestId, amount, reason }) {
+        const key = voiceSettleKey(orgId, requestId);
         if (w.ledger.refunds.has(key)) return;
         w.ledger.refunds.set(key, { ledgerId, amount, reason });
         w.ledger.balance += amount;
@@ -170,20 +185,82 @@ test("받아쓰기: 무음(0초)은 실제 길이 정산으로 전액 환불", a
   assert.equal(res.status, 200);
   assert.equal((await json(res)).data?.credits, 0);
   assert.equal(w.ledger.balance, 10);
-  assert.equal(w.ledger.refunds.get(voiceSettleKey(REQ))?.reason, "stt_settle");
+  assert.equal(w.ledger.refunds.get(voiceSettleKey(ORG, REQ))?.reason, "stt_settle");
 });
 
-test("멱등: 같은 request_id 재전송은 추가 차감 없음(voice:<request_id>)", async () => {
+test("멱등: 같은 request_id 재전송은 409, 제공자 재호출·추가 차감 없음(voice:<org_id>:<request_id>)", async () => {
   const w = world({ seconds: 30 });
   const d = deps(w);
   assert.equal((await handleStt(dictation(), d)).status, 200);
-  assert.equal((await handleStt(dictation(), d)).status, 200);
+  const again = await handleStt(dictation(), d);
+  assert.equal(again.status, 409);
+  assert.equal((await json(again)).error?.code, "voice_request_done");
+  assert.equal(w.providerCalls.length, 1);
   assert.equal(w.ledger.consumes.size, 1);
-  assert.ok(w.ledger.consumes.has(`voice:${REQ}`));
+  assert.ok(w.ledger.consumes.has(`voice:${ORG}:${REQ}`));
   assert.equal(w.ledger.balance, 9);
   // 다른 request_id는 새로 차감
   assert.equal((await handleStt(dictation(REQ2), d)).status, 200);
   assert.equal(w.ledger.balance, 8);
+});
+
+test("다른 조직: 같은 request_id라도 키가 조직 범위라 남의 원장을 재사용하지 않고 자기 크레딧으로 차감", async () => {
+  const w = world({ seconds: 30 });
+  const d = deps(w);
+  assert.equal((await handleStt(dictation(), d)).status, 200);
+  w.session = { userId: USER, orgId: OTHER_ORG, role: "member", entitled: true, accessToken: "x".repeat(30) };
+  assert.equal((await handleStt(dictation(), d)).status, 200);
+  assert.deepEqual([...w.ledger.consumes.keys()].sort(), [`voice:${ORG}:${REQ}`, `voice:${OTHER_ORG}:${REQ}`].sort());
+  assert.equal(w.ledger.balance, 8);
+});
+
+test("원장 사실 불일치(조직·행위자·금액·모드·nonce 중 하나)면 제공자 전에 409", async () => {
+  const tampers: ((r: Row) => Partial<Row>)[] = [
+    () => ({ orgId: OTHER_ORG }),
+    () => ({ actorId: OTHER_USER }),
+    () => ({ amount: 2 }),
+    () => ({ mode: "consult" }),
+    () => ({ nonce: "old" }),
+  ];
+  for (const tamper of tampers) {
+    const w = world({ tamper });
+    const res = await handleStt(dictation(), deps(w));
+    assert.equal(res.status, 409);
+    assert.equal(w.providerCalls.length, 0);
+  }
+});
+
+test("다른 사용자: 같은 조직·같은 request_id 재사용은 409(남이 낸 원장으로 받지 않음)", async () => {
+  const w = world({ seconds: 30 });
+  const d = deps(w);
+  assert.equal((await handleStt(dictation(), d)).status, 200);
+  w.session = { userId: OTHER_USER, orgId: ORG, role: "member", entitled: true, accessToken: "x".repeat(30) };
+  assert.equal((await handleStt(dictation(), d)).status, 409);
+  assert.equal(w.providerCalls.length, 1);
+  assert.equal(w.ledger.balance, 9);
+});
+
+test("환불된 원장 재사용: 실패·환불 뒤 같은 request_id로 받아쓰기·상담 모두 409, 무료 처리 없음", async () => {
+  const w = world({ fail: true });
+  const d = deps(w);
+  assert.equal((await handleStt(dictation(), d)).status, 503);
+  assert.equal(w.ledger.balance, 10);
+  assert.equal((await handleStt(dictation(), d)).status, 409);
+  const c = await handleStt(consult({}), d);
+  assert.equal(c.status, 409);
+  assert.equal(w.providerCalls.length, 1);
+  assert.equal(w.enqueued.length, 0);
+  assert.equal(w.ledger.balance, 10);
+});
+
+test("받아쓰기 원장으로 상담 접수 불가: 같은 request_id 상담은 409, enqueue 없음", async () => {
+  const w = world({ seconds: 30 });
+  const d = deps(w);
+  assert.equal((await handleStt(dictation(), d)).status, 200);
+  const res = await handleStt(consult({}), d);
+  assert.equal(res.status, 409);
+  assert.equal(w.enqueued.length, 0);
+  assert.equal(w.ledger.balance, 9);
 });
 
 test("제공자 실패: 전액 환불 후 503, 같은 request_id 재전송은 제공자를 다시 부르지 않음(409)", async () => {

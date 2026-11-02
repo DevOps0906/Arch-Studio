@@ -1,7 +1,7 @@
 // POST /api/voice/stt 본체(04_API.md 2.2절 `/api/voice/stt` 행, AR-06-053).
 // 받아쓰기(multipart): audio ≤60초·5MB + { request_id, mode:'dictation' } → 200 { text, duration_s, credits }.
 //   순서: 실패 닫힘(제공자 없음 503, 인증보다 먼저) → 인증 → 레이트 리밋 → member+ → 엔타이틀먼트 → 본문(5MB·형식·매직바이트)
-//   → 선차감 1(분, `voice:<request_id>`) → 제공자 → 실제 길이 정산(남는 크레딧 `voice:<request_id>:settle`로 환불) → 200.
+//   → 선차감 1(분, `voice:<org_id>:<request_id>`, 새 원장만 통과·재사용은 409) → 제공자 → 실제 길이 정산(`...:settle` 환불) → 200.
 //   제공자 실패·60초 초과는 전액 환불 후 오류. 원본은 저장하지 않는다(메모리에서만 쓰고 버림).
 // 상담 녹음(JSON): { request_id, mode:'consult', project_ref, audio_path(consult_audio), duration_s ≤7200, notice_version }
 //   → 신고 길이로 선차감 → core.voice_jobs(원본 24시간 보관·고지 기록) + enqueue_job('arch.stt') → 202 { job_id, credits }.
@@ -9,6 +9,7 @@
 // 차감은 credits.reserve 한 곳에서만 일어나므로 그 앞의 모든 거부는 차감 0이다. 조직·행위자는 세션에서만.
 // 응답·로그에 경로·토큰·전사문·예외 원문을 넣지 않는다.
 // server-only를 import하지 않는다(node --test 대상).
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { logger } from "../../lib/logger.ts";
 import { errorResponse, GatewayError, okResponse, readJsonLimited, toErrorResponse, UUID_RE, UUID_V4_RE } from "../ai/gateway/http.ts";
@@ -19,12 +20,36 @@ import { AUDIO_HEAD_BYTES, AUDIO_MIME, sniffAudio } from "./audio.ts";
 import { CONSULT_MAX_SECONDS, DICTATION_MAX_SECONDS, DURATION_TOLERANCE_S, settleStt, sttCreditsFor } from "./billing.ts";
 import type { SttProvider, SttResult } from "./provider.ts";
 
+export interface ReserveInput {
+  orgId: string;
+  actorId: string;
+  requestId: string;
+  amount: number;
+  mode: "dictation" | "consult";
+  /** 이번 호출만의 값(원장 metadata.nonce). 기존 원장이 돌아오면 다르다. */
+  nonce: string;
+}
+
+/** 돌려받은 원장 행의 사실. amount는 차감 크레딧(양수). 읽지 못한 칸은 null(→ 불일치로 본다). */
+export interface ReservedLedger {
+  ledgerId: number;
+  orgId: string | null;
+  actorId: string | null;
+  amount: number | null;
+  mode: string | null;
+  nonce: string | null;
+}
+
 /** core.consume_credits·refund_credits(service_role). 멱등 키는 구현이 billing.ts 규칙으로 만든다. */
 export interface VoiceCredits {
-  /** 선차감. 같은 request_id면 기존 원장을 돌려준다(추가 차감 없음). refunded = 그 원장에 이미 붙은 환불 합. */
-  reserve(input: { orgId: string; actorId: string; requestId: string; amount: number; mode: "dictation" | "consult" }): Promise<{ ledgerId: number; refunded: number }>;
-  /** 정산·실패 환불(키 `voice:<request_id>:settle`, 한 요청에 한 번). */
-  refund(input: { ledgerId: number; requestId: string; amount: number; reason: string }): Promise<void>;
+  /**
+   * 선차감(키 `voice:<org_id>:<request_id>`). 같은 키 원장이 이미 있으면 consume_credits는 새로 차감하지 않고 기존 원장을 돌려준다.
+   * 돌려받은 원장의 사실(조직·행위자·금액·모드·이번 호출 nonce)을 그대로 돌려준다. 새로 삽입했는지는 nonce 일치로만 판별한다
+   * (consume_credits 반환값으로는 구분 불가 → p_metadata.nonce에 이번 호출 값을 넣고 원장 행을 다시 읽는다).
+   */
+  reserve(input: ReserveInput): Promise<ReservedLedger>;
+  /** 정산·실패 환불(키 `voice:<org_id>:<request_id>:settle`, 한 요청에 한 번). */
+  refund(input: { ledgerId: number; orgId: string; requestId: string; amount: number; reason: string }): Promise<void>;
 }
 
 export interface VoiceOrgRepo {
@@ -69,6 +94,8 @@ export interface VoiceDeps {
   now(): number;
   /** 제공자 호출 시간 상한(ms). 기본 30초. */
   providerTimeoutMs?: number;
+  /** 원장 nonce 생성. 기본 crypto.randomUUID. */
+  nonce?: () => string;
 }
 
 /** 받아쓰기 오디오 상한(04_API.md "≤60초·5MB, 제안"). */
@@ -126,13 +153,23 @@ function dbCode(error: unknown): string | undefined {
   return typeof raw === "string" ? raw : undefined;
 }
 
-async function reserveOrThrow(credits: VoiceCredits, input: Parameters<VoiceCredits["reserve"]>[0]): Promise<{ ledgerId: number; refunded: number }> {
+/**
+ * 선차감 + 새 원장인지 확인. 이번 호출이 만든 원장(nonce 일치)이고 조직·행위자·금액·모드가 이번 요청과 같을 때만 통과.
+ * 그 밖(재전송·환불된 원장 재사용·받아쓰기 원장으로 상담·다른 사용자)은 제공자·enqueue 전에 409(실패 닫힘, 추가 차감 없음).
+ */
+async function reserveFresh(credits: VoiceCredits, deps: VoiceDeps, input: Omit<ReserveInput, "nonce">): Promise<number> {
+  const nonce = (deps.nonce ?? randomUUID)();
+  let got: ReservedLedger;
   try {
-    return await credits.reserve(input);
+    got = await credits.reserve({ ...input, nonce });
   } catch (error) {
     if (dbCode(error) === "CR001") throw new GatewayError("CR001", { required: input.amount });
     throw error;
   }
+  const fresh =
+    got.nonce === nonce && got.orgId === input.orgId && got.actorId === input.actorId && got.amount === input.amount && got.mode === input.mode;
+  if (!fresh) throw new VoiceReject("voice_request_done");
+  return got.ledgerId;
 }
 
 /** 본문을 maxBytes까지만 읽는다. 넘으면 413. */
@@ -204,15 +241,14 @@ async function handleDictation(req: Request, deps: VoiceDeps, session: GatewaySe
   const input = await parseDictation(req);
   const reserved = sttCreditsFor(DICTATION_MAX_SECONDS);
   const credits = deps.credits();
-  const { ledgerId, refunded } = await reserveOrThrow(credits, {
+  const ledgerId = await reserveFresh(credits, deps, {
     orgId: session.orgId,
     actorId: session.userId,
     requestId: input.requestId,
     amount: reserved,
     mode: "dictation",
   });
-  // 실패·초과로 이미 환불된 요청의 재전송: 멱등 차감이 새로 받지 않으므로 제공자를 다시 부르지 않는다.
-  if (refunded > 0) throw new VoiceReject("voice_request_done");
+  const refundArgs = { ledgerId, orgId: session.orgId, requestId: input.requestId };
 
   let result: SttResult;
   try {
@@ -222,16 +258,16 @@ async function handleDictation(req: Request, deps: VoiceDeps, session: GatewaySe
       deps.providerTimeoutMs ?? 30_000,
     );
   } catch {
-    await credits.refund({ ledgerId, requestId: input.requestId, amount: reserved, reason: "stt_failed" });
+    await credits.refund({ ...refundArgs, amount: reserved, reason: "stt_failed" });
     throw new VoiceReject("voice_unavailable");
   }
   if (result.durationSeconds > DICTATION_MAX_SECONDS + DURATION_TOLERANCE_S) {
-    await credits.refund({ ledgerId, requestId: input.requestId, amount: reserved, reason: "stt_too_long" });
+    await credits.refund({ ...refundArgs, amount: reserved, reason: "stt_too_long" });
     throw new VoiceReject("VOICE_TOO_LONG");
   }
   const settled = settleStt(reserved, Math.min(result.durationSeconds, DICTATION_MAX_SECONDS));
   if (settled.refund > 0) {
-    await credits.refund({ ledgerId, requestId: input.requestId, amount: settled.refund, reason: "stt_settle" });
+    await credits.refund({ ...refundArgs, amount: settled.refund, reason: "stt_settle" });
   }
   return okResponse({ text: result.text.trim().slice(0, MAX_TEXT), duration_s: round2(result.durationSeconds), credits: settled.charged });
 }
@@ -267,7 +303,7 @@ async function handleConsult(req: Request, deps: VoiceDeps, session: GatewaySess
 
   const amount = sttCreditsFor(input.duration_s);
   const credits = deps.credits();
-  const { ledgerId } = await reserveOrThrow(credits, {
+  const ledgerId = await reserveFresh(credits, deps, {
     orgId: session.orgId,
     actorId: session.userId,
     requestId: input.request_id,
@@ -288,7 +324,7 @@ async function handleConsult(req: Request, deps: VoiceDeps, session: GatewaySess
       ledgerId,
     }));
   } catch {
-    await credits.refund({ ledgerId, requestId: input.request_id, amount, reason: "stt_enqueue_failed" });
+    await credits.refund({ ledgerId, orgId: session.orgId, requestId: input.request_id, amount, reason: "stt_enqueue_failed" });
     throw new VoiceReject("voice_unavailable");
   }
   return okResponse({ job_id: jobId, credits: amount }, 202);

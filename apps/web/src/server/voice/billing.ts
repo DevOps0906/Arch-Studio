@@ -1,6 +1,7 @@
 // STT 크레딧 계산(정수). 분당 1, 실제 길이로 정산(01_PRD.md 4.5절, 04_API.md 1장 "환불"·2.2절 `/api/voice/stt`).
 // 선차감 = 상한 길이(받아쓰기 60초) 또는 신고 길이(상담) 기준, 정산 = 제공자가 잰 실제 길이 기준. 실제가 더 길어도 선차감보다 더 받지 않는다.
-// 멱등 키: 차감 `voice:<request_id>`, 정산 환불 `voice:<request_id>:settle`(같은 요청 재전송·재시도에 추가 차감·이중 환불 없음).
+// 멱등 키: 차감 `voice:<org_id>:<request_id>`, 정산 환불 `voice:<org_id>:<request_id>:settle`(조직 범위 한정, 이중 환불 없음).
+// 같은 키의 기존 원장이 돌아오면(재전송·재사용) 제공자를 다시 부르지 않고 409(service.ts assertFreshReserve).
 // 워커(workers/arch-jobs/src/handlers/stt/billing.ts)에 같은 식이 있다. 바꾸면 함께 바꾼다.
 // server-only를 import하지 않는다(node --test 대상).
 import { STT_CREDITS_PER_MINUTE } from "../ai/pricing.ts";
@@ -23,10 +24,10 @@ export function settleStt(reserved: number, actualSeconds: number): { charged: n
   return { charged, refund: reserved - charged };
 }
 
-export function voiceIdempotencyKey(requestId: string): string {
-  return `voice:${requestId}`;
+export function voiceIdempotencyKey(orgId: string, requestId: string): string {
+  return `voice:${orgId}:${requestId}`;
 }
 
-export function voiceSettleKey(requestId: string): string {
-  return `voice:${requestId}:settle`;
+export function voiceSettleKey(orgId: string, requestId: string): string {
+  return `voice:${orgId}:${requestId}:settle`;
 }

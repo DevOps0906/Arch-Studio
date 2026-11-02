@@ -24,7 +24,7 @@
     "./settings/general": "./src/settings/general/index.tsx",
     "./license": "./src/license/index.tsx",
     "./credits": "./src/credits/index.tsx",
-    "./voice": "./src/voice/index.tsx",
+    "./voice": "./src/voice/voice.tsx",
     "./not-found": "./src/not-found/index.tsx"
   },
   "scripts": {

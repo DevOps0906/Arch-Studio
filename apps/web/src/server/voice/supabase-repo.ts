@@ -28,7 +28,7 @@ function statusOf(error: unknown): number | undefined {
 
 export function supabaseVoiceCredits(service: Client, schemas: SchemaNames): VoiceCredits {
   return {
-    async reserve({ orgId, actorId, requestId, amount, mode }) {
+    async reserve({ orgId, actorId, requestId, amount, mode, nonce }) {
       const { data, error } = await service.schema(schemas.core).rpc("consume_credits", {
         p_org_id: orgId,
         p_amount: amount,
@@ -36,25 +36,40 @@ export function supabaseVoiceCredits(service: Client, schemas: SchemaNames): Voi
         p_reason: "stt",
         p_ref_type: "voice",
         p_ref_id: requestId,
-        p_idempotency_key: voiceIdempotencyKey(requestId),
-        p_metadata: { mode },
+        p_idempotency_key: voiceIdempotencyKey(orgId, requestId),
+        // nonce: 새로 삽입했는지 판별용(기존 원장이 돌아오면 그 행의 이전 nonce가 남아 있다).
+        p_metadata: { mode, nonce },
         p_actor_id: actorId,
       });
       if (error) throw new DbCodeError(error);
       const row = (Array.isArray(data) ? data[0] : data) as { ledger_id?: unknown } | null;
       const ledgerId = row?.ledger_id;
       if (typeof ledgerId !== "number" || !Number.isSafeInteger(ledgerId)) throw new Error("consume_credits without ledger_id");
-      const refunds = await service.schema(schemas.core).from("credit_ledger").select("amount").eq("refund_of", ledgerId);
-      if (refunds.error) throw new DbCodeError(refunds.error);
-      const refunded = ((refunds.data ?? []) as { amount?: unknown }[]).reduce((s, r) => s + (typeof r.amount === "number" ? r.amount : 0), 0);
-      return { ledgerId, refunded };
+      // 돌려받은 원장 행 다시 읽기(읽기 전용 1행). 칸을 못 읽으면 null → 서비스가 불일치(409)로 본다.
+      const got = await service
+        .schema(schemas.core)
+        .from("credit_ledger")
+        .select("org_id, actor_id, amount, entry_type, metadata")
+        .eq("id", ledgerId)
+        .maybeSingle();
+      if (got.error) throw new DbCodeError(got.error);
+      const r = (got.data ?? {}) as { org_id?: unknown; actor_id?: unknown; amount?: unknown; entry_type?: unknown; metadata?: unknown };
+      const meta = r.metadata !== null && typeof r.metadata === "object" ? (r.metadata as Record<string, unknown>) : {};
+      return {
+        ledgerId,
+        orgId: typeof r.org_id === "string" ? r.org_id : null,
+        actorId: typeof r.actor_id === "string" ? r.actor_id : null,
+        amount: r.entry_type === "consume" && typeof r.amount === "number" ? -r.amount : null,
+        mode: typeof meta["mode"] === "string" ? meta["mode"] : null,
+        nonce: typeof meta["nonce"] === "string" ? meta["nonce"] : null,
+      };
     },
-    async refund({ ledgerId, requestId, amount, reason }) {
+    async refund({ ledgerId, orgId, requestId, amount, reason }) {
       const { error } = await service.schema(schemas.core).rpc("refund_credits", {
         p_consume_ledger_id: ledgerId,
         p_reason: reason,
         p_amount: amount,
-        p_idempotency_key: voiceSettleKey(requestId),
+        p_idempotency_key: voiceSettleKey(orgId, requestId),
         p_actor_id: null,
       });
       if (error) throw new DbCodeError(error);
@@ -129,7 +144,7 @@ export function supabaseConsultQueue(service: Client, schemas: SchemaNames): Con
         },
         p_max_attempts: 2, // 대체 없이 1회 재시도(02_ARCHITECTURE.md 4장 arch.stt 행)
         p_credit_ledger_id: i.ledgerId,
-        p_idempotency_key: `job:arch:${voiceIdempotencyKey(i.requestId)}`,
+        p_idempotency_key: `job:arch:${voiceIdempotencyKey(i.orgId, i.requestId)}`,
         p_created_by: i.actorId,
         p_refund_on_failure: true,
       });

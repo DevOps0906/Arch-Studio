@@ -1,4 +1,4 @@
-// arch.stt: 실제 길이 정산(분당 1, voice:<voice_ref>:settle 멱등), 재시도 분류, payload 검사, 실패 닫힘 등록(AR-06-053). 제공자는 가짜.
+// arch.stt: 실제 길이 정산(분당 1, voice:<org_id>:<voice_ref>:settle 멱등), 재시도 분류, payload 검사, 실패 닫힘 등록(AR-06-053). 제공자는 가짜.
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { JobRow } from "../../core/db.ts";
@@ -73,7 +73,7 @@ function setup(opts: { seconds?: number; providerFails?: boolean; downloadFails?
   return { rec, handler: createSttHandler({ provider, storage, credits }), ctx };
 }
 
-test("정산: 신고 185초(4 선차감) → 실제 121.5초(3) → 1 환불, 키 voice:<voice_ref>:settle", async () => {
+test("정산: 신고 185초(4 선차감) → 실제 121.5초(3) → 1 환불, 키 voice:<org_id>:<voice_ref>:settle", async () => {
   const { rec, handler, ctx } = setup({ seconds: 121.5 });
   const out = await handler(ctx(job()));
   assert.deepEqual(out?.jobResult, {
@@ -84,7 +84,7 @@ test("정산: 신고 185초(4 선차감) → 실제 121.5초(3) → 1 환불, �
     provider: "fake",
     model: "fake-1",
   });
-  assert.deepEqual([...rec.refunds.entries()], [[`voice:${VOICE}:settle`, { ledgerId: 7, amount: 1 }]]);
+  assert.deepEqual([...rec.refunds.entries()], [[`voice:${ORG}:${VOICE}:settle`, { ledgerId: 7, amount: 1 }]]);
   assert.equal(rec.uploads[0]?.bucket, "org-files");
   assert.equal(JSON.parse(rec.uploads[0]?.body ?? "{}").text, "1층 근생, 2~4층 다세대");
   assert.deepEqual(rec.beats.map((b) => JSON.parse(b).stage), ["split", "transcribe", "merge"]);
@@ -95,17 +95,26 @@ test("정산 멱등: 같은 잡 재실행(재시도)도 환불은 한 번", asyn
   await handler(ctx(job()));
   await handler(ctx(job()));
   assert.equal(rec.refunds.size, 1);
-  assert.equal(rec.refunds.get(`voice:${VOICE}:settle`)?.amount, 3);
+  assert.equal(rec.refunds.get(`voice:${ORG}:${VOICE}:settle`)?.amount, 3);
 });
 
-test("실제가 신고보다 길면 선차감 이상 받지 않음(환불 0), 원장 없는 잡은 정산 안 함", async () => {
-  const long = setup({ seconds: 900 });
+test("실제가 신고보다 조금(10% 이내) 길면 선차감 이상 받지 않음(환불 0), 원장 없는 잡은 정산 안 함", async () => {
+  const long = setup({ seconds: 200 });
   assert.equal((await long.handler(long.ctx(job())))?.jobResult?.["credits"], 4);
   assert.equal(long.rec.refunds.size, 0);
   const free = setup({ seconds: 10 });
   await free.handler(free.ctx(job({}, null)));
   assert.equal(free.rec.refunds.size, 0);
   assert.deepEqual(settleStt(sttCreditsFor(185), 0), { charged: 0, refund: 4 });
+});
+
+test("실제가 신고보다 10% 넘게 길면 STT_DURATION_MISMATCH 실패(재시도 없음 → fail_job 전액 환불), 전사본·부분 환불 없음", async () => {
+  const s = setup({ seconds: 185 * 1.1 + 0.5 });
+  await assert.rejects(s.handler(s.ctx(job())), (e: unknown) => e instanceof JobError && !e.retryable && e.code === "STT_DURATION_MISMATCH");
+  assert.equal(s.rec.uploads.length, 0);
+  assert.equal(s.rec.refunds.size, 0);
+  const edge = setup({ seconds: 185 * 1.1 });
+  assert.equal((await edge.handler(edge.ctx(job())))?.jobResult?.["credits"], 4);
 });
 
 test("실패 분류: 제공자·내려받기 오류는 재시도(대체 없이 1회), 형식·payload 오류는 재시도 없음", async () => {
