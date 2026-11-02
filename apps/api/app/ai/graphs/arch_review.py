@@ -314,7 +314,12 @@ def compliance(
             if violations(s, key, fields):
                 removed += 1
                 continue
-            (moved if severity_of(s.text) == "WARN" else keep).append(s)
+            if severity_of(s.text) != "WARN":
+                keep.append(s)
+            elif any(isinstance(p, RefPart) for p in s.parts):
+                removed += 1  # "확인 필요"에는 Ref를 두지 않는다(계약) — 옮기지 않고 뺀다
+            else:
+                moved.append(s)
         kept_needs = [n for n in needs if not violations(n, NEEDS_CHECK, fields)]
         removed += len(needs) - len(kept_needs)
         out[key] = (keep, kept_needs + moved)
