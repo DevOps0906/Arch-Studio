@@ -52,7 +52,7 @@ importers:
         version: link:../../packages/ui
       manifold-3d:
         specifier: 3.5.4
-        version: 3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1(@types/node@24.19.2))(esbuild-wasm@0.27.7)
+        version: 3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1)(esbuild-wasm@0.27.7)
       react:
         specifier: 19.2.9
         version: 19.2.9
@@ -90,6 +90,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@arch-studio/rules':
+        specifier: workspace:*
+        version: link:../../packages/rules
       '@arch-studio/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -227,7 +230,7 @@ importers:
         version: link:../domain
       manifold-3d:
         specifier: 3.5.4
-        version: 3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1(@types/node@24.19.2))(esbuild-wasm@0.27.7)
+        version: 3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1)(esbuild-wasm@0.27.7)
     devDependencies:
       fast-check:
         specifier: 4.10.2
@@ -5157,7 +5160,7 @@ snapshots:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  manifold-3d@3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1(@types/node@24.19.2))(esbuild-wasm@0.27.7):
+  manifold-3d@3.5.4(@gltf-transform/core@4.5.1)(@gltf-transform/extensions@4.5.1)(@gltf-transform/functions@4.5.1)(esbuild-wasm@0.27.7):
     dependencies:
       '@gltf-transform/core': 4.5.1
       '@gltf-transform/extensions': 4.5.1

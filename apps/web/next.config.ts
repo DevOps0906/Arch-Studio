@@ -17,7 +17,7 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  transpilePackages: ["@arch-studio/ui"],
+  transpilePackages: ["@arch-studio/ui", "@arch-studio/rules", "@arch-studio/domain", "@arch-studio/geometry"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
