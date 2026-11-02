@@ -41,7 +41,7 @@
 | AR-06-050 | RAG 색인·평가셋·위키 설정 | W2 | 046 | 보통 | builder | 완료 |
 | AR-06-058 | CI: 데스크톱 빌드·서명 릴리스·비밀 검사 | W2 | 001, 003, 004 | 높음 | builder | 진행(058a 완료·058b 대기) |
 | AR-06-073 | 클라우드 프로젝트 blob 저장·RLS·expected_version 충돌 | W2 | 001, 002, 003 | 높음 | challenger→builder | 완료 |
-| AR-06-071 | 웹 스튜디오 셸 (studio): 서브도메인·워커·CSP | W2 | 070, 071a, 003, 008 | 높음 | challenger→builder | 진행 |
+| AR-06-071 | 웹 스튜디오 셸 (studio): 서브도메인·워커·CSP | W2 | 070, 071a, 003, 008 | 높음 | challenger→builder | 완료 |
 | AR-06-072 | 웹 어댑터 구현(web/): 캐시·파일·세션·권한 | W2 | 070, 073 | 보통 | builder | 완료 |
 | AR-06-022 | SVG·PNG·PDF 작성기, 글꼴 폭 표 | W3 | 020, 021 | 보통 | builder | 완료 |
 | AR-06-023 | 배치도 뷰와 골든 | W3 | 016, 020 | 보통 | builder | 완료 |
@@ -74,7 +74,7 @@
 | AR-06-032 | 제안서 PDF(도면 시트 포함) | W5 | 022, 046, 047, 048 | 보통 | builder | 대기 |
 | AR-06-039 | 3D 입출력: glTF·IFC·.3dm | W5 | 013, 036 | 높음 | builder | 진행 |
 | AR-06-052 | 대화형 설계 입력·상담 녹음 후보 | W5 | 038, 046, 047, 048, 053 | 보통 | builder | 대기 |
-| AR-06-055 | AI 화면: 검토·채팅·위키 | W5 | 012, 051, 053, 054 | 보통 | builder | 진행 |
+| AR-06-055 | AI 화면: 검토·채팅·위키 | W5 | 012, 051, 053, 054 | 보통 | builder | 완료 |
 | AR-06-056 | AI 렌더: 캡처·fal 워커·렌더 화면 | W5 | 036, 047, 048 | 높음 | builder | 진행 |
 | AR-06-057 | 랜딩·요금·다운로드·법적 고지 | W5 | 003, 012, 023 | 낮음 | codex-designer⇄designer | 완료 |
 | AR-06-077 | 로컬↔클라우드 수동 업로드·내려받기 | W5 | 034, 072, 073 | 보통 | builder | 진행 |
@@ -123,5 +123,6 @@
 | 2026-10-29 | 규칙 팩 2026.10.0 | 근거 문서에 조문이 붙은 법규 수치가 없어 10개 규칙 전부 `미확인`(판정 전부 WARN), 지원 지자체 0, 허가 도서 평가셋 30건 미측정 | 사용자: 법규 수치·조문·시행일 제공 또는 원문 표 작성 후 검수 → 팩 2026.10.1 |
 | 2026-11-03 | AR-06-054 채팅 `apps/api/app/routes/tools.py`·`apps/web/src/server/ai/chat/**` | ① FastAPI가 토큰 `req`·`conv` 클레임을 본문 request_id와 대조하지 않음(jti 1회로 재사용은 막힘) ② 일일 턴 상한은 원장 건수 근사(동시 요청 소폭 초과) ③ 레이트리밋 메모리 ④ 재전송은 같은 조직이면 다른 사용자도 저장 답을 받을 수 있음(request_id UUID v4 추측 불가 전제) ⑤ FastAPI 운영 배선(검색·LLM 주입) 없음 → 미주입 503 | ①④ 후속 보강(토큰 클레임 대조·findAnswer에 user 조건), ② 원자 카운터 마이그레이션, ③⑤ 운영 전 차단 |
 | 2026-11-03 | 두 세션 병렬 구현 정리(tasks/logs/RECONCILE-2026-11-03.md) | 050·053·073·072·086은 원격 구현, 049·051·054는 원격+로컬 합치기. 로컬 원본은 브랜치 local/parallel-2026-11-02 보존. 잔여: 054 일일 상한이 조직 단위라 상류 장애 환불 턴도 소진(🟡), 054 search_effective 시간 상한 없음, 채팅 숫자 검사에 한글 수사 미적용, schema.ChatLlmOutput 미사용, .env.example에 ARCH_AI_CHAT_ENABLED·ARCH_API_URL 이름 추가 필요(읽기 차단 규칙으로 사람이 수정) | 각 항목 후속 작업에서 처리 |
+| 2026-11-03 | 055·071·077 후속 | 071: 사람 확인(Vercel Build Output 인식 후 실제 응답 헤더 curl, 팝업 OAuth COOP 끊김, WebView2·워커/WASM 브라우저 로드, next start 실응답 CORS 헤더), STUDIO_ORIGIN을 .env.example·env 스키마에 등록, CI에 build:web+check:web 단계, SVG 정화 미구현. 서버 라우트 GET /api/cloud-projects/{id}/blob(로컬 원본 local/parallel-2026-11-02에 있음, 정리 때 이식 누락)·GET /api/entitlement(074) 없음 → 웹 어댑터 404. 055: 셸 오른쪽 채팅 패널 연결, 3구간 캡처(playwright 의존성 결정), 위키 서버 API, "오늘 남은 턴" 서버 값, 데모 응답, 04_API review 행 정정, 취소 검토 환불 문구(🟡). 077(진행 유지): 일괄 zip 내려받기·업로드/충돌 화면 연결, 건축주 정보 업로드 기본 제외(05_DATA_MODEL 제안 따름 — 사람 확인) | 각 후속 작업에서 처리 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
