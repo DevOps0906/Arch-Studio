@@ -144,7 +144,7 @@ def test_k_and_date_contract(store: InMemoryStore) -> None:
         with pytest.raises(ValueError, match="k"):
             search_effective(store, EMB, org_id=ORG, query="건폐율", application_date=D2, k=bad_k)
     with pytest.raises(TypeError):
-        search_effective(store, EMB, org_id=ORG, query="건폐율", application_date=datetime(2025, 1, 1, 9), k=K)  # type: ignore[arg-type]
+        search_effective(store, EMB, org_id=ORG, query="건폐율", application_date=datetime(2025, 1, 1, 9), k=K)
     with pytest.raises(ValueError, match="22023"):
         store.search(ORG, EMB.embed("x"), 51)
     with pytest.raises(ValueError, match="22023"):
