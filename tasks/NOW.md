@@ -63,3 +63,8 @@
 - 085 완료: 표시 절(조명·그림자·재질·층 라벨·층 탭·분해도), 표시 값은 localStorage(층 숨김은 세션만), 분해도 중 측정 D 막음. reviewer(code) ACCEPT, 🟠1·🟡2 반영.
 - 085 후속: 실기 GPU 60fps 측정(사람), 그림자 지도 2048→저사양 1024 여부, scripts/shot은 playwright 없어 실행 불가(대체 캡처 사용), 03장 3.5절 '레이어/표시' 위치 정정(레이어 토글은 왼쪽 목록).
 - 043은 R-A1·가격 미정으로 미룸(사용자 선택). 다음 후보: 086(높음·challenger), 073(높음, 072·074·077 해제), 043.
+
+## 갱신 (2026-11-02, 보안 L2 확정 후 병렬 3작업 착수)
+- 보안 레벨 L2 확정·push(2bb18c5). S-1 닫힘.
+- 병렬 진행: A=073(클라우드 blob·RLS·expected_version), B=086(annotations[]), C=058+S-7(CI·SBOM·OSV·cargo audit; 서명·릴리스 실행은 인증서 대기로 뼈대만). 단계: challenger 3명 검토 중 → builder(worktree) → reviewer(Codex 한도 11-04까지 → reviewer 대체).
+- 환경: python은 PATH 없음 → `PATH="$HOME/AppData/Local/Programs/Python/Python312:$PATH"`로 nomad 도구 실행.
