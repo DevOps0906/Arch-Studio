@@ -21,6 +21,7 @@ create temp table t_ids as
   select (select id from @C@.organizations where owner_id = 'aaaaaaaa-0000-4000-8000-000000000001') as oa,
          (select id from @C@.organizations where owner_id = 'bbbbbbbb-0000-4000-8000-000000000002') as ob,
          (select id from @C@.organizations where owner_id = 'cccccccc-0000-4000-8000-000000000003') as oc,
+         (select id from @C@.organizations where owner_id = 'dddddddd-0000-4000-8000-000000000004') as om,
          '99999999-0000-4000-8000-000000000001'::uuid as proj;
 grant select on t_ids to anon, authenticated, service_role;
 insert into @C@.org_members (org_id, user_id, role, status, joined_at)
@@ -93,10 +94,17 @@ select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000
 select 1 from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000002'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000002'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1, '88888888-0000-4000-8000-000000000001'::uuid) s where s.version = 1;
 -- TEST service 같은 local_id 다른 project_uuid 23505 | expect=sqlstate:23505
 select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000003'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000003'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1, '88888888-0000-4000-8000-000000000001'::uuid);
--- TEST service 세 번째 사본(상한 3 도달) | expect=rows:1
+-- TEST service 세 번째 사본(oA 는 영구 라이선스 유효라 상한 100) | expect=rows:1
 select 1 from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000003'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000003'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1) s where s.version = 1;
--- TEST service 상한 초과 AR040 | expect=sqlstate:AR040
-select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000004'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- 상한은 체험 조직(M 소유 oM, cloud_projects_max 3)으로 본다. oA 는 영구 라이선스 유효라 상한 100(01_PRD 4.8).
+-- TEST service 체험 조직 사본 1건째 | expect=rows:1
+select 1 from @S@.save_cloud_project((select om from t_ids), 'dddddddd-0000-4000-8000-000000000004', '99999999-0000-4000-8000-000000000101'::uuid, '체험', (select om from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000101'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service 체험 조직 사본 2건째 | expect=rows:1
+select 1 from @S@.save_cloud_project((select om from t_ids), 'dddddddd-0000-4000-8000-000000000004', '99999999-0000-4000-8000-000000000102'::uuid, '체험', (select om from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000102'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service 체험 조직 사본 3건째 | expect=rows:1
+select 1 from @S@.save_cloud_project((select om from t_ids), 'dddddddd-0000-4000-8000-000000000004', '99999999-0000-4000-8000-000000000103'::uuid, '체험', (select om from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000103'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service 체험 조직 상한 3 초과 AR040 | expect=sqlstate:AR040
+select * from @S@.save_cloud_project((select om from t_ids), 'dddddddd-0000-4000-8000-000000000004', '99999999-0000-4000-8000-000000000104'::uuid, '체험', (select om from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000104'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
 -- TEST service local_id null → 값 설정 허용 | expect=rows:1
 select 1 from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', (select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.arch', 2, 1000, 1, '88888888-0000-4000-8000-000000000002'::uuid) s where s.version = 3;
 -- TEST service local_id 다른 값으로 변경 22023 | expect=sqlstate:22023
@@ -382,7 +390,7 @@ with o as (insert into @C@.payment_orders (order_id, org_id, app_id, kind, plan_
 select 1 from @S@.extend_updates((select id from o)) l where l.updates_until > current_date;
 -- TEST service 같은 주문 재처리는 다시 늘리지 않음 | expect=rows:1
 select 1 from @S@.extend_updates((select id from @C@.payment_orders where order_id = 'arch-test-order-2')) l
- where l.updates_until < (current_date + interval '1 year 1 day')::date;
+ where l.updates_until < ((now() at time zone 'Asia/Seoul')::date + interval '1 year 1 day')::date;
 -- TEST service 연장 뒤 oB 상태 licensed | expect=rows:1
 select 1 where @S@.org_features((select ob from t_ids)) ->> 'state' = 'licensed';
 
