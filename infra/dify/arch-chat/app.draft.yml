@@ -1,0 +1,15 @@
+# 초안(미연결). Dify DSL 내보내기로 대체될 자리표시 파일. 키 값 없음.
+app:
+  mode: advanced-chat
+  name: arch-chat
+workflow:
+  nodes:
+    - id: answer
+      type: http-request
+      method: POST
+      url: "{{FASTAPI}}/tools/answer"
+      headers: {Authorization: "Bearer {{DIFY_INTERNAL_API_KEY}}"}
+      body: {request_id: "{{request_id}}", message: "{{sys.query}}"}
+    - id: reply
+      type: answer
+      answer: "{{answer.body}}"  # HTTP 노드 원문만. 뒤에 LLM 노드를 두지 않는다
