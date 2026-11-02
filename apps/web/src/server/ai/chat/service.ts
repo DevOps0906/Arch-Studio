@@ -3,8 +3,12 @@
 // → 레이트 리밋(429) → 본문(zod strict) → 멱등(중복 완료면 저장 답변 재전송, 처리 중·환불 후는 409) → 일일 턴 상한(원장 근사, 429)
 // → 대화 소유 확인 → 토큰 발급 → 선차감 → FastAPI 호출(전체 60초) → 출처 재검사(문장별 source_ids ⊂ sources, 없는 문장 제거)
 // → 대화·메시지 저장 → SSE 송출(문장 단위). 송출 시작 전 실패·타임아웃·0문장(no_source)은 전액 환불. 송출 뒤 클라이언트 중단은 차감 유지.
+// 과금 표(로컬 리뷰 🔴 "폴백 무료 유도" 반영): 출처 있는 답을 전달하면 경로와 무관하게 1크레딧. 무료(환불)는 no_source·상류 실패/타임아웃·
+// FastAPI 4xx 거절(폴백 없음)·저장 실패·확정 직전 클라이언트 중단뿐이고, 모두 답을 저장·전달하지 않는다(환불된 원장으로 재전송 불가).
+// 선차감은 원장 nonce·조직·행위자·금액·대화를 대조해 이번 호출이 만든 행일 때만 통과(인스턴스 간 경합·키 재사용 → 409, 상류 호출 0).
+// 환불 실패는 alert 로그를 남기고 응답의 credits·refunded에 실제 상태를 적는다.
 // 응답·로그에 본문·토큰·예외 원문을 넣지 않는다. server-only를 import하지 않는다(node --test 대상).
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
 import { logger } from "../../../lib/logger.ts";
 import type { RateLimitStore } from "../../licenses/rate-limit.ts";
@@ -16,6 +20,10 @@ export const CHAT_CREDITS = CHAT_TURN_CREDITS.credits;
 /** 환불·재전송 응답의 과금 표시. */
 const NO_CHARGE = CHAT_CREDITS - CHAT_CREDITS;
 export const NO_SOURCE_MESSAGE = "근거를 찾지 못했습니다. 크레딧은 차감되지 않았습니다.";
+/** no_source 환불이 실패했을 때(정산 대기). */
+export const NO_SOURCE_PENDING_MESSAGE = "근거를 찾지 못했습니다. 크레딧은 환불 처리됩니다.";
+/** 클라이언트가 끊은 요청의 상태(nginx 관례). 본문 없음. */
+const CLIENT_CLOSED = 499;
 export const CHAT_MAX_BODY = 16 * 1024;
 export const CHAT_MAX_MESSAGE = 2000;
 /** 조직·사용자별 20회/분. */
@@ -40,12 +48,25 @@ export interface ChatAnswer {
   sources: ChatSource[];
 }
 
+/** 차감 RPC가 돌려준 원장 행의 사실. 읽지 못한 칸은 null(→ 불일치로 본다). */
+export interface ChatLedgerRow {
+  ledgerId: string;
+  orgId: string | null;
+  actorId: string | null;
+  /** 차감 금액(양수). consume 행이 아니면 null. */
+  amount: number | null;
+  conversationId: string | null;
+  /** 원장 metadata.nonce. 기존 행이 돌아오면 이번 호출의 nonce와 다르다. */
+  nonce: string | null;
+}
+
 export interface ChatLedger {
   /** 이 멱등 키의 차감 원장 행 id(없으면 null). */
   find(key: string): Promise<string | null>;
   /** 오늘(KST 0시 = sinceIso 이후) 이 조직의 채팅 순차감 건수(차감 − 환불). */
   countSince(orgId: string, sinceIso: string): Promise<number>;
-  consume(args: { orgId: string; actorId: string; amount: number; key: string; requestId: string }): Promise<string>;
+  /** 같은 키 원장이 이미 있으면 새로 차감하지 않고 그 행의 사실을 돌려준다(차감 RPC 멱등 키). */
+  consume(args: { orgId: string; actorId: string; amount: number; key: string; requestId: string; conversationId: string; nonce: string }): Promise<ChatLedgerRow>;
   refund(args: { ledgerId: string; reason: string; key: string; actorId: string }): Promise<void>;
 }
 
@@ -81,14 +102,17 @@ export interface ChatDeps {
   now(): number;
   /** 테스트용 재정의. 기본 CHAT_TIMEOUT_MS. */
   timeoutMs?: number;
+  /** 테스트용 재정의. 기본 randomUUID. */
+  nonce?: () => string;
 }
 
-type ChatCode = "chat_disabled" | "ai_chat_unavailable" | "IDEMPOTENT_REPLAY" | "chat_failed" | "chat_timeout";
+type ChatCode = "chat_disabled" | "ai_chat_unavailable" | "IDEMPOTENT_REPLAY" | "chat_rejected" | "chat_failed" | "chat_timeout";
 
 const CHAT_ERRORS: Readonly<Record<ChatCode, { status: number; message: string }>> = {
   chat_disabled: { status: 503, message: "지금은 법규 질의를 사용할 수 없습니다. 크레딧은 차감되지 않았습니다." },
   ai_chat_unavailable: { status: 403, message: "현재 이용권에서는 법규 질의 채팅을 쓸 수 없습니다." },
   IDEMPOTENT_REPLAY: { status: 409, message: "이미 처리 중이거나 완료되지 않은 요청입니다. 잠시 후 다시 확인하거나 새 요청으로 다시 보내 주세요." },
+  chat_rejected: { status: 422, message: "질문을 처리할 수 없습니다. 내용을 고쳐 다시 보내 주세요. 크레딧은 환불되었습니다." },
   chat_failed: { status: 502, message: "답변을 만들지 못했습니다. 크레딧은 환불되었습니다." },
   chat_timeout: { status: 504, message: "답변 시간이 초과되었습니다. 크레딧은 환불되었습니다." },
 };
@@ -208,19 +232,30 @@ async function refundSafe(deps: ChatDeps, session: GatewaySession, ledgerId: str
     await deps.ledger.refund({ ledgerId, reason, key: `${key}:refund`, actorId: session.userId });
     return true;
   } catch {
-    logger.error("ai_chat.refund_failed", { route: "ai_chat", reason, ledger_id: ledgerId, org_id: session.orgId });
+    logger.error("ai_chat.refund_failed", { route: "ai_chat", reason, ledger_id: ledgerId, org_id: session.orgId, alert: true });
     return false;
   }
 }
 
-async function callUpstream(deps: ChatDeps, base: string, token: string, body: Record<string, unknown>): Promise<unknown> {
-  const signal = AbortSignal.timeout(deps.timeoutMs ?? CHAT_TIMEOUT_MS);
+/** FastAPI가 4xx로 거절(입력·토큰 문제). 다시 보내도 같으므로 재시도·폴백 없이 환불한다. */
+class UpstreamRejected extends Error {
+  readonly status: number;
+  constructor(status: number) {
+    super("upstream_rejected");
+    this.name = "UpstreamRejected";
+    this.status = status;
+  }
+}
+
+async function callUpstream(deps: ChatDeps, base: string, token: string, body: Record<string, unknown>, client: AbortSignal): Promise<unknown> {
+  const signal = AbortSignal.any([AbortSignal.timeout(deps.timeoutMs ?? CHAT_TIMEOUT_MS), client]);
   const res = await deps.fetch(`${base.replace(/\/+$/, "")}/tools/answer`, {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
     signal,
   });
+  if (res.status >= 400 && res.status < 500) throw new UpstreamRejected(res.status);
   if (!res.ok) throw new Error("upstream_status");
   const text = await res.text();
   if (text.length > MAX_RESPONSE_CHARS) throw new Error("upstream_size");
@@ -285,13 +320,23 @@ export async function handleChat(req: Request, deps: ChatDeps): Promise<Response
       throw new GatewayError("token_signing_unavailable");
     }
 
-    let ledgerId: string;
+    const nonce = (deps.nonce ?? randomUUID)();
+    let row: ChatLedgerRow;
     try {
-      ledgerId = await deps.ledger.consume({ orgId: session.orgId, actorId: session.userId, amount: CHAT_CREDITS, key, requestId: input.request_id });
+      row = await deps.ledger.consume({ orgId: session.orgId, actorId: session.userId, amount: CHAT_CREDITS, key, requestId: input.request_id, conversationId, nonce });
     } catch (error) {
       const code = error !== null && typeof error === "object" ? (error as { code?: unknown }).code : undefined;
       throw new GatewayError(code === "CR001" ? "CR001" : "internal");
     }
+    // 이번 호출이 새로 만든 행이 아니면(다른 인스턴스가 먼저 차감·환불된 키 재사용·다른 사용자·다른 대화) 상류 호출 전에 409.
+    const fresh =
+      row.nonce === nonce &&
+      row.orgId === session.orgId &&
+      row.actorId === session.userId &&
+      row.amount === CHAT_CREDITS &&
+      row.conversationId === conversationId;
+    if (!fresh) throw new ChatReject("IDEMPOTENT_REPLAY");
+    const ledgerId = row.ledgerId;
 
     let raw: unknown;
     try {
@@ -299,8 +344,17 @@ export async function handleChat(req: Request, deps: ChatDeps): Promise<Response
         request_id: input.request_id,
         message: input.message,
         application_date: input.application_date ?? kstDate(deps.now()),
-      });
+      }, req.signal);
     } catch (error) {
+      if (req.signal.aborted) {
+        await refundSafe(deps, session, ledgerId, key, "chat_aborted");
+        return new Response(null, { status: CLIENT_CLOSED });
+      }
+      if (error instanceof UpstreamRejected) {
+        logger.warn("ai_chat.upstream_rejected", { route: "ai_chat", status: error.status });
+        const refunded = await refundSafe(deps, session, ledgerId, key, "chat_rejected");
+        throw new ChatReject(error.status === 422 ? "chat_rejected" : "chat_failed", refunded);
+      }
       const timeout = isAbort(error);
       throw new ChatReject(timeout ? "chat_timeout" : "chat_failed", await refundSafe(deps, session, ledgerId, key, timeout ? "chat_timeout" : "chat_upstream_failed"));
     }
@@ -308,7 +362,13 @@ export async function handleChat(req: Request, deps: ChatDeps): Promise<Response
     const answer = verifyAnswer(raw);
     if (!answer) {
       const refunded = await refundSafe(deps, session, ledgerId, key, "chat_no_source");
-      return sseResponse(conversationId, null, { credits: NO_CHARGE, refunded, message: NO_SOURCE_MESSAGE });
+      return sseResponse(conversationId, null, refunded ? { credits: NO_CHARGE, refunded, message: NO_SOURCE_MESSAGE } : { credits: CHAT_CREDITS, refunded, message: NO_SOURCE_PENDING_MESSAGE });
+    }
+
+    // 확정 직전 클라이언트가 끊었으면 답을 전달할 수 없으므로 저장하지 않고 환불(저장하면 같은 request_id 재전송이 무료 답이 된다).
+    if (req.signal.aborted) {
+      await refundSafe(deps, session, ledgerId, key, "chat_aborted");
+      return new Response(null, { status: CLIENT_CLOSED });
     }
 
     try {

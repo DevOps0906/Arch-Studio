@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { DbCodeError } from "../gateway/supabase-repo.ts";
 import type { SchemaNames } from "../../licenses/supabase-repo.ts";
-import type { ChatAnswer, ChatLedger, ChatSentence, ChatSource, ChatStore } from "./service.ts";
+import type { ChatAnswer, ChatLedger, ChatLedgerRow, ChatSentence, ChatSource, ChatStore } from "./service.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 생성 타입(Database) 도입 전
 type Client = SupabaseClient<any, any, any>;
@@ -48,10 +48,26 @@ export function supabaseChatLedger(service: Client, schemas: SchemaNames): ChatL
         p_ref_type: "ai_chat",
         p_ref_id: a.requestId,
         p_idempotency_key: a.key,
+        // nonce: 새로 삽입했는지 판별용(같은 키의 기존 행이 돌아오면 그 행의 이전 nonce가 남아 있다).
+        p_metadata: { conversation_id: a.conversationId, nonce: a.nonce },
         p_actor_id: a.actorId,
       });
       if (error) throw new DbCodeError(error);
-      return firstLedgerId(data);
+      const ledgerId = firstLedgerId(data);
+      const got = await ledger().select("org_id, actor_id, amount, entry_type, metadata").eq("id", Number(ledgerId)).maybeSingle();
+      if (got.error) throw new DbCodeError(got.error);
+      const r = (got.data ?? {}) as { org_id?: unknown; actor_id?: unknown; amount?: unknown; entry_type?: unknown; metadata?: unknown };
+      const meta = r.metadata !== null && typeof r.metadata === "object" ? (r.metadata as Record<string, unknown>) : {};
+      const row: ChatLedgerRow = {
+        ledgerId,
+        orgId: typeof r.org_id === "string" ? r.org_id : null,
+        actorId: typeof r.actor_id === "string" ? r.actor_id : null,
+        // 차감 행은 음수로 저장된다(053 voice와 같은 해석).
+        amount: r.entry_type === "consume" && typeof r.amount === "number" ? -r.amount : null,
+        conversationId: typeof meta["conversation_id"] === "string" ? meta["conversation_id"] : null,
+        nonce: typeof meta["nonce"] === "string" ? meta["nonce"] : null,
+      };
+      return row;
     },
     async refund(a) {
       const { error } = await service.schema(schemas.core).rpc("refund_credits", {

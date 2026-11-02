@@ -5,7 +5,7 @@ import { GatewayError } from "../gateway/http.ts";
 import type { GatewaySession } from "../gateway/session.ts";
 import { MemoryRateLimitStore } from "../../licenses/rate-limit.ts";
 import { isChatEnabled } from "./config.ts";
-import { conversationIdFor, handleChat, NO_SOURCE_MESSAGE, kstDayStartIso, verifyAnswer, type ChatAnswer, type ChatDeps } from "./service.ts";
+import { conversationIdFor, handleChat, NO_SOURCE_MESSAGE, NO_SOURCE_PENDING_MESSAGE, kstDayStartIso, verifyAnswer, type ChatAnswer, type ChatDeps } from "./service.ts";
 
 const ORG = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const USER = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
@@ -31,9 +31,19 @@ interface H {
 }
 
 function harness(
-  opts: { enabled?: boolean; sess?: GatewaySession | Error; perDay?: number; used?: number; upstream?: (signal: AbortSignal) => Promise<Response>; timeoutMs?: number; refundFails?: boolean } = {},
+  opts: {
+    enabled?: boolean;
+    sess?: GatewaySession | Error;
+    perDay?: number;
+    used?: number;
+    upstream?: (signal: AbortSignal) => Promise<Response>;
+    timeoutMs?: number;
+    refundFails?: boolean;
+    /** find가 기존 원장을 못 본 것처럼(다른 인스턴스와 경합) 동작. */
+    findMisses?: boolean;
+  } = {},
 ): H {
-  const keys = new Map<string, string>();
+  const keys = new Map<string, { ledgerId: string; nonce: string; actorId: string; conversationId: string }>();
   const consumed: string[] = [];
   const refunds: { ledgerId: string; reason: string }[] = [];
   const saved: H["saved"] = [];
@@ -50,16 +60,19 @@ function harness(
     turnsPerDay: async () => opts.perDay ?? 20,
     ledger: {
       async find(key) {
-        return keys.get(key) ?? null;
+        return opts.findMisses ? null : (keys.get(key)?.ledgerId ?? null);
       },
       async countSince() {
         return opts.used ?? 0;
       },
       async consume(a) {
-        const id = String(100 + keys.size);
-        keys.set(a.key, id);
-        consumed.push(a.key);
-        return id;
+        let row = keys.get(a.key);
+        if (!row) {
+          row = { ledgerId: String(100 + keys.size), nonce: a.nonce, actorId: a.actorId, conversationId: a.conversationId };
+          keys.set(a.key, row);
+          consumed.push(a.key);
+        }
+        return { ledgerId: row.ledgerId, orgId: a.orgId, actorId: row.actorId, amount: a.amount, conversationId: row.conversationId, nonce: row.nonce };
       },
       async refund(a) {
         if (opts.refundFails) throw new Error("db");
@@ -94,9 +107,10 @@ function harness(
   return { deps, consumed, refunds, saved, upstream };
 }
 
-function request(body: unknown = { request_id: RID, message: "건폐율이 얼마죠?" }): Request {
+function request(body: unknown = { request_id: RID, message: "건폐율이 얼마죠?" }, signal?: AbortSignal): Request {
   return new Request("http://localhost/api/ai/chat", {
     method: "POST",
+    ...(signal ? { signal } : {}),
     headers: { "content-type": "application/json", authorization: "Bearer x" },
     body: JSON.stringify(body),
   });
@@ -265,4 +279,86 @@ test("verifyAnswer·kstDayStartIso 단위", () => {
   assert.equal(verifyAnswer(GOOD), null, "봉투 없는 응답은 거부");
   assert.equal(kstDayStartIso(Date.parse("2026-11-02T03:00:00Z")), "2026-11-01T15:00:00.000Z");
   assert.equal(kstDayStartIso(Date.parse("2026-11-01T16:00:00Z")), "2026-11-01T15:00:00.000Z");
+});
+
+test("원장 nonce 대조: 다른 인스턴스가 먼저 차감한 키(find가 못 봄) → 409, 상류 호출·추가 차감 0", async () => {
+  const h = harness({ findMisses: true });
+  assert.equal((await handleChat(request(), h.deps)).status, 200);
+  const res = await handleChat(request(), h.deps);
+  assert.equal(res.status, 409);
+  assert.equal(await code(res), "IDEMPOTENT_REPLAY");
+  assert.equal(h.upstream.n, 1);
+  assert.equal(h.consumed.length, 1);
+  assert.equal(h.refunds.length, 0);
+});
+
+test("원장 nonce 대조: 같은 키를 다른 사용자가 재사용 → 409, 상류 호출 0", async () => {
+  const h = harness({ findMisses: true });
+  await (await handleChat(request(), h.deps)).text();
+  const other = harness({ sess: session({ userId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee" }) });
+  other.deps.ledger = h.deps.ledger;
+  assert.equal((await handleChat(request(), other.deps)).status, 409);
+  assert.equal(other.upstream.n, 0);
+});
+
+test("출처 있는 답은 항상 1크레딧(무료 경로 없음)", async () => {
+  const h = harness();
+  const ev = events(await (await handleChat(request(), h.deps)).text());
+  assert.equal((ev.at(-1)!.data as { credits: number }).credits, 1);
+  assert.equal(h.refunds.length, 0);
+});
+
+test("FastAPI 422 거절: 폴백 없이 환불, 422 chat_rejected, 저장 0", async () => {
+  const h = harness({ upstream: async () => new Response("{}", { status: 422 }) });
+  const res = await handleChat(request(), h.deps);
+  assert.equal(res.status, 422);
+  const body = (await res.json()) as { error: { code: string; details: { refunded: boolean } } };
+  assert.equal(body.error.code, "chat_rejected");
+  assert.equal(body.error.details.refunded, true);
+  assert.deepEqual(h.refunds.map((r) => r.reason), ["chat_rejected"]);
+  assert.equal(h.upstream.n, 1);
+  assert.equal(h.saved.length, 0);
+});
+
+test("FastAPI 401·403 거절: 502 chat_failed, 환불 chat_rejected, 재시도 0", async () => {
+  const h = harness({ upstream: async () => new Response("{}", { status: 403 }) });
+  const res = await handleChat(request(), h.deps);
+  assert.equal(res.status, 502);
+  assert.deepEqual(h.refunds.map((r) => r.reason), ["chat_rejected"]);
+  assert.equal(h.upstream.n, 1);
+});
+
+test("no_source + 환불 실패: done.credits 1·refunded false·정산 대기 문구", async () => {
+  const h = harness({ refundFails: true, upstream: async () => new Response(JSON.stringify({ ok: true, data: { answer: { sentences: [] }, sources: [], no_source: true } }), { status: 200 }) });
+  const ev = events(await (await handleChat(request(), h.deps)).text());
+  assert.deepEqual(ev[0]!.data, { conversation_id: conversationIdFor(ORG, RID), no_source: true, credits: 1, refunded: false, message: NO_SOURCE_PENDING_MESSAGE });
+});
+
+test("확정 직전 클라이언트 중단: 499, 환불 chat_aborted, 저장 0, 같은 request_id 재전송도 무료 답 없음(409)", async () => {
+  const ac = new AbortController();
+  const h = harness({
+    upstream: async () => {
+      ac.abort();
+      return new Response(JSON.stringify({ ok: true, data: GOOD }), { status: 200 });
+    },
+  });
+  const res = await handleChat(request(undefined, ac.signal), h.deps);
+  assert.equal(res.status, 499);
+  assert.deepEqual(h.refunds.map((r) => r.reason), ["chat_aborted"]);
+  assert.equal(h.saved.length, 0);
+  assert.equal((await handleChat(request(), h.deps)).status, 409);
+});
+
+test("상류 대기 중 클라이언트 중단: 499, 환불 chat_aborted", async () => {
+  const ac = new AbortController();
+  const h = harness({
+    upstream: (signal) =>
+      new Promise((_, reject) => {
+        signal.addEventListener("abort", () => reject(signal.reason));
+        ac.abort();
+      }),
+  });
+  const res = await handleChat(request(undefined, ac.signal), h.deps);
+  assert.equal(res.status, 499);
+  assert.deepEqual(h.refunds.map((r) => r.reason), ["chat_aborted"]);
 });
