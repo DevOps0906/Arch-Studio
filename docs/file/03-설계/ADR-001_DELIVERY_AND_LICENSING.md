@@ -25,12 +25,12 @@
 | 공유 UI·기능 | `packages/ui`, `packages/features` | 화면 기능 단위, 주입받은 어댑터로만 데이터 접근 | 어댑터 주입 지점 추가 |
 | 어댑터 | `packages/shell-bridge` | 플랫폼 인터페이스(아래) + 구현 2벌(`tauri/`, `web/`) | `web/` 구현 신설(기존 "웹 대체" 확장) |
 | 셸 A | `apps/desktop`(Vite + Tauri 2.x, 기존) | 라우팅, 워커 생성, Rust 코어(fs·SQLite·키체인·license·updater) | 어댑터 `tauri/` 연결 |
-| 셸 B | `apps/web`의 앱 라우트 신설 `src/app/(studio)/**`(제안) | 로그인 후 스튜디오. 라우팅·워커 생성·CSP는 셸 B가 소유 | 신설. 기존 `(marketing)`·`(account)`와 라우트 그룹 분리. **출처는 별도 서브도메인(예 `app.`)을 기본값으로**(5장 출처 분리) |
+| 셸 B | 셸 A와 **같은 Vite SPA**를 웹용 빌드로 정적 호스팅(웹 어댑터 `shell-bridge/web` 주입) (D-071a) | 로그인 후 스튜디오. 라우팅·워커 생성은 SPA가 소유, CSP는 정적 호스트 헤더 | 신설은 배포·어댑터 연결뿐. `apps/web`(Next.js)은 마케팅·계정·API만. **출처는 별도 서브도메인(예 `app.`)을 기본값으로**(5장 출처 분리) |
 | 서버 | `apps/web/src/server/**`, `apps/api`, `workers/arch-jobs`, `supabase/` | 라이선스·AI·잡·클라우드 프로젝트 | `cloud-projects`·`licenses` 확장(7장) |
 
 경계 규칙(제안):
-- `packages/features`는 `apps/*`를 import하지 않는다. `(studio)`와 `apps/desktop`은 같은 `features` 라우트 정의를 공유하고 셸만 감싼다.
-- `apps/desktop`의 `routes/**`와 `(studio)`의 페이지를 이중 관리하지 않도록, 화면 컴포넌트는 `features`에 두고 두 셸은 얇은 래퍼만 갖는다. 정적 번들(Vite)과 Next.js(App Router) 라우터 차이는 래퍼에서 흡수한다. 실현 가능성은 **W0의 1주 스파이크**(AR-06-071a)로 확인(미확인). 실패 시 대안: Vite SPA 하나에 `web` 어댑터를 붙여 정적 호스팅(Next는 마케팅·계정만).
+- `packages/features`는 `apps/*`를 import하지 않는다. 웹·설치형은 같은 Vite SPA와 같은 `features` 라우트 정의를 쓰고 어댑터만 바꿔 주입한다 (D-071a).
+- 화면 컴포넌트는 `features`에 두어 이중 관리를 없앤다. Next `(studio)` 공유안은 채택하지 않았다: 초기 JS gzip Vite 89KB vs Next 183~185KB, CSP `script-src 'self' 'wasm-unsafe-eval'`에서 Next는 인라인 RSC 스크립트 차단 (D-071a, `spikes/studio-shell/RESULT.md`). 미검증(WebView2 실행·실제 정적 호스트·엔진 워커/WASM 로드)은 AR-06-071에서 확인 (D-071a).
 - 엔진 워커는 두 셸 모두 `EngineRequest/Response` 프로토콜(`02_ARCHITECTURE.md` 2.4절)을 쓴다. 워커 파일 위치만 셸별.
 
 ### 2.1 플랫폼 어댑터 인터페이스 (계약 예시, 제안)
@@ -39,7 +39,7 @@
 |---|---|---|---|
 | `ProjectStore` | 프로젝트·리비전 읽기/쓰기/목록 (저장 모드는 3장) | Rust `local_db_*`(SQLite) + 클라우드 모드 시 `CloudProjectClient` | `CloudProjectClient`(Supabase, RLS) + IndexedDB는 **읽기 캐시만**(3.1절) |
 | `FileGateway` | 가져오기/내보내기 파일 I/O | OS 대화상자 경로(`fs.rs`, 크기 상한) | `<input type=file>`·File System Access API(가능 시)·다운로드 Blob. 크기 상한 동일 |
-| `SecureStore` | 토큰·라이선스 파일 보관 | OS 키체인(`secrets.rs`) | 메모리 + httpOnly 쿠키 세션(쿠키 사용 시 CSRF 토큰 필수, 5장). 장기 비밀 보관 없음. 라이선스 파일 없음(서버 판정) |
+| `SecureStore` | 토큰·라이선스 파일 보관 | OS 키체인(`secrets.rs`) | 메모리 보관 Bearer 세션 토큰(쿠키·CSRF 아님, `localStorage` 금지) (D-071a). 장기 비밀 보관 없음. 라이선스 파일 없음(서버 판정) |
 | `EntitlementClient` | 권한 판정 | Rust `license.rs`가 서명 파일 검증(로컬 기능) + 서버(클라우드 기능) | 서버 `arch.org_features`가 정본, 세션마다 조회 |
 | `Updater` | 앱 업데이트 | Tauri updater(서명) | 없음(배포 즉시 반영). 규칙 팩은 서버 자격 판정 |
 
@@ -238,17 +238,17 @@ interface PlatformAdapters {
 
 | 항목 | 규칙 |
 |---|---|
-| 출처 | `(studio)`는 별도 서브도메인(예 `app.`)으로 분리가 기본값. 마케팅 도메인과 쿠키·스토리지 분리. 같은 출처 유지는 예외로 팀장 승인 |
-| CSP | 스튜디오에만 `wasm-unsafe-eval`(필요 시)을 허용하고 마케팅·계정 페이지에는 적용하지 않는다. `unsafe-eval`·`unsafe-inline` 스크립트 금지 |
-| 세션 | 쿠키 세션이면 CSRF 토큰 필수, 아니면 Bearer 전용. 둘을 섞지 않는다 |
+| 출처 | 스튜디오 SPA는 별도 서브도메인(예 `app.`)의 정적 호스트가 기본값. 마케팅 도메인과 스토리지 분리. 같은 출처 유지는 예외로 팀장 승인 (D-071a) |
+| CSP | 스튜디오 정적 호스트 헤더에 `script-src 'self' 'wasm-unsafe-eval'`. 마케팅·계정 페이지에는 `wasm-unsafe-eval`을 적용하지 않는다. `unsafe-eval`·`unsafe-inline` 스크립트 금지 (D-071a) |
+| 세션 | **Bearer 전용**(쿠키·CSRF 미사용). 접근 통제는 클라이언트 가드 + RLS(서버 강제는 API·RLS) (D-071a) |
 | SVG 미리보기 | 업로드·생성 SVG는 정화(sanitize) 후 표시. 스크립트·외부 참조 제거 |
 
-노출 면 위협 메모(`threat-model.md` 형식 압축, 신규 면 `apps/web (studio)` 라우트):
+노출 면 위협 메모(`threat-model.md` 형식 압축, 신규 면 웹 스튜디오 Vite SPA 정적 호스트, D-071a):
 
 | 노출 면 | 인증·인가 | 데이터 | 키 | 입력 검증 | 남용·로그·피해 범위 |
 |---|---|---|---|---|---|
-| `(studio)` 웹 앱 + 엔진 번들 | 세션 + 조직 엔타이틀먼트(서버). 번들 자체는 공개 | 프로젝트(대지·설계), 규칙 팩(서명 URL 15분) | 웹 번들에 비밀 0(`VITE_`/`NEXT_PUBLIC_` 허용 목록 검사 확대) | 업로드 MIME·크기(DXF 20MB 등 동일), zod | 팩 다운로드 레이트 리밋(수치 `미확정`), 프로젝트 저장 조직당 한도. 피해: 로직 복제(데이터는 게이트), 계정 탈취 시 한 조직 프로젝트 |
-| `POST /api/cloud-projects/*` | Bearer/세션(쿠키면 CSRF), RLS 같은 조직만, `expected_version` 검사 | 프로젝트 blob·버전 | 없음(service_role 서버만) | 본문 크기 상한, 스키마 `schema_version` | 용량·건수 한도, 본문 로그 0. 피해: 한 조직 데이터 |
+| 웹 스튜디오 SPA + 엔진 번들 | Bearer 세션 + 조직 엔타이틀먼트(서버). 번들 자체는 공개 | 프로젝트(대지·설계), 규칙 팩(서명 URL 15분) | 웹 번들에 비밀 0(`VITE_`/`NEXT_PUBLIC_` 허용 목록 검사 확대) | 업로드 MIME·크기(DXF 20MB 등 동일), zod | 팩 다운로드 레이트 리밋(수치 `미확정`), 프로젝트 저장 조직당 한도. 피해: 로직 복제(데이터는 게이트), 계정 탈취 시 한 조직 프로젝트 |
+| `POST /api/cloud-projects/*` | Bearer 전용(D-071a), RLS 같은 조직만, `expected_version` 검사 | 프로젝트 blob·버전 | 없음(service_role 서버만) | 본문 크기 상한, 스키마 `schema_version` | 용량·건수 한도, 본문 로그 0. 피해: 한 조직 데이터 |
 
 ## 6. 랜딩 다운로드 흐름
 
@@ -272,7 +272,7 @@ interface PlatformAdapters {
 | `01_PRD.md` 2장 | 범위에 "웹 스튜디오(전체 기능)" 행 추가, Excel/CSV 내보내기 MVP 표시 | Q1 해결 후 |
 | `01_PRD.md` 4장 | 4.1에 기간제·연 구독 행, 4.3 상태표에 웹 열 추가, 4.4에 4.4절 관계 문구, 4.2 교차점 계산 재점검 | 가격은 Q3 후 |
 | `02_ARCHITECTURE.md` | 1장 웹 행 갱신, 2장에 `web-studio` 모듈·어댑터 `web/`, 2.2절 클라우드 정본 서술 | |
-| `03_SCREENS_UX.md` | 랜딩(듀얼 CTA, ④ 시안), `(studio)` 진입, 저장 모드·충돌 대화상자, 만료·유예 상태 | 표 형식 |
+| `03_SCREENS_UX.md` | 랜딩(듀얼 CTA, ④ 시안), 웹 스튜디오(Vite SPA, D-071a) 진입, 저장 모드·충돌 대화상자, 만료·유예 상태 | 표 형식 |
 | `04_API.md` | `cloud-projects` 저장(`expected_version`)·목록, 엔타이틀먼트 조회, 규칙 팩 웹 자격 | |
 | `05_DATA_MODEL.md` | `license_skus` 기간제·연 구독, `licenses.term_ends_at`, 엔타이틀먼트 `seats`(판매 전), `cloud_projects`(blob·`project_uuid` 정본·`local_id` nullable), 로컬 B 분류 | 판매 시작 전 스키마 반영 |
 | `01_PRD.md` 4.8 | 키 표에 기간제·연 구독 키 추가 | 4.5절 |
@@ -286,8 +286,8 @@ interface PlatformAdapters {
 | ID(제안) | 내용 | 위험 |
 |---|---|---|
 | AR-06-070 | `shell-bridge` 어댑터 인터페이스 정의(`PlatformAdapters`) + 설치형 구현 이전 | 보통 |
-| AR-06-071a | **W0** Vite/Next 공유 스파이크(1주). 실패 시 Vite SPA 하나 + web 어댑터 + 정적 호스팅 | 보통 |
-| AR-06-071 | `apps/web` `(studio)` 셸: 별도 서브도메인·라우트·워커·CSP | 높음(노출 면) |
+| AR-06-071a | **W0** Vite/Next 공유 스파이크(1주). 결과: Vite SPA 하나 + web 어댑터 + 정적 호스팅 채택 (D-071a) | 보통 |
+| AR-06-071 | 웹 스튜디오 Vite SPA 정적 호스팅: 별도 서브도메인·워커·CSP·Bearer (D-071a) | 높음(노출 면) |
 | AR-06-072 | `web/` 어댑터: `CloudProjectClient`, IndexedDB 캐시, FileGateway | 보통 |
 | AR-06-073 | 클라우드 프로젝트 API·RLS·`expected_version` 충돌 처리(blob 업서트) | 높음(RLS) |
 | AR-06-074 | 기간제·연 구독 SKU, 엔타이틀먼트 서버 판정(웹), 라이선스 파일 필드 | 높음(결제·라이선스) |
@@ -323,7 +323,7 @@ interface PlatformAdapters {
 | Q12 | 제안값 확인: past_due 유예 7일, `updates_yearly` 좌석 수량 과금·좌석별 업데이트 기간(4.1절), 환불 시 크레딧 회수, 체험 → 구매 전환 규칙(4.7절) | 제안대로, 사용자 승인 필요 |
 | Q6 | 계정당 동시 웹 세션 수, 엔타이틀먼트 캐시 TTL | 미정 |
 | Q7 | 비로그인 웹 체험 범위(샘플 팩 vs 전체), 번들 노출 위험 수용 | 로그인 필수 + 샘플 규칙 팩 |
-| Q8 | `(studio)`를 `apps/web`에 둘지 별도 `apps/studio-web`로 둘지(번들 분리·배포 단위). 출처는 서브도메인 분리 기본 | `apps/web` 라우트 그룹 + 서브도메인 |
+| Q8 | 닫힘 (D-071a, 2026-11-02): 웹 스튜디오 = `apps/desktop`의 Vite 앱 웹 빌드 모드(web 어댑터·`app.` 정적 호스트). 별도 `apps/studio-web`·Next `(studio)` 없음. 출처는 서브도메인 분리 | 결정됨 |
 | Q9 | 받은 랜딩 시안 파일 경로·캡처를 `docs`에 보관할 위치(정본 지정) | 디자이너 몫, 이 문서는 경로 `미확인` |
 | Q10 | 웹 전용 사용자(설치형 없음)의 법규 팩 오프라인 사용 불가 고지 문구 | 03 화면에서 정의 |
 

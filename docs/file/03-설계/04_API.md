@@ -1,12 +1,12 @@
 # 04 API: Arch Studio (arch-studio)
 
-작성일 2026-10-16. 약칭: PRD = `docs/file/02-요구사항/01_PRD.md`, CS = `docs/file/03-설계/공용코어/CORE_SPEC.md`, SM = `docs/file/03-설계/공용코어/SHARED_MODULES.md`, AA = `docs/file/03-설계/공용코어/AI_ARCHITECTURE.md`, TG = `D:/WorkSpace/platform/docs/Tauri/README.md`. 테이블·RPC·잡 타입·오류 코드 이름은 `05_DATA_MODEL.md`와 같고, DB 함수의 정본은 05장과 `D:/WorkSpace/platform/docs/products/_supabase-modular/migrations/2400_arch.sql`이다. 코어 RPC는 CS를 인용만 한다. 코드 블록은 계약 예시다. 호출자는 웹(쿠키)과 데스크톱(Tauri 셸, Bearer) 둘이고, 도면 생성·판정·매스 제안은 로컬 엔진이라 계약을 4.7절에 따로 둔다.
+작성일 2026-10-16. 약칭: PRD = `docs/file/02-요구사항/01_PRD.md`, CS = `docs/file/03-설계/공용코어/CORE_SPEC.md`, SM = `docs/file/03-설계/공용코어/SHARED_MODULES.md`, AA = `docs/file/03-설계/공용코어/AI_ARCHITECTURE.md`, TG = `D:/WorkSpace/platform/docs/Tauri/README.md`. 테이블·RPC·잡 타입·오류 코드 이름은 `05_DATA_MODEL.md`와 같고, DB 함수의 정본은 05장과 `D:/WorkSpace/platform/docs/products/_supabase-modular/migrations/2400_arch.sql`이다. 코어 RPC는 CS를 인용만 한다. 코드 블록은 계약 예시다. 호출자는 웹 화면(마케팅·계정, 쿠키), 웹 스튜디오(Vite SPA, Bearer, D-071a), 데스크톱(Tauri 셸, Bearer) 셋이고, 도면 생성·판정·매스 제안은 로컬 엔진이라 계약을 4.7절에 따로 둔다.
 
 ## 1. 원칙
 
 | 항목 | 규칙 | 근거 |
 |---|---|---|
-| 인증 | 모든 Route Handler 첫 줄 `const ctx = await requireSession('arch', { roles? })`. 웹은 쿠키, 데스크톱은 `Authorization: Bearer <Supabase access_token>`. Bearer 검증은 코어 요청 T-C1(같은 `SessionContext` 반환)이 반영된 뒤에 열고, 그 전까지 데스크톱은 Supabase 직접 조회 범위(RLS)만 쓴다. 미로그인 401, pending/suspended 403, `entitled=false` 402. 조직은 세션에서만 얻고 본문의 `org_id`는 받지 않는다(zod에 없음) | `docs/file/03-설계/공용코어/SHARED_MODULES.md:80`, `D:/WorkSpace/platform/docs/Tauri/README.md:136`, `D:/WorkSpace/platform/docs/Tauri/README.md:372` |
+| 인증 | 모든 Route Handler 첫 줄 `const ctx = await requireSession('arch', { roles? })`. 웹 화면(W)은 쿠키, 데스크톱(D)·웹 스튜디오(S, D-071a)는 `Authorization: Bearer <Supabase access_token>`. Bearer 검증은 코어 요청 T-C1(같은 `SessionContext` 반환)이 반영된 뒤에 열고, 그 전까지 데스크톱은 Supabase 직접 조회 범위(RLS)만 쓴다. 미로그인 401, pending/suspended 403, `entitled=false` 402. 조직은 세션에서만 얻고 본문의 `org_id`는 받지 않는다(zod에 없음) | `docs/file/03-설계/공용코어/SHARED_MODULES.md:80`, `D:/WorkSpace/platform/docs/Tauri/README.md:136`, `D:/WorkSpace/platform/docs/Tauri/README.md:372` |
 | `entitled=false` 402의 예외 (추가 2026-10-28) | 만료·좌석 미배정·회수 사용자도 **데이터 회수 경로는 열어 둔다**. 허용(402 아님): `GET /api/entitlement`, `GET /api/cloud-projects`, `GET /api/cloud-projects/{project_uuid}/blob`(서명 URL 발급), 전체 프로젝트 일괄 내려받기 `GET /api/cloud-projects/export.zip`(MVP 포함 승인 2026-10-28, 2.1절), 로컬 내보내기. 차단(402): `POST /api/cloud-projects`, `POST /api/uploads/sign`, AI·검토·규칙 팩·좌석 외 쓰기. 402 본문은 `details: { reason: 'expired' \| 'seat_unassigned' \| 'seat_revoked' \| 'no_product' \| 'fallback', can_download: true }`(크레딧 402의 `required/balance`와 구분). `fallback` = 영구 업데이트 만료 폴백 상태에서 해당 권리가 없을 때(예: 웹 편집·클라우드 검토). 판정은 아래 "라우트별 필요 권리" 표의 right 하나만 본다(고정 순위 없음, `ADR-001` 4.7절 합성값). 구현은 해당 GET에서 `requireSession`이 `entitled=false`를 거절하지 않는 옵션이 필요하며 코어 요청 필요 여부 `미확인`. 쓰기 RPC의 DB 권리 검사 실패는 `AR044`(7.1절)로 올라오며 Route Handler가 이 402로 매핑한다. 보존 기한이 지난 사본은 404. 영구 폴백 조직(`fallback`)은 보존 기한이 없어 사본을 계속 열람·내려받는다(확정 D-H5 ①) | `ADR-001` 3.1·3.3·4.7 |
 | 공개 예외 | `POST /api/webhooks/toss`(서명), `POST /api/samples/download-event`(익명, 레이트 리밋), `GET /auth/callback`, `POST /api/dev/login`(Stage A 로컬 전용) | `docs/file/03-설계/공용코어/AUTH_ROADMAP.md:364` |
 | 순서 | 인증 → zod → 레이트 리밋(`core.rate_limit_hit`) → 기능 판정(`arch.org_features`) → 서버 variant 결정(단가 표는 `apps/web/src/server/ai/pricing.ts` 상수와 seed가 같은 값) → service_role RPC(검사·선차감·enqueue 한 트랜잭션) → 202 | `docs/file/03-설계/공용코어/CORE_SPEC.md:181-188` |
@@ -17,9 +17,9 @@
 | 응답 봉투 | 성공 `{ ok: true, data }`, 실패 `{ ok: false, error: { code, message, details? } }`. 402는 `details: { required, balance }`. 예외 원문·스택·SQL 문구를 내보내지 않는다 | 제안(`D:/WorkSpace/platform/docs/products/nomad-docs/04_API.md:15`와 같은 형식) |
 | 진행 상황 | `GET /api/jobs/{id}` 폴링(3초, 제안) 또는 Realtime(`core.jobs`, RLS). 가짜 진행률 금지 | `docs/file/03-설계/공용코어/CORE_SPEC.md:312` |
 | 레이트 리밋 | 활성화 API IP당 10회/시간, 렌더 API 조직당 20회/분, 채팅 사용자당 20회/60초(PRD 5장). 그 밖의 생성 API 조직당 60회/분, 로그인 IP당 10회/10분, 웹훅 제공자당 600회/분(코어 기준). 키 `arch:<route>:<org_id 또는 ip_hash>` | `docs/file/02-요구사항/01_PRD.md 5절`, `docs/file/03-설계/공용코어/SECURITY_BASELINE.md:147-149` |
-| CORS | 데스크톱 셸 출처(+ 스튜디오 출처 1개, 바로 위 행)만 허용 목록에 둔다: Windows `http://tauri.localhost`, macOS(Phase 2) `tauri://localhost`(구현 시 확인). 와일드카드 금지, `Access-Control-Allow-Credentials` 없음(쿠키를 쓰지 않음), 허용 헤더 `Authorization`, `Content-Type`. 웹훅·`/auth/*`·`/api/dev/login`은 CORS를 열지 않는다. 규격은 코어 요청 T-C2 | `D:/WorkSpace/platform/docs/Tauri/README.md:137`, `D:/WorkSpace/platform/docs/Tauri/README.md:373` |
+| CORS | 데스크톱 셸 출처(+ 스튜디오 출처 1개, 바로 위 행)만 허용 목록에 둔다: Windows `http://tauri.localhost`, macOS(Phase 2) `tauri://localhost`(구현 시 확인). 와일드카드 금지, `Access-Control-Allow-Credentials` 없음(D·S는 쿠키를 쓰지 않음, D-071a), 허용 헤더 `Authorization`, `Content-Type`. 웹훅·`/auth/*`·`/api/dev/login`은 CORS를 열지 않는다. 규격은 코어 요청 T-C2 | `D:/WorkSpace/platform/docs/Tauri/README.md:137`, `D:/WorkSpace/platform/docs/Tauri/README.md:373` |
 | 업로드 | 큰 파일(클라우드 사본, 렌더 입력, 제안서 도면 SVG, 상담 녹음)은 `POST /api/uploads/sign`으로 서명 업로드 URL을 받아 플랫폼 어댑터가 업로드한다: 데스크톱(D)은 Rust 스트리밍, 웹 스튜디오(S)는 브라우저가 서명 URL로 직접 PUT(서버 경유 없음). 경로는 서버가 만들고(`<org_id>/arch/<purpose>/<uuid>.<ext>`), 사용 시점에 서버가 크기·MIME·매직바이트·조직 폴더를 다시 검사한다 | `D:/WorkSpace/platform/docs/Tauri/README.md:175` |
-| 웹 스튜디오 인증 (추가 2026-10-28) | `app.` 서브도메인의 스튜디오 호출자 = S. 방식은 하나만 고르고 섞지 않는다: (a) `Authorization: Bearer`(메모리 보관, CSRF 불필요) 또는 (b) httpOnly 쿠키 세션 + CSRF 토큰 필수(변경 메서드마다 검사, 불일치 403). 기본값 `팀장 결정 필요`. 어느 쪽이든 조직은 세션에서만 얻고, CORS는 스튜디오 출처 1개만 허용 목록에 추가(쿠키 방식이면 `Allow-Credentials` 이 출처에만). 업로드 MIME·크기는 데스크톱과 동일 상한 | `ADR-001_DELIVERY_AND_LICENSING.md` 5장 |
+| 웹 스튜디오 인증 (추가 2026-10-28) | `app.` 서브도메인의 스튜디오 호출자 = S. SPA(`app.`)와 API(Next `apps/web`)는 다른 출처이며 인증은 `Authorization: Bearer`만(메모리 보관, 쿠키+CSRF 경로 없음, D-071a). 조직은 세션에서만 얻고, CORS는 스튜디오 출처 1개만 허용 목록에 추가(`Allow-Credentials` 없음). 업로드 MIME·크기는 데스크톱과 동일 상한 | `ADR-001_DELIVERY_AND_LICENSING.md` 5장 |
 | 로그 | 시리얼 원문, 라이선스 파일, 토큰, 도면·모델 좌표, 렌더 입력, 녹음, 프롬프트 전문을 로그에 남기지 않는다 | `docs/file/02-요구사항/01_PRD.md 5절`, `docs/file/02-요구사항/01_PRD.md 9.5절` |
 | DB 강제 (추가 2026-10-28) | Route Handler의 권리 검사는 1차 방어일 뿐이다. 쓰기 RPC(`save_cloud_project`·`upsert_drafting_profile` 등)는 호출 사용자·대상 조직 단위 `rights.web_edit`를 DB 함수 안에서 다시 검사한다(세션 클라이언트로 RPC를 직접 호출해도 우회 불가). 정본은 `05_DATA_MODEL.md` 2.9·2.18절 | `ADR-001` 4.7절 |
 
@@ -39,7 +39,7 @@
 
 ## 2. Route Handler
 
-역할: `member+` = owner/admin/member, `oa` = owner/admin. 호출자: W = 웹 화면(쿠키), D = 데스크톱(Bearer), S = 웹 스튜디오(`app.` 출처, 1장 "웹 스튜디오 인증": Bearer 또는 쿠키+CSRF). 기능 키는 PRD 4.8절·9.4절이고 `arch.org_features`가 판정한다.
+역할: `member+` = owner/admin/member, `oa` = owner/admin. 호출자: W = 웹 화면(쿠키), D = 데스크톱(Bearer), S = 웹 스튜디오(`app.` 출처, 1장 "웹 스튜디오 인증": Bearer, D-071a). 기능 키는 PRD 4.8절·9.4절이고 `arch.org_features`가 판정한다.
 
 ### 2.1 라이선스·업데이트·규칙 팩·계정
 

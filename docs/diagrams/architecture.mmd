@@ -5,14 +5,14 @@ flowchart LR
   subgraph client["클라이언트 영역 (신뢰 경계 1: 비밀 0, 판정은 서버 권한 참조)"]
     direction TB
     landing["랜딩·/download<br/>apps/web (marketing)"]
-    studio["웹 스튜디오 셸 B<br/>apps/web src/app/(studio), app. 서브도메인"]
+    studio["웹 스튜디오 (web 빌드)<br/>apps/desktop Vite 앱, app. 정적 호스트"]
     desktop["설치형 셸 A<br/>apps/desktop (Tauri 2 + Rust 코어)<br/>키체인 · 로컬 SQLite · 라이선스 서명 검증 · updater · deep-link"]
     shared["공유 packages (UI·OS 비의존)<br/>packages/{domain, geometry, rules, program, massing, layout, drafting, io, features, ui}"]
     subgraph adapters["플랫폼 어댑터 packages/shell-bridge (src/tauri · src/web)"]
       direction TB
       ad_proj["ProjectStore<br/>tauri: 로컬 SQLite · web: CloudProjectClient"]
       ad_file["FileGateway<br/>tauri: fs.rs 대화상자 · web: input / Blob"]
-      ad_sec["SecureStore<br/>tauri: OS 키체인 · web: 메모리 + httpOnly 쿠키"]
+      ad_sec["SecureStore<br/>tauri: OS 키체인 · web: 메모리(Bearer)"]
       ad_ent["EntitlementClient<br/>tauri: license.rs + 서버 · web: 서버 판정"]
       ad_upd["Updater<br/>tauri: 서명 업데이트 · web: 없음"]
     end
@@ -49,7 +49,7 @@ flowchart LR
   ad_ent -->|"클라우드 기능 판정"| route
   ad_upd -->|"업데이트 매니페스트"| route
   desktop -->|"Bearer, 셸 출처만 CORS"| route
-  studio -->|"Bearer 또는 쿠키 + CSRF (택 1)"| route
+  studio -->|"Bearer, 스튜디오 출처만 CORS"| route
 
   route -->|"서명 토큰 iss=arch"| api
   workers -->|"잡 토큰 sub=job:id"| api

@@ -42,13 +42,13 @@
 | AR-06-058 | CI: 데스크톱 빌드·서명 릴리스·비밀 검사 | W2 | 001, 003, 004 | 높음 | builder | 진행(058a 완료·058b 대기) |
 | AR-06-073 | 클라우드 프로젝트 blob 저장·RLS·expected_version 충돌 | W2 | 001, 002, 003 | 높음 | challenger→builder | 진행 |
 | AR-06-071 | 웹 스튜디오 셸 (studio): 서브도메인·워커·CSP | W2 | 070, 071a, 003, 008 | 높음 | challenger→builder | 대기 |
-| AR-06-072 | 웹 어댑터 구현(web/): 캐시·파일·세션·권한 | W2 | 070, 073 | 보통 | builder | 대기 |
+| AR-06-072 | 웹 어댑터 구현(web/): 캐시·파일·세션·권한 | W2 | 070, 073 | 보통 | builder | 진행 |
 | AR-06-022 | SVG·PNG·PDF 작성기, 글꼴 폭 표 | W3 | 020, 021 | 보통 | builder | 완료 |
 | AR-06-023 | 배치도 뷰와 골든 | W3 | 016, 020 | 보통 | builder | 완료 |
 | AR-06-024 | 면적 산정도·면적표 뷰와 골든 | W3 | 015, 020 | 보통 | builder | 완료 |
 | AR-06-025 | 일조사선 단면 뷰와 골든 | W3 | 016, 020 | 보통 | builder | 완료 |
 | AR-06-042 | 업데이트·규칙 팩·단가표 배포 | W3 | 040, 041 | 높음 | challenger→builder | 완료 |
-| AR-06-049 | 라우팅 seed·AI 보안 테스트 | W3 | 046, 047 | 높음 | challenger→builder | 대기 |
+| AR-06-049 | 라우팅 seed·AI 보안 테스트 | W3 | 046, 047 | 높음 | challenger→builder | 진행 |
 | AR-06-051 | 클라우드 법규 검토 그래프·API | W3 | 015, 047, 048, 050 | 보통 | builder | 대기 |
 | AR-06-053 | 음성: STT API·음성 UI·읽어 주기 | W3 | 012, 047, 048 | 보통 | builder | 대기 |
 | AR-06-054 | Dify arch-chat·채팅 SSE 중계 | W3 | 047, 050 | 보통 | builder | 대기 |
@@ -114,7 +114,7 @@
 | 2026-10-29 | `04_API.md` 4.7.3 SheetSpec `dx_mm`·`dy_mm` | 모델 mm인지 용지 단위인지 모호(현재 number, 정수 강제 없음) | AR-06-020에서 확정 |
 | 2026-10-29 | 기획 문서 전반 "task `log.md`" | `[DECISION]` 기록 경로가 저장소에 정해지지 않음 | `tasks/logs/AR-06-NNN.md` 사용 시작(071a·014) |
 | 2026-10-29 | `~/.claude/nomad/bin/design-preview` | 글자 크기 표의 태블릿·데스크톱 열이 `[data-surface="landing"]` 미디어 블록 값으로 덮임. 컴팩트 밀도·`--line-dash-*`·`--chat-bubble-max`도 표에 없음 | NOMAD 도구 수정(저장소 밖). 앱 값 정본은 tokens.css, DESIGN.md 3.1에 주의 문구 |
-| 2026-10-29 | ADR-001 2장 · 06_AGENT_PLAN AR-06-071·072 | D-071a(Vite SPA+정적 호스팅, Bearer) 채택으로 쓰기 경로·세션·CSP 서술이 낡음 | AR-06-071 착수 전 planner로 문서 정정(`tasks/logs/AR-06-071a.md`) |
+| 2026-10-29 | ADR-001 2장 · 06_AGENT_PLAN AR-06-071·072 | D-071a(Vite SPA+정적 호스팅, Bearer) 채택으로 쓰기 경로·세션·CSP 서술이 낡음 | AR-06-071 착수 전 planner로 문서 정정(`tasks/logs/AR-06-071a.md`) — 정정 완료 2026-11-02(잔여 결정 팀장 확인 대기) |
 | 2026-10-29 | AR-06-002 완료 조건 "두 대상, CI 잡" | 모놀리스만 통과(129건), 모듈러는 platform 코어 0000~0009 필요로 미검증, `.github/workflows` 없음 | 첫 CI는 보안 S-7(`/secure setup --ci`)과 함께 신설해 test:rls·test:db·db:check 포함 |
 | 2026-10-29 | `reconcile_runs`(0002) | 최종 실패에서 fail_job 후 fail_ai_run 전에 워커가 죽으면 원장 환불은 끝났는데 실행이 failed로만 남아 refunded 전이 누락(이중 환불은 아님, codex 리뷰) | 새 마이그레이션으로 reconcile이 잡 원장 환불 여부를 보고 refunded 전이(2401 조각 방식) |
 | 2026-10-29 | AR-06-048 워커 ↔ 04_API.md | 워커가 부르는 `POST /api/internal/ai-settle`·`/api/internal/ai-token`(Bearer 워커 키, `{job_id, scope}`→`{token}`)과 잡 타임아웃(intake·proposal_pdf 5분, stt 30분)은 builder가 정한 값 | AR-06-047 AI 게이트에서 04_API에 확정 |

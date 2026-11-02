@@ -14,7 +14,7 @@
 | 파일 입출력 | `packages/io` 자체 작성기: glTF 2.0(.gltf, 버퍼 data URI)·IFC4 STEP(IfcTriangulatedFaceSet) — 결정적 순수 함수, 런타임 의존성 없음. web-ifc 0.0.78(MPL-2.0)은 번들 제외·테스트 왕복 검증 전용. rhino3dm 8.35.0(.3dm, MIT, AR-02-D2 확인)은 다음 단계. DXF 가져오기 자체 파서(P1, 엔티티 부분집합) | AR-06-039 고정 | `01_PRD.md 3절`, `:232` |
 | 로컬 DB | SQLite(`rusqlite` bundled). 화면은 이름 붙은 Rust 명령 `local_db_*`만 | 구현 시 고정 | `D:/WorkSpace/platform/docs/Tauri/README.md:111` |
 | 클라우드 웹 | Next.js 16.2.x App Router + React 19.2(`apps/web`), Tailwind CSS v4, three.js 히어로 | 16.2.x | 확정 결정 3, `D:/WorkSpace/platform/docs/Tauri/README.md:218` |
-| 웹 스튜디오 셸 (추가 2026-10-28) | `apps/web`의 `src/app/(studio)/**`를 `app.` 서브도메인으로 배포(출처·쿠키·스토리지를 마케팅 도메인과 분리, 같은 출처는 팀장 승인 예외). 엔진은 웹 워커에서 그대로 실행. 라우팅·워커 생성·CSP는 이 셸이 소유. 공유 가능성은 W0 스파이크 AR-06-071a로 확인(아래) | 위 Next.js 16.2.x | `ADR-001_DELIVERY_AND_LICENSING.md` 2·5장 |
+| 웹 스튜디오 셸 (추가 2026-10-28) | `apps/desktop`의 Vite 앱을 웹 빌드 모드(web 어댑터)로 `app.` 서브도메인 정적 호스트에 배포(D-071a; 출처·스토리지를 마케팅 도메인과 분리, 같은 출처는 팀장 승인 예외). 엔진은 웹 워커에서 그대로 실행. 라우팅·워커 생성·CSP는 이 셸이 소유 | Vite(설치형과 동일 앱) | `ADR-001_DELIVERY_AND_LICENSING.md` 2·5장 |
 | AI 서비스 | FastAPI(Python) `apps/api`, LangChain, LangGraph + `langgraph-checkpoint-postgres`(`ai_runtime`), pgvector RAG(HNSW, 1024차원) | Python 3.12(제안), pgvector 0.8 이상 | `docs/file/03-설계/공용코어/AI_ARCHITECTURE.md` 4~6장 |
 | 채팅·음성·이미지 | 공용 Dify 앱 `arch-chat`, `packages/core-voice`(STT), fal(렌더) | 설치 버전 확인 | `docs/file/03-설계/공용코어/SHARED_MODULES.md:502-506`, `:241` |
 | 워커 | Node 20 TS `workers/arch-jobs`, 큐는 `core.jobs`(`claim_jobs`)만 | Node 20 | `docs/file/03-설계/공용코어/CORE_SPEC.md:308` |
@@ -24,7 +24,7 @@
 
 열린 기술 결정(이 문서에서 추가, 1주 스파이크에서 확정): AR-02-D1 2D 다각형 라이브러리 선택과 라이선스(후보 Clipper2 계열, 확인 실패 시 정수 좌표 자체 구현), AR-02-D2 rhino3dm 라이선스(확인 실패 시 .3dm은 MVP에서 내보내기만 보류). D-23의 jsPDF·svg2pdf.js 라이선스도 같은 스파이크에서 확인한다.
 
-W0 공유 스파이크 (추가 2026-10-28, `ADR-001_DELIVERY_AND_LICENSING.md` 2장): AR-06-071a, 1주. 질문 = `packages/features` 라우트 정의를 Vite(`apps/desktop`)와 Next.js App Router(`(studio)`)가 얇은 래퍼만으로 공유할 수 있는가(실현 가능성 `미확인`). 실패 시 대안 = Vite SPA 하나에 `web` 어댑터를 붙여 정적 호스팅하고 Next는 마케팅·계정만 맡는다(그 경우 `(studio)` 행은 `apps/studio-web`로 바뀌며 Q8 결정에 따름).
+W0 공유 스파이크 (추가 2026-10-28, `ADR-001_DELIVERY_AND_LICENSING.md` 2장): AR-06-071a, 1주. 질문 = `packages/features` 라우트 정의를 Vite(`apps/desktop`)와 Next.js App Router가 공유할 수 있는가. 결과(D-071a, 2026-10-29): 공유안 불채택, Vite SPA 하나에 `web` 어댑터를 붙여 정적 호스팅하고 Next(`apps/web`)는 마케팅·계정·API만 맡는다. 별도 `apps/studio-web` 없음(Q8 닫힘).
 
 ## 2. 모듈 경계
 
@@ -45,13 +45,13 @@ W0 공유 스파이크 (추가 2026-10-28, `ADR-001_DELIVERY_AND_LICENSING.md` 2
 | drafting | `packages/drafting/src/{sheet,views,annotate,titleblock,layers,writers/dxf,writers/svg,writers/pdf,writers/png}/**`, `packages/drafting/golden/**` | 도면 엔진(AR-F-028~032, 036, 038). 2.3절 | 2.3절 계약 |
 | io | `packages/io/src/{ifc,gltf,rhino,dxf-import}/**` | AR-F-016 내보내기·가져오기, AR-F-037 | 가져오기 결과는 "후보"이고 사용자가 확정해야 DesignModel에 들어간다 |
 | engine-worker | `apps/desktop/src/workers/**`(`engine.worker.ts` 판정·엔벨로프·매스, `drafting.worker.ts` 시트·작성기·가져오기, 이름은 제안) | 무거운 계산을 UI 스레드 밖에서 실행 | 2.4절 메시지 프로토콜 |
-| web-studio (추가 2026-10-28) | `apps/web/src/app/(studio)/**`(`app.` 서브도메인), 웹 워커 `apps/web/src/workers/**`(제안) | 로그인 후 스튜디오 셸: 설치형 화면 17개와 같은 기능(설계·판정·도면·AI·표제란 설정, 화면 매핑 03장 1.3.2절), 라우팅, 워커 생성, CSP(`wasm-unsafe-eval`은 여기에만, `unsafe-eval`·`unsafe-inline` 금지), SVG 정화 | `packages/features`, `packages/shell-bridge`의 `web/` 구현. `(marketing)`·`(account)`와 라우트 그룹 분리. 같은 `EngineRequest/Response`(2.4절). `packages/features`는 `apps/*`를 import하지 않는다 |
+| web-studio (추가 2026-10-28) | `apps/desktop`의 Vite 앱 웹 빌드(`app.` 정적 호스트, D-071a), 웹 워커 경로 `apps/desktop/src/workers`(설치형과 공용, D-071a·AR-06-071 결정 1) | 로그인 후 스튜디오 셸: 설치형 화면 17개와 같은 기능(설계·판정·도면·AI·표제란 설정, 화면 매핑 03장 1.3.2절), 라우팅, 워커 생성, CSP(`wasm-unsafe-eval`은 여기에만, `unsafe-eval`·`unsafe-inline` 금지), SVG 정화 | `packages/features`, `packages/shell-bridge`의 `web/` 구현. Next의 `(marketing)`·`(account)`와 별도 앱(D-071a). 같은 `EngineRequest/Response`(2.4절). `packages/features`는 `apps/*`를 import하지 않는다 |
 | shell-bridge | `packages/shell-bridge/src/{tauri,web}/**`(구현 2벌) | 플랫폼 어댑터 5종 `ProjectStore`·`FileGateway`·`SecureStore`·`EntitlementClient`·`Updater`(+`capabilities`, 계약 `ADR-001` 2.1). 기존 NativeBridge·LicenseClient·Exporter는 `tauri/` 구현 안으로 들어가고 웹 대체는 `web/`이 맡는다(제안). 데스크톱 인증 흐름(`src/auth/**`). 기능 코드는 `capabilities`로 분기하고 `platform === 'web'` 직접 검사 금지 | `D:/WorkSpace/platform/docs/Tauri/README.md:237-249`. 화면은 Tauri API를 직접 import하지 않는다(`:234`) |
 | features | `packages/features/src/{auth,projects,site,modeler,judgment,program,plans,sheets,render,proposal,review,chat,wiki,voice,license,credits,settings,api-client}/**` | 화면 기능 단위. 데이터 접근은 주입받은 클라이언트로만 | api-client: Bearer, 재시도 대기열(`D:/WorkSpace/platform/docs/Tauri/README.md:318`) |
 | ui | `packages/ui/src/**`, `packages/ui/tokens.css` | 디자인 시스템 컴포넌트, Tailwind CSS v4 `@theme` 토큰(웹·데스크톱 공유) | 03장 |
 | web-public | `apps/web/src/app/(marketing)/**`, `apps/web/src/app/legal/**` | 랜딩, 가격, 다운로드, 샘플 도면 | 샘플 DXF·PDF는 골든 케이스 출력물을 CI가 복사(실제 엔진 출력만 게시, 제안) |
 | web-account | `apps/web/src/app/(account)/**` | 계정 화면: 라이선스·좌석·기기·크레딧·결제 결과(마케팅 도메인). 설계 화면과 표제란 설정은 여기가 아니라 web-studio와 데스크톱이 같은 `packages/features` 화면으로 제공(ADR-001 1장 ① 기능 동등) | `requireSession('arch')` |
-| web-api | `apps/web/src/app/api/**` → `apps/web/src/server/{licenses,updates,rule-packs,site,cloud-projects,drafting-profile,billing,ai,voice,jobs,account}/**` | Route Handler(얇게), 라이선스 서명, 업데이트 매니페스트, VWorld 중계, 크레딧 선차감 RPC 호출, 서명 URL | 04장 2절. 데스크톱 요청은 Bearer(T-C1), CORS 셸 출처만(T-C2). 스튜디오(`app.` 출처)는 Bearer 또는 쿠키+CSRF 중 하나만(04장 1절, 섞지 않음) |
+| web-api | `apps/web/src/app/api/**` → `apps/web/src/server/{licenses,updates,rule-packs,site,cloud-projects,drafting-profile,billing,ai,voice,jobs,account}/**` | Route Handler(얇게), 라이선스 서명, 업데이트 매니페스트, VWorld 중계, 크레딧 선차감 RPC 호출, 서명 URL | 04장 2절. 데스크톱 요청은 Bearer(T-C1), CORS 셸 출처만(T-C2). 스튜디오(`app.` 출처)는 Bearer만, 쿠키·CSRF 경로 없음(04장 1절, D-071a) |
 | auth | `apps/web/src/lib/auth/`, `apps/web/src/app/(auth)/`, `apps/web/src/app/auth/`, `apps/web/src/app/api/dev/login/`, 데스크톱 `packages/shell-bridge/src/auth/**` + `packages/features/src/auth/**` | 로그인 단계 분기(A/B/C)와 데스크톱 앱 복귀(9절) | 단계 분기는 이 경로에서만(`AUTH_ROADMAP.md` 3.1절). 기능 코드는 `session_context`만 |
 | hero3d | `apps/web/src/components/hero3d/**`, `apps/web/public/hero/**` | 랜딩 3D 히어로 | three.js import는 여기와 `features/modeler`만 |
 | ai-service | `apps/api/app/ai/graphs/arch_{review,intake,layout}.py`, `apps/api/app/ai/compliance/arch.py`, `apps/api/app/ai/products/arch/**` | 그래프 3종, 제품 compliance 규칙, 제안서 서술 생성, 법령 RAG 수집 | 서명 토큰·잡 토큰만 신뢰(`AI_ARCHITECTURE.md` 2.1절) |
