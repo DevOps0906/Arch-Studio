@@ -37,7 +37,7 @@ export interface SaveCloudProjectArgs {
 /**
  * 사용자 JWT 저장소(RLS, supabase-repo.ts): list = SELECT arch.cloud_projects(조직 updated_at desc, 커서),
  * usage = count + cloud_projects_max + retention_until, find = (org, project_uuid) 1행, save = arch.save_cloud_project(...).
- * save의 DB 오류는 CloudDbError(코드: AR031·AR040·AR041·23505·23514·42501·22023, AR041은 currentVersion, AR040은 max)로 던진다.
+ * save의 DB 오류는 CloudDbError(코드: AR031·AR040·AR041·AR044·23505·23514·42501·22023, AR041은 currentVersion, AR040은 max)로 던진다.
  * save의 previous_path = 교체된 이전 객체 경로(새 사본·같은 경로면 null).
  */
 export interface CloudProjectRepo {
@@ -228,6 +228,9 @@ export async function handleSaveCloudProject(req: Request, deps: CloudDeps): Pro
         throw new CloudApiError("AR041", e.currentVersion !== undefined ? { current_version: e.currentVersion } : undefined);
       }
       if (e instanceof CloudDbError && e.code === "AR040") throw new CloudApiError("AR040", e.max !== undefined ? { max: e.max } : undefined);
+      if (e instanceof CloudDbError && e.code === "AR031") throw new CloudApiError("AR031", { max_bytes: SNAPSHOT_MAX_BYTES });
+      // DB 권리 검사 실패(AR044)는 402(04_API 1장): 서버 검사와 같은 본문.
+      if (e instanceof CloudDbError && e.code === "AR044") throw new CloudApiError("entitlement_expired", { can_download: true });
       throw e;
     }
     if (saved.project_uuid !== input.project_uuid || saved.version !== input.expected_version + 1) {

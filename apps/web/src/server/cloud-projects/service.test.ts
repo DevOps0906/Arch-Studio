@@ -19,7 +19,7 @@ import {
   type CloudProjectRow,
   type SaveCloudProjectArgs,
 } from "./service.ts";
-import { decodeCursor, encodeCursor, toCloudDbError } from "./supabase-repo.ts";
+import { decodeCursor, encodeCursor, supabaseCloudRepo, toCloudDbError } from "./supabase-repo.ts";
 
 const ORG = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
 const OTHER_ORG = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
@@ -424,6 +424,19 @@ test("저장: 교체된 이전 객체를 지운다(같은 프로젝트 폴더만
   assert.ok(lines.every((l) => !l.includes(OLD) && !l.includes(`${ORG}/`)));
 });
 
+test("저장: DB AR044(권리 없음) → 402 entitlement_expired(can_download)", async () => {
+  const w = world({
+    saveOverride: async () => {
+      throw new CloudDbError("AR044");
+    },
+  });
+  const r = await save(w, newBody());
+  assert.equal(r.status, 402);
+  assert.equal(r.json.error.code, "entitlement_expired");
+  assert.deepEqual(r.json.error.details, { can_download: true });
+  assert.equal(mapCloudDbError({ code: "AR044" }), "AR044");
+});
+
 test("저장: DB 23505(같은 local_id·다른 project_uuid) 409, DB AR031 413", async () => {
   const dup = world({
     saveOverride: async () => {
@@ -438,7 +451,82 @@ test("저장: DB 23505(같은 local_id·다른 project_uuid) 409, DB AR031 413",
       throw new CloudDbError("AR031");
     },
   });
-  assert.equal((await save(big, newBody())).status, 413);
+  const bigRes = await save(big, newBody());
+  assert.equal(bigRes.status, 413);
+  assert.equal(bigRes.json.error.code, "AR031");
+  assert.deepEqual(bigRes.json.error.details, { max_bytes: SNAPSHOT_MAX_BYTES });
+});
+
+/** supabase-js 체인 흉내: 호출(메서드·인자)을 기록하고 마지막 await에서 정해 둔 결과를 돌려준다. */
+function fakeClient(result: { data: unknown; error: unknown }) {
+  const calls: Array<[string, unknown[]]> = [];
+  const chain: Record<string, unknown> = {};
+  for (const m of ["schema", "from", "select", "eq", "or", "order", "limit", "rpc", "maybeSingle"]) {
+    chain[m] = (...args: unknown[]) => {
+      calls.push([m, args]);
+      return chain;
+    };
+  }
+  chain.then = (ok: (v: unknown) => unknown, fail?: (e: unknown) => unknown) => Promise.resolve(result).then(ok, fail);
+  return { client: chain as never, calls };
+}
+const SCHEMAS = { core: "public", arch: "public" };
+const dbRow = (i: number) => ({
+  id: `00000000-0000-4000-8000-00000000000${i}`,
+  org_id: ORG,
+  project_uuid: P1,
+  local_id: null,
+  name: `n${i}`,
+  version: 1,
+  bytes: 10,
+  updated_at: `2026-11-02T00:00:0${i}+00:00`,
+});
+
+test("supabase 저장소 list: limit개면 next null, limit+1개면 마지막 행 커서, 커서가 있으면 or 필터·정렬·limit+1", async () => {
+  const exact = fakeClient({ data: [dbRow(1), dbRow(2)], error: null });
+  const r1 = await supabaseCloudRepo(exact.client, SCHEMAS).list(ORG, { cursor: null, limit: 2 });
+  assert.equal(r1.rows.length, 2);
+  assert.equal(r1.next, null);
+  assert.ok(r1.rows.every((r) => !("id" in r)), "내부 id는 행에 넣지 않는다");
+  assert.deepEqual(exact.calls.find(([m]) => m === "limit")?.[1], [3]);
+  assert.equal(exact.calls.some(([m]) => m === "or"), false);
+  assert.deepEqual(exact.calls.filter(([m]) => m === "order").map(([, a]) => a), [
+    ["updated_at", { ascending: false }],
+    ["id", { ascending: false }],
+  ]);
+  assert.deepEqual(exact.calls.find(([m]) => m === "eq")?.[1], ["org_id", ORG]);
+
+  const more = fakeClient({ data: [dbRow(1), dbRow(2), dbRow(3)], error: null });
+  const r2 = await supabaseCloudRepo(more.client, SCHEMAS).list(ORG, { cursor: null, limit: 2 });
+  assert.equal(r2.rows.length, 2);
+  assert.ok(r2.next);
+  assert.deepEqual(decodeCursor(r2.next), { updatedAt: dbRow(2).updated_at, id: dbRow(2).id });
+
+  const paged = fakeClient({ data: [dbRow(3)], error: null });
+  const r3 = await supabaseCloudRepo(paged.client, SCHEMAS).list(ORG, { cursor: r2.next, limit: 2 });
+  assert.equal(r3.next, null);
+  assert.deepEqual(paged.calls.find(([m]) => m === "or")?.[1], [
+    `updated_at.lt."${dbRow(2).updated_at}",and(updated_at.eq."${dbRow(2).updated_at}",id.lt.${dbRow(2).id})`,
+  ]);
+});
+
+test("supabase 저장소 save: RPC 인자, 배열·객체 반환 모두 받고 previous_path 없으면 null, 오류는 CloudDbError", async () => {
+  const args = { orgId: ORG, projectUuid: P1, localId: LOCAL, name: "n", storagePath: pathFor(ORG, P1), expectedVersion: 2 };
+  const arr = fakeClient({ data: [{ project_uuid: P1, version: 3, previous_path: pathFor(ORG, P2) }], error: null });
+  assert.deepEqual(await supabaseCloudRepo(arr.client, SCHEMAS).save(args), { project_uuid: P1, version: 3, previous_path: pathFor(ORG, P2) });
+  assert.deepEqual(arr.calls.find(([m]) => m === "rpc")?.[1], [
+    "save_cloud_project",
+    { p_project_uuid: P1, p_local_id: LOCAL, p_name: "n", p_storage_path: pathFor(ORG, P1), p_expected_version: 2 },
+  ]);
+  const obj = fakeClient({ data: { project_uuid: P1, version: 1, previous_path: null }, error: null });
+  assert.deepEqual(await supabaseCloudRepo(obj.client, SCHEMAS).save(args), { project_uuid: P1, version: 1, previous_path: null });
+  const empty = fakeClient({ data: [], error: null });
+  await assert.rejects(supabaseCloudRepo(empty.client, SCHEMAS).save(args), (e: unknown) => e instanceof CloudDbError && e.code === "internal");
+  const conflict = fakeClient({ data: null, error: { code: "AR041", details: '{"current_version": 5}' } });
+  await assert.rejects(
+    supabaseCloudRepo(conflict.client, SCHEMAS).save(args),
+    (e: unknown) => e instanceof CloudDbError && e.code === "AR041" && e.currentVersion === 5,
+  );
 });
 
 test("supabase 저장소: 커서 왕복·깨진 커서 invalid_input, PostgREST 오류 detail → current_version·max", () => {

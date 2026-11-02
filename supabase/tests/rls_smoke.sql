@@ -204,7 +204,7 @@ select * from @S@.eligible_rule_packs((select oa from t_ids));
 select 1 where @S@.org_features((select oc from t_ids)) ->> 'state' = 'trial_expired';
 -- TEST C 규칙 팩 0개 | expect=rows:0
 select * from @S@.eligible_rule_packs();
--- TEST C 클라우드 사본 저장 42501(엔타이틀먼트 없음) | expect=sqlstate:42501
+-- TEST C 클라우드 사본 저장 AR044(엔타이틀먼트 없음, 권리 없음 → 402) | expect=sqlstate:AR044
 select * from @S@.save_cloud_project((select p3 from t_cloud), null, 'c', (select oc from t_ids)::text || '/arch/project_snapshot/' || (select p3 from t_cloud)::text || '/' || gen_random_uuid()::text || '.arch', 1);
 -- TEST C 만료 조직도 자기 사본 읽기(엔타이틀먼트 없이) | expect=rows:1
 select project_uuid, name, version, bytes from @S@.cloud_projects;

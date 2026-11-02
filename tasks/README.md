@@ -121,5 +121,7 @@
 | 2026-10-29 | AR-06-006 로컬 명령 | 내부 오류 코드 5개(CANCELLED·READ_FAILED·INVALID_INPUT·NOT_FOUND·VERSION_CONFLICT)가 04_API 7.3 AR 코드 밖, 저장 기본 파일명 export.<ext>(4.7.6 이름 규칙 미반영), 리비전 보존 정책 없음, 100MiB 내보내기 쓰기가 async 스레드를 잠시 점유, cargo audit 미설치 | 7.3 정식 코드화는 070 어댑터 때, 파일명은 030 ExportDialog, 보존 정책·cargo audit은 CI(S-7) |
 | 2026-10-29 | AR-06-006 사람 확인 | 실제 Windows 열기·저장·덮어쓰기 대화상자, OneDrive·junction·260자+ 경로 미검증(테스트는 picker 대체) | 대표님 확인 후 tasks/logs/AR-06-006.md에 기록 |
 | 2026-10-29 | 규칙 팩 2026.10.0 | 근거 문서에 조문이 붙은 법규 수치가 없어 10개 규칙 전부 `미확인`(판정 전부 WARN), 지원 지자체 0, 허가 도서 평가셋 30건 미측정 | 사용자: 법규 수치·조문·시행일 제공 또는 원문 표 작성 후 검수 → 팩 2026.10.1 |
+| 2026-11-02 | Storage `arch-user/<org>/arch/project_snapshot/` (AR-06-073) | 서명 업로드 후 저장이 거절(AR041·AR040·23505)되거나 중단된 객체가 행 없이 남는다(교체된 이전 객체는 저장 성공 뒤 삭제) | 정리 크론: `cloud_projects.storage_path`에 없는 project_snapshot 객체 중 N시간 지난 것 삭제(service_role, 후속 작업) |
+| 2026-11-02 | 설치형 클라우드 업로드(AR-06-077) | 서버는 업로드 폴더 키를 항상 `project_uuid`로 대조한다. 설치형이 `local_id` 폴더로 올리면 POST가 422(23514) | 077에서 upload-url의 `{id}` = `project_uuid`로 고정, `local_id`는 본문 필드로만 보내는지 테스트로 대조 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준

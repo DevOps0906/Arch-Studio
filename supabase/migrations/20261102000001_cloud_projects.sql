@@ -13,18 +13,21 @@
 -- 4) save_cloud_project 교체: 옛 (uuid, text, text, integer) DROP, 새 (p_project_uuid, p_local_id, p_name, p_storage_path,
 --    p_expected_version). 업로드 객체(storage.objects, 버킷 arch-user) 존재·크기(≤100MB) 를 DB 안에서 재검사하고 bytes 로 저장한다.
 --    AR041 은 detail 에 {"current_version": N}, AR040 은 detail 에 {"max": N}(메시지 원문에 숫자 없음).
---    반환 previous_path = 교체된 이전 객체 경로(서버가 저장 성공 후 지운다, 최신 1개만 보존). web_edit 재검사는 AR-06-074 몫.
+--    엔타이틀먼트 없음 = AR044(→402, 04_API 7.1절). 반환 previous_path = 교체된 이전 객체 경로(서버가 저장 성공 후 지운다, 최신 1개만 보존). web_edit 재검사는 AR-06-074 몫.
 -- 반복 실행 가능.
 -- =====================================================================
 
 -- 1. 열 추가·백필·키 교체
 alter table public.cloud_projects add column if not exists project_uuid uuid;
 alter table public.cloud_projects add column if not exists bytes bigint not null default 0;
+-- 백필은 사용자 변경이 아니므로 updated_at(목록 정렬·커서 키)을 보존한다: set_updated_at 트리거를 잠시 끈다.
+alter table public.cloud_projects disable trigger cloud_projects_set_updated_at;
 update public.cloud_projects set project_uuid = coalesce(local_id, gen_random_uuid()) where project_uuid is null;
 update public.cloud_projects c
    set bytes = coalesce((select (o.metadata ->> 'size')::bigint from storage.objects o
                           where o.bucket_id = 'arch-user' and o.name = c.storage_path), 0)
  where c.bytes = 0;
+alter table public.cloud_projects enable trigger cloud_projects_set_updated_at;
 alter table public.cloud_projects alter column project_uuid set not null;
 alter table public.cloud_projects alter column local_id drop not null;
 alter table public.cloud_projects drop constraint if exists cloud_projects_bytes_check;
@@ -91,7 +94,7 @@ begin
     raise exception 'save_cloud_project: not a member' using errcode = '42501';
   end if;
   if not public.has_entitlement(v_org, 'arch') then
-    raise exception 'save_cloud_project: no entitlement' using errcode = '42501';
+    raise exception 'save_cloud_project: no entitlement' using errcode = 'AR044';  -- 권리 없음 → 402(04_API 1장·7.1절)
   end if;
   if p_storage_path !~ ('^' || v_org::text || '/arch/project_snapshot/' || p_project_uuid::text
                         || '/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.[a-z0-9]{1,8}$') then
