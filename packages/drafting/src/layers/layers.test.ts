@@ -5,8 +5,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { STD_LAYERS } from "@arch-studio/domain";
 import { LAYER_TABLE, layerDef, layerOrder, resolveLayerMap } from "../index.ts";
+import { outputLayerTable } from "./index.ts";
 
-test("16개 표준 레이어, 순서·ACI·선 종류가 PRD 9.6절과 같다", () => {
+test("17개 표준 레이어(PRD 9.6절 16개 + 사람 주석 A-ANNO-USER), 순서·ACI·선 종류", () => {
   assert.deepEqual(LAYER_TABLE.map((l) => l.name), [...STD_LAYERS]);
   assert.deepEqual(
     LAYER_TABLE.map((l) => `${l.name}:${l.aci}:${l.linetype}`),
@@ -27,6 +28,7 @@ test("16개 표준 레이어, 순서·ACI·선 종류가 PRD 9.6절과 같다", 
       "A-ANNO-NRTH:7:CONTINUOUS",
       "A-TTLB:7:CONTINUOUS",
       "A-REFR:9:CONTINUOUS",
+      "A-ANNO-USER:6:CONTINUOUS",
     ],
   );
   assert.equal(layerOrder("A-TTLB"), 14);
@@ -34,7 +36,7 @@ test("16개 표준 레이어, 순서·ACI·선 종류가 PRD 9.6절과 같다", 
   assert.ok(Object.isFrozen(LAYER_TABLE) && Object.isFrozen(LAYER_TABLE[0]));
 });
 
-test("layer_map 없음 → 표준 이름 16개", () => {
+test("layer_map 없음 → 표준 이름 17개", () => {
   const r = resolveLayerMap(undefined);
   assert.deepEqual(r.table.map((l) => l.name), [...STD_LAYERS]);
   assert.deepEqual(r.warnings, []);
@@ -53,7 +55,7 @@ test("매핑·금지 문자·합치기·표준 밖 키", () => {
   assert.equal(r.names["A-SITE-BNDY"], "A-SITE-BNDY");
   assert.equal(r.names["A-ENVL"], "A-ENVL");
   assert.equal(r.table.filter((l) => l.name === "건물외곽").length, 1);
-  assert.equal(r.table.length, 15);
+  assert.equal(r.table.length, 16); // 표준 17개 - 합치기 1
   assert.deepEqual(
     r.warnings.map((w) => `${w.kind}:${w.key}`),
     ["unknown_key:X-FOO", "invalid_name:A-SITE-BNDY", "invalid_name:A-ENVL"],
@@ -89,4 +91,14 @@ test("이름 충돌은 대소문자 무시(ASCII): 앞 레이어 유지, 뒤는 
   const m = resolveLayerMap({ "A-MASS": "a-wall", "A-WALL": "0" });
   assert.equal(m.names["A-WALL"], "a-wall");
   assert.deepEqual(m.warnings.map((w) => w.kind), ["name_conflict"]);
+});
+
+test("쓸 때만 레이어(A-ANNO-USER): 쓰지 않으면 출력 표에서 빠지고, 다른 레이어와 합친 이름은 남는다", () => {
+  const none = resolveLayerMap(undefined);
+  assert.deepEqual(outputLayerTable(none, new Set()).map((l) => l.name), STD_LAYERS.filter((l) => l !== "A-ANNO-USER"));
+  assert.deepEqual(outputLayerTable(none, new Set(["A-ANNO-USER"])).map((l) => l.name), [...STD_LAYERS]);
+  const merged = resolveLayerMap({ "A-ANNO-TEXT": "NOTE", "A-ANNO-USER": "NOTE" });
+  assert.ok(outputLayerTable(merged, new Set()).some((l) => l.name === "NOTE"));
+  const renamed = resolveLayerMap({ "A-ANNO-USER": "MY-NOTE" });
+  assert.ok(!outputLayerTable(renamed, new Set()).some((l) => l.name === "MY-NOTE"));
 });

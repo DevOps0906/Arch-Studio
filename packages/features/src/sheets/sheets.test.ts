@@ -22,8 +22,13 @@ import {
   nextPaper,
   outputErrorText,
   parseModel,
+  legacyStoreKey,
+  orphanNotice,
   parseStored,
+  parseStoredV1,
   readBuildResponse,
+  readStoredSheets,
+  storeKey,
   readWriteResponse,
   serializeStored,
   sheetAccess,
@@ -397,4 +402,63 @@ test("없는 글자(부분 집합 밖)는 PDF·PNG 쓰기에서 AR057 경고로 
   const { d } = deps(engine);
   const out = await runExport({ formats: ["png", "pdf"], sheets: [r.built.sheet], layerMap: {}, projectName: "p", date: "2026-10-29" }, d);
   assert.ok(out.warnings.some((w) => w.code === "AR057"), JSON.stringify(out.warnings));
+});
+
+/* ---------- 도면 주석 편집층(AR-06-086) ---------- */
+
+test("저장 키 v2, v1은 이행해 읽기만(지우지 않음): 시트·주석 1건이 틀려도 그 항목만 버리고 개수 보고", () => {
+  assert.equal(storeKey("p1"), "arch.sheets.v2.p1");
+  assert.equal(legacyStoreKey("p1"), "arch.sheets.v1.p1");
+  const a = { ...newSpec("site_plan", [], house, "A3") } as Record<string, unknown>;
+  delete a.annotations;
+  const v1 = JSON.stringify({
+    engine_version: "1.0.0",
+    specs: [
+      { ...a, annotation_overrides: [{ target: "label:road:edge0", dx_mm: 1.25 }, { target: "note:1", text: "메모", dx_mm: 30, dy_mm: 50 }, { target: 3 }] },
+      { ...a, id: "site_plan-2", paper: "A0", annotation_overrides: [] },
+      { ...a, id: "site_plan-3", annotation_overrides: [] },
+    ],
+  });
+  const m = parseStoredV1(v1);
+  assert.equal(m.dropped, 2);
+  assert.deepEqual(m.stored.specs.map((x) => x.id), ["site_plan-1", "site_plan-3"]);
+  assert.deepEqual(m.stored.specs[0]?.annotations, [
+    { id: "ov-label:road:edge0", kind: "override", target: "label:road:edge0", dx_mm: 1.25 },
+    { id: "ov-note:1", kind: "text", dx_mm: 30, dy_mm: 50, text: "메모" },
+  ]);
+  // v1 형식을 v2 파서에 넣으면 통째로 거부(v2는 엄격).
+  assert.deepEqual(parseStored(v1).specs, []);
+  const store: Record<string, string> = { [legacyStoreKey("p1")]: v1 };
+  const r = readStoredSheets((k) => store[k] ?? null, "p1");
+  assert.equal(r.migrated, true);
+  assert.equal(r.stored.specs.length, 2);
+  store[storeKey("p1")] = serializeStored({ engine_version: null, specs: [] });
+  assert.deepEqual(readStoredSheets((k) => store[k] ?? null, "p1"), { stored: { engine_version: null, specs: [] }, migrated: false, dropped: 0 });
+  assert.ok(store[legacyStoreKey("p1")] === v1);
+});
+
+test("워커 응답의 unapplied(고아 포함)를 BuiltSheet로 전달, 형식이 틀린 항목은 버린다", async () => {
+  const input = inputFor("site_plan");
+  input.sheet = {
+    ...input.sheet,
+    annotations: [
+      { id: "u-gone", kind: "text", anchor: { ref: "no-such", part: "center", snap: [0, 0] }, dx_mm: 0, dy_mm: 0, text: "고아" },
+      { id: "ov-dim:none", kind: "override", target: "dim:none", dx_mm: 1 },
+    ],
+  };
+  const r = await createSheetBuilder(makeEngine() as never).build(input);
+  assert.ok(r.ok, r.ok ? "" : r.code);
+  assert.deepEqual(r.built.unapplied, [
+    { id: "ov-dim:none", reason: "missing_target" },
+    { id: "u-gone", reason: "orphan_missing" },
+  ]);
+  const odd = readBuildResponse({ req_id: "r", ok: true, engine_version: "1", result: { sheet: r.built.sheet, svg_preview: "<svg/>", unapplied: [{ id: 1 }, { id: "a", reason: "orphan_index" }] } }, "r");
+  assert.ok(odd.kind === "ok");
+  assert.deepEqual(odd.built.unapplied, [{ id: "a", reason: "orphan_index" }]);
+});
+
+test("내보내기 안내: 고른 시트의 고아 수 합(모르는 시트는 0), 0이면 문구 없음(막지 않음)", () => {
+  assert.equal(orphanNotice({ s1: 2, s2: 1 }, ["s1", "s2", "s3"]), "고아 주석 3개는 출력에서 빠집니다.");
+  assert.equal(orphanNotice({ s1: 2 }, ["s2"]), null);
+  assert.equal(orphanNotice(undefined, ["s1"]), null);
 });

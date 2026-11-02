@@ -41,7 +41,7 @@ export function planSheetInput(model: DesignModelV1, judgment: JudgmentResult, f
   return {
     model,
     judgment,
-    sheet: { id: "plan-preview", kind: "floor_plan", paper: "A3", orientation: "landscape", scale: "auto", floor_id, annotation_overrides: [], include_in_proposal: false },
+    sheet: { id: "plan-preview", kind: "floor_plan", paper: "A3", orientation: "landscape", scale: "auto", floor_id, annotations: [], include_in_proposal: false },
     profile: PLAN_PROFILE,
     license: { drafting_watermark: false },
     engine_version: judgment.engine_version,

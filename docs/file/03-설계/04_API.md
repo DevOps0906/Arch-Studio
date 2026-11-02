@@ -374,9 +374,21 @@ interface SheetSpec {
   floor_id?: string                                  // floor_plan, area_plan(층별)
   section_line?: { a: Point; b: Point }              // sunlight_section. 없으면 매스 무게중심을 지나는 정북 방향
   elevation_face?: 'N' | 'S' | 'E' | 'W'
-  annotation_overrides: Array<{ target: string; dx_mm?: number; dy_mm?: number; text?: string; hidden?: boolean }>  // 주석만. 형상은 고칠 수 없다
+  annotations: Annotation[]                          // 주석만(형상은 고칠 수 없다). 최대 500개, 그리기 순서는 id 사전순(AR-06-086)
   include_in_proposal: boolean
 }
+interface Anchor {                       // 모델 객체 + 부위. 좌표는 엔진이 정수 mm로 푼다
+  ref: string                            // 모델 객체 id(매스·실) 또는 예약 'site:boundary' | 'road:<edge_index>' | 'line:setback'
+  part: 'vertex' | 'edge' | 'center'
+  index?: number                         // 꼭짓점·변 번호(모델 저장 순서)
+  at?: 'start' | 'end' | 'mid' | 'foot'  // 변 위 위치(기본 mid). foot = 상대 앵커에서 내린 수선의 발(치수만)
+  snap: Point                            // 고를 때의 기준 좌표(mm). 해석 좌표가 다르면 고아
+}
+type Annotation =                        // 문자 200자 이하. 오프셋은 용지 mm(엔진이 0.01mm로 반올림)
+  | { id: string; kind: 'override'; target: string; dx_mm?: number; dy_mm?: number; text?: string; hidden?: boolean }  // id = 'ov-' + target. 자동 주석 옮기기·숨기기(값 문구는 바꿀 수 없음)
+  | { id: string; kind: 'dim'; a: Anchor; b: Anchor; offset_mm: number; text?: string }  // 값은 엔진이 두 앵커 거리로 '{값}'에 채움
+  | { id: string; kind: 'text'; anchor?: Anchor; dx_mm: number; dy_mm: number; text: string; hidden?: boolean }  // 앵커 없으면 용지 좌표 고정(이행 메모 'ov-note:…')
+  | { id: string; kind: 'leader' | 'cloud'; anchor: Anchor; dx_mm: number; dy_mm: number; text: string; size_mm?: number }  // size_mm는 cloud만(0 초과 400 이하)
 interface DraftingProfile {              // 클라우드 arch.drafting_profiles, 로컬 drafting_profile_cache
   office_name: string
   architect_name?: string
@@ -390,9 +402,12 @@ interface DraftingProfile {              // 클라우드 arch.drafting_profiles,
 type StdLayer =
   | 'A-SITE-BNDY' | 'A-SITE-ROAD' | 'A-SITE-SETB' | 'A-ENVL' | 'A-MASS' | 'A-WALL' | 'A-DOOR' | 'A-GLAZ'
   | 'A-AREA' | 'A-AREA-IDEN' | 'A-PARK' | 'A-ANNO-DIMS' | 'A-ANNO-TEXT' | 'A-ANNO-NRTH' | 'A-TTLB' | 'A-REFR'
+  | 'A-ANNO-USER'                        // 사람이 만든 u- 주석(AR-06-086). 쓸 때만 레이어 표·SVG 그룹에 낸다. 이행 메모(ov-note:)는 A-ANNO-TEXT
 ```
 
-레이어 색·선 종류는 PRD 9.6절 표 그대로다(1점 쇄선 `DASHDOT`, 파선 `DASHED`, 실선 `CONTINUOUS`).
+레이어 색·선 종류는 PRD 9.6절 표 그대로다(1점 쇄선 `DASHDOT`, 파선 `DASHED`, 실선 `CONTINUOUS`). `A-ANNO-USER`는 ACI 6·실선(제안).
+
+주석 규칙(AR-06-086, 결정 원본 `tasks/logs/AR-06-086.md` [DECISION]): id는 시트 안에서 유일하고 사용자 주석은 `u-`, 이행분은 `ov-` 접두라 엔진 anno_id(`dim:`·`label:` 등)와 겹치지 않는다. 앵커 `ref`가 모델에 없거나(`orphan_missing`) 번호가 범위 밖이거나(`orphan_index`) 해석 좌표가 `snap`과 다르면(`orphan_moved`) 고아 — 출력(DXF·PDF·SVG·PNG)에서 빼고 `buildSheet` 반환 `unapplied[]`(`{ id, reason }`, 대상 없는 덮어쓰기 `missing_target` 등과 같은 경로)로 알린다. 그 시트 뷰에 그려지지 않는 대상(다른 층의 실 등)은 고아가 아니라 그리지 않는다. 사람 치수 TEXT의 `source_ref`는 `"user"`. 기존 저장본(`annotation_overrides`, 로컬 키 `arch.sheets.v1`)은 같은 target을 합친 뒤 `ov-` + target 1건으로 옮기고(`note:` target은 앵커 없는 `text`), 틀린 항목만 버린다(`migrateSheetSpecV1`). input_hash는 `annotations`를 id 순으로 정렬해 계산한다.
 
 #### 4.7.4 SheetModel 프리미티브
 
@@ -441,7 +456,7 @@ type EngineRequest =                    // 봉투·레인·seq 규칙은 02장 2
 
 type EngineResponse =                   // 성공은 { req_id, seq?, ok: true, op, result, engine_version, elapsed_ms }. result 형식:
   | { op: 'progress'; req_id: string; stage: string; pct: number }
-  | { op: 'build_sheet'; result: { sheet: SheetModel; svg_preview: string } }
+  | { op: 'build_sheet'; result: { sheet: SheetModel; svg_preview: string; unapplied: Array<{ id: string; reason: string }> } }  // unapplied: 출력에서 빠진 주석(고아 orphan_*·대상 없는 덮어쓰기 등, 4.7.3절)
   | { op: 'write'; result: { files: Array<{ name: string; bytes: ArrayBuffer; sha256: string }> } }  // bytes 는 Transferable
   | { op: 'suggest_mass'; result: { candidates: Array<{ label: 'max_coverage' | 'sunlight_margin' | 'regular_plan'; masses: DesignModelV1['masses']; judgment: JudgmentResult }>; max_gross_area_m2?: number } }  // 모두 PASS
   | { op: 'validate_layout'; result: { rooms: Array<{ room_id: string; area_m2: number; target_diff_m2: number | null }>; errors: Array<{ code: 'AR051'; room_ids: string[]; kind: 'overlap' | 'outside' }> } }

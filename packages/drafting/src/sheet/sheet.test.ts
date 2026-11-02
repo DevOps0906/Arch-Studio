@@ -187,11 +187,12 @@ test("결정성: 같은 입력 같은 출력, 형상 입력 순서와 무관(속
         const input = sampleInput(model, {
           license: fallback === undefined ? { drafting_watermark: watermark } : { drafting_watermark: watermark, fallback_revisions: fallback },
         });
-        input.sheet.annotation_overrides = ovs.map((o) => ({
-          target: o.i % 2 ? `dim:setback:edge0:mass-m${String(o.i % masses).padStart(3, "0")}` : `label:room:r${String(o.i).padStart(3, "0")}`,
-          dx_mm: o.dx,
-          hidden: o.hide,
-        }));
+        const targets = new Map<string, { dx: number; hide: boolean }>();
+        for (const o of ovs) {
+          const t = o.i % 2 ? `dim:setback:edge0:mass-m${String(o.i % masses).padStart(3, "0")}` : `label:room:r${String(o.i).padStart(3, "0")}`;
+          targets.set(t, { dx: o.dx, hide: o.hide });
+        }
+        input.sheet.annotations = [...targets].map(([target, o]) => ({ id: `ov-${target}`, kind: "override" as const, target, dx_mm: o.dx, hidden: o.hide }));
         const a = buildSheet(input, sampleView(model));
         const b = buildSheet(structuredClone(input), sampleView(structuredClone(model)));
         assert.equal(canonicalJson(a), canonicalJson(b));

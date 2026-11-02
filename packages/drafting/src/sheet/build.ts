@@ -1,6 +1,7 @@
-// 시트 1장 생성(파이프라인 3~6단계): fit → annotate(+덮어쓰기) → titleblock → assemble.
+// 시트 1장 생성(파이프라인 3~6단계): fit → annotate(+덮어쓰기·사람 주석) → titleblock → assemble.
 // 1단계 validate는 호출자가 먼저 부르고, 2단계 뷰 생성기(views/<kind>, 023~026)는 ViewModel로 넘긴다.
-import { applyOverrides, type AnnotateContext, type UnappliedOverride } from "../annotate/index.ts";
+import { applyOverrides, cmpStr, type AnnotateContext, type AnnotationOverride, type UnappliedAnnotation } from "../annotate/index.ts";
+import { applyUserAnnotations } from "../annotate/user.ts";
 import { buildTitleBlock, textHeightUm } from "../titleblock/index.ts";
 import { roundHalfAway } from "@arch-studio/geometry";
 import { assembleSheet } from "./assemble.ts";
@@ -20,8 +21,11 @@ export interface ViewModel {
 
 export interface BuildResult {
   sheet: SheetModel;
-  /** 대상이 없거나 허용되지 않은 덮어쓰기(화면 "적용되지 않은 주석 수정 n건"). */
-  unapplied_overrides: UnappliedOverride[];
+  /**
+   * 출력에서 빠진 주석(id 순): 대상이 없거나 허용되지 않은 덮어쓰기, 고아 주석(orphan_*) 등.
+   * 화면 "적용되지 않은 주석 n건"·"고아 주석 n개는 출력에서 빠집니다".
+   */
+  unapplied: UnappliedAnnotation[];
 }
 
 const PI = 3.141592653589793;
@@ -158,7 +162,11 @@ export function buildSheet(input: DraftingInput, view: ViewModel): BuildResult {
   });
   const ctx: AnnotateContext = { scale: fit.scale, text_h: textHeightUm(profile.default_text_height_mm) };
   const raw = view.annotate ? view.annotate({ ...ctx, fit }) : [];
-  const { annotations, unapplied } = applyOverrides(raw, sheet.annotation_overrides, ctx);
+  const overrides = sheet.annotations.filter((a): a is AnnotationOverride => a.kind === "override");
+  const auto = applyOverrides(raw, overrides, ctx);
+  const user = applyUserAnnotations(input, view.views[0]?.view_id, ctx);
+  const annotations = [...auto.annotations, ...user.annotations];
+  const unapplied = [...auto.unapplied, ...user.unapplied].sort((x, y) => cmpStr(x.id, y.id));
   const title = buildTitleBlock({
     profile,
     kind: sheet.kind,
@@ -181,5 +189,5 @@ export function buildSheet(input: DraftingInput, view: ViewModel): BuildResult {
     ...(view.warnings ? { warnings: view.warnings } : {}),
     ...(view.checks ? { checks: view.checks } : {}),
   });
-  return { sheet: out, unapplied_overrides: unapplied };
+  return { sheet: out, unapplied };
 }

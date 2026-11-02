@@ -42,23 +42,22 @@ test("DraftingProfile 값·모르는 칸으로 고지가 바뀌지 않는다", (
 test("덮어쓰기로 표제란·고지를 숨기거나 바꿀 수 없다", () => {
   const model = sampleModel();
   const input = sampleInput(model);
-  input.sheet.annotation_overrides = [
-    { target: "ttlb:disclaimer", hidden: true },
-    { target: "ttlb:disclaimer", text: "삭제" },
-    { target: "ttlb:frame", dx_mm: 100 },
-    { target: "disclaimer", text: "" },
+  input.sheet.annotations = [
+    { id: "ov-ttlb:disclaimer", kind: "override", target: "ttlb:disclaimer", hidden: true, text: "삭제" },
+    { id: "ov-ttlb:frame", kind: "override", target: "ttlb:frame", dx_mm: 100 },
+    { id: "ov-disclaimer", kind: "override", target: "disclaimer", text: "" },
   ];
   input.profile.layer_map = { "A-TTLB": "OFFICE-TB" };
-  const { sheet, unapplied_overrides } = buildSheet(input, sampleView(model));
+  const { sheet, unapplied } = buildSheet(input, sampleView(model));
   assert.equal(texts(sheet.paper_prims).filter((s) => s === DISCLAIMER).length, 1);
   assert.equal(sheet.title_block.disclaimer, DISCLAIMER);
   assert.ok(!sheet.annotations.some((a) => a.prims.some((p) => p.t === "text" && p.s === "삭제")));
   assert.deepEqual(
-    unapplied_overrides.map((u) => [u.target, u.reason]),
+    unapplied.map((u) => [u.id, u.reason]),
     [
-      ["disclaimer", "missing_target"],
-      ["ttlb:disclaimer", "missing_target"],
-      ["ttlb:frame", "missing_target"],
+      ["ov-disclaimer", "missing_target"],
+      ["ov-ttlb:disclaimer", "missing_target"],
+      ["ov-ttlb:frame", "missing_target"],
     ],
   );
   // 레이어 매핑은 이름만 바꾼다. 시트에는 표준 A-TTLB 고지가 그대로.

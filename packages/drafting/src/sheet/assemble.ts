@@ -158,7 +158,8 @@ export function assembleSheet(a: AssembleInput): SheetModel {
     sheet_id: input.sheet.id,
     kind: input.sheet.kind,
     engine_version: input.engine_version,
-    input_hash: sha256Hex(canonicalJson(input)),
+    // 주석은 id 순으로 그리므로 해시도 id 순 배열로 낸다(배열 순서만 다른 입력 → 같은 바이트, AR-06-086).
+    input_hash: sha256Hex(canonicalJson({ ...input, sheet: { ...input.sheet, annotations: [...input.sheet.annotations].sort((x, y) => cmpStr(x.id, y.id)) } })),
     paper: { size: input.sheet.paper, orientation: input.sheet.orientation, w, h },
     scale: fit.scale,
     views,

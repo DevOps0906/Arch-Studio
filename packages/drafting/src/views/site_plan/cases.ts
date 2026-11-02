@@ -1,5 +1,5 @@
 // site_plan 골든·테스트 공용 케이스(테스트 전용, 배포 코드에서 import하지 않는다).
-import type { DesignModelV1, JudgmentResult, Polygon } from "@arch-studio/domain";
+import type { DesignModelV1, JudgmentResult, Polygon, SheetAnnotation } from "@arch-studio/domain";
 import type { DraftingInput } from "../../sheet/types.ts";
 import { sampleInput, sampleModel } from "../../sheet/test-fixtures.ts";
 import type { SitePlanExtras } from "./index.ts";
@@ -81,6 +81,41 @@ function multiMass(): DraftingInput {
   return make(model, passItems({ setback: 2000, parking: 4 }));
 }
 
+/** 사람 주석(AR-06-086). siteModel() 기본값: 대지 30m×20m, 매스 m000 (5000,8000)-(20000,16000), 도로 0번 변 6m. */
+function withAnnotations(annotations: SheetAnnotation[]): DraftingInput {
+  const input = make(siteModel(), passItems());
+  input.sheet = { ...input.sheet, annotations };
+  return input;
+}
+
+const USER_ANNOTATIONS: SheetAnnotation[] = [
+  { id: "u-leader-road", kind: "leader", anchor: { ref: "road:0", part: "edge", index: 0, at: "mid", snap: [15000, 0] }, dx_mm: 10, dy_mm: -8, text: "전면도로" },
+  {
+    id: "u-dim-front",
+    kind: "dim",
+    a: { ref: "m000", part: "vertex", index: 0, snap: [5000, 8000] },
+    b: { ref: "site:boundary", part: "edge", index: 0, at: "foot", snap: [5000, 0] },
+    offset_mm: -6,
+  },
+  { id: "u-text-entry", kind: "text", anchor: { ref: "m000", part: "center", snap: [12500, 12000] }, dx_mm: 0, dy_mm: -5, text: "주출입구" },
+  { id: "u-cloud-corner", kind: "cloud", anchor: { ref: "m000", part: "vertex", index: 2, snap: [20000, 16000] }, dx_mm: 0, dy_mm: 0, text: "검토", size_mm: 15 },
+  { id: "ov-note:memo", kind: "text", dx_mm: 30, dy_mm: 40, text: "기획 검토 메모" },
+  { id: "ov-label:road:edge0", kind: "override", target: "label:road:edge0", dx_mm: 2, dy_mm: 3 },
+];
+
+const ORPHAN_ANNOTATIONS: SheetAnnotation[] = [
+  { id: "u-ok", kind: "text", anchor: { ref: "site:boundary", part: "vertex", index: 3, snap: [0, 20000] }, dx_mm: 5, dy_mm: -5, text: "정상" },
+  { id: "u-gone", kind: "text", anchor: { ref: "m999", part: "center", snap: [0, 0] }, dx_mm: 0, dy_mm: 0, text: "없는 매스" },
+  { id: "u-range", kind: "leader", anchor: { ref: "m000", part: "edge", index: 4, snap: [0, 0] }, dx_mm: 0, dy_mm: 5, text: "범위 밖" },
+  {
+    id: "u-moved",
+    kind: "dim",
+    a: { ref: "m000", part: "vertex", index: 1, snap: [5000, 8000] },
+    b: { ref: "site:boundary", part: "vertex", index: 1, snap: [30000, 0] },
+    offset_mm: 0,
+  },
+];
+
 export const CASES: SitePlanCase[] = [
   {
     id: "site_plan-basic",
@@ -105,5 +140,17 @@ export const CASES: SitePlanCase[] = [
     note: "매스 3개(겹침 포함): 합집합 투영, 지번 라벨, 건축선",
     input: multiMass(),
     extras: {},
+  },
+  {
+    id: "site_plan-user-annotations",
+    note: "사람 주석(AR-06-086): 치수(수선의 발)·문자·지시선·구름·이행 메모(A-ANNO-USER) + 도로 라벨 옮기기",
+    input: withAnnotations(USER_ANNOTATIONS),
+    extras: { parking_accessible: 1 },
+  },
+  {
+    id: "site_plan-orphan-annotations",
+    note: "고아 주석(AR-06-086): ref 없음·번호 범위 밖·기준 좌표 불일치 → 출력 0건, 정상 문자 1건만",
+    input: withAnnotations(ORPHAN_ANNOTATIONS),
+    extras: { parking_accessible: 1 },
   },
 ];

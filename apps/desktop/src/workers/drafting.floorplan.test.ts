@@ -13,7 +13,7 @@ const handler = createDraftingHandlers().handlers.build_sheet!;
 const input = (m: typeof model, floor_id = "f1") => ({
   model: m,
   judgment: { engine_version: "t", rule_pack_version: "2026.10.0", application_date: "2026-12-01", items: [{ key: "coverage", verdict: "NA", unit: "pct", basis: [] }], pending_changes: 0 },
-  sheet: { id: "s", kind: "floor_plan", paper: "A3", orientation: "landscape", scale: "auto", floor_id, annotation_overrides: [], include_in_proposal: false },
+  sheet: { id: "s", kind: "floor_plan", paper: "A3", orientation: "landscape", scale: "auto", floor_id, annotations: [], include_in_proposal: false },
   profile: { office_name: "", layer_map: {}, default_paper: "A3", default_text_height_mm: 2.5, font_family: "Noto Sans KR" },
   license: { drafting_watermark: false },
   engine_version: "t",

@@ -85,7 +85,7 @@ export function previewInput(profile: DraftingProfile, watermark: boolean, date:
       paper: profile.default_paper,
       orientation: "landscape",
       scale: "auto",
-      annotation_overrides: [],
+      annotations: [],
       include_in_proposal: false,
     },
     profile,

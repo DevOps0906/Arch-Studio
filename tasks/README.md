@@ -109,6 +109,7 @@
 | 2026-10-28 | `supabase/migrations/20261013000001_core_lite.sql` consume_credits | `p_idempotency_key` 기본값 null → 키 없이 호출 시 멱등 검사 생략(운영 경로는 키 전달, 현재 중복 차감 없음). `tests/rls_smoke.sql`도 키 생략 | **코어 요청으로 이관**(2026-10-29 사용자 결정, '코어 ALTER 0건'): platform 코어 0003에서 키 NULL·공백 거부(22023). 제품은 운영 경로가 항상 키를 넘기는지 테스트로만 고정 |
 | 2026-10-28 | `supabase/migrations/20261013000002_arch_domain.sql` 동시 렌더 수 검사 | 잠금 전에 개수를 세어 동시 요청 2건이 모두 통과할 수 있음(미재현) | **AR-06-001에서** 조직 단위 잠금 후 검사 + 동시 요청 테스트 (Codex 리뷰 🟡) |
 | 2026-10-29 | `03_SCREENS_UX.md` 4.3절 | "DESIGN.md 5절"을 가리키나 DESIGN.md는 4절까지 | 다음 문서 작업에서 참조 정정 |
+| 2026-11-02 | `supabase` `arch.upsert_drafting_profile` v_std | DB upsert_drafting_profile v_std에 A-ANNO-USER 추가(마이그레이션, 위험 높음). 그 전까지 설정 화면 A-ANNO-USER 행은 읽기 전용(AR-06-086) | 새 번호 마이그레이션 + challenger·reviewer security, 이후 `LOCKED_LAYERS` 해제 |
 | 2026-10-29 | `06_AGENT_PLAN.md` AR-06-013 행 | 근거 `04_API.md:276-366`이 실제 4.7절(306~393줄)과 어긋남 | 장 번호 인용으로 교체 |
 | 2026-10-29 | `02_ARCHITECTURE.md` 위험 #2 ↔ AR-06-013 | 판정 필수값 누락: 위험 #2는 "입력 필요" 표시, 013은 스키마 검증 실패 | AR-06-037 판정 패널에서 검증 실패를 "입력 필요"로 표시해 양립 |
 | 2026-10-29 | `04_API.md` 4.7.3 SheetSpec `dx_mm`·`dy_mm` | 모델 mm인지 용지 단위인지 모호(현재 number, 정수 강제 없음) | AR-06-020에서 확정 |

@@ -2,7 +2,7 @@
 // 케이스 정의만 바꾸고 골든을 다시 만들려면 DXF_WRITER_VERSION을 올린 뒤 golden:update(update.ts가 강제).
 import type { DesignModelV1 } from "@arch-studio/domain";
 import { buildSheet, label, validateDraftingInput, type DraftingInput, type Prim, type SheetModel, type ViewModel } from "../../src/index.ts";
-import { sampleInput, sampleModel, sampleView } from "../../src/sheet/test-fixtures.ts";
+import { sampleInput, sampleModel, sampleOrphanAnnotations, sampleUserAnnotations, sampleView } from "../../src/sheet/test-fixtures.ts";
 import type { DxfOptions } from "../../src/writers/dxf/index.ts";
 
 export interface GoldenCase {
@@ -326,5 +326,15 @@ export const CASES: GoldenCase[] = [
         font: { file: "NanumGothic.ttf", family: "NanumGothic" },
         timestamps: { created: 2461342.25, updated: 2461343.5 },
       }),
+  },
+  {
+    id: "writer-user-annotations",
+    note: "사람 주석(AR-06-086): 치수·문자·지시선·구름·이행 메모(A-ANNO-USER) + 자동 주석 옮기기",
+    build: () => ok(sheetOf(sampleModel(), { sheet: { annotations: sampleUserAnnotations() } })),
+  },
+  {
+    id: "writer-orphan-annotations",
+    note: "고아 주석(AR-06-086): ref 없음·번호 범위 밖·기준 좌표 불일치는 출력 0건, 정상 문자 1건만",
+    build: () => ok(sheetOf(sampleModel(), { sheet: { annotations: sampleOrphanAnnotations() } })),
   },
 ];

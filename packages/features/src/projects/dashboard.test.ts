@@ -33,7 +33,7 @@ function input(id: string, updatedAt: string, model: DesignModelV1 | null, verdi
     version: 1,
     cloudVersion: undefined,
     model,
-    sheets: Array.from({ length: sheets }, (_, i) => ({ id: `site_plan-${i + 1}`, kind: "site_plan", paper: "A3", orientation: "landscape", scale: "auto", annotation_overrides: [], include_in_proposal: true }) as const),
+    sheets: Array.from({ length: sheets }, (_, i) => ({ id: `site_plan-${i + 1}`, kind: "site_plan", paper: "A3", orientation: "landscape", scale: "auto", annotations: [], include_in_proposal: true }) as const),
     verdict,
   };
 }

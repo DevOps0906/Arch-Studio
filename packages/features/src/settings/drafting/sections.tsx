@@ -5,7 +5,7 @@ import { Badge, Banner, Button, Field, Input, Select, Table, cn } from "@arch-st
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { isApiError } from "../../api-client/index.ts";
 import { LoadingState, useApi, useEngine } from "../../shell/index.ts";
-import { layerTable, LINETYPE_LABEL, WARNING_TEXT, type SaveLayerWarning } from "./layer-map.ts";
+import { layerTable, LINETYPE_LABEL, LOCKED_LAYER_TEXT, WARNING_TEXT, type SaveLayerWarning } from "./layer-map.ts";
 import { LOGO_FAILURE_TEXT, parseTicket, sha256Hex, stripPng } from "./logo.ts";
 import { BUNDLED_FONTS, checkForm, DEFAULT_PROFILE, PAPERS, type FormErrors, type Paper, type ProfileForm } from "./profile.ts";
 import { nextSheetSeq } from "../../sheets/seq.ts";
@@ -229,7 +229,7 @@ export function LayerSection({ form, setForm, editable, dirty, saving, errors, o
       aria-label={`${r.name} 사무소 이름`}
       value={r.input}
       onChange={(e) => set(r.name, e.target.value)}
-      disabled={!editable}
+      disabled={!editable || r.locked}
       invalid={r.blocked || r.warning !== null}
       maxLength={64}
       spellCheck={false}
@@ -246,6 +246,11 @@ export function LayerSection({ form, setForm, editable, dirty, saving, errors, o
           표준 이름 유지
         </Badge>
         <span className="text-caption whitespace-normal text-fg-2">{WARNING_TEXT[r.warning as SaveLayerWarning["kind"]]}</span>
+      </span>
+    ) : r.locked ? (
+      <span className="flex flex-col gap-1">
+        <span className="text-caption text-fg-2">{r.output}</span>
+        <span className="text-caption whitespace-normal text-fg-2">{LOCKED_LAYER_TEXT}</span>
       </span>
     ) : (
       <span className="text-caption text-fg-2">{r.output}</span>

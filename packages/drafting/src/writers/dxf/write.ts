@@ -1,7 +1,7 @@
 // DXF 작성기(D-20 (a), AR-F-038, 02_ARCHITECTURE.md 2.3절 "DXF 작성기"·"결정성 규칙").
 // ASCII, $ACADVER=AC1027, UTF-8, 줄 끝 \r\n, $INSUNITS=4(mm). 구조는 AR-06-019 스파이크에서 AutoCAD 열기가 확인된 구성을 따른다.
 // 좌표: 모델 공간 1:1(실제 mm). 첫 뷰의 모델 좌표를 그대로 두고, 용지 요소(도곽·표제란·용지 주석)는 축척 분모를 곱해 놓는다.
-import { layerOrder, resolveLayerMap, type LayerMapWarning, type Linetype } from "../../layers/index.ts";
+import { layerOrder, outputLayerTable, resolveLayerMap, sheetLayers, type LayerMapWarning, type Linetype } from "../../layers/index.ts";
 import { comparePrim } from "../../sheet/assemble.ts";
 import { DraftingError } from "../../sheet/errors.ts";
 import { PRIM_KINDS, type BlockDef, type Prim, type SheetModel, type Vec } from "../../sheet/types.ts";
@@ -93,7 +93,9 @@ export function writeDxf(sheet: SheetModel, options: DxfOptions = {}): DxfResult
   nameValue(font.file, "글꼴 파일");
   nameValue(font.family, "글꼴 패밀리");
   const ts = options.timestamps ?? { created: DXF_DEFAULT_JULIAN, updated: DXF_DEFAULT_JULIAN };
-  const layers = resolveLayerMap(options.layer_map);
+  const resolved = resolveLayerMap(options.layer_map);
+  // 사람 주석 레이어(A-ANNO-USER)는 쓸 때만 표에 넣는다(주석 없는 시트는 이전과 같은 바이트).
+  const layers = { ...resolved, table: outputLayerTable(resolved, sheetLayers(sheet)) };
   // CAD는 레이어 이름을 대소문자 구분 없이 다룬다: 출력 표("0" 포함)에 대소문자 무시 중복이 있으면 안 된다(resolveLayerMap 불변식).
   const layerKeys = new Set<string>(["0"]);
   for (const l of layers.table) {

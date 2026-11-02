@@ -5,7 +5,7 @@ import { Banner, Button, Checkbox, Dialog } from "@arch-studio/ui";
 import { useEffect, useId, useState } from "react";
 import { LoadingState, LockedState } from "../shell/index.ts";
 import type { ExportOutcome, ExportProgress } from "./runner.ts";
-import { AR057_TEXT, FORMAT_LABEL, FORMAT_ORDER, fileCount, outputErrorText, type OutputFormat, type SheetAccess } from "./model.ts";
+import { AR057_TEXT, FORMAT_LABEL, FORMAT_ORDER, fileCount, orphanNotice, outputErrorText, type OutputFormat, type SheetAccess } from "./model.ts";
 
 export interface ExportItem {
   readonly id: string;
@@ -31,6 +31,8 @@ export interface ExportDialogProps {
   png: { ok: true } | { ok: false; reason: string };
   /** 사무소 레이어 매핑이 있는가(없으면 "표준 이름"만 의미가 있다). */
   hasOfficeMap: boolean;
+  /** 시트 id별 고아 주석 수(미리보기로 만든 시트만 안다). 고른 시트에 있으면 "출력에서 빠집니다" 안내(막지 않는다, 03장 9.6절). */
+  orphans?: Readonly<Record<string, number>>;
   onRun(sel: ExportSelection, onProgress: (p: ExportProgress) => void): Promise<ExportRun>;
 }
 
@@ -56,6 +58,7 @@ export function ExportDialog(p: ExportDialogProps) {
   const chosenFormats = FORMAT_ORDER.filter((f) => formats.has(f) && (f !== "png" || pngOk));
   const chosenIds = p.items.filter((i) => ids.has(i.id)).map((i) => i.id);
   const total = fileCount(chosenFormats, chosenIds.length);
+  const orphanText = orphanNotice(p.orphans, chosenIds);
   const busy = phase.kind === "running";
 
   const toggle = <T,>(set: Set<T>, v: T, on: boolean): Set<T> => {
@@ -111,6 +114,7 @@ export function ExportDialog(p: ExportDialogProps) {
                 표제란에 "체험판"이 표시됩니다. 라이선스나 구독이 있으면 표시되지 않습니다.
               </Banner>
             ) : null}
+            {orphanText ? <p className="text-caption text-fg-2">{orphanText}</p> : null}
             {p.access.viewOnly ? <p className="text-caption text-fg-2">편집 권한이 없어 마지막으로 만든 시트를 다시 내보내기만 됩니다.</p> : null}
             <fieldset className="flex flex-col gap-1">
               <legend className="text-caption font-medium text-fg-2">시트</legend>
