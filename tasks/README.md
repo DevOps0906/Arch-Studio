@@ -48,7 +48,7 @@
 | AR-06-024 | 면적 산정도·면적표 뷰와 골든 | W3 | 015, 020 | 보통 | builder | 완료 |
 | AR-06-025 | 일조사선 단면 뷰와 골든 | W3 | 016, 020 | 보통 | builder | 완료 |
 | AR-06-042 | 업데이트·규칙 팩·단가표 배포 | W3 | 040, 041 | 높음 | challenger→builder | 완료 |
-| AR-06-049 | 라우팅 seed·AI 보안 테스트 | W3 | 046, 047 | 높음 | challenger→builder | 대기 |
+| AR-06-049 | 라우팅 seed·AI 보안 테스트 | W3 | 046, 047 | 높음 | challenger→builder | 완료 |
 | AR-06-051 | 클라우드 법규 검토 그래프·API | W3 | 015, 047, 048, 050 | 보통 | builder | 대기 |
 | AR-06-053 | 음성: STT API·음성 UI·읽어 주기 | W3 | 012, 047, 048 | 보통 | builder | 완료 |
 | AR-06-054 | Dify arch-chat·채팅 SSE 중계 | W3 | 047, 050 | 보통 | builder | 완료 |
@@ -128,5 +128,8 @@
 | 2026-11-02 | 설치형 클라우드 업로드(AR-06-077) | 서버는 업로드 폴더 키를 항상 `project_uuid`로 대조한다. 설치형이 `local_id` 폴더로 올리면 POST가 422(23514) | 077에서 upload-url의 `{id}` = `project_uuid`로 고정, `local_id`는 본문 필드로만 보내는지 테스트로 대조 |
 | 2026-11-02 | `apps/api/app/ai/tools/arch`·`apps/web/src/server/ai/chat` (AR-06-054) | 채팅 운영 배선 3개 미구현(`ConversationMap`: core.ai_conversations 조회, DB 색인 Retriever: 050 제안 DB 함수, `arch.chat` 라우터 LLM `AnswerGenerator`) → 운영 `/tools/answer*` 503. `core.ai_messages` 대화 저장 없음. `ai_chat` 기능 키가 seed·org_features에 없어 명시적 false만 차단 | 라우터·DB 함수 작업에서 배선 + ai_messages 저장, seed에 `ai_chat` 추가 후 `!== true` 차단으로 강화. 추가(리뷰): 일일 턴 상한은 세기→차감이 원자적이지 않아 동시 요청이 상한을 조금 넘을 수 있음(TOCTOU), ai_messages 미저장이라 중단·재전송(409) 뒤 답을 다시 받을 수 없음 → 상한 검사를 차감 RPC 안으로 옮기고 답을 ai_messages에 저장해 같은 request_id 재조회 제공 |
 | 2026-11-02 | AR-06-054 리뷰 잔여 🟡 | 환불 실패 시에도 503 문구가 "크레딧은 차감되지 않았습니다"로 나감(alert 로그는 남음). Dify HTTP 노드 템플릿이 따옴표·줄바꿈으로 JSON을 깨면 그런 정상 질문이 매번 422(과금 0) | 문구를 환불 결과에 따라 분기. Dify 버전으로 치환 방식 확인 후 infra/dify/arch-chat 노드 본문 수정(사람·운영 확인) |
+| 2026-11-02 | CI(AR-06-049 → 058) | `pnpm test:ai-routing`(DB 없음)과 `node scripts/ai-routing/run-sql.mjs`(로컬 Supabase 필요)는 CI에 연결돼 있지 않다. `start-run.ts:168` "AR-06-049가 CI에서 막는다" 주석은 사실과 다르다 | 058에서 CI 연결(DB 단계는 supabase start 후). 연결 전까지 주석을 "pricing.test.ts·test:ai-routing이 막는다(CI 연결은 058)"로 정정 |
+| 2026-11-02 | 그래프 등록(AR-06-049) | 웹이 `graph:arch.proposal_narrative` 잡 토큰을 발급하지만(ai-token `arch.proposal_pdf`) apps/api `PRODUCT.graphs`에 그 그래프가 없어 404 | 제안서 서술 그래프 작업에서 PRODUCT에 추가하거나, 그 전까지 발급 scope에서 제외. 추가되면 `tests/arch/security` scope 매트릭스가 자동으로 포함 |
+| 2026-11-02 | `arch.knowledge` 라우팅(AR-06-049) | seed force=false라 국외 동의 조직의 org override가 상용 임베딩(voyage)을 고를 수 있다. 문서 "아니오(컬렉션 모델 고정)"와 현재 동작은 일치(컬렉션 모델은 ai_collections.embedding_provider가 고정) | 플랫폼 공통 지식 검색이 운영자 org 상수로만 돈다면 변경 불필요. 사용자 org 컬렉션에도 쓰게 되면 force 여부를 사람 판정 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
