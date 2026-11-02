@@ -33,7 +33,12 @@ jobs:
       - run: pnpm -r lint
       - run: pnpm -r typecheck
       - run: pnpm test
+      # 빌드 검증용 공개 변수 자리표시자(비밀 아님, 실제 서비스에 연결되지 않는 값). 운영 값은 배포 환경에만 둔다.
       - run: pnpm --filter ./apps/web build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.invalid
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon
+          NEXT_PUBLIC_TOSS_CLIENT_KEY: ci-placeholder-toss
       # 클라이언트 번들: Mock·시드 이메일 문자열 0, 키 모양 비밀 0
       - run: node scripts/dev/check-bundle-mock.mjs dir apps/web/.next/static
       - run: node scripts/ci/scan-secrets.mjs dir apps/web/.next/static
