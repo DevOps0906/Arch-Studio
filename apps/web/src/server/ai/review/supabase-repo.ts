@@ -47,5 +47,12 @@ export function supabaseReviewOrg(user: Client, schemas: SchemaNames): ReviewOrg
       if (error) throw new DbCodeError(error);
       return data !== null && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>) : {};
     },
+    async reviewInputSha256(runId) {
+      // RLS reviews_select(조직 구성원 읽기). 렌더 등 다른 실행 테이블의 id면 행이 없다 → null.
+      const { data, error } = await user.schema(schemas.arch).from("reviews").select("model_summary").eq("id", runId).maybeSingle();
+      if (error) throw new DbCodeError(error);
+      const sha = (data as { model_summary?: { input_sha256?: unknown } } | null)?.model_summary?.input_sha256;
+      return typeof sha === "string" && /^[0-9a-f]{64}$/.test(sha) ? sha : null;
+    },
   };
 }

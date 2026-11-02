@@ -5,13 +5,12 @@ from __future__ import annotations
 import re
 from collections.abc import Callable, Mapping
 from datetime import date
-from decimal import Decimal
 from typing import Any, TypeVar
 
 import pytest
 from pydantic import BaseModel
 
-from app.ai.compliance.arch import check_sentence, numbers_in
+from app.ai.compliance.arch import check_sentence
 from app.ai.graphs.arch_review import (
     DISCLAIMER_VERSION,
     FEATURE,
@@ -21,7 +20,6 @@ from app.ai.graphs.arch_review import (
     InterpretOutput,
     ReviewGraphError,
     RewriteOutput,
-    engine_numbers,
     format_engine_value,
     select_items,
     snapshot_from_row,
@@ -158,13 +156,20 @@ def all_sentences(result: ReviewResultV1) -> list[tuple[str, list[str]]]:
     ]
 
 
-def allowed_numbers(result: ReviewResultV1, source_ids: list[str]) -> set[Decimal]:
-    snapshot = snapshot_from_row(ROW)
-    allowed = set(engine_numbers(snapshot.judgment))
+def residual_digits(result: ReviewResultV1, text: str, source_ids: list[str]) -> str:
+    """엔진 값 치환 문자열과 인용 조문 번호를 지운 뒤 남는 숫자(있으면 LLM이 만든 숫자)."""
+    judgment = snapshot_from_row(ROW).judgment
+    shown = sorted(
+        (format_engine_value(float(v), i.unit) for i in judgment.items for v in (i.value, i.limit) if v is not None),
+        key=len,
+        reverse=True,
+    )
+    for s in shown:
+        text = text.replace(s, "")
     by_id = {s.id: s for s in result.sources}
     for sid in source_ids:
-        allowed.update(numbers_in(f"{by_id[sid].law} {by_id[sid].article}"))
-    return allowed
+        text = text.replace(by_id[sid].article, "")
+    return "".join(ch for ch in text if ch.isdigit())
 
 
 # ---------------------------------------------------------------------------
@@ -315,8 +320,7 @@ def test_no_llm_generated_number_reaches_output(noise: str) -> None:
         )
     )
     for text, sids in all_sentences(result):
-        allowed = allowed_numbers(result, sids)
-        assert all(n.normalize() in {a.normalize() for a in allowed} for n in numbers_in(text)), text
+        assert residual_digits(result, text, sids) == "", text
     assert [t for t, _ in all_sentences(result)] == ["용적률 210.25% 초과."]
 
 
@@ -389,10 +393,58 @@ def test_format_engine_value_is_deterministic() -> None:
 
 
 def test_check_sentence_codes() -> None:
-    allowed = {Decimal("60")}
-    assert check_sentence("허가가 가능합니다.", allowed) == ["legality_assertion"]
-    assert check_sentence("구청이 보증한 계획입니다.", allowed) == ["public_endorsement"]
-    assert check_sentence("전문가를 대신해 판단합니다.", allowed) == ["expert_replacement"]
-    assert check_sentence("한도는 60%입니다.", allowed) == []
-    assert check_sentence("한도는 61%입니다.", allowed) == ["ungrounded_number"]
-    assert check_sentence("허가권자 확인이 필요합니다.", allowed) == []
+    articles = {"제55조"}
+    assert check_sentence("허가가 가능합니다.", articles) == ["legality_assertion"]
+    assert check_sentence("구청이 보증한 계획입니다.", articles) == ["public_endorsement"]
+    assert check_sentence("전문가를 대신해 판단합니다.", articles) == ["expert_replacement"]
+    assert check_sentence("허가권자 확인이 필요합니다.", articles) == []
+    # 자리표시자 밖 숫자는 엔진 값과 같아도 거부. 인용 조문 번호만 허용.
+    assert check_sentence("한도는 60%입니다.", articles) == ["ungrounded_number"]
+    assert check_sentence("제55조에 따라 조례로 정합니다.", articles) == []
+    assert check_sentence("제56조에 따라 조례로 정합니다.", articles) == ["ungrounded_number"]
+    assert check_sentence("제55조제2항에 따릅니다.", articles) == ["ungrounded_number"]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "육십 퍼센트를 넘습니다.",
+        "주차 세 대가 부족합니다.",
+        "이십 층 규모입니다.",
+        "열 미터 이격이 필요합니다.",
+        "오십%입니다.",
+    ],
+)
+def test_korean_numeral_with_unit_rejected(text: str) -> None:
+    assert check_sentence(text, set()) == ["ungrounded_number"]
+
+
+@pytest.mark.parametrize(
+    "text", ["이 대지는 도로에 접합니다.", "세대수 기준을 확인하세요.", "사이 층에 둡니다.", "이 평면은 참고입니다."]
+)
+def test_common_words_not_mistaken_for_numbers(text: str) -> None:
+    assert check_sentence(text, set()) == []
+
+
+def test_number_bypasses_removed_and_cited_article_kept() -> None:
+    """한글 수사·다른 항목 엔진 값(200%) 직접 기재는 재작성 실패 시 제거, 인용 조문 번호는 통과."""
+    result = run(
+        FakeLLM(
+            out(
+                [
+                    (
+                        "items.1",
+                        [
+                            ("용적률 한도 육십 퍼센트를 넘습니다.", [IDS["far-law"]]),
+                            ("한도 200%를 넘습니다.", [IDS["far-law"]]),  # items.1.limit 값을 직접 씀 → 거부
+                            ("제56조에 따라 조례로 정합니다.", [IDS["far-law"]]),  # 인용 자료 조문 → 허용
+                            ("제57조도 봅니다.", [IDS["far-law"]]),  # 인용하지 않은 조문 번호 → 거부
+                        ],
+                    ),
+                ],
+                needs=[("주차 세 대가 부족합니다.", [IDS["parking-ordinance"]])],
+            ),
+            rewrite=lambda t: t,
+        )
+    )
+    assert [t for t, _ in all_sentences(result)] == ["제56조에 따라 조례로 정합니다."]

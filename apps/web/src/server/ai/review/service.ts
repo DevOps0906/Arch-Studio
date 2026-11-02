@@ -5,6 +5,8 @@
 // 클라이언트가 보낸 judgment·model_summary는 받기만 하고 쓰지 않는다(서버 재계산 값만 저장, 02_ARCHITECTURE.md 4장).
 // 차감은 start_ai_run 한 곳에서만 일어나므로 그 앞의 모든 거부는 차감 0이다. 같은 request_id 재전송은 DB가 기존 실행을 돌려준다
 // (추가 차감·추가 잡 없음, 다른 조직이면 42501 — 차감 키 consume:arch:<request_id>와 실행 행 request_id unique가 한 트랜잭션).
+// 돌려받은 실행이 이번 요청의 것인지 대조한다(AR-06-053 원장 대조와 같은 실패 닫힘): 실행이 arch.reviews 행(종류 review)이고
+// model_summary.input_sha256이 이번 DesignModel 지문과 같을 때만 202. 다른 종류(렌더 등)·다른 입력에 쓴 request_id 재사용은 409.
 // 조직·행위자는 세션에서만. 응답·로그에 판정 값·주소·토큰·예외 원문을 넣지 않는다.
 // server-only를 import하지 않는다(node --test 대상).
 import { z } from "zod";
@@ -19,6 +21,8 @@ import { recomputeJudgment, type RulePack } from "./recompute.ts";
 /** 사용자 JWT 클라이언트(RLS). 기능 판정. */
 export interface ReviewOrgRepo {
   orgFeatures(orgId: string): Promise<Record<string, unknown>>;
+  /** arch.reviews 행의 model_summary.input_sha256(RLS: 같은 조직만). 행이 없으면(다른 종류 실행·다른 조직) null. */
+  reviewInputSha256(runId: string): Promise<string | null>;
 }
 
 /** 서버 규칙 팩(게시된 버전만, 저장소 원문 sha256·크기 대조 후). 없거나 게시 상태가 아니면 null. 그 밖의 오류는 throw. */
@@ -61,10 +65,11 @@ export const reviewRequestSchema = z
   })
   .strict();
 
-type ReviewOnlyCode = "ai_review_disabled";
+type ReviewOnlyCode = "ai_review_disabled" | "review_request_reused";
 
 const REVIEW_ERRORS: Readonly<Record<ReviewOnlyCode, { status: number; message: string }>> = {
   ai_review_disabled: { status: 503, message: "지금은 클라우드 검토를 사용할 수 없습니다. 크레딧은 차감되지 않았습니다." },
+  review_request_reused: { status: 409, message: "이미 다른 요청에 쓴 요청 ID입니다. 새 요청으로 다시 시도하세요." },
 };
 
 class ReviewReject extends Error {
@@ -124,7 +129,8 @@ export async function handleReview(req: Request, deps: ReviewDeps): Promise<Resp
 
     // 1) 폴백·만료·플랜 밖: AR012(04_API.md 2.1절 review 행). DB(start_ai_run)도 cloud_review로 같은 판정을 한다.
     if (!session.entitled) throw new GatewayError("AR012");
-    const features = await deps.org(session).orgFeatures(session.orgId);
+    const org = deps.org(session);
+    const features = await org.orgFeatures(session.orgId);
     if (features.cloud_review !== true) throw new GatewayError("AR012");
 
     // 2) 본문 rule_context = 본문 버전·기준일·지자체.
@@ -158,6 +164,14 @@ export async function handleReview(req: Request, deps: ReviewDeps): Promise<Resp
         model_summary: server.summary,
       },
     });
+    // 5) 돌려받은 실행 = 이번 요청(종류 review + 같은 입력 지문)인지 대조. 아니면 409(추가 차감 없음: DB가 기존 실행을 돌려줬다).
+    let stored: string | null;
+    try {
+      stored = await org.reviewInputSha256(run.run_id);
+    } catch {
+      throw new GatewayError("internal");
+    }
+    if (stored === null || stored !== server.summary.input_sha256) throw new ReviewReject("review_request_reused");
     return okResponse(run, 202);
   } catch (error) {
     if (error instanceof ReviewReject) {

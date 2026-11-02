@@ -5,14 +5,13 @@
 라우팅 표의 실패 규칙대로 "규칙 단계만으로" 동작한다(`SHARED_MODULES.md:355`).
 
 금지: 인허가 보장, 적법성 단정("허가 가능합니다"), 전문가 대체, 공공기관 보증, 근거 없는 수치.
-근거 없는 수치는 `allowed_numbers`(엔진 값 + 인용 조문 번호) 밖의 숫자가 문장에 있으면 위반이다.
+근거 없는 수치는 자리표시자 밖 숫자(인용 조문 번호 "제N조" 제외)·한글 수사+단위 표현이 있으면 위반이다.
 """
 
 from __future__ import annotations
 
 import re
 from collections.abc import Iterable
-from decimal import Decimal, InvalidOperation
 from typing import Literal
 
 ViolationCode = Literal[
@@ -36,38 +35,40 @@ _PATTERNS: tuple[tuple[ViolationCode, re.Pattern[str]], ...] = (
     ),
 )
 
-# 숫자 토큰: 1, 1,200, 59.5. 조문 "제55조의2"의 55·2도 숫자다(인용 조문 번호는 allowed_numbers로 허용).
-NUMBER_RE = re.compile(r"\d+(?:,\d{3})*(?:\.\d+)?")
+# 숫자 규칙(자리표시자 밖): 아라비아 숫자는 전부 거부한다.
+# 예외는 인용 자료의 조문 번호와 정확히 같은 "제N조(의M)"뿐이다. 엔진 값과 같은 숫자를 직접 쓴 경우도 거부한다
+# (다른 항목 값을 옮겨 적는 우회 차단). 엔진 값은 `{ref:...}` 치환으로만 들어간다.
+ARTICLE_RE = re.compile(r"제\d+조(?:의\d+)?")
+DIGIT_RE = re.compile(r"[0-9０-９]")
+# 한글 수사 + 단위(육십 퍼센트·세 대·이십 층·열 미터 등). 흔한 낱말(이 대지·세대·사이 층·이 평면·이 프로젝트)과
+# 겹치지 않게 단위 뒤는 조사·끝만, 고유어 수사는 띄어 쓴 단위만, 한자어 두 자 이상은 십·백·천·만이 든 꼴만 잡는다.
+_SINO1 = "[일이삼사오육륙칠팔구]"
+_SINO = f"(?:{_SINO1}|[십백천만])+"
+_SINO_BIG = f"(?:{_SINO1}?[십백천만])+{_SINO1}?"
+_NATIVE = "(?:한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스무|스물|서른|마흔|쉰)"
+_TAIL = r"(?=[이가은는을를의에도만로와과]|입니다|이며|이고|$|[\s.,)])"
+KOREAN_NUMBER_RES: tuple[re.Pattern[str], ...] = (
+    re.compile(rf"(?<![가-힣]){_SINO}\s*(?:%|㎡|(?:퍼센트|미터|제곱미터|평방미터|센티미터|밀리미터){_TAIL})"),
+    re.compile(rf"(?<![가-힣]){_SINO_BIG}\s*(?:층|대|개|미터){_TAIL}"),
+    re.compile(rf"(?<![가-힣]){_NATIVE}(?:\s*{_NATIVE})?\s+(?:대|층|개|미터){_TAIL}"),
+)
 
 
-def number_value(token: str) -> Decimal | None:
-    try:
-        return Decimal(token.replace(",", ""))
-    except InvalidOperation:
-        return None
+def has_ungrounded_number(text: str, allowed_articles: Iterable[str]) -> bool:
+    """자리표시자를 뺀 문장에 허용되지 않은 숫자 표현이 있으면 True."""
+    articles = set(allowed_articles)
+    rest = ARTICLE_RE.sub(lambda m: "" if m.group(0) in articles else m.group(0), text)
+    if DIGIT_RE.search(rest):
+        return True
+    return any(p.search(rest) for p in KOREAN_NUMBER_RES)
 
 
-def numbers_in(text: str) -> list[Decimal]:
-    out: list[Decimal] = []
-    for tok in NUMBER_RE.findall(text):
-        v = number_value(tok)
-        if v is not None:
-            out.append(v)
-    return out
-
-
-def ungrounded_numbers(text: str, allowed: Iterable[Decimal]) -> list[Decimal]:
-    """allowed 밖의 숫자(값 비교, 표기 차이 `1,200`·`1200.0` 무시)."""
-    allowed_set = {a.normalize() for a in allowed}
-    return [n for n in numbers_in(text) if n.normalize() not in allowed_set]
-
-
-def check_sentence(text: str, allowed_numbers: Iterable[Decimal]) -> list[ViolationCode]:
-    """위반 코드 목록(중복 없음, 발견 순서). 빈 목록이면 통과."""
+def check_sentence(text: str, allowed_articles: Iterable[str]) -> list[ViolationCode]:
+    """위반 코드 목록(중복 없음, 발견 순서). 빈 목록이면 통과. text는 자리표시자를 뺀 문장."""
     found: list[ViolationCode] = []
     for code, pattern in _PATTERNS:
         if code not in found and pattern.search(text):
             found.append(code)
-    if ungrounded_numbers(text, allowed_numbers):
+    if has_ungrounded_number(text, allowed_articles):
         found.append("ungrounded_number")
     return found

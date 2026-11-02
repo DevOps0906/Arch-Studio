@@ -1,14 +1,14 @@
 // POST /api/ai/review: 서버 재계산만 저장(클라이언트 JudgmentResult 불신)·폴백 AR012·스위치·멱등(AR-06-051). 차감은 가짜 start_ai_run이 센다.
 import assert from "node:assert/strict";
 import { test, type TestContext } from "node:test";
-import { judge, loadRulePack, type RulePack } from "../../../../../../packages/rules/src/index.ts";
+import { judge, loadRulePack, type RulePack } from "@arch-studio/rules";
 import { FIXTURE_PACK_RAW, fixtureModel } from "../../../../../../packages/rules/src/test-fixtures.ts";
 import { GatewayError } from "../gateway/http.ts";
 import type { GatewaySession } from "../gateway/session.ts";
 import type { RunStarter } from "../gateway/start-run.ts";
 import { MemoryRateLimitStore } from "../../licenses/rate-limit.ts";
 import { isReviewEnabled } from "./config.ts";
-import { recomputeJudgment } from "./recompute.ts";
+import { designModelFingerprint, recomputeJudgment } from "./recompute.ts";
 import { handleReview, REVIEW_MAX_BODY, type ReviewDeps } from "./service.ts";
 
 const ORG = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -32,6 +32,8 @@ interface World {
   packFails?: boolean;
   dbError?: string;
   runs: Map<string, { run_id: string; job_id: string; credits: number }>;
+  /** run_id → arch.reviews 행의 model_summary(가짜 DB). 여기에 없는 run_id는 다른 종류 실행(렌더 등). */
+  reviewRows: Map<string, Record<string, unknown>>;
   stored: Record<string, unknown>[];
   charged: number;
   starterCalls: number;
@@ -45,6 +47,7 @@ function world(over: Partial<World> = {}): World {
     features: { cloud_review: true },
     packs: new Map([[PACK.version, PACK]]),
     runs: new Map(),
+    reviewRows: new Map(),
     stored: [],
     charged: 0,
     starterCalls: 0,
@@ -66,6 +69,7 @@ function fakeStarter(w: World): RunStarter {
       const row = { run_id: `bbbbbbbb-bbbb-4bbb-8bbb-${hex}`, job_id: `aaaaaaaa-aaaa-4aaa-8aaa-${hex}`, credits: 15 };
       w.runs.set(args.p_request_id, row);
       w.stored.push(args.p_options);
+      w.reviewRows.set(row.run_id, args.p_options.model_summary as Record<string, unknown>);
       w.charged += 15;
       return [row];
     },
@@ -85,7 +89,13 @@ function deps(w: World): ReviewDeps {
         return w.session;
       },
     },
-    org: () => ({ orgFeatures: async () => w.features }),
+    org: () => ({
+      orgFeatures: async () => w.features,
+      reviewInputSha256: async (runId) => {
+        const sha = w.reviewRows.get(runId)?.input_sha256;
+        return typeof sha === "string" ? sha : null;
+      },
+    }),
     packs: () => ({
       async load(version) {
         if (w.packFails) throw new Error("storage 500 service_role=secret");
@@ -153,6 +163,7 @@ test("review: 정상 → 202 · review/review · 저장 판정 = 서버 packages
     building_area_m2: 80,
     height_mm: 6000,
     ordinance_unverified: [],
+    input_sha256: designModelFingerprint(model()),
   });
 });
 
@@ -287,4 +298,30 @@ test("같은 request_id 재전송 → 같은 실행, 차감 1회 · 크레딧 �
   const capped = await call(world({ dbError: "AR034" }));
   assert.equal(capped.status, 429);
   assert.equal(capped.json.error?.code, "AI_DAILY_LIMIT");
+});
+
+test("request_id 재사용 대조: 다른 DesignModel·다른 종류 실행(렌더)에 쓴 request_id → 409, 추가 차감 0", async (t) => {
+  quiet(t);
+  const w = world();
+  const b = body();
+  assert.equal((await call(w, b)).status, 202);
+  const other = fixtureModel({ municipality_code: MUNI_OK });
+  other.masses[0]!.floors.push({ id: "f3", level: 3, height_mm: 3000, use: "가짜용도A" });
+  const reused = await call(w, { ...b, design_model: other });
+  assert.equal(reused.status, 409);
+  assert.equal(reused.json.error?.code, "review_request_reused");
+  assert.equal(w.charged, 15);
+
+  // 같은 request_id가 렌더 실행 행에 있으면 DB는 그 실행을 돌려준다 → reviews 행 없음 → 409.
+  const r = world();
+  const renderReq = rid();
+  r.runs.set(renderReq, { run_id: "bbbbbbbb-bbbb-4bbb-8bbb-0000000000ff", job_id: "aaaaaaaa-aaaa-4aaa-8aaa-0000000000ff", credits: 3 });
+  const asRender = await call(r, body({ request_id: renderReq }));
+  assert.equal(asRender.status, 409);
+  assert.equal(r.charged, 0);
+
+  // 키 순서만 다른 같은 입력은 같은 지문(정상 재전송 → 202).
+  const same = JSON.parse(JSON.stringify(model()));
+  const reordered = Object.fromEntries(Object.entries(same).reverse());
+  assert.equal((await call(w, { ...b, design_model: reordered })).status, 202);
 });
