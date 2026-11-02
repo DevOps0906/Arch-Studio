@@ -199,13 +199,15 @@ interface ReviewResultV1 {
     key: string                              // JudgmentResult.items[].key 와 같은 값, 또는 'district_plan' 등 RAG 전용 항목
     verdict: 'PASS' | 'FAIL' | 'WARN' | 'CHECK'   // CHECK = 확인 필요
     engine_value?: { value: number; limit: number; unit: string }  // 엔진 값 그대로 복사. LLM 이 만든 숫자를 넣지 않는다
-    sentences: Array<{ text: string; source_ids: string[] }>      // source_ids 가 빈 문장이 하나라도 있으면 AR033
+    sentences: Array<{ text: string; source_ids: string[]; nature: 'interpretation' }>  // source_ids 가 빈 문장이 하나라도 있으면 AR033
   }>
-  needs_check: Array<{ text: string; source_ids: string[] }>
+  needs_check: Array<{ text: string; source_ids: string[]; nature: 'interpretation' }>
   sources: Array<{ id: string; law: string; article: string; effective_from: string; kind: 'law' | 'ordinance' | 'interpretation' | 'district_plan' }>
   disclaimer_version: string                 // "법적 판정 아님" 고지 버전
 }
 ```
+
+숫자 규칙(AR-06-051): 숫자는 `engine_value`(엔진 값 복사)·`verdict`로만 나간다. `text`는 AI 해석 문장이고 숫자가 없다(`nature: 'interpretation'` = 해석, 수치 아님). 그래프 안에서 LLM은 `parts: [{type:'text', text} | {type:'ref', item:'items.<i>', field:'value'|'limit'}]`로 쓰고, ref는 같은 항목의 엔진 값만 가리키며 출력 문장에는 고정 낱말 '산정값'·'한도값'으로 그려진다(needs_check·district_plan 문장은 ref 금지). 화면은 수치를 `engine_value`에서 표시한다.
 
 ### 4.3 `arch.intake` 결과 (고정 스키마, 좌표 없음)
 

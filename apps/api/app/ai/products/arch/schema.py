@@ -430,14 +430,20 @@ class ReviewEngineValue(Strict):
     unit: Annotated[str, Field(max_length=16), _max_len(16)]
 
 
+# AI 문장 표식: "해석(수치 아님)". 수치는 ReviewItem.engine_value·verdict로만 나간다(AR-06-051 [DECISION]).
+SentenceNature = Literal["interpretation"]
+
+
 class ReviewSentence(Strict):
     text: T_SENTENCE_MAX
     source_ids: Annotated[list[IdStr], Field(min_length=1, max_length=20)]  # 빈 문장 출처 = AR033
+    nature: SentenceNature = "interpretation"
 
 
 class ReviewNeedsCheck(Strict):
     text: T_SENTENCE_MAX
     source_ids: SourceIds
+    nature: SentenceNature = "interpretation"
 
 
 class ReviewSource(Strict):

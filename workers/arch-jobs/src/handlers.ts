@@ -8,6 +8,7 @@ import { createRenderHandler } from "./handlers/render/handler.ts";
 import { mockRenderProvider } from "./handlers/render/mock-provider.ts";
 import type { RenderStorage } from "./handlers/render/storage.ts";
 import { supabaseRenderStorage } from "./handlers/render/storage.ts";
+import { buildReviewHandler } from "./handlers/review/register.ts";
 import { buildSttHandler } from "./handlers/stt/register.ts";
 
 type Env = Readonly<Record<string, string | undefined>>;
@@ -20,6 +21,8 @@ export function buildHandlers(env: Env, makeStorage: (env: Env) => RenderStorage
   }
   const stt = buildSttHandler(env);
   if (stt) handlers["arch.stt"] = stt;
+  const review = buildReviewHandler(env);
+  if (review) handlers["arch.review"] = review;
   return handlers;
 }
 
