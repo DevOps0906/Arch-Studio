@@ -15,7 +15,7 @@ permissions: {}
 
 concurrency:
   group: supply-chain-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   sbom:
@@ -59,7 +59,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: stable
+          go-version: "1.27.3"
           cache: false
       - run: go install github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.7.0
       - run: mkdir -p osv
@@ -67,6 +67,8 @@ jobs:
       - run: |
           "$(go env GOPATH)/bin/osv-scanner" scan source --format json --output-file osv/osv.json \
             -L pnpm-lock.yaml -L apps/desktop/src-tauri/Cargo.lock || true
+      # `|| true` 가 도구 자체 실패(설치·인자 오류)를 가리지 않게, 보고서가 만들어졌는지 확인한다
+      - run: test -s osv/osv.json
       - if: github.event_name == 'schedule'
         run: |
           "$(go env GOPATH)/bin/osv-scanner" scan source -L pnpm-lock.yaml -L apps/desktop/src-tauri/Cargo.lock
@@ -76,7 +78,7 @@ jobs:
           name: osv
           path: osv/
           retention-days: 90
-          if-no-files-found: ignore
+          if-no-files-found: error
 
   cargo-audit:
     name: cargo audit
@@ -90,4 +92,6 @@ jobs:
           persist-credentials: false
       - run: rustup toolchain install stable --profile minimal
       - run: cargo install cargo-audit --version 0.22.2 --locked
+      # OSV 와 같은 정책: PR·푸시는 보고만(비차단), 주간 schedule 에서 실패
       - run: cargo audit --file apps/desktop/src-tauri/Cargo.lock
+        continue-on-error: ${{ github.event_name != 'schedule' }}

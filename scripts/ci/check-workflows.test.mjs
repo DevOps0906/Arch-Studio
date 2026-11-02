@@ -19,6 +19,16 @@ test("위반 5종이 잡힌다", () => {
   for (const k of ["pull_request_target", "SHA 고정", "persist-credentials", "최상위 permissions", "secrets 참조"]) assert.match(e, new RegExp(k));
 });
 
+test("persist-credentials 는 다른 스텝 것으로 인정하지 않는다", () => {
+  const two = good.replace("persist-credentials: false", "fetch-depth: 1") +
+    `      - uses: actions/setup-node@${SHA}\n        with:\n          persist-credentials: false\n`;
+  assert.match(checkWorkflow("a.yml", two).join("\n"), /persist-credentials/);
+});
+
+test("secrets: inherit 금지", () => {
+  assert.match(checkWorkflow("a.yml", good + "  b:\n    uses: ./.github/workflows/x.yml\n    secrets: inherit\n").join("\n"), /inherit/);
+});
+
 test("주석 안의 secrets.·tag 는 오탐 아님", () => {
   assert.deepEqual(checkWorkflow("a.yml", good + "      # secrets.X 는 쓰지 않는다\n"), []);
 });

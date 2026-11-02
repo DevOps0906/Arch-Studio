@@ -13,7 +13,7 @@ permissions: {}
 
 concurrency:
   group: guard-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   guard:
@@ -34,7 +34,7 @@ jobs:
       - run: node scripts/ci/check-workflows.mjs
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
-          go-version: stable
+          go-version: "1.27.3"
           cache: false
       # 모듈 프록시·sumdb 가 무결성을 검증한다(버전 고정)
       - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
