@@ -7,12 +7,18 @@ import type { ProjectRecord, ProjectSummary } from "../adapters/project-store.ts
 
 export interface ReadCache {
   getList(): Promise<readonly ProjectSummary[] | null>;
-  putList(list: readonly ProjectSummary[]): Promise<void>;
+  /** `epoch`: 작업을 시작할 때 `epoch()`로 받은 값. 그 사이 clear()가 있었으면 쓰지 않는다(가드가 비교). */
+  putList(list: readonly ProjectSummary[], epoch?: number): Promise<void>;
   getRecord(id: string): Promise<ProjectRecord | null>;
-  putRecord(record: ProjectRecord): Promise<void>;
+  putRecord(record: ProjectRecord, epoch?: number): Promise<void>;
+  /** clear() 횟수. 요청을 보내기 전에 받아 두었다가 put에 넘긴다(로그아웃 경합 방어). */
+  epoch(): number;
   deleteRecord(id: string): Promise<void>;
   /** 전부 삭제(로그아웃). 실패하면 던진다. */
   clear(): Promise<void>;
+  /** 이 캐시를 채운 주체(sub+org 문자열). 없으면 null. 읽기 가드(guarded-cache.ts)가 쓴다. */
+  getOwner(): Promise<string | null>;
+  setOwner(owner: string): Promise<void>;
 }
 
 /** 캐시 없음(IndexedDB 미지원·비공개 모드). */
@@ -23,11 +29,15 @@ export const NO_READ_CACHE: ReadCache = Object.freeze({
   putRecord: async () => {},
   deleteRecord: async () => {},
   clear: async () => {},
+  getOwner: async () => null,
+  setOwner: async () => {},
+  epoch: () => 0,
 });
 
 const DB_NAME = "arch-studio-read-cache";
 const STORE = "kv";
 const LIST_KEY = "list";
+const OWNER_KEY = "owner";
 const recordKey = (id: string) => `project:${id}`;
 
 function wrap<T>(req: IDBRequest<T>): Promise<T> {
@@ -84,5 +94,9 @@ export function createIndexedDbReadCache(factory: IDBFactory | undefined = globa
     putRecord: (record) => quiet(undefined, () => run("readwrite", (s) => s.put(record, recordKey(record.id))).then(() => undefined)),
     deleteRecord: (id) => quiet(undefined, () => run("readwrite", (s) => s.delete(recordKey(id))).then(() => undefined)),
     clear: () => run("readwrite", (s) => s.clear()).then(() => undefined),
+    epoch: () => 0,
+    getOwner: () => quiet(null, async () => ((await run("readonly", (s) => s.get(OWNER_KEY))) as string | undefined) ?? null),
+    // 주체 기록 실패는 던진다: 기록 없이 데이터만 남으면 다음 사용자에게 읽힐 수 있어 가드가 쓰기를 포기해야 한다.
+    setOwner: (owner) => run("readwrite", (s) => s.put(owner, OWNER_KEY)).then(() => undefined),
   };
 }

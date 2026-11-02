@@ -8,6 +8,8 @@ export interface WebApiOptions {
   readonly getAccessToken: () => Promise<string | null>;
   /** 테스트 주입. 기본 globalThis.fetch. */
   readonly fetch?: typeof fetch;
+  /** 개발·테스트용: 서명 URL에 http 허용. 기본 https만. */
+  readonly allowInsecureSignedUrls?: boolean;
 }
 
 export interface ApiResult {
@@ -34,18 +36,41 @@ export function assertBaseUrl(baseUrl: string): URL {
   return url;
 }
 
-/** 서명 URL 검사: https(또는 localhost http)만. 액세스 토큰은 이 URL로 보내지 않는다. */
-export function isSafeSignedUrl(raw: unknown): raw is string {
-  if (typeof raw !== "string") return false;
-  try {
-    assertBaseUrl(raw);
-    return true;
-  } catch {
-    return false;
+/** 본문 읽기: Content-Length가 상한을 넘으면 읽기 전에 거부, 없으면 스트리밍 누적이 넘는 순간 중단. 초과는 null. */
+async function readLimited(res: Response, maxBytes: number): Promise<Uint8Array | null> {
+  const declared = Number(res.headers.get("content-length"));
+  if (res.headers.has("content-length") && Number.isFinite(declared) && declared > maxBytes) {
+    await res.body?.cancel().catch(() => {});
+    return null;
   }
+  if (!res.body) {
+    const all = new Uint8Array(await res.arrayBuffer());
+    return all.byteLength > maxBytes ? null : all;
+  }
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > maxBytes) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) {
+    out.set(c, at);
+    at += c.byteLength;
+  }
+  return out;
 }
 
 export class WebApi {
+  readonly #insecure: boolean;
   readonly #base: string;
   readonly #token: () => Promise<string | null>;
   readonly #fetch: typeof fetch;
@@ -53,6 +78,7 @@ export class WebApi {
   constructor(options: WebApiOptions) {
     this.#base = assertBaseUrl(options.baseUrl).origin;
     this.#token = options.getAccessToken;
+    this.#insecure = options.allowInsecureSignedUrls === true;
     this.#fetch = options.fetch ?? ((...args) => globalThis.fetch(...args));
   }
 
@@ -96,8 +122,22 @@ export class WebApi {
     }
   }
 
-  /** 서명 URL 전송(Authorization 없음). 실패는 null. */
-  async transfer(url: string, init: { method: "GET" } | { method: "PUT"; body: Uint8Array }): Promise<Uint8Array | true | null> {
+  /** 서명 URL 검사: https만(옵션으로 http 허용). 액세스 토큰은 이 URL로 보내지 않는다. */
+  isSafeSignedUrl(raw: unknown): raw is string {
+    if (typeof raw !== "string") return false;
+    try {
+      const u = new URL(raw);
+      return u.protocol === "https:" || (this.#insecure && u.protocol === "http:");
+    } catch {
+      return false;
+    }
+  }
+
+  /** 서명 URL 전송(Authorization 없음). 실패·상한 초과는 null. */
+  async transfer(
+    url: string,
+    init: { method: "GET"; maxBytes: number } | { method: "PUT"; body: Uint8Array },
+  ): Promise<Uint8Array | true | null> {
     try {
       const res = await this.#fetch(url, {
         method: init.method,
@@ -109,7 +149,7 @@ export class WebApi {
         signal: AbortSignal.timeout(BLOB_TIMEOUT_MS),
       });
       if (!res.ok) return null;
-      return init.method === "GET" ? new Uint8Array(await res.arrayBuffer()) : true;
+      return init.method === "GET" ? await readLimited(res, init.maxBytes) : true;
     } catch {
       return null;
     }

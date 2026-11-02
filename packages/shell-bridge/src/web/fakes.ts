@@ -2,7 +2,13 @@
 
 export const BASE = "https://app.test";
 export const STORAGE = "https://storage.test";
-export const ORG = "00000000-0000-4000-8000-0000000000aa";
+/** 서명 없는 JWT 모양 토큰(sub·org_id 클레임만). */
+export function fakeJwt(sub: string, org = "org-1"): string {
+  const b = (o: unknown) => btoa(JSON.stringify(o)).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_");
+  return `${b({ alg: "none" })}.${b({ sub, app_metadata: { org_id: org } })}.sig`;
+}
+
+export const ORG ="00000000-0000-4000-8000-0000000000aa";
 
 export interface FakeCall {
   readonly method: string;
@@ -32,6 +38,8 @@ export interface FakeCloud {
   online: boolean;
   /** true면 모든 API 요청에 401(만료된 세션). */
   rejectAuth: boolean;
+  /** 설정하면 API 응답이 이 Promise가 끝날 때까지 대기(진행 중 요청 중 로그아웃 경합 재현). */
+  gate: Promise<void> | null;
   /** 올바른 Bearer 토큰(다르면 401). */
   token: string;
   rights: Record<string, boolean>;
@@ -57,7 +65,8 @@ export function createFakeCloud(opts: FakeCloudOptions = {}): FakeCloud {
     blobs,
     online: true,
     rejectAuth: false,
-    token: "tok-123",
+    gate: null,
+    token: fakeJwt("user-a"),
     rights: opts.rights ?? { view_export: true, desktop_edit: true, web_edit: true, ai_render: true, cloud_review: true },
     seat: opts.seat ?? "assigned",
     products: opts.products ?? [{ kind: "sub", term_ends_at: null }],
@@ -84,7 +93,8 @@ export function createFakeCloud(opts: FakeCloudOptions = {}): FakeCloud {
         return url.pathname.startsWith("/dl/") && data ? new Response(data.slice()) : new Response(null, { status: 404 });
       }
 
-      if (state.rejectAuth || headers.get("authorization") !== `Bearer ${state.token}`) return err(401, "unauthorized");
+      if (state.gate) await state.gate;
+      if (state.rejectAuth || !headers.get("authorization")?.startsWith("Bearer ")) return err(401, "unauthorized");
       const p = url.pathname;
       if (p === "/api/entitlement") {
         return ok({ products: state.products, seat: { state: state.seat }, rights: state.rights });

@@ -6,6 +6,7 @@ import type { PlatformAdapters } from "../adapters/index.ts";
 import { clearAllSecrets, MemorySecureStore } from "../adapters/secure-store.ts";
 import { WebEntitlementClient } from "./entitlement.ts";
 import { createBrowserFileHost, WebFileGateway, type WebFileHost } from "./file-gateway.ts";
+import { createGuardedCache, principalFromToken } from "./guarded-cache.ts";
 import { WebApi, type WebApiOptions } from "./http.ts";
 import { WebProjectStore } from "./project-store.ts";
 import { createIndexedDbReadCache, type ReadCache } from "./read-cache.ts";
@@ -15,11 +16,18 @@ export interface CreateWebAdaptersOptions extends WebApiOptions {
   readonly fileHost?: WebFileHost;
   /** 읽기 캐시. 기본 IndexedDB(없으면 캐시 없음). */
   readonly cache?: ReadCache;
+  /**
+   * 캐시 주체(sub+org). 기본은 access token(JWT) payload의 sub·org_id를 서명 검증 없이 읽는다(캐시 구분용).
+   * null이면 캐시를 읽지도 쓰지도 않는다. 계정이 바뀌면 이전 사용자의 캐시는 폐기된다.
+   */
+  readonly getPrincipal?: () => Promise<string | null>;
 }
 
 export function createWebAdapters(options: CreateWebAdaptersOptions): PlatformAdapters {
   const api = new WebApi(options);
-  const cache = options.cache ?? createIndexedDbReadCache();
+  const getPrincipal =
+    options.getPrincipal ?? (async () => principalFromToken(await options.getAccessToken().catch(() => null)));
+  const cache = createGuardedCache(options.cache ?? createIndexedDbReadCache(), getPrincipal);
   const secrets = new MemorySecureStore();
   const projects = new WebProjectStore({ api, cache });
   return Object.freeze({

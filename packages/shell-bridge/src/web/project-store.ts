@@ -15,7 +15,7 @@ import {
   type SaveProjectResult,
 } from "../adapters/project-store.ts";
 import { sha256Hex } from "./hash.ts";
-import { isSafeSignedUrl, type ApiResult, type WebApi } from "./http.ts";
+import type { ApiResult, WebApi } from "./http.ts";
 import type { ReadCache } from "./read-cache.ts";
 
 /** 서버 project_snapshot 상한(버킷 100MB, 04_API 업로드 정책). 넘는 blob은 올리기 전에 거부. */
@@ -131,6 +131,7 @@ export class WebProjectStore implements ProjectStore {
   }
 
   async list(): Promise<readonly ProjectSummary[]> {
+    const epoch = this.#cache.epoch();
     const items: Record<string, unknown>[] = [];
     let cursor: string | null = null;
     for (let page = 0; page < MAX_LIST_PAGES; page++) {
@@ -156,7 +157,7 @@ export class WebProjectStore implements ProjectStore {
         version: it.version,
       });
     }
-    await this.#cache.putList(out);
+    await this.#cache.putList(out, epoch);
     return out;
   }
 
@@ -175,7 +176,7 @@ export class WebProjectStore implements ProjectStore {
     if (r.status === 0 || r.status >= 500) throw new Unreachable();
     if (r.status !== 200 || !isRecord(r.data)) throw projectError(r);
     const { url, version, bytes } = r.data;
-    if (!isSafeSignedUrl(url) || !isVersion(version) || typeof bytes !== "number" || !Number.isSafeInteger(bytes) || bytes < 0) {
+    if (!this.#api.isSafeSignedUrl(url) || !isVersion(version) || typeof bytes !== "number" || !Number.isSafeInteger(bytes) || bytes < 0) {
       return fail("PROJECT_UNAVAILABLE");
     }
     return { meta: { url, version, bytes }, result: r };
@@ -183,12 +184,13 @@ export class WebProjectStore implements ProjectStore {
 
   async #download(meta: BlobMeta): Promise<BlobBody> {
     if (meta.bytes > WEB_BLOB_MAX_BYTES) return fail("PROJECT_UNAVAILABLE");
-    const got = await this.#api.transfer(meta.url, { method: "GET" });
+    const got = await this.#api.transfer(meta.url, { method: "GET", maxBytes: WEB_BLOB_MAX_BYTES });
     if (!(got instanceof Uint8Array) || got.byteLength > WEB_BLOB_MAX_BYTES) return fail("PROJECT_UNAVAILABLE");
     return parseBlob(got);
   }
 
   async open(id: string): Promise<ProjectRecord | null> {
+    const epoch = this.#cache.epoch();
     assertProjectId(id);
     if (this.#deleted.has(id)) return null;
     let meta: BlobMeta | null;
@@ -227,11 +229,12 @@ export class WebProjectStore implements ProjectStore {
       sha256: await sha256Hex(encoder.encode(blob.designModel)),
     };
     this.#createdAt.set(id, record.createdAt);
-    await this.#cache.putRecord(record);
+    await this.#cache.putRecord(record, epoch);
     return record;
   }
 
   async save(input: SaveProjectInput): Promise<SaveProjectResult> {
+    const epoch = this.#cache.epoch();
     assertSaveProjectInput(input);
     // 설계 모델은 JSON 객체여야 한다(저장소가 최종 판정, 070 계약).
     try {
@@ -278,7 +281,7 @@ export class WebProjectStore implements ProjectStore {
     });
     if (sign.status !== 200 || !isRecord(sign.data)) throw projectError(sign);
     const { signed_upload_url: uploadUrl, path } = sign.data;
-    if (!isSafeSignedUrl(uploadUrl) || typeof path !== "string") return fail("PROJECT_UNAVAILABLE");
+    if (!this.#api.isSafeSignedUrl(uploadUrl) || typeof path !== "string") return fail("PROJECT_UNAVAILABLE");
     if ((await this.#api.transfer(uploadUrl, { method: "PUT", body: bytes })) !== true) return fail("PROJECT_UNAVAILABLE");
 
     const saved = await this.#api.call("POST", "/api/cloud-projects", {
@@ -289,7 +292,8 @@ export class WebProjectStore implements ProjectStore {
     });
     if (saved.status !== 200 || !isRecord(saved.data)) throw projectError(saved);
     const version = saved.data.version;
-    if (saved.data.project_uuid !== id || !isVersion(version) || version !== (expectedVersion ?? 0) + 1) {
+    // 서버가 저장했으므로 version이 expected+1과 달라도 실패로 보지 않는다: 캐시를 서버 값으로 갱신하고 서버 값을 돌려준다.
+    if (saved.data.project_uuid !== id || !isVersion(version) || version <= (expectedVersion ?? 0)) {
       return fail("PROJECT_UNAVAILABLE");
     }
 
@@ -308,7 +312,7 @@ export class WebProjectStore implements ProjectStore {
       engineVersion: body.engineVersion,
       designModel: body.designModel,
       sha256,
-    });
+    }, epoch);
     return { version, sha256 };
   }
 

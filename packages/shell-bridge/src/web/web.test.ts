@@ -8,7 +8,8 @@ import { createFileFixture, type FileFixture } from "../testing/files.ts";
 import { spyWebStorage } from "../test-helpers.ts";
 import type { ExportFormat } from "../adapters/exporter.ts";
 import { createWebAdapters } from "./adapters.ts";
-import { BASE, createFakeCloud, createFakeIdb, STORAGE, type FakeCloud } from "./fakes.ts";
+import { BASE, createFakeCloud, createFakeIdb, fakeJwt, STORAGE, type FakeCloud } from "./fakes.ts";
+import { WebApi } from "./http.ts";
 import type { WebFileHost } from "./file-gateway.ts";
 import { createIndexedDbReadCache } from "./read-cache.ts";
 
@@ -37,13 +38,16 @@ function fixtureFileHost(fx: FileFixture): WebFileHost {
   };
 }
 
-function setup(cloudOptions?: Parameters<typeof createFakeCloud>[0]) {
-  const cloud = createFakeCloud(cloudOptions);
-  const idb = createFakeIdb();
+function setup(
+  cloudOptions?: Parameters<typeof createFakeCloud>[0],
+  shared: { cloud?: FakeCloud; idb?: ReturnType<typeof createFakeIdb>; token?: string } = {},
+) {
+  const cloud = shared.cloud ?? createFakeCloud(cloudOptions);
+  const idb = shared.idb ?? createFakeIdb();
   const files = createFileFixture();
   const adapters = createWebAdapters({
     baseUrl: BASE,
-    getAccessToken: async () => cloud.token,
+    getAccessToken: async () => shared.token ?? cloud.token,
     fetch: cloud.fetch,
     fileHost: fixtureFileHost(files),
     cache: createIndexedDbReadCache(idb.factory),
@@ -210,4 +214,88 @@ test("웹 묶음: updater 없음·license 없음·capabilities 웹 값", () => {
   assert.equal(adapters.updater, null);
   assert.equal(adapters.entitlement.license, null);
   assert.equal(adapters.capabilities.persistentSecrets, false);
+});
+
+test("계정 전환: 이전 사용자의 캐시는 오프라인 list·open에서 보이지 않고 폐기된다", async () => {
+  const a = setup(undefined, { token: fakeJwt("user-a") });
+  await a.adapters.projects.save(input(7));
+  await a.adapters.projects.list();
+  assert.equal((await a.adapters.projects.open(testProjectId(7)))?.version, 1);
+  const b = setup(undefined, { cloud: a.cloud, idb: a.idb, token: fakeJwt("user-b") });
+  a.cloud.online = false;
+  await assert.rejects(b.adapters.projects.list(), (e) => isBridgeError(e, "PROJECT_UNAVAILABLE"));
+  await assert.rejects(b.adapters.projects.open(testProjectId(7)), (e) => isBridgeError(e, "PROJECT_UNAVAILABLE"));
+  assert.ok(![...a.idb.data.keys()].some((k) => k.startsWith("project:") || k === "list"), "이전 사용자 데이터가 남음");
+  // 같은 사용자라도 org가 다르면 다른 주체.
+  const c = setup(undefined, { cloud: a.cloud, idb: a.idb, token: fakeJwt("user-b", "org-2") });
+  a.cloud.online = true;
+  await b.adapters.projects.save(input(8));
+  a.cloud.online = false;
+  await assert.rejects(c.adapters.projects.list(), (e) => isBridgeError(e, "PROJECT_UNAVAILABLE"));
+});
+
+test("로그아웃 경합: 진행 중 요청이 끝나도 지운 캐시를 다시 채우지 않는다", async () => {
+  const { adapters, cloud, idb } = setup();
+  await adapters.projects.save(input(10));
+  await adapters.clearSecrets();
+  let release!: () => void;
+  cloud.gate = new Promise<void>((r) => (release = r));
+  const pending = adapters.projects.list();
+  await new Promise((r) => setTimeout(r, 5));
+  const logout = adapters.clearSecrets();
+  release();
+  cloud.gate = null;
+  await Promise.allSettled([pending, logout]);
+  assert.equal(idb.data.size, 0, "로그아웃 뒤 캐시에 데이터가 남음");
+});
+
+test("다운로드 상한: Content-Length는 읽기 전에, 없으면 누적 중 중단", async () => {
+  let pulled = 0;
+  const big = (headers: Record<string, string>) =>
+    (async () =>
+      new Response(
+        new ReadableStream(
+          {
+            pull(c) {
+              pulled++;
+              c.enqueue(new Uint8Array(10));
+              if (pulled > 100) c.close();
+            },
+          },
+          { highWaterMark: 0 },
+        ),
+        { headers },
+      )) as unknown as typeof fetch;
+  const api = (f: typeof fetch) => new WebApi({ baseUrl: BASE, getAccessToken: async () => "t", fetch: f });
+  assert.equal(await api(big({ "content-length": "1000" })).transfer(`${STORAGE}/dl/x`, { method: "GET", maxBytes: 50 }), null);
+  assert.equal(pulled, 0, "선언 크기 초과인데 본문을 읽음");
+  assert.equal(await api(big({})).transfer(`${STORAGE}/dl/x`, { method: "GET", maxBytes: 50 }), null);
+  assert.ok(pulled < 100, "누적 초과 후에도 계속 읽음");
+  const ok = await api(async () => new Response(new Uint8Array(5))).transfer(`${STORAGE}/dl/x`, { method: "GET", maxBytes: 50 });
+  assert.equal((ok as Uint8Array).byteLength, 5);
+});
+
+test("서명 URL: 기본 https만, 옵션으로만 http 허용", () => {
+  const mk = (allowInsecureSignedUrls?: boolean) =>
+    new WebApi({ baseUrl: BASE, getAccessToken: async () => "t", ...(allowInsecureSignedUrls ? { allowInsecureSignedUrls } : {}) });
+  assert.equal(mk().isSafeSignedUrl("http://localhost:54321/up"), false);
+  assert.equal(mk().isSafeSignedUrl("https://s.test/up"), true);
+  assert.equal(mk(true).isSafeSignedUrl("http://localhost:54321/up"), true);
+});
+
+test("저장: 서버 version이 expected+1보다 커도 성공(서버 값 반환, 캐시 갱신)", async () => {
+  const { cloud, idb } = setup();
+  const inner = cloud.fetch;
+  const skewed: typeof fetch = async (u, init) => {
+    const res = await inner(u, init);
+    if (String(u).endsWith("/api/cloud-projects") && init?.method === "POST") {
+      const body = (await res.json()) as { ok: true; data: { project_uuid: string; version: number } };
+      return new Response(JSON.stringify({ ok: true, data: { ...body.data, version: body.data.version + 1 } }));
+    }
+    return res;
+  };
+  const a = createWebAdapters({ baseUrl: BASE, getAccessToken: async () => cloud.token, fetch: skewed, cache: createIndexedDbReadCache(idb.factory) });
+  const r = await a.projects.save(input(12));
+  assert.equal(r.version, 2);
+  assert.equal((idb.data.get(`project:${testProjectId(12)}`) as { version: number }).version, 2);
 });
