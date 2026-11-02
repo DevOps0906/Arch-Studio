@@ -117,7 +117,9 @@ export function supabaseCloudProjectRepo(user: Client, service: Client, schemas:
   };
 }
 
-export function supabaseSnapshotInspector(service: Client): SnapshotInspector {
+const PURGE_PAGE = 1000;
+
+export function supabaseSnapshotInspector(service: Client, schemas: SchemaNames): SnapshotInspector {
   return {
     async inspect(path) {
       const at = path.lastIndexOf("/");
@@ -131,12 +133,22 @@ export function supabaseSnapshotInspector(service: Client): SnapshotInspector {
     },
     async purge(orgId, projectUuid) {
       const dir = `${orgId}/arch/project_snapshot/${projectUuid}`;
-      const { data, error } = await service.storage.from(BUCKET).list(dir, { limit: 1000 });
-      if (error) throw new Error("storage list failed");
-      const names = (data ?? []).map((o: { name: string }) => `${dir}/${o.name}`);
-      if (names.length === 0) return;
-      const removed = await service.storage.from(BUCKET).remove(names);
-      if (removed.error) throw new Error("storage remove failed");
+      // 삭제 직후 같은 project_uuid가 다시 저장됐을 수 있다: 살아 있는 행의 storage_path는 지우지 않는다.
+      const live = await service.schema(schemas.arch).from("cloud_projects").select("storage_path").eq("org_id", orgId).eq("project_uuid", projectUuid).maybeSingle();
+      if (live.error) throw new Error("db read failed");
+      const keep = (live.data as { storage_path?: unknown } | null)?.storage_path;
+      const names: string[] = [];
+      for (let offset = 0; ; offset += PURGE_PAGE) {
+        const { data, error } = await service.storage.from(BUCKET).list(dir, { limit: PURGE_PAGE, offset });
+        if (error) throw new Error("storage list failed");
+        const page = (data ?? []) as Array<{ name: string }>;
+        for (const o of page) if (`${dir}/${o.name}` !== keep) names.push(`${dir}/${o.name}`);
+        if (page.length < PURGE_PAGE) break;
+      }
+      for (let i = 0; i < names.length; i += PURGE_PAGE) {
+        const removed = await service.storage.from(BUCKET).remove(names.slice(i, i + PURGE_PAGE));
+        if (removed.error) throw new Error("storage remove failed");
+      }
     },
   };
 }

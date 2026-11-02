@@ -15,7 +15,7 @@ export function cloudDeps(): CloudDeps {
   deps = {
     session: gatewaySessionResolver(),
     repo: (session) => supabaseCloudProjectRepo(userClient(session.accessToken), createSupabaseServiceClient(), gatewaySchemas()),
-    snapshots: () => supabaseSnapshotInspector(createSupabaseServiceClient()),
+    snapshots: () => supabaseSnapshotInspector(createSupabaseServiceClient(), gatewaySchemas()),
     signUpload: (req) => handleUploadSign(req, uploadDeps()),
     rateLimit: new MemoryRateLimitStore(),
     now: () => Date.now(),

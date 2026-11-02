@@ -7,7 +7,7 @@ import type { GatewaySession } from "../ai/gateway/session.ts";
 import { MemoryRateLimitStore } from "../licenses/rate-limit.ts";
 import { CloudDbError, mapCloudDbError } from "./errors.ts";
 import { sanitizeCloudLog } from "./log.ts";
-import { decodeCursor, encodeCursor, toCloudDbError } from "./supabase-repo.ts";
+import { decodeCursor, encodeCursor, supabaseSnapshotInspector, toCloudDbError } from "./supabase-repo.ts";
 import {
   handleCloudUploadUrl,
   handleDeleteCloudProject,
@@ -349,6 +349,32 @@ test("삭제: 입력 검사·viewer 403·만료 조직도 허용·정리 실패�
   const log = lines.join("\n");
   assert.match(log, /blob_orphan/);
   assert.ok(!log.includes(ORG) && !log.includes(TOKEN), "조직·토큰·경로는 로그에 없다");
+});
+
+test("purge: 재저장된 같은 project_uuid의 현재 blob은 남기고 1000개 초과 폴더는 페이지로 모두 지운다", async () => {
+  const dir = `${ORG}/arch/project_snapshot/${P1}`;
+  const stored = Array.from({ length: 1500 }, (_, i) => `o${String(i).padStart(4, "0")}.arch`);
+  const keepName = "o1200.arch";
+  const removedAll: string[] = [];
+  const fake = (liveRow: { storage_path: string } | null) => ({
+    schema: () => ({ from: () => ({ select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: liveRow, error: null }) }) }) }) }) }),
+    storage: {
+      from: () => ({
+        list: async (_d: string, o: { limit: number; offset: number }) => ({ data: stored.slice(o.offset, o.offset + o.limit).map((name) => ({ name })), error: null }),
+        remove: async (names: string[]) => {
+          removedAll.push(...names);
+          return { error: null };
+        },
+      }),
+    },
+  });
+  const schemas = { arch: "public", core: "public" } as never;
+  await supabaseSnapshotInspector(fake({ storage_path: `${dir}/${keepName}` }) as never, schemas).purge(ORG, P1);
+  assert.equal(removedAll.length, 1499);
+  assert.ok(!removedAll.includes(`${dir}/${keepName}`));
+  removedAll.length = 0;
+  await supabaseSnapshotInspector(fake(null) as never, schemas).purge(ORG, P1);
+  assert.equal(removedAll.length, 1500);
 });
 
 test("supabase-repo: 커서 왕복·필터 주입 차단, DETAIL(JSON) 수치만 읽는다", () => {

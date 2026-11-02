@@ -102,7 +102,7 @@ select * from @S@.delete_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-40
 -- TEST service 삭제 뒤 같은 조직 사본 2건 | expect=rows:2
 select 1 from @S@.cloud_projects where org_id = (select oa from t_ids);
 -- TEST service 삭제 감사 로그 남음 | expect=rows:1
-select 1 from @S@.audit_log where action = 'cloud_project.delete' limit 1;
+select 1 from @C@.audit_log where action = 'cloud_project.delete' limit 1;
 
 -- AS A
 -- TEST A 자기 조직 라이선스 1행 | expect=rows:1
