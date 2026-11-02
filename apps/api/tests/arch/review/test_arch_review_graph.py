@@ -517,3 +517,18 @@ def test_connector_and_more_negative(text: str) -> None:
 @pytest.mark.parametrize("text", ["THIRTEEN floors", "a Dozen units", "one Billion", "Nineteen", "xii"])
 def test_ascii_backup_ignorecase(text: str) -> None:
     assert "korean_numeral" in v([t(text)])
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["용적률 한도 이백", "용적률 한도 이백 이하", "건폐율 한도 육십이다", "vi", "XII 구역"],
+)
+def test_connector_without_particle_and_roman_rejected(text: str) -> None:
+    # 재검증 🟠: "한도"의 "도"를 조사로 떼면 연결어 건너뛰기가 실패하던 경우, 소문자 로마 숫자.
+    assert "korean_numeral" in v([TextPart(type="text", text=text)])
+
+
+@pytest.mark.parametrize("text", ["단위는 mm 입니다", "cm 단위", "ID 확인", "LLM 해석", "mid 구간"])
+def test_ascii_abbreviations_not_roman(text: str) -> None:
+    # 재검증 🟡: 단위·약어가 로마 숫자로 오탐되지 않는다.
+    assert v([TextPart(type="text", text=text)]) == []

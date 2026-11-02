@@ -244,7 +244,8 @@ def _token_after(text: str, end: int) -> str:
     skipped = 0
     for word in m.group(2).split():
         token = _strip_particle(word)
-        if token in CONNECTORS and skipped < MAX_CONNECTORS:
+        # "한도"의 "도"를 조사로 떼지 않도록 원형도 대조한다.
+        if (word in CONNECTORS or token in CONNECTORS) and skipped < MAX_CONNECTORS:
             skipped += 1
             continue
         return token
@@ -281,7 +282,12 @@ BACKUP_NUMERAL_RES: tuple[re.Pattern[str], ...] = (
         r"|hundred|thousand|million|billion|dozen|half|percent)\b",
         re.IGNORECASE,
     ),
-    re.compile(r"(?<![A-Za-z])[IVXLCDM]{1,6}(?![A-Za-z])", re.IGNORECASE),
+    # 로마 숫자: 올바른 로마 숫자 꼴만(ID·LLM·mid 제외), 단위 약어 m·mm·cm는 제외.
+    re.compile(
+        r"(?<![A-Za-z])(?!(?:m|mm|cm)(?![A-Za-z]))"
+        r"(?=[IVXLCDM])M{0,3}(?:CM|CD|D?C{0,3})(?:XC|XL|L?X{0,3})(?:IX|IV|V?I{0,3})(?![A-Za-z])",
+        re.IGNORECASE,
+    ),
 )
 
 
