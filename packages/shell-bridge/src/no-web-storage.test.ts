@@ -14,9 +14,11 @@ function sources(dir: string): string[] {
   });
 }
 
-test("토큰 저장 경로: localStorage·sessionStorage·indexedDB 참조 0건", () => {
-  const hits = sources(SRC).filter((f) => /localStorage|sessionStorage|indexedDB/.test(readFileSync(f, "utf8")));
+test("토큰 저장 경로: localStorage·sessionStorage 참조 0건, indexedDB는 읽기 캐시 한 곳(072)", () => {
+  const hits = sources(SRC).filter((f) => /localStorage|sessionStorage/.test(readFileSync(f, "utf8")));
   assert.deepEqual(hits.map((f) => relative(SRC, f)), []);
+  const idb = sources(SRC).filter((f) => /indexedDB/.test(readFileSync(f, "utf8")));
+  assert.deepEqual(idb.map((f) => relative(SRC, f)), [join("web", "read-cache.ts")]);
 });
 
 test("console 호출 0건(값이 로그로 새는 경로 차단)", () => {
