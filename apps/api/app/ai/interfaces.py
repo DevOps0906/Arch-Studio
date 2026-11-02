@@ -18,7 +18,9 @@ T = TypeVar("T", bound=BaseModel)
 class StructuredLLM(Protocol):
     """feature 키로 라우팅된 제공자에서 구조화 출력을 받는다. 반환 전에 output_model로 strict 검증한다."""
 
-    def generate(self, *, feature: str, org: str, prompt: str, output_model: type[T]) -> T: ...
+    def generate(
+        self, *, feature: str, org: str, prompt: str, output_model: type[T], timeout_s: float | None = None
+    ) -> T: ...
 
 
 class GraphRunner(Protocol):

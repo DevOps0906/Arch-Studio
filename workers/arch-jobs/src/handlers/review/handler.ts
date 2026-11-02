@@ -35,7 +35,10 @@ function retry(code: string, message: string, cause?: unknown): JobError {
 
 /**
  * 결과 문장 출처 id 재검사(결정 6): result.review.sources의 id 집합 밖 출처는 제거, 출처가 남지 않은 문장은 버린다.
- * 항목이 있는데 문장이 한 줄도 남지 않으면 AR033. 항목 0건(선택 항목 없음)은 그대로 성공.
+ * needs_check(확인 필요)도 같은 규칙(출처 필수). 항목이 있는데 문장이 한 줄도 남지 않으면 AR033(확인 필요는 세지 않음).
+ * 항목 0건(선택 항목 없음)은 그대로 성공.
+ * 한계: 기준은 응답 안의 sources 집합이다(워커는 FastAPI가 쓴 retrieve 청크 집합을 모른다). 따라서 sources 자체를
+ * 지어낸 응답은 못 잡는다 — 1차 방어는 FastAPI cite_check(청크 집합 소속), 이 검사는 계약 위반 응답을 막는 이중 안전장치다.
  */
 export function recheckSources(result: unknown): Obj {
   if (!isObj(result) || !isObj(result["review"])) throw fatal("bad_result", "review result invalid");
@@ -44,19 +47,23 @@ export function recheckSources(result: unknown): Obj {
   const sources = review["sources"];
   if (!Array.isArray(items) || !Array.isArray(sources)) throw fatal("bad_result", "review result invalid");
   const known = new Set(sources.filter(isObj).map((s) => s["id"]).filter((id): id is string => typeof id === "string"));
-  let kept = 0;
-  const nextItems = items.map((raw: unknown) => {
-    if (!isObj(raw) || !Array.isArray(raw["sentences"])) throw fatal("bad_result", "review item invalid");
-    const sentences = (raw["sentences"] as unknown[]).flatMap((s): Obj[] => {
+  const cleanList = (list: unknown): Obj[] => {
+    if (!Array.isArray(list)) return [];
+    return list.flatMap((s: unknown): Obj[] => {
       if (!isObj(s) || typeof s["text"] !== "string" || s["text"].length === 0 || !Array.isArray(s["source_ids"])) return [];
       const ids = (s["source_ids"] as unknown[]).filter((id): id is string => typeof id === "string" && known.has(id));
       return ids.length > 0 ? [{ ...s, source_ids: ids }] : [];
     });
+  };
+  let kept = 0;
+  const nextItems = items.map((raw: unknown) => {
+    if (!isObj(raw) || !Array.isArray(raw["sentences"])) throw fatal("bad_result", "review item invalid");
+    const sentences = cleanList(raw["sentences"]);
     kept += sentences.length;
     return { ...raw, sentences };
   });
   if (items.length > 0 && kept === 0) throw fatal("AR033", "no sentence with a valid source");
-  return { ...result, review: { ...review, items: nextItems } };
+  return { ...result, review: { ...review, items: nextItems, needs_check: cleanList(review["needs_check"]) } };
 }
 
 export function createReviewHandler(deps: ReviewHandlerDeps): JobHandler {
@@ -91,12 +98,15 @@ export function createReviewHandler(deps: ReviewHandlerDeps): JobHandler {
 
     const row = await deps.reader.get(runId);
     if (!row || row.org_id !== job.org_id) throw fatal("bad_payload", "review row not found");
+    // 이미 끝난 실행(succeeded·failed·refunded)이면 LLM 호출 전에 조기 종료한다(중복 잡·재전달 방어).
+    if (row.status !== "queued" && row.status !== "running") throw fatal("bad_payload", "review not active");
     if (!isObj(row.judgment) || Number.isNaN(row.created_at_ms)) throw fatal("bad_payload", "review row invalid");
     const deadline = row.created_at_ms + REVIEW_TOTAL_MS;
     const remainingMs = () => deadline - deps.clock.now();
     const overall = () => fatal("review_timeout", "review exceeded 10 minutes");
 
     if (remainingMs() <= 0) throw overall();
+    // heartbeat는 단계가 바뀔 때만 보낸다(폴링마다 DB 쓰기 금지).
     await ctx.heartbeat(10, JSON.stringify({ stage: "load" }));
 
     const timeoutS = Math.min(600, Math.max(1, Math.ceil(remainingMs() / 1000)));
@@ -111,6 +121,7 @@ export function createReviewHandler(deps: ReviewHandlerDeps): JobHandler {
     if (typeof graphRunId !== "string" || graphRunId.length === 0) throw fatal("bad_response", "graph run id missing");
 
     await ctx.heartbeat(30, JSON.stringify({ stage: "retrieve" }));
+    let interpretBeat = false;
     for (;;) {
       if (signal.aborted) throw signal.reason;
       if (remainingMs() <= 0) throw overall();
@@ -131,7 +142,10 @@ export function createReviewHandler(deps: ReviewHandlerDeps): JobHandler {
         throw fatal(code === "AR033" || code === "INVALID_INPUT" ? code : "graph_failed", `review graph failed: ${code}`);
       }
       if (status !== "accepted" && status !== "running" && status !== "queued") throw fatal("bad_response", "graph status invalid");
-      await ctx.heartbeat(60, JSON.stringify({ stage: "interpret" }));
+      if (!interpretBeat) {
+        interpretBeat = true;
+        await ctx.heartbeat(60, JSON.stringify({ stage: "interpret" }));
+      }
       await deps.clock.sleep(Math.min(pollMs, Math.max(remainingMs(), 0)), signal);
     }
   };

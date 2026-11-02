@@ -62,6 +62,7 @@ interface Opts {
   row?: ReviewRow | null;
   posts?: unknown[];
   post?: Step;
+  beats?: string[];
 }
 async function run(gets: Step[], opts: Opts = {}) {
   const clock = opts.clock ?? new FakeClock(T0 + 1000);
@@ -72,7 +73,7 @@ async function run(gets: Step[], opts: Opts = {}) {
     clock,
     fetch: fakeFetch(gets, opts.posts, opts.post),
   });
-  return handler({ job: job(opts.attempts), signal: new AbortController().signal, heartbeat: async () => {} });
+  return handler({ job: job(opts.attempts), signal: new AbortController().signal, heartbeat: async (_p, note) => { opts.beats?.push(String(note)); } });
 }
 async function rejectsWith(p: Promise<unknown>, code: string, retryable: boolean): Promise<void> {
   await assert.rejects(p, (e: unknown) => e instanceof JobError && e.code === code && e.retryable === retryable, `${code}/${String(retryable)}`);
@@ -132,4 +133,38 @@ test("킬 스위치: 정확히 'true'+API·웹 주소·워커 키가 있을 때�
   assert.deepEqual(keys({ ...base, ARCH_AI_REVIEW_ENABLED: "true", ARCH_API_URL: "" }), []);
   assert.equal(loadReviewConfig({ ARCH_AI_REVIEW_ENABLED: "true" }).enabled, false);
   assert.deepEqual(keys({ ...base, ARCH_AI_REVIEW_ENABLED: "true" }), ["arch.review"]);
+});
+
+test("needs_check도 출처 필수: 이번 출처 집합 밖 id 제거, 출처가 남지 않으면 항목 제거", async () => {
+  const result = {
+    ...okResult,
+    review: {
+      ...okResult.review,
+      needs_check: [
+        { text: "keep", source_ids: ["s1", "fake"] },
+        { text: "no-source", source_ids: [] },
+        { text: "all-fake", source_ids: ["fake"] },
+      ],
+    },
+  };
+  const r = await run([ok({ status: "succeeded", result })]);
+  const review = r?.runResult?.["review"] as { needs_check: unknown[] };
+  assert.deepEqual(review.needs_check, [{ text: "keep", source_ids: ["s1"] }]);
+});
+
+test("이미 끝난 실행(status가 queued·running 아님)은 FastAPI 호출 전에 조기 종료", async () => {
+  for (const status of ["succeeded", "failed", "refunded"]) {
+    const posts: unknown[] = [];
+    await rejectsWith(run([], { row: { ...row, status }, posts }), "bad_payload", false);
+    assert.equal(posts.length, 0);
+  }
+  await run([ok({ status: "succeeded", result: okResult })], { row: { ...row, status: "queued" } });
+});
+
+test("heartbeat는 단계 변화 때만(폴링 횟수와 무관)", async () => {
+  const beats: string[] = [];
+  const many = Array.from({ length: 5 }, () => ok({ status: "running" }));
+  await run([...many, ok({ status: "succeeded", result: okResult })], { beats });
+  assert.equal(beats.filter((b) => b.includes("interpret")).length, 1);
+  assert.equal(beats.length, 4); // load · retrieve · interpret · compliance
 });

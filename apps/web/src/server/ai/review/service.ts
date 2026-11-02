@@ -1,6 +1,6 @@
 // POST /api/ai/review 본체(04_API.md 2.1절 review 행, AR-06-051 B1). 순서:
-// 실패 닫힘 스위치(503, 인증보다 먼저) → 인증 → 본문 읽기(256KB 초과 AR031) → zod strict(422) → 레이트 리밋(429) → 역할 member+(403)
-// → 엔타이틀먼트(402) → 본문 rule_context 일치(422) → 규칙 팩 확인(eligible_rule_packs 대조 · sha256 · 서명, 실패 닫힘 503)
+// 실패 닫힘 스위치(503, 인증보다 먼저) → 인증 → 본문 읽기(256KB 초과 AR031) → zod strict(422) → 역할 member+(403)
+// → 엔타이틀먼트(402) → 레이트 리밋(429, 권한 없는 요청이 한도를 소모하지 못하게 뒤에 둔다) → 본문 rule_context 일치(422) → 규칙 팩 확인(eligible_rule_packs 대조 · sha256 · 서명, 실패 닫힘 503)
 // → packages/rules judge() 서버 재계산 → arch.start_ai_run(재계산 결과만 options에, 차감은 그 안에서만) → 202.
 // 데스크톱이 보낸 JudgmentResult는 읽지도 저장하지도 않는다(불신, 06_AGENT_PLAN 051). 조직·행위자는 세션에서만.
 // 응답·로그에 본문·팩 내용·키·예외 원문을 넣지 않는다. server-only를 import하지 않는다(node --test 대상).
@@ -32,7 +32,10 @@ export interface ReviewDeps {
 
 /** 04_API.md 2.1절 review 행 "≤256KB". */
 export const REVIEW_MAX_BODY = 256 * 1024;
+/** 조직·사용자별 10회/분(한 사용자가 조직 전체 한도를 소진하지 못하게 키에 userId 포함). */
 export const REVIEW_RATE = { limit: 10, windowS: 60 } as const;
+// 운영 차단: 기본 메모리 저장소는 단일 인스턴스 전제다. 공유 저장소(core.rate_limit_hit 또는 Redis)로의 교체는
+// 운영 배포 전에 막는다(040·042·047 공통, tasks/logs/AR-06-051.md).
 
 const MEMBER_PLUS = new Set(["owner", "admin", "member"]);
 
@@ -125,12 +128,12 @@ export async function handleReview(req: Request, deps: ReviewDeps): Promise<Resp
     if (!parsed.success) throw new GatewayError("invalid_input");
     const input = parsed.data;
 
-    const hit = await deps.rateLimit.hit(`arch:ai_review:${session.orgId}`, REVIEW_RATE.limit, REVIEW_RATE.windowS, deps.now());
+    if (!MEMBER_PLUS.has(session.role)) throw new GatewayError("42501");
+    if (!session.entitled) throw new GatewayError("entitlement_expired", { can_download: true });
+    const hit = await deps.rateLimit.hit(`arch:ai_review:${session.orgId}:${session.userId}`, REVIEW_RATE.limit, REVIEW_RATE.windowS, deps.now());
     if (!hit.allowed) {
       throw new GatewayError("rate_limited", undefined, { "retry-after": String(Math.max(1, Math.ceil((hit.resetAtMs - deps.now()) / 1000))) });
     }
-    if (!MEMBER_PLUS.has(session.role)) throw new GatewayError("42501");
-    if (!session.entitled) throw new GatewayError("entitlement_expired", { can_download: true });
 
     // 판정은 model.rule_context로 돈다. 바깥 필드(DB 컬럼·start_ai_run 검사용)와 다르면 어느 쪽도 믿지 않는다.
     const ctx = input.model.rule_context;
@@ -141,7 +144,14 @@ export async function handleReview(req: Request, deps: ReviewDeps): Promise<Resp
     const pack = loadRulePack(await loadVerifiedPack(deps, session, input.rule_pack_version));
     if (pack.version !== input.rule_pack_version) throw new ReviewReject("rule_pack_unavailable", "pack_version_mismatch");
     // pendingChanges는 폴백 배너용 서버 값이다. 이 경로는 쓰지 않으므로 0(데스크톱 값은 쓰지 않는다).
-    const { result } = judge(input.model as unknown as Parameters<typeof judge>[0], pack, { pendingChanges: 0 });
+    let result: ReturnType<typeof judge>["result"];
+    try {
+      ({ result } = judge(input.model as unknown as Parameters<typeof judge>[0], pack, { pendingChanges: 0 }));
+    } catch (error) {
+      // 본문(DesignModel) 입력 오류는 RulesError뿐 아니라 zod 등 다른 예외로도 올 수 있다 → 모두 422(원문은 로그에 남기지 않는다).
+      if (error instanceof RulesError) throw error;
+      throw new GatewayError("invalid_input");
+    }
 
     const run = await startAiRun(deps.starter(), {
       orgId: session.orgId,

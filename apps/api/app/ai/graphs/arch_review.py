@@ -4,7 +4,9 @@ load_snapshot -> select_items -> retrieve -> interpret -> cite_check -> resolve_
 
 - DB 권한 없음: 판정(서버 재계산 JudgmentResult)·application_date는 본문으로 받고, org는 토큰에서 온다.
 - LLM은 숫자를 만들지 않는다: `{ref:<key>.<value|limit>}` 자리표시자만 쓰고 resolve_refs가 엔진 값으로 치환한다.
-- cite_check: 출처 id는 이번 retrieve 결과 청크 집합 소속만 허용한다(지어낸 id 제거). 남는 문장 0이면 AR033.
+- 숫자는 치환만: 문장 속 맨숫자(엔진 값·조문 번호와 같아도)는 허용하지 않는다. 1회 재작성 후에도 있으면 문장 제거.
+- cite_check: 출처 id는 이번 retrieve 결과 청크 집합 소속만 허용한다(지어낸 id 제거). 확인 필요도 출처 필수.
+  남는 문장 0이면 AR033.
 - 오류 코드: AR033 | PROVIDER | INVALID_INPUT (+retryable, stage). 예외 메시지는 결과에 담지 않는다.
 """
 
@@ -109,6 +111,10 @@ def _check_deadline(deps: ReviewDeps, deadline: float, stage: Stage) -> None:
         raise ReviewError("PROVIDER", stage, True)  # 시간 초과: 재시도 여부는 워커의 전체 10분이 정한다
 
 
+def _remaining(deps: ReviewDeps, deadline: float) -> float:
+    return max(0.001, deadline - deps.clock())
+
+
 # --- 노드 ---------------------------------------------------------------
 
 
@@ -187,11 +193,15 @@ def _interpret_prompt(selected: list[JudgmentItem], hits: dict[str, list[Hit]]) 
 
 
 def interpret(
-    deps: ReviewDeps, *, org: str, selected: list[JudgmentItem], hits: dict[str, list[Hit]]
+    deps: ReviewDeps, *, org: str, selected: list[JudgmentItem], hits: dict[str, list[Hit]], deadline: float
 ) -> ReviewLlmOutput:
     try:
         return deps.llm.generate(
-            feature=FEATURE, org=org, prompt=_interpret_prompt(selected, hits), output_model=ReviewLlmOutput
+            feature=FEATURE,
+            org=org,
+            prompt=_interpret_prompt(selected, hits),
+            output_model=ReviewLlmOutput,
+            timeout_s=_remaining(deps, deadline),
         )
     except Exception as exc:
         logger.error("arch.review interpret 실패: %s", type(exc).__name__)
@@ -217,7 +227,7 @@ def cite_check(
                 sentences.append(_Sentence(s.text, ids))
         for s in llm_item.needs_check:
             ids = list(dict.fromkeys(i for i in s.source_ids if i in allowed_ids))
-            if s.text.strip():
+            if ids and s.text.strip():
                 needs.append(_Sentence(s.text, ids))
     return result
 
@@ -226,25 +236,13 @@ def _count(drafts: dict[str, tuple[list[_Sentence], list[_Sentence]]]) -> int:
     return sum(len(s) for s, _ in drafts.values())
 
 
-def _source_numbers(ids: list[str], chunks: dict[str, Hit]) -> set[float]:
-    nums: set[float] = set()
-    for cid in ids:
-        hit = chunks.get(cid)
-        if hit is not None:
-            label = f"{hit.chunk.metadata.get('title', '')} {hit.chunk.metadata.get('article', '')}"
-            nums.update(float(n) for n in _NUM.findall(label))
-    return nums
-
-
-def _resolve_text(text: str, refs: dict[str, float], extra_allowed: set[float]) -> tuple[str, set[str]] | None:
-    """자리표시자를 치환. 알 수 없는 경로나 엔진 값 집합 밖 숫자가 있으면 None."""
+def _resolve_text(text: str, refs: dict[str, float]) -> tuple[str, set[str]] | None:
+    """자리표시자만 치환. 알 수 없는 경로나 자리표시자 밖 맨숫자가 있으면 None(엔진 값과 같아도 거부)."""
     for m in _ANY_REF.finditer(text):
         inner = m.group(0)[5:-1]
         if inner not in refs:
             return None
-    bare = _ANY_REF.sub("", text)
-    allowed = {float(_fmt(v)) for v in refs.values()} | extra_allowed
-    if any(float(n) not in allowed for n in _NUM.findall(bare)):
+    if _NUM.search(_ANY_REF.sub("", text)):
         return None
     used: set[str] = set()
 
@@ -264,14 +262,14 @@ def resolve_refs(
     org: str,
     drafts: dict[str, tuple[list[_Sentence], list[_Sentence]]],
     refs: dict[str, float],
-    hit_by_id: dict[str, Hit],
+    deadline: float,
 ) -> tuple[dict[str, tuple[list[_Sentence], list[_Sentence]]], dict[str, float]]:
     used_all: set[str] = set()
 
     def fix(s: _Sentence) -> _Sentence | None:
-        extra = _source_numbers(s.source_ids, hit_by_id)
-        resolved = _resolve_text(s.text, refs, extra)
+        resolved = _resolve_text(s.text, refs)
         if resolved is None:  # 1회 재작성 후 제거
+            _check_deadline(deps, deadline, "interpret")
             try:
                 rewritten = deps.llm.generate(
                     feature=FEATURE,
@@ -279,11 +277,12 @@ def resolve_refs(
                     prompt="다음 문장에서 숫자를 {ref:<key>.value} 자리표시자로 바꿔 다시 써라: "
                     + s.text.replace("<", "&lt;"),
                     output_model=ReviewLlmRewrite,
+                    timeout_s=_remaining(deps, deadline),
                 )
             except Exception as exc:
                 logger.error("arch.review 재작성 실패: %s", type(exc).__name__)
                 raise ReviewError("PROVIDER", "interpret", True) from exc
-            resolved = _resolve_text(rewritten.text, refs, extra)
+            resolved = _resolve_text(rewritten.text, refs)
             if resolved is None:
                 return None
         used_all.update(resolved[1])
@@ -375,12 +374,12 @@ def run_review(deps: ReviewDeps, *, org: str, inp: ReviewRunInput) -> ReviewRunR
     hits = retrieve(deps, org=org, applied=applied, selected=selected, stage_deadline=deadline)
     hit_by_id = {h.chunk.id: h for hs in hits.values() for h in hs}
     _check_deadline(deps, deadline, "interpret")
-    llm_out = interpret(deps, org=org, selected=selected, hits=hits)
+    llm_out = interpret(deps, org=org, selected=selected, hits=hits, deadline=deadline)
     drafts = cite_check(llm_out, selected, hits)
     if _count(drafts) == 0:
         raise ReviewError("AR033", "interpret", False)
     _check_deadline(deps, deadline, "interpret")
-    drafts, used = resolve_refs(deps, org=org, drafts=drafts, refs=_ref_values(items), hit_by_id=hit_by_id)
+    drafts, used = resolve_refs(deps, org=org, drafts=drafts, refs=_ref_values(items), deadline=deadline)
     if _count(drafts) == 0:
         raise ReviewError("AR033", "interpret", False)
     drafts = compliance(drafts)

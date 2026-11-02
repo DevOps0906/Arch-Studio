@@ -346,7 +346,7 @@ class ReviewSentence(Strict):
 
 class ReviewNeedsCheck(Strict):
     text: T_SENTENCE_MAX
-    source_ids: SourceIds
+    source_ids: Annotated[list[IdStr], Field(min_length=1, max_length=20)]  # 확인 필요도 출처 필수
 
 
 class ReviewSource(Strict):

@@ -64,7 +64,7 @@ function world(over: Partial<World> = {}): World {
 }
 
 let seq = 0;
-function deps(w: World): ReviewDeps {
+function deps(w: World, rateLimit: MemoryRateLimitStore = new MemoryRateLimitStore()): ReviewDeps {
   const starter: RunStarter = {
     async startAiRun(args) {
       const existing = w.runs.get(args.p_request_id);
@@ -93,7 +93,7 @@ function deps(w: World): ReviewDeps {
     privilegedRepo: () => ({ readSmallText: async (path) => w.files.get(path) ?? null }),
     pubKeys: () => w.pubKeys,
     starter: () => starter,
-    rateLimit: new MemoryRateLimitStore(),
+    rateLimit,
     now: () => Date.UTC(2026, 10, 1),
   };
 }
@@ -121,8 +121,12 @@ function req(b: unknown): Request {
   });
 }
 
-async function call(w: World, b: unknown): Promise<{ status: number; json: { ok: boolean; data?: Record<string, unknown>; error?: { code: string } } }> {
-  const res = await handleReview(req(b), deps(w));
+async function call(
+  w: World,
+  b: unknown,
+  rateLimit?: MemoryRateLimitStore,
+): Promise<{ status: number; json: { ok: boolean; data?: Record<string, unknown>; error?: { code: string } } }> {
+  const res = await handleReview(req(b), deps(w, rateLimit));
   return { status: res.status, json: (await res.json()) as never };
 }
 
@@ -232,4 +236,17 @@ test("viewer 403 · 만료 402", async () => {
   const base = { userId: USER, orgId: ORG, accessToken: "user-access-token-value-0123456789" };
   assert.equal((await call(world({ session: { ...base, role: "viewer", entitled: true } as GatewaySession }), body())).status, 403);
   assert.equal((await call(world({ session: { ...base, role: "member", entitled: false } as GatewaySession }), body())).status, 402);
+});
+
+test("레이트 리밋: 권한 없는 요청(viewer)은 한도를 소모하지 않고, member는 11번째에 429", async () => {
+  const base = { userId: USER, orgId: ORG, accessToken: "user-access-token-value-0123456789" };
+  const store = new MemoryRateLimitStore();
+  const viewer = world({ session: { ...base, role: "viewer", entitled: true } as GatewaySession });
+  for (let i = 0; i < 12; i += 1) assert.equal((await call(viewer, body(), store)).status, 403);
+  const w = world();
+  for (let i = 0; i < 10; i += 1) assert.equal((await call(w, body(), store)).status, 202);
+  assert.equal((await call(w, body(), store)).status, 429);
+  // 같은 조직의 다른 사용자는 별도 버킷
+  const other = world({ session: { ...base, userId: "99999999-9999-4999-8999-999999999999", role: "member", entitled: true } as GatewaySession });
+  assert.equal((await call(other, body(), store)).status, 202);
 });

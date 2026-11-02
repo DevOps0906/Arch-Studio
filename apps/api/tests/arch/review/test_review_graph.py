@@ -41,8 +41,12 @@ class FakeLLM:
     def __init__(self, handler: Handler | None = None) -> None:
         self.handler = handler
         self.calls = 0
+        self.timeouts: list[float | None] = []
 
-    def generate(self, *, feature: str, org: str, prompt: str, output_model: type[Any]) -> Any:
+    def generate(
+        self, *, feature: str, org: str, prompt: str, output_model: type[Any], timeout_s: float | None = None
+    ) -> Any:
+        self.timeouts.append(timeout_s)
         self.calls += 1
         if self.handler is not None:
             return self.handler(prompt, output_model)
@@ -335,3 +339,81 @@ def test_compliance_rules() -> None:
     assert severity_of("허가 가능합니다") == "FAIL"
     assert severity_of("문제없습니다") == "WARN"
     assert severity_of("건폐율이 한도를 초과합니다") is None
+
+
+def _out_with(prompt: str, sentences: list[tuple[str, bool]], needs: list[tuple[str, bool]] | None = None) -> BaseModel:
+    cid = re.findall(r'<chunk id="([^"]+)"', prompt)[0]
+
+    def mk(t: str, ok: bool) -> ReviewLlmSentence:
+        return ReviewLlmSentence(text=t, source_ids=[cid] if ok else [])
+
+    return ReviewLlmOutput(
+        items=[
+            ReviewLlmItem(
+                key="coverage",
+                sentences=[mk(t, ok) for t, ok in sentences],
+                needs_check=[mk(t, ok) for t, ok in (needs or [])],
+            )
+        ]
+    )
+
+
+def test_bare_numbers_never_allowed_even_if_equal_to_engine_or_article(
+    settings: Settings, kb: InMemoryStore, auth: Auth
+) -> None:
+    def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
+        if model is ReviewLlmRewrite:
+            return ReviewLlmRewrite(text="제61조에 따라 60입니다")  # 재작성도 맨숫자
+        return _out_with(
+            prompt,
+            [
+                ("제61조에 따라 건폐율 61%입니다", True),  # 조문 번호 → 값 우회
+                ("건폐율 65%, 한도 60%입니다", True),  # 엔진 값과 같은 맨숫자
+                ("{ref:coverage.value}입니다", True),
+            ],
+        )
+
+    llm = FakeLLM(handler)
+    data = run_and_get(make_client(settings, kb, llm), auth)
+    (sentence,) = data["result"]["review"]["items"][0]["sentences"]
+    assert sentence["text"] == "65입니다"
+    assert llm.calls == 3  # interpret 1 + 맨숫자 문장 2개 각 1회 재작성
+
+
+def test_needs_check_requires_source(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
+    def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
+        return _out_with(
+            prompt,
+            [("{ref:coverage.value}입니다", True)],
+            [("출처 없는 확인 사항", False), ("출처 있는 확인 사항", True)],
+        )
+
+    data = run_and_get(make_client(settings, kb, FakeLLM(handler)), auth)
+    texts = [n["text"] for n in data["result"]["review"]["needs_check"]]
+    assert texts == ["출처 있는 확인 사항"]
+    assert all(n["source_ids"] for n in data["result"]["review"]["needs_check"])
+
+
+def test_llm_calls_get_remaining_time_timeout(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
+    def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
+        if model is ReviewLlmRewrite:
+            return ReviewLlmRewrite(text="{ref:coverage.value}입니다")
+        return _out_with(prompt, [("건폐율 99입니다", True)])
+
+    llm = FakeLLM(handler)
+    run_and_get(make_client(settings, kb, llm), auth, body(timeout_s=120))
+    assert len(llm.timeouts) == 2
+    assert all(t is not None and 0 < t <= 120 for t in llm.timeouts)
+
+
+def test_resolve_refs_checks_deadline_before_rewrite(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
+    now = [0.0]
+
+    def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
+        now[0] = 1000.0  # interpret 직후 시간 초과
+        return _out_with(prompt, [("건폐율 99입니다", True)])
+
+    llm = FakeLLM(handler)
+    data = run_and_get(make_client(settings, kb, llm, clock=lambda: now[0]), auth, body(timeout_s=150))
+    assert data["error"]["code"] == "PROVIDER" and data["error"]["retryable"] is True
+    assert llm.calls == 1  # 재작성 호출 없음
