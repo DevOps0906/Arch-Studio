@@ -43,6 +43,13 @@ export const TARGETS = [
     origin: 'supabase/modular/2401_arch_fixes.sql',
     seed: null,
   },
+  {
+    src: 'supabase/modular/2402_arch_cloud_projects.sql',
+    out: 'supabase/migrations/20261102000001_arch_cloud_projects.sql',
+    title: '20261102000001_arch_cloud_projects.sql (모놀리스 arch-studio)',
+    origin: 'supabase/modular/2402_arch_cloud_projects.sql',
+    seed: null,
+  },
 ];
 
 const SEED_BEGIN = '-- @monolith-seed-begin';

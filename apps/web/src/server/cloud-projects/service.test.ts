@@ -7,8 +7,10 @@ import type { GatewaySession } from "../ai/gateway/session.ts";
 import { MemoryRateLimitStore } from "../licenses/rate-limit.ts";
 import { CloudDbError, mapCloudDbError } from "./errors.ts";
 import { sanitizeCloudLog } from "./log.ts";
+import { decodeCursor, encodeCursor, toCloudDbError } from "./supabase-repo.ts";
 import {
   handleCloudUploadUrl,
+  handleDeleteCloudProject,
   handleListCloudProjects,
   handleSaveCloudProject,
   isOwnSnapshotPath,
@@ -38,6 +40,8 @@ interface World {
   max: number;
   objects: Map<string, number>;
   saves: SaveCloudProjectArgs[];
+  purged: string[];
+  purgeFails?: boolean;
   signed: Request[];
   webEdit?: "allowed" | "fallback" | "denied";
   /** 저장소 이상 동작 흉내. */
@@ -56,6 +60,7 @@ function world(over: Partial<World> = {}): World {
     max: 3,
     objects: new Map([[pathFor(ORG, P1), 5000], [pathFor(ORG, P2), 5000], [pathFor(ORG, LOCAL), 5000]]),
     saves: [],
+    purged: [],
     signed: [],
     ...over,
   };
@@ -85,12 +90,20 @@ function fakeRepo(w: World): CloudProjectRepo {
         if (args.expectedVersion !== 0) throw new CloudDbError("AR041", { currentVersion: 0 });
         const count = [...w.rows.values()].filter((r) => r.org_id === args.orgId).length;
         if (count >= w.max) throw new CloudDbError("AR040", { max: w.max });
-        w.rows.set(key, row(args.orgId, args.projectUuid, 1, { name: args.name, local_id: args.localId }));
+        if (args.localId && [...w.rows.values()].some((r) => r.org_id === args.orgId && r.local_id === args.localId)) throw new CloudDbError("23505");
+        w.rows.set(key, row(args.orgId, args.projectUuid, 1, { name: args.name, local_id: args.localId, bytes: args.blobBytes }));
         return { project_uuid: args.projectUuid, version: 1 };
       }
       if (cur.version !== args.expectedVersion) throw new CloudDbError("AR041", { currentVersion: cur.version });
       w.rows.set(key, { ...cur, name: args.name, version: cur.version + 1 });
       return { project_uuid: args.projectUuid, version: cur.version + 1 };
+    },
+    async remove(orgId, _actor, uuid, expected) {
+      const cur = w.rows.get(`${orgId}:${uuid}`);
+      if (!cur) throw new CloudDbError("not_found");
+      if (expected !== null && cur.version !== expected) throw new CloudDbError("AR041", { currentVersion: cur.version });
+      w.rows.delete(`${orgId}:${uuid}`);
+      return { version: cur.version };
     },
   };
 }
@@ -105,7 +118,13 @@ function deps(w: World, rate = new MemoryRateLimitStore()): CloudDeps {
       },
     },
     repo: () => fakeRepo(w),
-    snapshots: () => ({ inspect: async (p) => (w.objects.has(p) ? { bytes: w.objects.get(p) as number } : null) }),
+    snapshots: () => ({
+      inspect: async (p) => (w.objects.has(p) ? { bytes: w.objects.get(p) as number } : null),
+      purge: async (org, uuid) => {
+        if (w.purgeFails) throw new Error("storage down");
+        w.purged.push(`${org}/${uuid}`);
+      },
+    }),
     signUpload: async (req) => {
       w.signed.push(req);
       return new Response(JSON.stringify({ ok: true, data: { signed_upload_url: "https://x/sign", path: "p", expires_at: "t" } }), { status: 200 });
@@ -138,6 +157,11 @@ async function uploadUrl(w: World, id: string, body: unknown) {
     id,
     deps(w),
   );
+  return { status: res.status, json: (await res.json()) as Json };
+}
+
+async function del(w: World, id: string, qs = "") {
+  const res = await handleDeleteCloudProject(new Request(`https://web.example/api/cloud-projects/${id}${qs}`, { method: "DELETE", headers: H }), id, deps(w));
   return { status: res.status, json: (await res.json()) as Json };
 }
 
@@ -249,11 +273,97 @@ test("저장: 업로드 경로 — 다른 조직 폴더·다른 프로젝트 폴
   assert.equal(big.status, 413);
   assert.equal(big.json.error.code, "AR031");
   assert.equal(w.saves.length, 0);
-  // 설치형에서 올린 사본: 경로 폴더 = local_id.
-  const local = await save(world(), newBody({ local_id: LOCAL, storage_path: pathFor(ORG, LOCAL) }));
+  // 설치형에서 올린 사본: 경로 폴더도 project_uuid(local_id는 폴더 키가 아니다).
+  const local = await save(world(), newBody({ local_id: LOCAL }));
   assert.equal(local.status, 200);
-  assert.ok(isOwnSnapshotPath(ORG, LOCAL, pathFor(ORG, LOCAL)));
-  assert.ok(!isOwnSnapshotPath(ORG, LOCAL, pathFor(OTHER_ORG, LOCAL)));
+  const byLocalFolder = await save(world(), newBody({ local_id: LOCAL, storage_path: pathFor(ORG, LOCAL) }));
+  assert.equal(byLocalFolder.status, 422);
+  assert.ok(isOwnSnapshotPath(ORG, P1, pathFor(ORG, P1)));
+  assert.ok(!isOwnSnapshotPath(ORG, P1, pathFor(OTHER_ORG, P1)));
+});
+
+test("저장: actor·bytes·schema_version은 서버가 정한다(클라이언트가 보낸 값은 strict로 거절)", async () => {
+  const w = world();
+  assert.equal((await save(w, newBody({ blob_bytes: 1 }))).status, 422);
+  assert.equal((await save(w, newBody({ schema_version: 9 }))).status, 422);
+  assert.equal((await save(w, newBody({ actor_id: OTHER_ORG }))).status, 422);
+  assert.equal((await save(w, newBody())).status, 200);
+  assert.equal(w.saves[0]?.actorId, USER);
+  assert.equal(w.saves[0]?.blobBytes, 5000, "업로드 객체 크기");
+  assert.equal(w.saves[0]?.schemaVersion, 1);
+});
+
+test("저장: 같은 local_id 다른 project_uuid는 23505 → 409(500 아님)", async () => {
+  const w = world();
+  assert.equal((await save(w, newBody({ local_id: LOCAL }))).status, 200);
+  const dup = await save(w, newBody({ project_uuid: P2, storage_path: pathFor(ORG, P2), local_id: LOCAL }));
+  assert.equal(dup.status, 409);
+  assert.equal(dup.json.error.code, "23505");
+  assert.equal(w.rows.size, 1);
+});
+
+test("저장: 같은 expected_version 동시 요청 둘 → 하나만 성공, 다른 하나는 AR041(마지막 쓰기 승리 없음)", async () => {
+  const w = world();
+  assert.equal((await save(w, newBody())).status, 200);
+  const rs = await Promise.all([save(w, newBody({ expected_version: 1, name: "A" })), save(w, newBody({ expected_version: 1, name: "B" }))]);
+  assert.deepEqual(rs.map((r) => r.status).sort(), [200, 409]);
+  assert.equal(w.rows.get(`${ORG}:${P1}`)?.version, 2);
+});
+
+test("삭제: 행 삭제 + Storage 폴더 정리, expected_version 불일치는 AR041·삭제 안 됨", async () => {
+  const w = world();
+  w.rows.set(`${ORG}:${P1}`, row(ORG, P1, 2));
+  const stale = await del(w, P1, "?expected_version=1");
+  assert.equal(stale.status, 409);
+  assert.equal(stale.json.error.details.current_version, 2);
+  assert.equal(w.rows.size, 1);
+  assert.deepEqual(w.purged, []);
+  const ok = await del(w, P1, "?expected_version=2");
+  assert.equal(ok.status, 200);
+  assert.deepEqual(ok.json.data, { project_uuid: P1, deleted: true });
+  assert.equal(w.rows.size, 0);
+  assert.deepEqual(w.purged, [`${ORG}/${P1}`]);
+  assert.equal((await del(w, P1)).status, 404, "이미 지운 사본");
+});
+
+test("삭제: 다른 조직 project_uuid는 404로 존재를 숨기고 그 행은 그대로", async () => {
+  const w = world();
+  w.rows.set(`${OTHER_ORG}:${P1}`, row(OTHER_ORG, P1, 1));
+  const r = await del(w, P1);
+  assert.equal(r.status, 404);
+  assert.equal(w.rows.size, 1);
+  assert.deepEqual(w.purged, []);
+});
+
+test("삭제: 입력 검사·viewer 403·만료 조직도 허용·정리 실패는 성공 + 고아 로그(경로 0)", async (t) => {
+  const lines = spy(t);
+  const w = world({ session: { userId: USER, orgId: ORG, role: "viewer", entitled: true, accessToken: TOKEN } });
+  assert.equal((await del(w, P1)).status, 403);
+  assert.equal((await del(world(), "not-a-uuid")).status, 422);
+  assert.equal((await del(world(), P1, "?expected_version=-1")).status, 422);
+  assert.equal((await del(world(), P1, "?x=1")).status, 422);
+  const expired = world({ session: { userId: USER, orgId: ORG, role: "owner", entitled: false, accessToken: TOKEN } });
+  expired.rows.set(`${ORG}:${P1}`, row(ORG, P1, 1));
+  expired.purgeFails = true;
+  assert.equal((await del(expired, P1)).status, 200);
+  const log = lines.join("\n");
+  assert.match(log, /blob_orphan/);
+  assert.ok(!log.includes(ORG) && !log.includes(TOKEN), "조직·토큰·경로는 로그에 없다");
+});
+
+test("supabase-repo: 커서 왕복·필터 주입 차단, DETAIL(JSON) 수치만 읽는다", () => {
+  const c = encodeCursor("2026-10-28T00:00:00.123456+00:00", P1);
+  assert.deepEqual(decodeCursor(c), { updatedAt: "2026-10-28T00:00:00.123456+00:00", projectUuid: P1 });
+  assert.equal(decodeCursor(Buffer.from(`2026-10-28T00:00:00Z),or(org_id.neq.x|${P1}`).toString("base64url")), null);
+  assert.equal(decodeCursor("AAAA"), null);
+  const e41 = toCloudDbError({ code: "AR041", message: "secret path", details: '{"current_version": 7}' });
+  assert.equal(e41.code, "AR041");
+  assert.equal(e41.currentVersion, 7);
+  assert.ok(!e41.message.includes("secret"));
+  assert.equal(toCloudDbError({ code: "AR040", details: '{"max": 3}' }).max, 3);
+  assert.equal(toCloudDbError({ code: "AR041", details: "not json" }).currentVersion, undefined);
+  assert.equal(toCloudDbError({ code: "23505" }).code, "23505");
+  assert.equal(toCloudDbError({ code: "P0002" }).code, "not_found");
 });
 
 test("저장: 권리 — viewer 403, entitled=false 402(can_download), web_edit 폴백 402(reason fallback), 저장소 호출 0", async () => {

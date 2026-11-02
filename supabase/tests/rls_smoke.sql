@@ -52,6 +52,58 @@ select 1 from @S@.licenses;
 -- TEST anon org_features 호출 42501 | expect=sqlstate:42501
 select @S@.org_features((select oa from t_ids));
 
+-- AS service
+-- TEST service 클라우드 사본 새로 저장(version 1) | expect=rows:1
+select 1 from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', (select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1) s where s.version = 1;
+-- TEST service 오래된 expected_version 으로 저장 AR041(저장 안 됨) | expect=sqlstate:AR041
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', (select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service AR041 뒤에도 version 1 유지 | expect=rows:1
+select 1 from @S@.cloud_projects where project_uuid = (select proj from t_ids) and version = 1;
+-- TEST service 현재 버전으로 저장(version 2) | expect=rows:1
+select 1 from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', (select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.arch', 1, 1000, 1) s where s.version = 2;
+-- TEST service 없는 사본에 expected_version 1 AR041 | expect=sqlstate:AR041
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000004'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 1, 1000, 1);
+-- TEST service 두 번째 사본 + local_id | expect=rows:1
+select 1 from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000002'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000002'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1, '88888888-0000-4000-8000-000000000001'::uuid) s where s.version = 1;
+-- TEST service 같은 local_id 다른 project_uuid 23505 | expect=sqlstate:23505
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000003'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000003'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1, '88888888-0000-4000-8000-000000000001'::uuid);
+-- TEST service 세 번째 사본(상한 3 도달) | expect=rows:1
+select 1 from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000003'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000003'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1) s where s.version = 1;
+-- TEST service 상한 초과 AR040 | expect=sqlstate:AR040
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000004'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service local_id null → 값 설정 허용 | expect=rows:1
+select 1 from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', (select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.arch', 2, 1000, 1, '88888888-0000-4000-8000-000000000002'::uuid) s where s.version = 3;
+-- TEST service local_id 다른 값으로 변경 22023 | expect=sqlstate:22023
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', (select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.arch', 3, 1000, 1, '88888888-0000-4000-8000-000000000003'::uuid);
+-- TEST service viewer 저장 42501 | expect=sqlstate:42501
+select * from @S@.save_cloud_project((select oa from t_ids), 'eeeeeeee-0000-4000-8000-000000000005', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000004'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service 다른 조직 사용자가 oA 저장 42501 | expect=sqlstate:42501
+select * from @S@.save_cloud_project((select oa from t_ids), 'bbbbbbbb-0000-4000-8000-000000000002', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000004'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service 엔타이틀먼트 없는 조직 저장 42501 | expect=sqlstate:42501
+select * from @S@.save_cloud_project((select oc from t_ids), 'cccccccc-0000-4000-8000-000000000003', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select oc from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000004'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service 다른 프로젝트 폴더 경로 23514 | expect=sqlstate:23514
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000002'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service 다른 조직 경로 23514 | expect=sqlstate:23514
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select ob from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000004'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service 경로 조작(..) 23514 | expect=sqlstate:23514
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/../../' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST service blob_bytes 0 → 22023 | expect=sqlstate:22023
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000004'::uuid, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || '99999999-0000-4000-8000-000000000004'::uuid::text || '/' || gen_random_uuid()::text || '.arch', 0, 0, 1);
+-- TEST service 삭제: 오래된 expected_version AR041 | expect=sqlstate:AR041
+select * from @S@.delete_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000003'::uuid, 9);
+-- TEST service 삭제: 다른 조직 사용자는 P0002(존재 은닉) | expect=sqlstate:P0002
+select * from @S@.delete_cloud_project((select ob from t_ids), 'bbbbbbbb-0000-4000-8000-000000000002', '99999999-0000-4000-8000-000000000003'::uuid);
+-- TEST service 삭제: viewer 42501 | expect=sqlstate:42501
+select * from @S@.delete_cloud_project((select oa from t_ids), 'eeeeeeee-0000-4000-8000-000000000005', '99999999-0000-4000-8000-000000000003'::uuid);
+-- TEST service 삭제 성공(경로 반환) | expect=rows:1
+select 1 from @S@.delete_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000003'::uuid, 1) d where d.storage_path is not null;
+-- TEST service 같은 사본 다시 삭제 P0002 | expect=sqlstate:P0002
+select * from @S@.delete_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', '99999999-0000-4000-8000-000000000003'::uuid);
+-- TEST service 삭제 뒤 같은 조직 사본 2건 | expect=rows:2
+select 1 from @S@.cloud_projects where org_id = (select oa from t_ids);
+-- TEST service 삭제 감사 로그 남음 | expect=rows:1
+select 1 from @S@.audit_log where action = 'cloud_project.delete' limit 1;
+
 -- AS A
 -- TEST A 자기 조직 라이선스 1행 | expect=rows:1
 select id, serial_last5 from @S@.licenses where org_id = (select oa from t_ids);
@@ -111,16 +163,12 @@ select @S@.upsert_drafting_profile(jsonb_build_object('logo_storage_path', (sele
 select 1 from @S@.upsert_drafting_profile('{"font_family": "Noto Sans KR"}') d where d.default_paper = 'A2' and d.office_name = '노마드 건축';
 -- TEST A 표제란 직접 UPDATE 42501 | expect=sqlstate:42501
 update @S@.drafting_profiles set office_name = 'x';
--- TEST A 클라우드 사본 새로 저장(version 1) | expect=rows:1
-select 1 from @S@.save_cloud_project((select proj from t_ids), '1호 단독주택', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.json', 0) s where s.version = 1;
--- TEST A 같은 사본 오래된 버전으로 저장 AR041 | expect=sqlstate:AR041
-select * from @S@.save_cloud_project((select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.json', 0);
--- TEST A 현재 버전으로 저장(version 2) | expect=rows:1
-select 1 from @S@.save_cloud_project((select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.json', 1) s where s.version = 2;
--- TEST A 경로 조작(..) 23514 | expect=sqlstate:23514
-select * from @S@.save_cloud_project((select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/../../' || gen_random_uuid()::text || '.json', 2);
--- TEST A 다른 조직 경로로 저장 42501 | expect=sqlstate:42501
-select * from @S@.save_cloud_project((select proj from t_ids), '1호', (select ob from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.json', 0);
+-- TEST A 클라우드 사본 저장 RPC 직접 호출 42501(service_role 전용) | expect=sqlstate:42501
+select * from @S@.save_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', (select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.arch', 2, 1000, 1);
+-- TEST A 클라우드 사본 삭제 RPC 직접 호출 42501(service_role 전용) | expect=sqlstate:42501
+select * from @S@.delete_cloud_project((select oa from t_ids), 'aaaaaaaa-0000-4000-8000-000000000001', (select proj from t_ids));
+-- TEST A 클라우드 사본 직접 DELETE 42501 | expect=sqlstate:42501
+delete from @S@.cloud_projects;
 -- TEST A 클라우드 사본 version 직접 변경 42501 | expect=sqlstate:42501
 update @S@.cloud_projects set version = 1;
 
@@ -133,9 +181,9 @@ select office_name from @S@.drafting_profiles where org_id = (select oa from t_i
 select @S@.upsert_drafting_profile('{"office_name": "x"}', (select ob from t_ids));
 
 -- AS V
--- TEST V(viewer) 클라우드 사본 저장 42501 | expect=sqlstate:42501
-select * from @S@.save_cloud_project(gen_random_uuid(), 'v', (select oa from t_ids)::text || '/arch/project_snapshot/' || gen_random_uuid()::text || '/' || gen_random_uuid()::text || '.json', 0);
--- TEST V 사본 목록은 읽기 | expect=rows:1
+-- TEST V(viewer) 클라우드 사본 저장 RPC 직접 호출 42501 | expect=sqlstate:42501
+select * from @S@.save_cloud_project((select oa from t_ids), 'eeeeeeee-0000-4000-8000-000000000005', gen_random_uuid(), 'v', (select oa from t_ids)::text || '/arch/project_snapshot/' || gen_random_uuid()::text || '/' || gen_random_uuid()::text || '.arch', 0, 1000, 1);
+-- TEST V 사본 목록은 읽기(서비스 블록이 만든 2건) | expect=rows:2
 select id from @S@.cloud_projects;
 
 -- AS B
@@ -159,8 +207,8 @@ select * from @S@.eligible_rule_packs((select oa from t_ids));
 select 1 where @S@.org_features((select oc from t_ids)) ->> 'state' = 'trial_expired';
 -- TEST C 규칙 팩 0개 | expect=rows:0
 select * from @S@.eligible_rule_packs();
--- TEST C 클라우드 사본 저장 42501(엔타이틀먼트 없음) | expect=sqlstate:42501
-select * from @S@.save_cloud_project(gen_random_uuid(), 'c', (select oc from t_ids)::text || '/arch/project_snapshot/' || gen_random_uuid()::text || '/' || gen_random_uuid()::text || '.json', 0);
+-- TEST C 비멤버 조직 사본 안 보임 | expect=rows:0
+select 1 from @S@.cloud_projects;
 
 -- AS service
 -- TEST service FOR ALL 정책 0(명령별 정책만) | expect=rows:0
