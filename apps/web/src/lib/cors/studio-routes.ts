@@ -1,6 +1,6 @@
 // 스튜디오(apps/desktop Vite 앱 — 설치형·웹 공용)가 Bearer로 부르는 API 목록(AR-06-071 결정 10).
 // 무로그인 거부 증명: 이 목록의 라우트는 Authorization 없이 401이어야 한다(studio-routes-unauth.test.ts가 실제 Route Handler로 확인).
-// 클라이언트 가드는 UX일 뿐이고, 거부는 서버가 한다. 새 스튜디오 호출을 추가하면 여기에도 추가한다(클라이언트 경로 스캔 테스트가 강제).
+// 클라이언트 가드는 UX일 뿐이고, 거부는 서버가 한다. 새 API 라우트·메서드는 여기 또는 테스트의 비스튜디오 목록(이유 필수)에 넣어야 한다(정확 대조 테스트가 강제).
 
 export type StudioMethod = "GET" | "POST" | "PUT" | "DELETE";
 

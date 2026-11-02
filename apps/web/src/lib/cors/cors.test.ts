@@ -1,6 +1,6 @@
 // API 공용 CORS(AR-06-071 결정 8): 허용 출처만 ACAO, credentials 없음, 오류 응답에도 ACAO·Vary, preflight, proxy 연결.
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { test } from "node:test";
@@ -65,12 +65,13 @@ test("preflight: 허용 출처 204(메서드·헤더·max-age), 아니면 403(AC
 });
 
 test("proxy(): /api preflight·일반 요청에 CORS, 화면 경로는 손대지 않는다(실제 proxy 모듈)", () => {
-  const stdout = execFileSync(process.execPath, ["--import", "./route-loader.mjs", "./proxy.run.ts"], {
+  const child = spawnSync(process.execPath, ["--import", "./route-loader.mjs", "./proxy.run.ts"], {
     cwd: import.meta.dirname,
     encoding: "utf8",
-    stdio: ["ignore", "pipe", "ignore"],
     timeout: 60_000,
   });
+  assert.equal(child.status, 0, `proxy 자식 프로세스 실패:\n${child.stderr}\n${child.error?.message ?? ""}`);
+  const stdout = child.stdout;
   const r = JSON.parse(stdout.trim().split("\n").at(-1) ?? "{}") as Record<string, { status: number; headers: Record<string, string> }>;
   const h = (name: string) => r[name]?.headers ?? {};
   assert.equal(r["preflight-allowed"]?.status, 204);

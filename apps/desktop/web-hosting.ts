@@ -123,7 +123,8 @@ export function vercelOutputConfig(env: WebBuildEnv): { version: 3; routes: Reco
       { src: "^/(.*)$", headers: webSecurityHeaders(env), continue: true },
       { src: "^/assets/(.+)\\.wasm$", headers: { "Content-Type": "application/wasm" }, continue: true },
       { src: "^/assets/(.*)$", headers: { "Cache-Control": "public, max-age=31536000, immutable" }, continue: true },
-      { src: "^/index\\.html$", headers: { "Cache-Control": "no-store" }, continue: true },
+      // `/`도 filesystem 단계에서 index.html로 풀리므로 함께 no-store.
+      { src: "^/(index\\.html)?$", headers: { "Cache-Control": "no-store" }, continue: true },
       { handle: "filesystem" },
       { src: "^/(?!assets/).*$", dest: "/index.html", headers: { "Cache-Control": "no-store" } },
     ],

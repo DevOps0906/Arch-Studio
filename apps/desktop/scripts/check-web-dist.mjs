@@ -9,7 +9,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { cspViolations, WEB_HOSTING_CONFIG, WEB_OUT_DIR } from "../web-hosting.ts";
+import { loadEnv } from "vite";
+import { cspViolations, WEB_BUILD_MODE, WEB_HOSTING_CONFIG, WEB_OUT_DIR } from "../web-hosting.ts";
 
 const APP = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ROOT = path.resolve(APP, "../..");
@@ -89,7 +90,8 @@ if (!existsSync(path.join(dir, "index.html"))) {
 const hits = tauriHits(dir);
 if (hits.length) failures.push(`Tauri IPC 코드:\n  ${hits.join("\n  ")}`);
 for (const [label, cmd] of [
-  ["릴리스 번들 검사", [path.join(APP, "scripts/check-release-bundle.mjs"), dir]],
+  ["릴리스 번들 검사", [path.join(APP, "scripts/check-release-bundle.mjs"), "--web", dir]],
+  ["웹 전용 표식 대조군", [path.join(APP, "scripts/check-release-bundle.mjs"), "--expect-web", dir]],
   ["비밀 검사", [path.join(ROOT, "scripts/ci/scan-secrets.mjs"), "dir", dir]],
 ]) {
   try {
@@ -101,7 +103,11 @@ for (const [label, cmd] of [
 failures.push(...inlineViolations(readFileSync(path.join(dir, "index.html"), "utf8")).map((v) => `index.html ${v}`));
 const configPath = path.join(APP, WEB_HOSTING_CONFIG);
 if (!existsSync(configPath)) failures.push(`호스트 설정 없음: ${WEB_HOSTING_CONFIG}`);
-else failures.push(...hostingViolations(JSON.parse(readFileSync(configPath, "utf8")), process.env).map((v) => `호스트 설정: ${v}`));
+else {
+  // 빌드와 같은 env: .env 파일(mode web) 위에 프로세스 env를 덮어쓴다.
+  const env = { ...loadEnv(WEB_BUILD_MODE, APP, "VITE_"), ...Object.fromEntries(Object.entries(process.env).filter(([k]) => k.startsWith("VITE_"))) };
+  failures.push(...hostingViolations(JSON.parse(readFileSync(configPath, "utf8")), env).map((v) => `호스트 설정: ${v}`));
+}
 
 if (failures.length) {
   console.error(`웹 빌드 검사 실패:\n${failures.join("\n")}`);
