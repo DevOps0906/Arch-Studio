@@ -42,6 +42,32 @@ insert into @S@.rule_pack_changes (rule_pack_id, title, kind, effective_from)
   select id, '정북 일조사선 개정', 'decree', '2026-09-01' from @S@.rule_packs where version = '2026.10.1';
 insert into @S@.builds (version, platform, channel, status, build_date, storage_path, signature, sha256, bytes, published_at) values
   ('1.1.0', 'windows-x86_64', 'stable', 'published', current_date, 'builds/stable/1.1.0/arch-setup.exe', repeat('s', 20), repeat('c', 64), 1000, now());
+-- AI 보안(AR-06-049): oB 만 국외 이전 동의. 플랫폼 운영자 조직(op) 소유 컬렉션 2개(공개 등록 1 + 비공개 1) + oA·oB 컬렉션 각 1개.
+-- 모든 청크는 같은 벡터라 유사도는 같고, 어느 컬렉션이 검색 범위에 드는지만 본다.
+insert into @C@.ai_org_settings (org_id, cross_border_ack_at, cross_border_notice) select ob, now(), 'v1' from t_ids;
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('ffffffff-0000-4000-8000-000000000006', 'p@test.local', '{"full_name": "P"}');
+delete from @C@.app_entitlements where org_id = (select id from @C@.organizations where owner_id = 'ffffffff-0000-4000-8000-000000000006');
+update @C@.profiles set platform_role = 'platform_admin' where id = 'ffffffff-0000-4000-8000-000000000006';
+create temp table t_kn as
+  select (select id from @C@.organizations where owner_id = 'ffffffff-0000-4000-8000-000000000006') as op,
+         array_fill(0.1::real, array[1024])::extensions.vector as vec;
+grant select on t_kn to anon, authenticated, service_role;
+insert into @C@.ai_collections (id, org_id, app_id, kind, name, embedding_provider, embedding_model)
+  select v.id::uuid, v.org, 'arch', 'rag', v.name, 'oss-embed', 'bge-m3'
+  from (select t_kn.op as op, (select oa from t_ids) as oa, (select ob from t_ids) as ob from t_kn) o
+  cross join lateral (values
+    ('c0000001-0000-4000-8000-000000000001', o.op, 'public-law'),
+    ('c0000001-0000-4000-8000-000000000002', o.op, 'platform-private'),
+    ('c0000001-0000-4000-8000-000000000003', o.oa, 'a-own'),
+    ('c0000001-0000-4000-8000-000000000004', o.ob, 'b-own')) as v(id, org, name);
+insert into @C@.ai_documents (id, collection_id, org_id, app_id, source_type, content_hash, status)
+  select ('d0000001-0000-4000-8000-00000000000' || right(c.id::text, 1))::uuid, c.id, c.org_id, 'arch', 'text', 'h' || right(c.id::text, 1), 'ready'
+  from @C@.ai_collections c where c.id::text like 'c0000001-%';
+insert into @C@.ai_chunks (document_id, collection_id, org_id, app_id, chunk_index, content, embedding)
+  select d.id, d.collection_id, d.org_id, 'arch', 0, 'chunk-' || right(d.collection_id::text, 1), (select vec from t_kn)
+  from @C@.ai_documents d where d.collection_id::text like 'c0000001-%';
+insert into @S@.public_knowledge_collections (collection_id, note) values ('c0000001-0000-4000-8000-000000000001', '법령');
 -- END SETUP
 
 -- AS anon
@@ -381,3 +407,49 @@ update @S@.rule_packs set status = 'withdrawn', withdrawn_at = now() where versi
 update @S@.rule_packs set status = 'published' where version = '2026.10.1';
 -- TEST service 보존 정리 실행 | expect=ok
 select * from @S@.purge_expired();
+
+-- =====================================================================
+-- AI 보안(AR-06-049): 라우팅 불변식 + 공개 지식 컬렉션. 불변식: 국외 이전 미동의 조직 체인에 cross_border 제공자 0,
+-- force 행은 동의 조직도 오픈소스만, 검색은 자기 조직 + 등록된 공개 컬렉션만.
+-- =====================================================================
+-- AS service
+-- TEST AI 라우팅 기본값 arch 14행(마이그레이션 upsert) | expect=rows:14
+select 1 from @C@.ai_routing_settings where org_id is null and app_id = 'arch';
+-- TEST AI 오픈소스 강제 행 3개(intake_consult·dify.aux·consult_recording) | expect=rows:3
+select 1 from @C@.ai_routing_settings where org_id is null and app_id = 'arch' and force_open_source and feature in ('arch.intake_consult', 'dify.aux', 'consult_recording');
+-- TEST AI 미동의 조직 oA 14 feature 체인에 국외 제공자 0 | expect=rows:0
+select s.feature from @C@.ai_routing_settings s cross join lateral @C@.resolve_ai_route((select oa from t_ids), 'arch', s.feature, s.kind) r cross join lateral jsonb_array_elements(r -> 'chain') e(item) join @C@.ai_providers p on p.id = e.item ->> 'provider' where s.org_id is null and s.app_id = 'arch' and p.cross_border;
+-- TEST AI 미동의 조직 oA 14 feature 모두 체인이 비지 않음 | expect=rows:0
+select s.feature from @C@.ai_routing_settings s cross join lateral @C@.resolve_ai_route((select oa from t_ids), 'arch', s.feature, s.kind) r where s.org_id is null and s.app_id = 'arch' and jsonb_array_length(r -> 'chain') = 0;
+-- TEST AI 동의 조직 oB 는 arch.review 에 국외 상용 제공자 허용(대조군) | expect=rows:1
+select 1 from @C@.resolve_ai_route((select ob from t_ids), 'arch', 'arch.review', 'llm') r where r -> 'chain' @> '[{"provider":"anthropic"}]'::jsonb;
+-- TEST AI 동의 조직 oB 의 force 행 체인은 오픈소스만 | expect=rows:0
+select s.feature from @C@.ai_routing_settings s cross join lateral @C@.resolve_ai_route((select ob from t_ids), 'arch', s.feature, s.kind) r cross join lateral jsonb_array_elements(r -> 'chain') e(item) join @C@.ai_providers p on p.id = e.item ->> 'provider' where s.org_id is null and s.app_id = 'arch' and s.force_open_source and p.source <> 'open_source';
+-- TEST AI 동의 조직 oB 의 force 행 모드는 open_source | expect=rows:3
+select 1 from @C@.ai_routing_settings s cross join lateral @C@.resolve_ai_route((select ob from t_ids), 'arch', s.feature, s.kind) r where s.org_id is null and s.app_id = 'arch' and s.force_open_source and r ->> 'mode' = 'open_source' and (r ->> 'force_open_source')::boolean;
+-- TEST 공개 지식 oA 검색 = 자기 컬렉션 + 공개 컬렉션 2건 | expect=rows:2
+select content from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10) where content in ('chunk-1', 'chunk-3');
+-- TEST 공개 지식 oA 검색에 다른 조직·비공개 플랫폼 컬렉션 0 | expect=rows:0
+select content from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10) where content in ('chunk-2', 'chunk-4');
+-- TEST 공개 지식 oB 검색 = 자기 컬렉션 + 공개 컬렉션 2건 | expect=rows:2
+select content from @S@.match_public_knowledge((select ob from t_ids), (select vec from t_kn), 10) where content in ('chunk-1', 'chunk-4');
+-- TEST 공개 지식 oA 가 oB 컬렉션 지정 42501 | expect=sqlstate:42501
+select * from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10, 'c0000001-0000-4000-8000-000000000004');
+-- TEST 공개 지식 oA 가 비공개 플랫폼 컬렉션 지정 42501 | expect=sqlstate:42501
+select * from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10, 'c0000001-0000-4000-8000-000000000002');
+-- TEST 공개 지식 oA 가 공개 컬렉션 지정 | expect=rows:1
+select * from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10, 'c0000001-0000-4000-8000-000000000001');
+-- TEST 공개 지식 oA 가 자기 컬렉션 지정 | expect=rows:1
+select * from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10, 'c0000001-0000-4000-8000-000000000003');
+-- TEST 공개 지식 등록은 플랫폼 조직 컬렉션만(조직 컬렉션 등록 22023) | expect=sqlstate:22023
+insert into @S@.public_knowledge_collections (collection_id) values ('c0000001-0000-4000-8000-000000000003');
+-- AS A
+-- TEST 공개 지식 일반 사용자 검색 호출 42501 | expect=sqlstate:42501
+select * from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10);
+-- TEST 공개 지식 등록부 직접 읽기 42501 | expect=sqlstate:42501
+select * from @S@.public_knowledge_collections;
+-- TEST 공개 지식 등록부 직접 쓰기 42501 | expect=sqlstate:42501
+insert into @S@.public_knowledge_collections (collection_id) values ('c0000001-0000-4000-8000-000000000002');
+-- AS anon
+-- TEST 공개 지식 anon 검색 호출 42501 | expect=sqlstate:42501
+select * from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10);

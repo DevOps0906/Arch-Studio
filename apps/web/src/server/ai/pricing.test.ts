@@ -15,7 +15,13 @@ import {
 } from "./pricing.ts";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../../..");
-const SEED_SQL = readFileSync(path.join(ROOT, "supabase/modular/2400_arch.sql"), "utf8");
+// 유효 seed = 모든 modular 조각(번호순)을 이어 붙였을 때 마지막에 나온 값(뒤 조각의 upsert가 앞 값을 덮는다).
+const MODULAR_DIR = path.join(ROOT, "supabase/modular");
+const SEED_SQL = readdirSync(MODULAR_DIR)
+  .filter((f) => /^\d+_.*\.sql$/.test(f))
+  .sort()
+  .map((f) => readFileSync(path.join(MODULAR_DIR, f), "utf8"))
+  .join("\n");
 
 function seedPrices(): Map<string, number> {
   const out = new Map<string, number>();
@@ -37,7 +43,7 @@ test("단가: seed runtime_config price.<variant>와 같은 값·같은 집합",
   for (const [variant, entry] of Object.entries(RUN_PRICES)) assert.equal(seed.get(variant), entry.credits, variant);
 });
 
-test("단가: 미확정 값은 명시돼 있다(review 15·walkthrough 40)", () => {
+test("단가: 미확정 값은 명시돼 있다(review·walkthrough)", () => {
   assert.equal(RUN_PRICES.review.status, "미확정");
   assert.equal(RUN_PRICES.walkthrough.status, "미확정");
 });
@@ -55,7 +61,7 @@ test("단가: kind·variant 표의 모든 variant에 단가가 있고 그 밖은
 test("크레딧팩: seed credit_packs와 같은 크레딧·원 금액(정수)", () => {
   for (const [code, pack] of Object.entries(CREDIT_PACKS)) {
     const re = new RegExp(`\\('arch', '${code}',\\s*'[^']*',\\s*(\\d+),\\s*(\\d+),`);
-    const m = re.exec(SEED_SQL);
+    const m = [...SEED_SQL.matchAll(new RegExp(re.source, "g"))].at(-1);
     assert.ok(m, code);
     assert.equal(Number(m[1]), pack.credits, code);
     assert.equal(Number(m[2]), pack.priceKrw, code);
