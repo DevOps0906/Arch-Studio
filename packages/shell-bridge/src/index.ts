@@ -120,3 +120,8 @@ export {
   type AuthStorageAdapter,
 } from "./supabase/client.ts";
 export type { InvokeFn } from "./tauri/invoke.ts";
+// 072 웹 어댑터. 앱 조립부: createPlatformAdapters({ web: () => createWebAdapters({ idb: <브라우저 IndexedDB 팩토리> }) }).
+export { createWebAdapters, type WebAdaptersOptions } from "./web/adapters.ts";
+export { IdbProjectCache, PROJECT_CACHE_DB, type ProjectReadCache } from "./web/project-cache.ts";
+export { browserFileHost, type PickedFile, type SaveSink, type WebFileHost } from "./web/file-gateway.ts";
+export { WebEntitlementClient } from "./web/entitlement.ts";

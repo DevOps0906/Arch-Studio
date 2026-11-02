@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { UUID_RE } from "../ai/gateway/http.ts";
 import type { SchemaNames } from "../licenses/supabase-repo.ts";
 import { CloudApiError, CloudDbError, mapCloudDbError } from "./errors.ts";
+import type { CloudBlobRepo, SnapshotReader } from "./blob.ts";
 import type { CloudProjectRepo, CloudProjectRow, SnapshotInspector } from "./service.ts";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 생성 타입(Database) 도입 전
@@ -141,6 +142,38 @@ export function supabaseSnapshotInspector(service: Client): SnapshotInspector {
     async remove(path) {
       const { error } = await bucket().remove([path]);
       if (error) throw new Error("storage remove failed");
+    },
+  };
+}
+
+/** blob 조회(사용자 JWT, RLS): (org, project_uuid) 1행의 version·storage_path. */
+export function supabaseCloudBlobRepo(user: Client, schemas: SchemaNames): CloudBlobRepo {
+  return {
+    async findSnapshot(orgId, projectUuid) {
+      const { data, error } = await user
+        .schema(schemas.arch)
+        .from("cloud_projects")
+        .select("org_id, version, storage_path")
+        .eq("org_id", orgId)
+        .eq("project_uuid", projectUuid)
+        .maybeSingle();
+      if (error) throw toCloudDbError(error);
+      const r = data as { org_id?: unknown; version?: unknown; storage_path?: unknown } | null;
+      if (!r) return null;
+      if (typeof r.org_id !== "string" || !Number.isSafeInteger(r.version) || typeof r.storage_path !== "string") throw new CloudDbError("internal");
+      return { org_id: r.org_id, version: r.version as number, storage_path: r.storage_path };
+    },
+  };
+}
+
+/** service_role Storage 읽기: 객체 크기(메타데이터 조회, 내용은 읽지 않음)·서명 다운로드 URL. 경로·URL은 오류에 싣지 않는다. */
+export function supabaseSnapshotReader(service: Client): SnapshotReader {
+  return {
+    stat: (path) => supabaseSnapshotInspector(service).inspect(path),
+    async signDownload(path, ttlS) {
+      const { data, error } = await service.storage.from(SNAPSHOT_BUCKET).createSignedUrl(path, ttlS);
+      if (error || !data?.signedUrl) throw new Error("storage sign failed");
+      return data.signedUrl;
     },
   };
 }

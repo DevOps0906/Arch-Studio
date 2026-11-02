@@ -20,6 +20,10 @@ export interface ContractSubject {
   readonly adapters: PlatformAdapters;
   /** 이 어댑터의 파일 대화상자·디스크 흉내(구현이 같은 fixture를 써야 한다). */
   readonly files: FileFixture;
+  /** false면 ProjectStore.delete가 없는 플랫폼(웹: 삭제 API가 계약에 없음, 072) — delete는 NOT_SUPPORTED여야 한다. 기본 true. */
+  readonly projectDelete?: boolean;
+  /** 이름 최대 글자 수. 기본 200(Rust·공통 한도). 웹 클라우드는 120(서버 CHECK). */
+  readonly projectNameMax?: number;
 }
 
 export type ContractFactory = () => ContractSubject | Promise<ContractSubject>;
@@ -123,8 +127,13 @@ export function runAdapterContract(name: string, factory: ContractFactory): void
     assert.equal(await projects.open(testProjectId(3)), null);
   });
 
-  t("projects: 삭제는 version 검사, 삭제 후 목록·열기에서 사라지고 다시 저장 불가", async ({ adapters: { projects } }) => {
+  t("projects: 삭제는 version 검사, 삭제 후 목록·열기에서 사라지고 다시 저장 불가", async ({ adapters: { projects }, projectDelete }) => {
     await projects.save(input(4));
+    if (projectDelete === false) {
+      await rejectsWith(() => projects.delete(testProjectId(4), 1), "NOT_SUPPORTED");
+      assert.equal((await projects.open(testProjectId(4)))?.version, 1);
+      return;
+    }
     await rejectsWith(() => projects.delete(testProjectId(4), 2), "VERSION_CONFLICT");
     await projects.delete(testProjectId(4), 1);
     assert.equal(await projects.open(testProjectId(4)), null);
@@ -137,7 +146,7 @@ export function runAdapterContract(name: string, factory: ContractFactory): void
     await rejectsWith(() => projects.delete(testProjectId(99), 1), "NOT_FOUND");
   });
 
-  t("projects: 잘못된 id·입력은 INVALID_INPUT(입력 원문 미포함)", async ({ adapters: { projects } }) => {
+  t("projects: 잘못된 id·입력은 INVALID_INPUT(입력 원문 미포함)", async ({ adapters: { projects }, projectNameMax = 200 }) => {
     const v4 = "0190a000-0000-4000-8000-000000000001";
     for (const id of ["", testProjectId(1).toUpperCase(), v4, `${testProjectId(1)}x`, TOKEN]) {
       const hidden = id ? [LEAK, id] : [LEAK];
@@ -147,7 +156,7 @@ export function runAdapterContract(name: string, factory: ContractFactory): void
     const bad: Partial<SaveProjectInput>[] = [
       { id: TOKEN },
       { name: "  " },
-      { name: "가".repeat(201) },
+      { name: "가".repeat(projectNameMax + 1) },
       { designModel: `[${JSON.stringify(TOKEN)}]` },
       { designModel: `{"broken": "${LEAK}"` },
       { schemaVersion: 0 },
@@ -158,7 +167,7 @@ export function runAdapterContract(name: string, factory: ContractFactory): void
     for (const patch of bad) await rejectsWith(() => projects.save(input(5, patch)), "INVALID_INPUT");
     assert.equal(await projects.open(testProjectId(5)), null);
     // 한도 정확히는 통과.
-    assert.equal((await projects.save(input(5, { name: "가".repeat(200) }))).version, 1);
+    assert.equal((await projects.save(input(5, { name: "가".repeat(projectNameMax) }))).version, 1);
   });
 
   // ---- FileGateway --------------------------------------------------------------------------

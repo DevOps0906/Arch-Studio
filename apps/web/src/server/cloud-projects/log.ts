@@ -2,7 +2,7 @@
 // 기본 logger의 redact는 키 이름으로만 가리므로 필드 이름과 값 형식을 모두 고정한다(licenses/log.ts·ai/gateway/log.ts와 같은 방식).
 import { logger } from "../../lib/logger.ts";
 
-export type CloudRoute = "cloud_projects_list" | "cloud_projects_save" | "cloud_projects_upload_url";
+export type CloudRoute = "cloud_projects_list" | "cloud_projects_save" | "cloud_projects_upload_url" | "cloud_projects_blob";
 
 export interface CloudLogFields {
   route: CloudRoute;
@@ -16,7 +16,7 @@ export interface CloudLogFields {
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const WORD = /^[a-z0-9_]{1,40}$/i;
-const ROUTES = new Set<CloudRoute>(["cloud_projects_list", "cloud_projects_save", "cloud_projects_upload_url"]);
+const ROUTES = new Set<CloudRoute>(["cloud_projects_list", "cloud_projects_save", "cloud_projects_upload_url", "cloud_projects_blob"]);
 
 export function sanitizeCloudLog(fields: CloudLogFields): Record<string, string | number> {
   const out: Record<string, string | number> = { route: ROUTES.has(fields.route) ? fields.route : "unknown" };

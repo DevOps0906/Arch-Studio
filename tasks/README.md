@@ -42,7 +42,7 @@
 | AR-06-058 | CI: 데스크톱 빌드·서명 릴리스·비밀 검사 | W2 | 001, 003, 004 | 높음 | builder | 대기 |
 | AR-06-073 | 클라우드 프로젝트 blob 저장·RLS·expected_version 충돌 | W2 | 001, 002, 003 | 높음 | challenger→builder | 완료 |
 | AR-06-071 | 웹 스튜디오 셸 (studio): 서브도메인·워커·CSP | W2 | 070, 071a, 003, 008 | 높음 | challenger→builder | 대기 |
-| AR-06-072 | 웹 어댑터 구현(web/): 캐시·파일·세션·권한 | W2 | 070, 073 | 보통 | builder | 대기 |
+| AR-06-072 | 웹 어댑터 구현(web/): 캐시·파일·세션·권한 | W2 | 070, 073 | 보통 | builder | 완료 |
 | AR-06-022 | SVG·PNG·PDF 작성기, 글꼴 폭 표 | W3 | 020, 021 | 보통 | builder | 완료 |
 | AR-06-023 | 배치도 뷰와 골든 | W3 | 016, 020 | 보통 | builder | 완료 |
 | AR-06-024 | 면적 산정도·면적표 뷰와 골든 | W3 | 015, 020 | 보통 | builder | 완료 |
@@ -131,5 +131,8 @@
 | 2026-11-02 | CI(AR-06-049 → 058) | `pnpm test:ai-routing`(DB 없음)과 `node scripts/ai-routing/run-sql.mjs`(로컬 Supabase 필요)는 CI에 연결돼 있지 않다. `start-run.ts:168` "AR-06-049가 CI에서 막는다" 주석은 사실과 다르다 | 058에서 CI 연결(DB 단계는 supabase start 후). 연결 전까지 주석을 "pricing.test.ts·test:ai-routing이 막는다(CI 연결은 058)"로 정정 |
 | 2026-11-02 | 그래프 등록(AR-06-049) | 웹이 `graph:arch.proposal_narrative` 잡 토큰을 발급하지만(ai-token `arch.proposal_pdf`) apps/api `PRODUCT.graphs`에 그 그래프가 없어 404 | 제안서 서술 그래프 작업에서 PRODUCT에 추가하거나, 그 전까지 발급 scope에서 제외. 추가되면 `tests/arch/security` scope 매트릭스가 자동으로 포함 |
 | 2026-11-02 | `arch.knowledge` 라우팅(AR-06-049) | seed force=false라 국외 동의 조직의 org override가 상용 임베딩(voyage)을 고를 수 있다. 문서 "아니오(컬렉션 모델 고정)"와 현재 동작은 일치(컬렉션 모델은 ai_collections.embedding_provider가 고정) | 플랫폼 공통 지식 검색이 운영자 org 상수로만 돈다면 변경 불필요. 사용자 org 컬렉션에도 쓰게 되면 force 여부를 사람 판정 |
+| 2026-11-02 | `arch.cloud_projects`·`GET /api/cloud-projects/{id}/blob`(AR-06-072) | 스냅숏 sha256 열이 없어 blob 응답 `sha256`이 null. 서버가 매번 해시하면 최대 100MB 읽기라 하지 않음 → 서버 측 무결성 대조 없음(클라이언트는 길이·내부 sha 자기 일관성만) | 새 번호 마이그레이션으로 `sha256` 열 추가, `save_cloud_project`가 업로드 때 받은 값을 저장·blob 응답에 실음(DB 변경, challenger·reviewer security) |
+| 2026-11-02 | `GET /api/cloud-projects/{id}/blob`(AR-06-072) | 보존 기한(`retention_until`) 지난 사본도 지금은 200으로 내려준다(04_API 1장은 404) | AR-06-074(cloud_retention)에서 보존 기한 판정 후 404 |
+
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
