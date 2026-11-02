@@ -48,6 +48,8 @@ function createCloudServer() {
     entitlement: null as unknown,
     offline: false,
     pageSize: 2,
+    /** true면 blob 메타에 sha256을 싣는다(실서버는 null). */
+    blobSha: false,
     /** 설정되면 내려받기 응답을 이 약속이 풀릴 때까지 미룬다. */
     holdDownload: null as Promise<void> | null,
     /** 경로별 응답 덮어쓰기(오류 매핑 시험). */
@@ -123,7 +125,13 @@ function createCloudServer() {
       const row = rows.get(`${org}:${m[1]}`);
       if (!row) return err(404, "not_found");
       const bytes = storage.get(row.path)!;
-      return json(200, { url: `https://storage.test/download/${encodeURIComponent(row.path)}`, org_id: org, version: row.version, bytes: bytes.byteLength, sha256: sha(bytes) });
+      return json(200, {
+        url: `https://storage.test/download/${encodeURIComponent(row.path)}`,
+        org_id: org,
+        version: row.version,
+        bytes: bytes.byteLength,
+        sha256: state.blobSha ? sha(bytes) : null,
+      });
     }
     // 라우트 없음(Next 기본 404: 봉투 없음).
     return new Response("Not Found", { status: 404 });
@@ -281,18 +289,34 @@ test("web: 읽기 캐시만 — save는 캐시를 읽지 않고 올리는 바이
   for (const blob of server.storage.values()) assert.ok(!new TextDecoder().decode(blob).includes(LEAK));
 });
 
-test("web: 캐시 적중은 version과 서버 sha256이 둘 다 같을 때만", async () => {
+test("web: 캐시 적중은 범위 키 + version·bytes가 둘 다 같을 때만", async () => {
   const cache = new SpyCache();
   const { adapters, server } = setup(cache);
   await adapters.projects.save(input(1));
   await adapters.projects.open(testProjectId(1));
   assert.equal(downloads(server), 0, "방금 저장한 리비전은 캐시에서");
   const key = `${USER}:${ORG}:${testProjectId(1)}`;
-  cache.items.set(key, { ...cache.items.get(key)!, blobSha256: "0".repeat(64) });
+  const real = cache.items.get(key)!.bytes;
+  cache.items.set(key, { ...cache.items.get(key)!, bytes: real + 1 });
   const r = await adapters.projects.open(testProjectId(1));
-  assert.equal(downloads(server), 1, "sha256 불일치면 내려받기");
+  assert.equal(downloads(server), 1, "bytes 불일치면 내려받기");
   assert.equal(r?.designModel, input(1).designModel);
-  assert.notEqual(cache.items.get(key)?.blobSha256, "0".repeat(64));
+  assert.equal(cache.items.get(key)?.bytes, real);
+});
+
+test("web: meta.sha256이 있으면 대조, 없어도(null) 스냅숏 내부 sha 자기 일관성은 검사", async () => {
+  const { adapters, server } = setup(null);
+  await adapters.projects.save(input(1));
+  server.state.blobSha = true;
+  assert.equal((await adapters.projects.open(testProjectId(1)))?.version, 1);
+  server.state.blobSha = false;
+  // 저장소의 스냅숏을 같은 길이로 바꿔치기(designModel만 변경, 내부 sha는 그대로) → 자기 일관성 실패.
+  const [path, blob] = [...server.storage.entries()][0]!;
+  const before = new TextDecoder().decode(blob);
+  const text = before.replace('{\\"n\\":1}', '{\\"n\\":2}');
+  assert.notEqual(text, before);
+  server.storage.set(path, new TextEncoder().encode(text));
+  await assert.rejects(adapters.projects.open(testProjectId(1)), isCode("PROJECT_UNAVAILABLE"));
 });
 
 test("web: 조직이 바뀌면 이전 범위 캐시를 비우고 다른 조직 항목으로 적중하지 않는다", async () => {
@@ -330,6 +354,7 @@ test("web: 로그아웃(clearSecrets)은 비밀과 읽기 캐시를 모두 지�
   await adapters.clearSecrets();
   assert.equal(idb.size(), 0);
   assert.equal(await adapters.secrets.get("auth.session"), null);
+  assert.equal(idb.dropped(), 1, "DB v2 업그레이드에서 옛 저장소를 지우고 다시 만든다");
 });
 
 test("web: 내려받기 중 로그아웃하면 늦게 끝난 열기가 캐시를 되살리지 않는다", async () => {
@@ -423,8 +448,8 @@ const blobMeta = (patch: Record<string, unknown>) =>
     JSON.stringify({ ok: true, data: { url: "https://storage.test/download/x", org_id: ORG, version: 1, bytes: 10, sha256: "a".repeat(64), ...patch } }),
   );
 
-test("web: 스냅숏 메타 — 상한 초과·sha256 없음은 내려받지 않는다", async () => {
-  for (const patch of [{ bytes: SNAPSHOT_MAX_BYTES + 1 }, { sha256: undefined }, { sha256: "XYZ" }, { org_id: "x" }]) {
+test("web: 스냅숏 메타 — 상한 초과·형식 틀린 sha256·org_id·bytes 없음은 내려받지 않는다", async () => {
+  for (const patch of [{ bytes: SNAPSHOT_MAX_BYTES + 1 }, { sha256: "XYZ" }, { org_id: "x" }, { bytes: undefined }]) {
     const { adapters, server } = setup();
     server.state.override = (path) => (path.endsWith("/blob") ? blobMeta(patch) : null);
     await assert.rejects(adapters.projects.open(testProjectId(1)), isCode("PROJECT_UNAVAILABLE"));
@@ -519,8 +544,10 @@ function createFakeIdb() {
     delete: (k: string) => req(() => void data.delete(k)),
     clear: () => req(() => data.clear()),
   };
+  let dropped = 0;
   const db = {
     objectStoreNames: { contains: () => true },
+    deleteObjectStore: () => void dropped++,
     createObjectStore: () => store,
     transaction: () => ({ objectStore: () => store }),
   };
@@ -535,5 +562,5 @@ function createFakeIdb() {
       return r;
     },
   } as unknown as IDBFactory;
-  return { factory, size: () => data.size };
+  return { factory, size: () => data.size, dropped: () => dropped };
 }

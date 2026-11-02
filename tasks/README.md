@@ -126,5 +126,8 @@
 | 2026-11-02 | AR-06-053 음성 | 상담 녹음은 mock만(워커 voice 토큰 발급 경로 없음), oss-voice /stt 계약 가정, 10분 분할·ElevenLabs 대체 미구현, 차감 후 원장 재조회·환불 실패 시 409로 회복 불가(🟡) | DB: consume_credits가 inserted 반환·전사본 24h 삭제·voice_jobs 상태·차감+enqueue 한 트랜잭션(tasks/logs/AR-06-053.md). 사람: voice 토큰 경로·디코더 의존성·국외 이전 동의 |
 | 2026-11-02 | Storage `arch-user/<org>/arch/project_snapshot/` (AR-06-073) | 서명 업로드 후 저장이 거절(AR041·AR040·23505)되거나 중단된 객체가 행 없이 남는다(교체된 이전 객체는 저장 성공 뒤 삭제) | 정리 크론: `cloud_projects.storage_path`에 없는 project_snapshot 객체 중 N시간 지난 것 삭제(service_role, 후속 작업) |
 | 2026-11-02 | 설치형 클라우드 업로드(AR-06-077) | 서버는 업로드 폴더 키를 항상 `project_uuid`로 대조한다. 설치형이 `local_id` 폴더로 올리면 POST가 422(23514) | 077에서 upload-url의 `{id}` = `project_uuid`로 고정, `local_id`는 본문 필드로만 보내는지 테스트로 대조 |
+| 2026-11-02 | `arch.cloud_projects`·`GET /api/cloud-projects/{id}/blob`(AR-06-072) | 스냅숏 sha256 열이 없어 blob 응답 `sha256`이 null. 서버가 매번 해시하면 최대 100MB 읽기라 하지 않음 → 서버 측 무결성 대조 없음(클라이언트는 길이·내부 sha 자기 일관성만) | 새 번호 마이그레이션으로 `sha256` 열 추가, `save_cloud_project`가 업로드 때 받은 값을 저장·blob 응답에 실음(DB 변경, challenger·reviewer security) |
+| 2026-11-02 | `GET /api/cloud-projects/{id}/blob`(AR-06-072) | 보존 기한(`retention_until`) 지난 사본도 지금은 200으로 내려준다(04_API 1장은 404) | AR-06-074(cloud_retention)에서 보존 기한 판정 후 404 |
+
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준

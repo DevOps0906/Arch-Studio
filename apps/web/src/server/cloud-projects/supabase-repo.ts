@@ -2,7 +2,6 @@
 // 사용자 JWT(RLS): list·usage·find·save. SELECT 정책은 조직 구성원(엔타이틀먼트 무관, 2402), save는 arch.save_cloud_project(2402 시그니처).
 // service_role 사용 지점(이유): 업로드 객체 메타 조회·이전 객체 삭제 2곳. arch-user 버킷에는 사용자 정책이 없다(2400_arch.sql 11절).
 // 오류 원문은 보관·로그하지 않는다: SQLSTATE와 detail의 숫자(current_version·max)만 꺼낸다.
-import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { UUID_RE } from "../ai/gateway/http.ts";
 import type { SchemaNames } from "../licenses/supabase-repo.ts";
@@ -167,31 +166,12 @@ export function supabaseCloudBlobRepo(user: Client, schemas: SchemaNames): Cloud
   };
 }
 
-/** service_role Storage 읽기: 스냅숏 sha256 계산(상한 초과면 읽지 않음)·서명 다운로드 URL. 경로·URL은 오류에 싣지 않는다. */
+/** service_role Storage 읽기: 객체 크기(메타데이터 조회, 내용은 읽지 않음)·서명 다운로드 URL. 경로·URL은 오류에 싣지 않는다. */
 export function supabaseSnapshotReader(service: Client): SnapshotReader {
-  const bucket = () => service.storage.from(SNAPSHOT_BUCKET);
   return {
-    async digest(path, maxBytes) {
-      const meta = await supabaseSnapshotInspector(service).inspect(path);
-      if (!meta) return null;
-      if (meta.bytes < 0 || meta.bytes > maxBytes) throw new Error("snapshot too large");
-      const { data, error } = await bucket().download(path);
-      if (error || !data) throw new Error("storage download failed");
-      if (data.size > maxBytes) throw new Error("snapshot too large");
-      const hash = createHash("sha256");
-      const reader = data.stream().getReader();
-      let bytes = 0;
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        bytes += value.byteLength;
-        if (bytes > maxBytes) throw new Error("snapshot too large");
-        hash.update(value);
-      }
-      return { bytes, sha256: hash.digest("hex") };
-    },
+    stat: (path) => supabaseSnapshotInspector(service).inspect(path),
     async signDownload(path, ttlS) {
-      const { data, error } = await bucket().createSignedUrl(path, ttlS);
+      const { data, error } = await service.storage.from(SNAPSHOT_BUCKET).createSignedUrl(path, ttlS);
       if (error || !data?.signedUrl) throw new Error("storage sign failed");
       return data.signedUrl;
     },

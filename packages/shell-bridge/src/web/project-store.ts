@@ -1,7 +1,8 @@
 // 웹 ProjectStore: 클라우드 사본(`arch.cloud_projects`, 04_API.md 2.1절 cloud-projects 행, ADR-001 3장) + IndexedDB 읽기 캐시(3.1절).
 // 저장 순서(073 계약): `POST /api/cloud-projects/{id}/upload-url` → 서명 URL로 스냅숏 PUT → `POST /api/cloud-projects`(expected_version).
-// 열기: `GET /api/cloud-projects/{id}/blob`(서명 다운로드 URL + org_id·version·bytes·sha256) → 캐시의 같은 version·sha256이면 그대로,
-// 아니면 스트림으로 내려받아(누적 길이가 meta.bytes를 넘으면 중단) 길이·sha256·형식 검증 후 캐시.
+// 열기: `GET /api/cloud-projects/{id}/blob`(서명 다운로드 URL + org_id·version·bytes, sha256은 선택) → 캐시의 같은 version·bytes면 그대로,
+// 아니면 스트림으로 내려받아(누적 길이가 meta.bytes를 넘으면 중단) 길이 = meta.bytes, 스냅숏 내부 sha 자기 일관성,
+// meta.sha256이 있을 때만 그 값과 대조한 뒤 캐시.
 // 삭제: 클라우드 사본 삭제 API가 계약(04_API)에 없어 NOT_SUPPORTED.
 // 캐시 키 `${userId}:${orgId}:${id}`. 조직(또는 사용자)이 바뀌면 캐시 전체를 비운다. 로그아웃(`invalidate`)은 세대를 올려
 // 그 전에 시작된 open·save가 늦게 끝나도 캐시에 다시 쓰지 않는다.
@@ -187,15 +188,14 @@ export class WebProjectStore implements ProjectStore {
     const meta = obj(r.data);
     const version = meta.version as number;
     const bytes = meta.bytes as number;
-    const blobSha = meta.sha256 as string;
+    const blobSha = meta.sha256 ?? null;
     if (
       !Number.isSafeInteger(version) ||
       version < 1 ||
       !Number.isSafeInteger(bytes) ||
       bytes <= 0 ||
       bytes > SNAPSHOT_MAX_BYTES ||
-      typeof blobSha !== "string" ||
-      !HEX64.test(blobSha) ||
+      (blobSha !== null && (typeof blobSha !== "string" || !HEX64.test(blobSha))) ||
       typeof meta.org_id !== "string" ||
       !UUID.test(meta.org_id) ||
       typeof meta.url !== "string" ||
@@ -205,7 +205,7 @@ export class WebProjectStore implements ProjectStore {
 
     const key = await this.#key(meta.org_id as string, id, gen);
     const hit = key ? await this.#cache!.get(key) : null;
-    if (hit && hit.record.id === id && hit.record.version === version && hit.blobSha256 === blobSha) {
+    if (hit && hit.record.id === id && hit.record.version === version && hit.bytes === bytes) {
       if (gen === this.#gen) this.#createdAt.set(id, hit.record.createdAt);
       return hit.record;
     }
@@ -218,13 +218,14 @@ export class WebProjectStore implements ProjectStore {
     } catch {
       return fail("PROJECT_UNAVAILABLE");
     }
-    if (body.byteLength !== bytes || (await sha256Hex(body)) !== blobSha) fail("PROJECT_UNAVAILABLE");
+    if (body.byteLength !== bytes) fail("PROJECT_UNAVAILABLE");
+    if (blobSha !== null && (await sha256Hex(body)) !== blobSha) fail("PROJECT_UNAVAILABLE");
 
     const record = await parseSnapshot(body, id, version);
     // 로그아웃(세대 변경) 뒤에 끝난 내려받기는 캐시·메모리에 남기지 않는다.
     if (gen === this.#gen) {
       this.#createdAt.set(id, record.createdAt);
-      if (key) await this.#cache!.put(key, { record, blobSha256: blobSha });
+      if (key) await this.#cache!.put(key, { record, bytes });
     }
     return record;
   }
@@ -301,7 +302,7 @@ export class WebProjectStore implements ProjectStore {
     if (gen === this.#gen) {
       this.#createdAt.set(input.id, createdAt);
       const key = await this.#key(orgId as string, input.id, gen);
-      if (key && gen === this.#gen) await this.#cache!.put(key, { record, blobSha256: blobSha });
+      if (key && gen === this.#gen) await this.#cache!.put(key, { record, bytes: blob.byteLength });
     }
     return { version: record.version, sha256: designSha };
   }
