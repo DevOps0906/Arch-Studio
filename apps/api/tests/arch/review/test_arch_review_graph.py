@@ -358,7 +358,7 @@ def test_every_numeric_codepoint_rejected() -> None:
 def test_other_scripts_rejected_without_enumeration() -> None:
     for ch in ("漢", "Ａ", "％", "㎡", "①", "Ⅻ", "½", "²", "€", "　", "\t", "\n"):
         assert not char_allowed(ch), repr(ch)
-    for ch in ("가", "힣", "ㄱ", "a", "Z", " ", ".", "·", "(", "“"):
+    for ch in ("가", "힣", "a", "Z", " ", ".", "·", "(", "“"):
         assert char_allowed(ch), repr(ch)
 
 
@@ -433,3 +433,87 @@ def test_resolve_refs_and_compliance_give_same_verdict() -> None:
     via_compliance = apply_compliance(corpus, judgment)
     assert via_resolve == via_compliance
     assert [d.target for d in via_resolve] == ["items.1", "needs_check", "district_plan", "items.0"]
+
+
+# ---------------------------------------------------------------------------
+# 재리뷰 3차: NFC·자모·연결어·오탐
+# ---------------------------------------------------------------------------
+
+
+def nfd(text: str) -> str:
+    return unicodedata.normalize("NFD", text)
+
+
+def raw_part(text: str) -> TextPart:
+    """정규화 검증을 거치지 않은 TextPart(그래프 밖에서 들어온 값도 판정기가 NFC로 다시 본다)."""
+    return TextPart.model_construct(type="text", text=text)
+
+
+@pytest.mark.parametrize(
+    ("text", "code"),
+    [
+        (nfd("삼십 평 이상입니다."), "korean_numeral"),
+        (nfd("다섯층입니다."), "korean_numeral"),
+        (nfd("허가 가능합니다."), "legality_assertion"),
+    ],
+)
+def test_nfd_input_is_normalized_then_caught(text: str, code: str) -> None:
+    assert text != unicodedata.normalize("NFC", text)
+    assert code in v([t(text)])  # 모델 검증(NFC 정규화) 경로
+    assert code in v([raw_part(text)])  # 판정기 자체 NFC 경로
+
+
+@pytest.mark.parametrize("text", ["삼십ㅤ평", "용적률ᅠ이백", "삼십ᅟ평", "ㄱ", "ᄀ"])
+def test_jamo_and_fillers_rejected(text: str) -> None:
+    assert "disallowed_char" in v([raw_part(text)])
+
+
+def test_every_non_syllable_hangul_codepoint_rejected() -> None:
+    """음절(AC00–D7A3) 밖의 한글 코드포인트(결합·호환·확장 자모, 반각 한글, 채움 문자)는 모두 거부."""
+    ranges = [(0x1100, 0x11FF), (0x3130, 0x318F), (0xA960, 0xA97F), (0xD7B0, 0xD7FF), (0xFFA0, 0xFFDF)]
+    cps = [cp for a, b in ranges for cp in range(a, b + 1)]
+    assert 0x115F in cps and 0x1160 in cps and 0x3164 in cps
+    assert [hex(cp) for cp in cps if char_allowed(chr(cp))] == []
+    hangul_named = [
+        cp
+        for cp in range(sys.maxunicode + 1)
+        if not 0xD800 <= cp <= 0xDFFF and "HANGUL" in unicodedata.name(chr(cp), "") and not 0xAC00 <= cp <= 0xD7A3
+    ]
+    assert hangul_named and [hex(cp) for cp in hangul_named if char_allowed(chr(cp))] == []
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "건폐율 한도는 육십입니다.",
+        "건폐율 기준 육십입니다.",
+        "용적률 최대 이백입니다.",
+        "높이 제한 삼십 이하입니다.",
+        "층수 제한은 다섯입니다.",
+        "건폐율이 육십이다.",
+        "백분의 육십입니다.",
+        "만 세대 규모입니다.",
+        "백 세대 이상입니다.",
+    ],
+)
+def test_connector_and_more_positive(text: str) -> None:
+    assert "korean_numeral" in v([t(text)])
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "세대 수에 따라 다릅니다.",
+        "세대의 규모를 확인하세요.",
+        "세대 구성을 확인하세요.",
+        "한층 더 엄격한 기준입니다.",
+        "주변 일대 지역입니다.",
+    ],
+)
+def test_connector_and_more_negative(text: str) -> None:
+    assert v([t(text)]) == []
+
+
+@pytest.mark.parametrize("text", ["THIRTEEN floors", "a Dozen units", "one Billion", "Nineteen", "xii"])
+def test_ascii_backup_ignorecase(text: str) -> None:
+    assert "korean_numeral" in v([t(text)])

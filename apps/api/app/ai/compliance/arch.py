@@ -4,7 +4,9 @@ AI 문장은 `parts: [Text | Ref]` 구조다. Ref(`{item, field}`)만이 엔진 
 고정 낱말(산정값·한도값)로 그려진다. 숫자는 ReviewItem.engine_value·verdict로만 내보낸다(수치는 엔진, 문장은 해석).
 
 `validate_free_text` 하나가 resolve_refs와 compliance 두 노드의 같은 판정기다(tasks/logs/AR-06-051.md [DECISION]).
-1. 문자 허용 목록(열거된 것만 통과): 한글 음절·자모, ASCII 알파벳, 공백(U+0020), 고정 구두점.
+0. 검사 전에 NFC 정규화(NFD로 쓴 '삼십 평'도 음절로 합친 뒤 검사).
+1. 문자 허용 목록(열거된 것만 통과): 한글 음절(AC00–D7A3)만, ASCII 알파벳, 공백(U+0020), 고정 구두점.
+   결합·호환 자모(1100–11FF·3130–318F, 채움 문자 115F·1160·3164 포함)는 거부(자모를 끼운 우회 차단).
    유니코드 범주 N*·numeric() 값이 있는 문자·한자·전각·원문자·로마 숫자 등 그 밖은 열거 없이 모두 거부.
 2. 한글 수사(닫힌 집합): 단위어·지표명 바로 앞뒤 낱말(4자 창)이 수사 문법(삼십·이백·다섯·스물다섯 등)이면 거부.
    기존 정규식(육십 퍼센트·세 대 등)은 보조망. ASCII 수 낱말(six·ten)·로마 숫자 낱말(VI)도 보조망으로 거부.
@@ -20,7 +22,7 @@ import unicodedata
 from collections.abc import Mapping, Sequence
 from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.ai.products.arch.schema import T_KEY_MAX, T_SENTENCE_MAX, Strict
 
@@ -63,6 +65,11 @@ class TextPart(Strict):
     type: Literal["text"]
     text: T_SENTENCE_MAX
 
+    @field_validator("text")
+    @classmethod
+    def _nfc(cls, value: str) -> str:
+        return unicodedata.normalize("NFC", value)
+
 
 class RefPart(Strict):
     """엔진 값 참조. item = "items.<i>"(문장 target과 같아야 한다), field = value | limit."""
@@ -81,7 +88,8 @@ NO_REF_TARGETS = frozenset({"needs_check", "district_plan"})
 
 
 def render_parts(parts: Sequence[TextPart | RefPart]) -> str:
-    return "".join(p.text if isinstance(p, TextPart) else REF_WORDS[p.field] for p in parts)
+    text = "".join(p.text if isinstance(p, TextPart) else REF_WORDS[p.field] for p in parts)
+    return unicodedata.normalize("NFC", text)
 
 
 # ---------------------------------------------------------------------------
@@ -97,9 +105,7 @@ def char_allowed(ch: str) -> bool:
         return False
     o = ord(ch)
     return (
-        0xAC00 <= o <= 0xD7A3  # 한글 음절
-        or 0x1100 <= o <= 0x11FF  # 한글 자모
-        or 0x3131 <= o <= 0x318E  # 한글 호환 자모
+        0xAC00 <= o <= 0xD7A3  # 한글 음절만(자모·채움 문자 제외)
         or "a" <= ch <= "z"
         or "A" <= ch <= "Z"
         or ch == " "
@@ -113,6 +119,7 @@ def char_allowed(ch: str) -> bool:
 
 UNIT_WORDS: tuple[str, ...] = (
     "제곱미터",
+    "백분의",
     "퍼센트",
     "미터",
     "세대",
@@ -138,31 +145,47 @@ METRIC_TERMS: tuple[str, ...] = (
     "대지면적",
     "건축면적",
     "층수",
+    "백분의",  # 단위어지만 수사가 뒤에 온다(백분의 육십) → 뒤를 본다
 )
+# 지표명 뒤에서 건너뛰는 연결어(조사 포함, 최대 2개): '건폐율 한도는 육십', '높이 제한 삼십 이하'.
+CONNECTORS = frozenset({"한도", "제한", "상한", "기준", "최대", "최소", "이하", "이상"})
+MAX_CONNECTORS = 2
+# 단위 앞 수사처럼 보이지만 수량이 아닌 낱말.
+UNIT_EXCEPTIONS = frozenset({"한층", "일대"})
 WINDOW = 4
 _D = "[일이삼사오육륙칠팔구]"
 _SINO_NUM = re.compile(rf"(?:{_D}?천)?(?:{_D}?백)?(?:{_D}?십)?{_D}?(?:만|억)?")
 _NATIVE_NUM = re.compile(
     "(?:열|스물|스무|서른|마흔|쉰|예순|일흔|여든|아흔)?(?:하나|한|둘|두|셋|세|넷|네|다섯|여섯|일곱|여덟|아홉)?"
 )
-_PARTICLES = (
-    "입니다",
-    "이며",
-    "이고",
-    "으로",
-    "이",
-    "가",
-    "은",
-    "는",
-    "을",
-    "를",
-    "의",
-    "에",
-    "도",
-    "만",
-    "로",
-    "와",
-    "과",
+_PARTICLES: tuple[str, ...] = tuple(
+    sorted(
+        (
+            "입니다",
+            "이었다",
+            "였다",
+            "이다",
+            "이며",
+            "이고",
+            "으로",
+            "이",
+            "가",
+            "은",
+            "는",
+            "을",
+            "를",
+            "의",
+            "에",
+            "도",
+            "만",
+            "로",
+            "와",
+            "과",
+            "다",
+        ),
+        key=len,
+        reverse=True,
+    )
 )
 _HANGUL_RUN = re.compile(r"[가-힣]+")
 
@@ -180,12 +203,19 @@ def _strip_particle(token: str) -> str:
 
 
 def _unit_occurrences(text: str) -> list[tuple[int, int, bool]]:
-    """(시작, 끝, 지표명 여부). 단위어는 뒤가 끝·비한글·조사일 때만(대지·세대수·층계는 단위 아님)."""
+    """(시작, 끝, 뒤를 볼지). 단위어는 뒤가 끝·비한글·조사일 때만(대지·세대수·층계는 단위 아님).
+
+    긴 단위어가 먼저 차지한 구간 안의 짧은 단위어는 세지 않는다('세대'의 '대').
+    """
     out: list[tuple[int, int, bool]] = []
-    for word in UNIT_WORDS:
+    taken: list[tuple[int, int]] = []
+    for word in sorted(UNIT_WORDS, key=len, reverse=True):
         for m in re.finditer(re.escape(word), text):
+            if any(a < m.end() and m.start() < b for a, b in taken):
+                continue
             nxt = _HANGUL_RUN.match(text, m.end())
             if nxt is None or nxt.group(0) in _PARTICLES:
+                taken.append((m.start(), m.end()))
                 out.append((m.start(), m.end(), False))
     for word in METRIC_TERMS:
         for m in re.finditer(word, text):
@@ -203,12 +233,22 @@ def _token_before(text: str, start: int) -> tuple[str, bool]:
     return (spaced.group(1), False) if spaced else ("", False)
 
 
+_AFTER_RE = re.compile(rf"([가-힣]{{0,3}})((?: [가-힣]+){{1,{MAX_CONNECTORS + 1}}})")
+
+
 def _token_after(text: str, end: int) -> str:
-    """end 뒤 낱말(지표명에 붙은 조사는 건너뛴다: '용적률은 이백'). 낱말 시작이 4자 창 안일 때만."""
-    m = re.match(r"([가-힣]{0,3}) ([가-힣]+)", text[end:])
-    if m is None or (m.group(1) and m.group(1) not in _PARTICLES) or m.start(2) > WINDOW:
+    """end 뒤 낱말. 지표명에 붙은 조사와 연결어(한도·제한·기준 등, 최대 2개)는 건너뛴다. 첫 낱말은 4자 창 안일 때만."""
+    m = _AFTER_RE.match(text, end)
+    if m is None or (m.group(1) and m.group(1) not in _PARTICLES) or len(m.group(1)) + 1 > WINDOW:
         return ""
-    return _strip_particle(m.group(2))
+    skipped = 0
+    for word in m.group(2).split():
+        token = _strip_particle(word)
+        if token in CONNECTORS and skipped < MAX_CONNECTORS:
+            skipped += 1
+            continue
+        return token
+    return ""
 
 
 def has_korean_numeral(text: str) -> bool:
@@ -216,8 +256,8 @@ def has_korean_numeral(text: str) -> bool:
         before, attached = _token_before(text, start)
         if attached:
             # 붙어 쓴 단위(다섯층·삼십평): 앞 덩어리 전체가 수사일 때만(사이층·이상층 제외).
-            # 지표명 앞에 붙은 말은 보지 않는다.
-            if not metric and is_numeral(before):
+            # 지표명 앞에 붙은 말은 보지 않는다. 한층·일대는 수량이 아니다.
+            if not metric and is_numeral(before) and before + text[start:end] not in UNIT_EXCEPTIONS:
                 return True
         elif before and (not metric or len(before) >= 2) and is_numeral(before):
             return True
@@ -236,11 +276,12 @@ BACKUP_NUMERAL_RES: tuple[re.Pattern[str], ...] = (
     re.compile(rf"(?<![가-힣])(?:[이삼사오육칠팔구]?[십백천만])+[일이삼사오육칠팔구]?\s*(?:층|대|개|미터){_TAIL}"),
     re.compile(rf"(?<![가-힣]){_NATIVE}(?:\s*{_NATIVE})?\s+(?:대|층|개|미터){_TAIL}"),
     re.compile(
-        r"\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|twenty|thirty|forty|fifty|sixty"
-        r"|seventy|eighty|ninety|hundred|thousand|million|half|percent)\b",
+        r"\b(?:zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen"
+        r"|sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety"
+        r"|hundred|thousand|million|billion|dozen|half|percent)\b",
         re.IGNORECASE,
     ),
-    re.compile(r"(?<![A-Za-z])[IVXLCDM]{1,6}(?![A-Za-z])"),
+    re.compile(r"(?<![A-Za-z])[IVXLCDM]{1,6}(?![A-Za-z])", re.IGNORECASE),
 )
 
 
@@ -267,9 +308,9 @@ def validate_free_text(
                 add("ref_target_mismatch")
             elif part.field not in ref_fields.get(part.item, frozenset()):
                 add("ref_unknown")
-        elif not all(char_allowed(ch) for ch in part.text):
+        elif not all(char_allowed(ch) for ch in unicodedata.normalize("NFC", part.text)):
             add("disallowed_char")
-    text = render_parts(parts)
+    text = render_parts(parts)  # NFC
     if not text.strip():
         add("empty")
     if has_korean_numeral(text) or any(p.search(text) for p in BACKUP_NUMERAL_RES):
