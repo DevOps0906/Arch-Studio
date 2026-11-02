@@ -40,7 +40,7 @@
 | AR-06-047 | AI 게이트: 토큰·pricing·업로드 서명 | W2 | 003, 046 | 높음 | challenger→builder | 완료 |
 | AR-06-050 | RAG 색인·평가셋·위키 설정 | W2 | 046 | 보통 | builder | 완료 |
 | AR-06-058 | CI: 데스크톱 빌드·서명 릴리스·비밀 검사 | W2 | 001, 003, 004 | 높음 | builder | 대기 |
-| AR-06-073 | 클라우드 프로젝트 blob 저장·RLS·expected_version 충돌 | W2 | 001, 002, 003 | 높음 | challenger→builder | 대기 |
+| AR-06-073 | 클라우드 프로젝트 blob 저장·RLS·expected_version 충돌 | W2 | 001, 002, 003 | 높음 | challenger→builder | 완료 |
 | AR-06-071 | 웹 스튜디오 셸 (studio): 서브도메인·워커·CSP | W2 | 070, 071a, 003, 008 | 높음 | challenger→builder | 대기 |
 | AR-06-072 | 웹 어댑터 구현(web/): 캐시·파일·세션·권한 | W2 | 070, 073 | 보통 | builder | 대기 |
 | AR-06-022 | SVG·PNG·PDF 작성기, 글꼴 폭 표 | W3 | 020, 021 | 보통 | builder | 완료 |
@@ -123,5 +123,7 @@
 | 2026-10-29 | 규칙 팩 2026.10.0 | 근거 문서에 조문이 붙은 법규 수치가 없어 10개 규칙 전부 `미확인`(판정 전부 WARN), 지원 지자체 0, 허가 도서 평가셋 30건 미측정 | 사용자: 법규 수치·조문·시행일 제공 또는 원문 표 작성 후 검수 → 팩 2026.10.1 |
 | 2026-11-02 | AR-06-050 RAG | 하니스·예시(미확인) 코퍼스만 완성. 재현율 0.8은 해시 임베더로만 확인 | 사람: 실제 법규 코퍼스·평가셋 30문항 작성 후 운영 임베딩으로 재측정. 결정: 시행 범위 컬럼 승격(코어)·wiki confirmed_on 컬럼·index/log 페이지 lint 예외·D-14 후 attribution 필수·출처 구분자 `;` (tasks/logs/AR-06-050.md) |
 | 2026-11-02 | AR-06-053 음성 | 상담 녹음은 mock만(워커 voice 토큰 발급 경로 없음), oss-voice /stt 계약 가정, 10분 분할·ElevenLabs 대체 미구현, 차감 후 원장 재조회·환불 실패 시 409로 회복 불가(🟡) | DB: consume_credits가 inserted 반환·전사본 24h 삭제·voice_jobs 상태·차감+enqueue 한 트랜잭션(tasks/logs/AR-06-053.md). 사람: voice 토큰 경로·디코더 의존성·국외 이전 동의 |
+| 2026-11-02 | Storage `arch-user/<org>/arch/project_snapshot/` (AR-06-073) | 서명 업로드 후 저장이 거절(AR041·AR040·23505)되거나 중단된 객체가 행 없이 남는다(교체된 이전 객체는 저장 성공 뒤 삭제) | 정리 크론: `cloud_projects.storage_path`에 없는 project_snapshot 객체 중 N시간 지난 것 삭제(service_role, 후속 작업) |
+| 2026-11-02 | 설치형 클라우드 업로드(AR-06-077) | 서버는 업로드 폴더 키를 항상 `project_uuid`로 대조한다. 설치형이 `local_id` 폴더로 올리면 POST가 422(23514) | 077에서 upload-url의 `{id}` = `project_uuid`로 고정, `local_id`는 본문 필드로만 보내는지 테스트로 대조 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준

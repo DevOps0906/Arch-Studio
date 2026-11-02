@@ -4,7 +4,7 @@
 -- =====================================================================
 -- rls_smoke.sql : Arch Studio RLS/권한/RPC 회귀 테스트 (DB_CONVENTIONS 13.3, SECURITY_BASELINE 15장, 05_DATA_MODEL.md 7절)
 -- 행위자: A(조직 oA owner, trial), M(oA member), V(oA viewer), B(조직 oB owner, trial + 업데이트 만료 영구 라이선스 = 폴백),
---         C(엔타이틀먼트 없음), anon, service
+--         C(엔타이틀먼트 없음), anon, service. 조직 oT(체험, 클라우드 사본 상한 확인용)는 service 로만 쓴다
 -- 형식: "-- TEST <이름> | expect=<rows:N | ok | sqlstate:CODE>" 머리 + 한 문장. "-- RUN" 은 기대값 없는 준비 문장.
 -- =====================================================================
 
@@ -42,6 +42,37 @@ insert into @S@.rule_pack_changes (rule_pack_id, title, kind, effective_from)
   select id, '정북 일조사선 개정', 'decree', '2026-09-01' from @S@.rule_packs where version = '2026.10.1';
 insert into @S@.builds (version, platform, channel, status, build_date, storage_path, signature, sha256, bytes, published_at) values
   ('1.1.0', 'windows-x86_64', 'stable', 'published', current_date, 'builds/stable/1.1.0/arch-setup.exe', repeat('s', 20), repeat('c', 64), 1000, now());
+-- 클라우드 사본(AR-06-073). 체험 조직 oT(cloud_projects_max 3)는 service 로 상한(AR040)만 본다.
+insert into auth.users (id, email, raw_user_meta_data) values
+  ('ffffffff-0000-4000-8000-000000000006', 't@test.local', '{"signup_app": "arch", "full_name": "T"}');
+-- 경로: <org>/arch/project_snapshot/<project_uuid>/<object>.arch. 9999...01 = proj(oA), 02 = local_id 충돌용, 03 = 기존 local 사본, 04 = 새 사본
+create temp table t_cloud as
+  select i.*, (select id from @C@.organizations where owner_id = 'ffffffff-0000-4000-8000-000000000006') as ot,
+         '88888888-0000-4000-8000-000000000001'::uuid as lid,
+         '99999999-0000-4000-8000-000000000002'::uuid as p2,
+         '99999999-0000-4000-8000-000000000003'::uuid as p3,
+         '99999999-0000-4000-8000-000000000004'::uuid as p4,
+         i.oa::text || '/arch/project_snapshot/' || i.proj::text || '/a0000000-0000-4000-8000-000000000001.arch' as a1,
+         i.oa::text || '/arch/project_snapshot/' || i.proj::text || '/a0000000-0000-4000-8000-000000000002.arch' as a2,
+         i.oa::text || '/arch/project_snapshot/' || i.proj::text || '/a0000000-0000-4000-8000-000000000003.arch' as a_big,
+         i.oa::text || '/arch/project_snapshot/' || i.proj::text || '/a0000000-0000-4000-8000-000000000009.arch' as a_missing,
+         i.oa::text || '/arch/project_snapshot/99999999-0000-4000-8000-000000000002/a0000000-0000-4000-8000-000000000004.arch' as a_p2,
+         i.oa::text || '/arch/project_snapshot/99999999-0000-4000-8000-000000000004/a0000000-0000-4000-8000-000000000005.arch' as a_p4
+  from t_ids i;
+alter table t_cloud add column t_new text;
+update t_cloud set t_new = ot::text || '/arch/project_snapshot/99999999-0000-4000-8000-000000000005/a0000000-0000-4000-8000-000000000006.arch';
+grant select on t_cloud to anon, authenticated, service_role;
+insert into storage.objects (bucket_id, name, metadata)
+  select 'arch-user', x.name, jsonb_build_object('size', x.size)
+  from t_cloud c, lateral (values (c.a1, 1000), (c.a2, 2000), (c.a_big, 104857601), (c.a_p2, 1000), (c.a_p4, 1000), (c.t_new, 1000)) as x(name, size);
+-- 기존 사본: oA 설치형 사본 1개(local_id = lid), 만료 조직 oC 1개(읽기 확인용), 체험 조직 oT 3개(상한)
+insert into @S@.cloud_projects (org_id, project_uuid, local_id, name, storage_path, bytes)
+  select oa, p3, lid, '기존 사본', oa::text || '/arch/project_snapshot/' || p3::text || '/a0000000-0000-4000-8000-000000000007.arch', 10 from t_cloud
+  union all
+  select oc, p3, null, '만료 조직 사본', oc::text || '/arch/project_snapshot/' || p3::text || '/a0000000-0000-4000-8000-000000000008.arch', 10 from t_cloud
+  union all
+  select ot, g, null, '체험 ' || n, ot::text || '/arch/project_snapshot/' || g::text || '/a0000000-0000-4000-8000-000000000008.arch', 10
+  from t_cloud, lateral (select gen_random_uuid() as g, n from generate_series(1, 3) n) s;
 -- END SETUP
 
 -- AS anon
@@ -111,16 +142,30 @@ select @S@.upsert_drafting_profile(jsonb_build_object('logo_storage_path', (sele
 select 1 from @S@.upsert_drafting_profile('{"font_family": "Noto Sans KR"}') d where d.default_paper = 'A2' and d.office_name = '노마드 건축';
 -- TEST A 표제란 직접 UPDATE 42501 | expect=sqlstate:42501
 update @S@.drafting_profiles set office_name = 'x';
--- TEST A 클라우드 사본 새로 저장(version 1) | expect=rows:1
-select 1 from @S@.save_cloud_project((select proj from t_ids), '1호 단독주택', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.json', 0) s where s.version = 1;
--- TEST A 같은 사본 오래된 버전으로 저장 AR041 | expect=sqlstate:AR041
-select * from @S@.save_cloud_project((select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.json', 0);
--- TEST A 현재 버전으로 저장(version 2) | expect=rows:1
-select 1 from @S@.save_cloud_project((select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.json', 1) s where s.version = 2;
+-- TEST A 클라우드 사본 새로 저장(version 1, bytes = 업로드 객체 크기) | expect=rows:1
+select 1 from @S@.save_cloud_project((select proj from t_cloud), null, '1호 단독주택', (select a1 from t_cloud), 0) s where s.version = 1 and s.previous_path is null;
+-- TEST A 같은 요청 재전송(expected 0) AR041 | expect=sqlstate:AR041
+select * from @S@.save_cloud_project((select proj from t_cloud), null, '1호', (select a2 from t_cloud), 0);
+-- TEST A 버전 충돌 거절 후 저장 안 됨(version 1·경로·이름·bytes 그대로) | expect=rows:1
+select 1 from @S@.cloud_projects c, t_cloud t where c.project_uuid = t.proj and c.org_id = t.oa and c.version = 1 and c.storage_path = t.a1 and c.name = '1호 단독주택' and c.bytes = 1000;
+-- TEST A 업로드 안 한 경로 23514 | expect=sqlstate:23514
+select * from @S@.save_cloud_project((select proj from t_cloud), null, '1호', (select a_missing from t_cloud), 1);
+-- TEST A 100MB 초과 객체 AR031 | expect=sqlstate:AR031
+select * from @S@.save_cloud_project((select proj from t_cloud), null, '1호', (select a_big from t_cloud), 1);
+-- TEST A 현재 버전으로 저장(version 2, 이전 경로 반환) | expect=rows:1
+select 1 from @S@.save_cloud_project((select proj from t_cloud), null, '1호', (select a2 from t_cloud), 1) s, t_cloud t where s.version = 2 and s.previous_path = t.a1;
+-- TEST A 목록 bytes = 새 객체 크기 | expect=rows:1
+select 1 from @S@.cloud_projects c, t_cloud t where c.project_uuid = t.proj and c.org_id = t.oa and c.bytes = 2000;
+-- TEST A 같은 local_id·다른 project_uuid 23505 | expect=sqlstate:23505
+select * from @S@.save_cloud_project((select p2 from t_cloud), (select lid from t_cloud), '사본', (select a_p2 from t_cloud), 0);
+-- TEST A 폴더와 다른 project_uuid 23514 | expect=sqlstate:23514
+select * from @S@.save_cloud_project((select p4 from t_cloud), null, '1호', (select a2 from t_cloud), 0);
+-- TEST A 사본으로 저장(새 project_uuid, expected 0 → 새 행) | expect=rows:1
+select 1 from @S@.save_cloud_project((select p4 from t_cloud), null, '1호 사본', (select a_p4 from t_cloud), 0) s where s.version = 1;
 -- TEST A 경로 조작(..) 23514 | expect=sqlstate:23514
-select * from @S@.save_cloud_project((select proj from t_ids), '1호', (select oa from t_ids)::text || '/arch/project_snapshot/../../' || gen_random_uuid()::text || '.json', 2);
+select * from @S@.save_cloud_project((select proj from t_ids), null, '1호', (select oa from t_ids)::text || '/arch/project_snapshot/../../' || gen_random_uuid()::text || '.arch', 2);
 -- TEST A 다른 조직 경로로 저장 42501 | expect=sqlstate:42501
-select * from @S@.save_cloud_project((select proj from t_ids), '1호', (select ob from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.json', 0);
+select * from @S@.save_cloud_project((select proj from t_ids), null, '1호', (select ob from t_ids)::text || '/arch/project_snapshot/' || (select proj from t_ids)::text || '/' || gen_random_uuid()::text || '.arch', 0);
 -- TEST A 클라우드 사본 version 직접 변경 42501 | expect=sqlstate:42501
 update @S@.cloud_projects set version = 1;
 
@@ -134,8 +179,8 @@ select @S@.upsert_drafting_profile('{"office_name": "x"}', (select ob from t_ids
 
 -- AS V
 -- TEST V(viewer) 클라우드 사본 저장 42501 | expect=sqlstate:42501
-select * from @S@.save_cloud_project(gen_random_uuid(), 'v', (select oa from t_ids)::text || '/arch/project_snapshot/' || gen_random_uuid()::text || '/' || gen_random_uuid()::text || '.json', 0);
--- TEST V 사본 목록은 읽기 | expect=rows:1
+select * from @S@.save_cloud_project((select p4 from t_cloud), null, 'v', (select a_p4 from t_cloud), 1);
+-- TEST V 사본 목록은 읽기(oA 3개: 1호·기존 사본·1호 사본) | expect=rows:3
 select id from @S@.cloud_projects;
 
 -- AS B
@@ -159,8 +204,26 @@ select * from @S@.eligible_rule_packs((select oa from t_ids));
 select 1 where @S@.org_features((select oc from t_ids)) ->> 'state' = 'trial_expired';
 -- TEST C 규칙 팩 0개 | expect=rows:0
 select * from @S@.eligible_rule_packs();
--- TEST C 클라우드 사본 저장 42501(엔타이틀먼트 없음) | expect=sqlstate:42501
-select * from @S@.save_cloud_project(gen_random_uuid(), 'c', (select oc from t_ids)::text || '/arch/project_snapshot/' || gen_random_uuid()::text || '/' || gen_random_uuid()::text || '.json', 0);
+-- TEST C 클라우드 사본 저장 AR044(엔타이틀먼트 없음, 권리 없음 → 402) | expect=sqlstate:AR044
+select * from @S@.save_cloud_project((select p3 from t_cloud), null, 'c', (select oc from t_ids)::text || '/arch/project_snapshot/' || (select p3 from t_cloud)::text || '/' || gen_random_uuid()::text || '.arch', 1);
+-- TEST C 만료 조직도 자기 사본 읽기(엔타이틀먼트 없이) | expect=rows:1
+select project_uuid, name, version, bytes from @S@.cloud_projects;
+-- TEST C 다른 조직 사본 0건 | expect=rows:0
+select 1 from @S@.cloud_projects where org_id <> (select oc from t_ids);
+
+-- AS anon
+-- TEST anon 클라우드 사본 저장 실행 권한 없음 42501 | expect=sqlstate:42501
+select * from @S@.save_cloud_project((select p4 from t_cloud), null, 'x', (select a_p4 from t_cloud), 1);
+-- TEST anon 클라우드 사본 목록 42501 | expect=sqlstate:42501
+select 1 from @S@.cloud_projects;
+
+-- AS service
+-- TEST service 옛 save_cloud_project(uuid, text, text, integer) 없음 | expect=rows:0
+select 1 from pg_catalog.pg_proc p join pg_catalog.pg_namespace n on n.oid = p.pronamespace where n.nspname = '@S@' and p.proname = 'save_cloud_project' and p.pronargs = 4;
+-- TEST service 체험 조직 상한(3개) 넘는 새 사본 AR040 | expect=sqlstate:AR040
+select * from @S@.save_cloud_project('99999999-0000-4000-8000-000000000005', null, '네 번째', (select t_new from t_cloud), 0);
+-- TEST service AR040 뒤 행 수 3 그대로 | expect=rows:3
+select 1 from @S@.cloud_projects where org_id = (select ot from t_cloud);
 
 -- AS service
 -- TEST service FOR ALL 정책 0(명령별 정책만) | expect=rows:0

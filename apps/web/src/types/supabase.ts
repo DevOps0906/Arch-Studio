@@ -449,14 +449,14 @@ isOneToOne: false
                   ]
                 },"cloud_projects": {
                   Row: {
-                    "created_at": string,"created_by": string | null,"id": string,"local_id": string,"name": string,"org_id": string,"storage_path": string,"updated_at": string,"updated_by": string | null,"version": number
+                    "bytes": number,"created_at": string,"created_by": string | null,"id": string,"local_id": string | null,"name": string,"org_id": string,"project_uuid": string,"storage_path": string,"updated_at": string,"updated_by": string | null,"version": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"local_id": string,"name": string,"org_id": string,"storage_path": string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number
+                    "bytes"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"local_id"?: string | null,"name": string,"org_id": string,"project_uuid": string,"storage_path": string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number
                   }
                   Update: {
-                    "created_at"?: string,"created_by"?: string | null,"id"?: string,"local_id"?: string,"name"?: string,"org_id"?: string,"storage_path"?: string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number
+                    "bytes"?: number,"created_at"?: string,"created_by"?: string | null,"id"?: string,"local_id"?: string | null,"name"?: string,"org_id"?: string,"project_uuid"?: string,"storage_path"?: string,"updated_at"?: string,"updated_by"?: string | null,"version"?: number
                   }
                   Relationships: [
                     {
@@ -1894,8 +1894,8 @@ isOneToOne: true
 { Args: Record<PropertyKey, never>; Returns: number
                            },
 "save_cloud_project":
-{ Args: { "p_expected_version": number,"p_local_id": string,"p_name": string,"p_storage_path": string }; Returns: {
-              "id": string,"version": number
+{ Args: { "p_expected_version": number,"p_local_id": string,"p_name": string,"p_project_uuid": string,"p_storage_path": string }; Returns: {
+              "previous_path": string,"project_uuid": string,"version": number
             }[]
                            },
 "session_context":
