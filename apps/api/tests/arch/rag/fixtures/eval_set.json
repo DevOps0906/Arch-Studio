@@ -1,0 +1,261 @@
+{
+  "is_example": true,
+  "note": "예시(미확인): 실제 법령 문구·수치가 아니며 사람이 원문을 확인해 교체한다. 문항 30개·재현율 목표 0.8은 06_AGENT_PLAN.md AR-06-050 제안값.",
+  "cases": [
+    {
+      "id": "case-01",
+      "question": "정북 방향 인접 대지 경계선 이격 거리",
+      "application_date": "2023-05-01",
+      "expected": [
+        "daylight-height@2020-01-01"
+      ]
+    },
+    {
+      "id": "case-02",
+      "question": "정북 방향 인접 대지 경계선 이격 거리",
+      "application_date": "2025-03-01",
+      "expected": [
+        "daylight-height@2024-07-01"
+      ]
+    },
+    {
+      "id": "case-03",
+      "question": "공동주택 채광 창문 벽면 인접 대지 이격",
+      "application_date": "2025-06-01",
+      "expected": [
+        "daylight-height@2024-07-01"
+      ]
+    },
+    {
+      "id": "case-04",
+      "question": "높이 제한 일조 확보 주거지역",
+      "application_date": "2021-01-01",
+      "expected": [
+        "daylight-height@2020-01-01"
+      ]
+    },
+    {
+      "id": "case-05",
+      "question": "건폐율 상한 용도지역별 조례",
+      "application_date": "2024-01-01",
+      "expected": [
+        "building-coverage@2019-03-01"
+      ]
+    },
+    {
+      "id": "case-06",
+      "question": "건축면적 처마 돌출 수평투영면적 산정",
+      "application_date": "2024-01-01",
+      "expected": [
+        "building-coverage@2019-03-01"
+      ]
+    },
+    {
+      "id": "case-07",
+      "question": "제2종일반주거지역 용적률",
+      "application_date": "2023-06-01",
+      "expected": [
+        "far-ordinance-gangnam@2021-01-01"
+      ],
+      "jurisdiction": "11680"
+    },
+    {
+      "id": "case-08",
+      "question": "제2종일반주거지역 용적률 공공기여 완화",
+      "application_date": "2025-06-01",
+      "expected": [
+        "far-ordinance-gangnam@2025-01-01"
+      ],
+      "jurisdiction": "11680"
+    },
+    {
+      "id": "case-09",
+      "question": "지하층 바닥면적 용적률 연면적 제외",
+      "application_date": "2024-12-31",
+      "expected": [
+        "far-ordinance-gangnam@2021-01-01"
+      ],
+      "jurisdiction": "11680"
+    },
+    {
+      "id": "case-10",
+      "question": "지하층 바닥면적 용적률 연면적 제외",
+      "application_date": "2025-01-01",
+      "expected": [
+        "far-ordinance-gangnam@2025-01-01"
+      ],
+      "jurisdiction": "11680"
+    },
+    {
+      "id": "case-11",
+      "question": "다세대주택 부설주차장 세대당 설치 대수",
+      "application_date": "2024-03-01",
+      "expected": [
+        "parking-ordinance-gangnam@2022-05-01"
+      ],
+      "jurisdiction": "11680"
+    },
+    {
+      "id": "case-12",
+      "question": "기계식 주차장치 진입로 전면 공지",
+      "application_date": "2024-03-01",
+      "expected": [
+        "parking-ordinance-gangnam@2022-05-01"
+      ],
+      "jurisdiction": "11680"
+    },
+    {
+      "id": "case-13",
+      "question": "근린생활시설 부설주차장 시설면적당 대수",
+      "application_date": "2024-03-01",
+      "expected": [
+        "parking-ordinance-haeundae@2023-02-01"
+      ],
+      "jurisdiction": "26350"
+    },
+    {
+      "id": "case-14",
+      "question": "차량 진입 불가 대지 주차장 설치 면제",
+      "application_date": "2024-03-01",
+      "expected": [
+        "parking-ordinance-haeundae@2023-02-01"
+      ],
+      "jurisdiction": "26350"
+    },
+    {
+      "id": "case-15",
+      "question": "외벽 마감재료 불연재료 준불연재료",
+      "application_date": "2021-01-01",
+      "expected": [
+        "exterior-finish@2019-11-07"
+      ]
+    },
+    {
+      "id": "case-16",
+      "question": "3층 이상 외벽 단열재 준불연 복합자재 실물모형시험",
+      "application_date": "2023-01-01",
+      "expected": [
+        "exterior-finish@2022-02-11"
+      ]
+    },
+    {
+      "id": "case-17",
+      "question": "외벽 마감재료 준불연재료 기준",
+      "application_date": "2022-02-10",
+      "expected": [
+        "exterior-finish@2019-11-07"
+      ]
+    },
+    {
+      "id": "case-18",
+      "question": "외벽 마감재료 준불연재료 기준",
+      "application_date": "2022-02-11",
+      "expected": [
+        "exterior-finish@2022-02-11"
+      ]
+    },
+    {
+      "id": "case-19",
+      "question": "가로구역 최고 높이 지정 공고",
+      "application_date": "2024-01-01",
+      "expected": [
+        "street-height@2018-06-01"
+      ]
+    },
+    {
+      "id": "case-20",
+      "question": "전면 도로 반대쪽 경계선 수평거리 도로 사선",
+      "application_date": "2024-01-01",
+      "expected": [
+        "street-height@2018-06-01"
+      ]
+    },
+    {
+      "id": "case-21",
+      "question": "가로변 건축한계선 후퇴 저층부 가로 활성화",
+      "application_date": "2024-01-01",
+      "expected": [
+        "yeoksam-district-plan@2023-09-01"
+      ],
+      "jurisdiction": "11680"
+    },
+    {
+      "id": "case-22",
+      "question": "공개공지 확보 대지면적 비율",
+      "application_date": "2024-01-01",
+      "expected": [
+        "yeoksam-district-plan@2023-09-01"
+      ],
+      "jurisdiction": "11680"
+    },
+    {
+      "id": "case-23",
+      "question": "공동개발 획지 합필",
+      "application_date": "2024-01-01",
+      "expected": [
+        "marine-city-district-plan@2022-04-15"
+      ],
+      "jurisdiction": "26350"
+    },
+    {
+      "id": "case-24",
+      "question": "해안변 건축물 외관 권장 색채 옥외 광고물",
+      "application_date": "2024-01-01",
+      "expected": [
+        "marine-city-district-plan@2022-04-15"
+      ],
+      "jurisdiction": "26350"
+    },
+    {
+      "id": "case-25",
+      "question": "경사지붕 다락 층수 산입",
+      "application_date": "2024-01-01",
+      "expected": [
+        "qa-attic-floor@2021-03-10"
+      ]
+    },
+    {
+      "id": "case-26",
+      "question": "발코니 거실 확장 바닥면적 포함",
+      "application_date": "2024-01-01",
+      "expected": [
+        "qa-balcony-extension@2020-08-20"
+      ]
+    },
+    {
+      "id": "case-27",
+      "question": "옥상 계단실 옥탑 높이 층수 산입",
+      "application_date": "2024-01-01",
+      "expected": [
+        "qa-rooftop-structure@2022-11-01"
+      ]
+    },
+    {
+      "id": "case-28",
+      "question": "1층 필로티 주차장 다세대주택 층수 제외",
+      "application_date": "2024-01-01",
+      "expected": [
+        "qa-pilotis-parking@2023-05-22"
+      ]
+    },
+    {
+      "id": "case-29",
+      "question": "옥탑 층수와 다락 층수 산입 기준",
+      "application_date": "2024-01-01",
+      "expected": [
+        "qa-rooftop-structure@2022-11-01",
+        "qa-attic-floor@2021-03-10"
+      ]
+    },
+    {
+      "id": "case-30",
+      "question": "강남구 부설주차장과 지구단위계획 공개공지",
+      "application_date": "2024-01-01",
+      "expected": [
+        "parking-ordinance-gangnam@2022-05-01",
+        "yeoksam-district-plan@2023-09-01"
+      ],
+      "jurisdiction": "11680"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "meta": {
+    "kind": "law",
+    "source_id": "far-ordinance-gangnam",
+    "title": "[예시] 강남구 도시계획 조례 용적률",
+    "effective_from": "2021-01-01",
+    "retrieved_on": "2026-11-02",
+    "is_example": true,
+    "effective_to": "2025-01-01",
+    "jurisdiction": "11680"
+  },
+  "text": "예시(미확인): 실제 법령 문구·수치가 아니며 사람이 원문을 확인해 교체한다.\n제1조(용적률) 제2종일반주거지역의 용적률은 OO퍼센트 이하로 한다.\n제2조(지하층) 지하층 바닥면적은 용적률 산정 연면적에서 제외한다."
+}

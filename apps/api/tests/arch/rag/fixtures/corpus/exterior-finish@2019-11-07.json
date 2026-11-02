@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "kind": "law",
+    "source_id": "exterior-finish",
+    "title": "[예시] 건축물 외벽 마감재료 기준",
+    "effective_from": "2019-11-07",
+    "retrieved_on": "2026-11-02",
+    "is_example": true,
+    "effective_to": "2022-02-11"
+  },
+  "text": "예시(미확인): 실제 법령 문구·수치가 아니며 사람이 원문을 확인해 교체한다.\n제1조(외벽 마감재료) 높이 OO미터 이상 건축물의 외벽 마감재료는 불연재료 또는 준불연재료로 한다."
+}
