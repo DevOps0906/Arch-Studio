@@ -126,6 +126,17 @@ test("사용자 토큰은 graph scope·job sub·run/job 클레임을 가질 수 
   assert.throws(() => signer.issueUserToken({ ...base, userId: "not-uuid" }), AiTokenClaimError);
 });
 
+test("채팅 사용자 토큰: scope=chat에 org·conv·req 클레임, req가 UUID가 아니면 거부", () => {
+  const conv = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+  const req = "11111111-1111-4111-8111-111111111111";
+  const c = decode(signer.issueUserToken({ userId: USER, orgId: ORG, scope: "chat", feat: "arch.chat", conv, req, nowS: NOW }).token).claims;
+  assert.equal(c.scope, "chat");
+  assert.equal(c.org, ORG);
+  assert.equal(c.conv, conv);
+  assert.equal(c.req, req);
+  assert.throws(() => signer.issueUserToken({ userId: USER, orgId: ORG, scope: "chat", req: "x", nowS: NOW }), AiTokenClaimError);
+});
+
 test("잡 토큰 입력 검증: 허용 밖 scope·feat, UUID 아닌 id, 대문자 UUID 거부", () => {
   const bad: Partial<typeof jobInput>[] = [
     { scope: "graph:arch.layout" as JobScope },
