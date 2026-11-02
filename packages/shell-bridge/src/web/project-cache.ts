@@ -1,13 +1,21 @@
 // 웹 프로젝트 읽기 캐시(ADR-001 3.1: IndexedDB는 **읽기 캐시만**). 서버에서 받은(또는 서버가 방금 받아들인) 리비전만 넣고,
 // ProjectStore.save는 이 캐시를 읽지 않는다(편집 캐시를 서버로 올리는 경로 0). 로그아웃(clearSecrets)에서 전부 지운다(공용 PC).
+// 키는 `${userId}:${orgId}:${projectId}`(ProjectStore가 만든다): 다른 사용자·조직의 항목이 섞여 적중하지 않는다.
+// 값에는 스냅숏 blob의 sha256을 같이 둔다: 적중은 서버 메타의 version·sha256이 둘 다 같을 때만.
 // 캐시는 최적화일 뿐이라 실패는 삼킨다(열기는 서버로 간다). IDBFactory는 주입받는다: 앱 조립부가 브라우저 전역을 넘긴다.
 import type { ProjectRecord } from "../adapters/project-store.ts";
 
+export interface CachedProject {
+  readonly record: ProjectRecord;
+  /** 스냅숏(.arch) 바이트의 sha256(서버 blob 메타와 비교). */
+  readonly blobSha256: string;
+}
+
 export interface ProjectReadCache {
-  get(id: string): Promise<ProjectRecord | null>;
-  put(record: ProjectRecord): Promise<void>;
-  delete(id: string): Promise<void>;
-  /** 전부 삭제(로그아웃). */
+  get(key: string): Promise<CachedProject | null>;
+  put(key: string, entry: CachedProject): Promise<void>;
+  delete(key: string): Promise<void>;
+  /** 전부 삭제(로그아웃·조직 전환). */
   clear(): Promise<void>;
 }
 
@@ -38,7 +46,7 @@ function isRecord(v: unknown): v is ProjectRecord {
   );
 }
 
-/** IndexedDB 구현. DB 하나·저장소 하나(keyPath `id`). */
+/** IndexedDB 구현. DB 하나·저장소 하나(키 = 범위 붙은 key, 값 `{ record, blobSha256 }`). */
 export class IdbProjectCache implements ProjectReadCache {
   readonly #factory: IDBFactory;
   #db: Promise<IDBDatabase> | null = null;
@@ -51,7 +59,7 @@ export class IdbProjectCache implements ProjectReadCache {
     this.#db ??= new Promise<IDBDatabase>((resolve, reject) => {
       const req = this.#factory.open(PROJECT_CACHE_DB, DB_VERSION);
       req.onupgradeneeded = () => {
-        if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE, { keyPath: "id" });
+        if (!req.result.objectStoreNames.contains(STORE)) req.result.createObjectStore(STORE);
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(new Error("idb open failed"));
@@ -66,26 +74,27 @@ export class IdbProjectCache implements ProjectReadCache {
     return (await this.#open()).transaction(STORE, mode).objectStore(STORE);
   }
 
-  async get(id: string): Promise<ProjectRecord | null> {
+  async get(key: string): Promise<CachedProject | null> {
     try {
-      const v: unknown = await done((await this.#store("readonly")).get(id));
-      return isRecord(v) && v.id === id ? v : null;
+      const v: unknown = await done((await this.#store("readonly")).get(key));
+      const e = typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {};
+      return isRecord(e.record) && typeof e.blobSha256 === "string" ? { record: e.record, blobSha256: e.blobSha256 } : null;
     } catch {
       return null;
     }
   }
 
-  async put(record: ProjectRecord): Promise<void> {
+  async put(key: string, entry: CachedProject): Promise<void> {
     try {
-      await done((await this.#store("readwrite")).put({ ...record }));
+      await done((await this.#store("readwrite")).put({ record: { ...entry.record }, blobSha256: entry.blobSha256 }, key));
     } catch {
       // 캐시 실패는 무시(정본은 서버).
     }
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(key: string): Promise<void> {
     try {
-      await done((await this.#store("readwrite")).delete(id));
+      await done((await this.#store("readwrite")).delete(key));
     } catch {
       // 위와 같다.
     }

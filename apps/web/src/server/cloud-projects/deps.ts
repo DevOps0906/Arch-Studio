@@ -6,8 +6,9 @@ import { MemoryRateLimitStore } from "../licenses/rate-limit.ts";
 import { createSupabaseServiceClient } from "../supabase/service.ts";
 import { uploadDeps } from "../uploads/deps.ts";
 import { handleUploadSign } from "../uploads/service.ts";
+import type { CloudBlobDeps } from "./blob.ts";
 import type { CloudDeps } from "./service.ts";
-import { supabaseCloudRepo, supabaseSnapshotInspector } from "./supabase-repo.ts";
+import { supabaseCloudBlobRepo, supabaseCloudRepo, supabaseSnapshotInspector, supabaseSnapshotReader } from "./supabase-repo.ts";
 
 let deps: CloudDeps | undefined;
 
@@ -22,4 +23,20 @@ export function cloudDeps(): CloudDeps {
     now: () => Date.now(),
   };
   return deps;
+}
+
+let blobDeps: CloudBlobDeps | undefined;
+
+/** GET /api/cloud-projects/{id}/blob(AR-06-072). 레이트 리밋 저장소는 클라우드 API와 같은 것을 쓴다. */
+export function cloudBlobDeps(): CloudBlobDeps {
+  if (blobDeps) return blobDeps;
+  const base = cloudDeps();
+  blobDeps = {
+    session: base.session,
+    repo: (session) => supabaseCloudBlobRepo(userClient(session.accessToken), gatewaySchemas()),
+    reader: () => supabaseSnapshotReader(createSupabaseServiceClient()),
+    rateLimit: base.rateLimit,
+    now: base.now,
+  };
+  return blobDeps;
 }

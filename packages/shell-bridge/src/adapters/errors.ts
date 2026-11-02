@@ -14,6 +14,8 @@ export type FileErrorCode = ExportErrorCode | "READ_FAILED";
  * ProjectStore 오류 코드(Rust `commands/mod.rs` `code`와 같은 값).
  * VERSION_CONFLICT = `expected_version` 불일치(웹 409 `AR041`도 이 코드로 바꾼다), AR060 로컬 DB 손상, AR061 읽기 전용 모드,
  * PROJECT_UNAVAILABLE = 그 밖의 실패(알 수 없는 오류 모양 포함).
+ * 웹(072) 클라우드 전용: QUOTA_EXCEEDED = 사본 개수 한도(`AR040`), TOO_LARGE = 스냅숏 크기 초과(`AR031`),
+ * ALREADY_EXISTS = 같은 로컬 프로젝트의 사본이 이미 있음(`23505`), UNAUTHENTICATED = 401(재로그인), RATE_LIMITED = 429.
  */
 export type ProjectErrorCode =
   | "NOT_FOUND"
@@ -21,6 +23,11 @@ export type ProjectErrorCode =
   | "INVALID_INPUT"
   | "AR060"
   | "AR061"
+  | "QUOTA_EXCEEDED"
+  | "TOO_LARGE"
+  | "ALREADY_EXISTS"
+  | "UNAUTHENTICATED"
+  | "RATE_LIMITED"
   | "PROJECT_UNAVAILABLE";
 
 /** LicenseClient 오류 코드(구현은 041). */

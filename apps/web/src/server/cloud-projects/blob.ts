@@ -1,0 +1,93 @@
+// GET /api/cloud-projects/{project_uuid}/blob (04_API.md 2.1절, 작업 AR-06-072): 클라우드 사본 스냅숏의 서명 다운로드 URL.
+// 조직 구성원(member+)이면 entitled=false여도 허용(1장 402 예외: 만료·미배정·회수 후 열람·내려받기). 같은 조직 행만(RLS + 서버 대조),
+// 다른 조직·없는 행·경로 불일치는 모두 404(존재 여부를 드러내지 않음). 응답 = { url(https, 10분), org_id, version, bytes, sha256 }.
+// sha256은 DB에 열이 없어 Storage 객체를 서버가 읽어 계산한다(상한 100MB, 제안: 저장 때 sha256 열을 두면 이 읽기를 없앨 수 있다).
+// org_id는 클라이언트 읽기 캐시 범위 키(세션 조직 그대로, 다른 조직 값 아님). 보존 기한 404는 AR-06-074(retention) 몫.
+// 로그: 경로·서명 URL·이름 0(log.ts 허용 목록). server-only를 import하지 않는다(node --test 대상).
+import { UUID_RE } from "../ai/gateway/http.ts";
+import type { GatewaySession, GatewaySessionResolver } from "../ai/gateway/session.ts";
+import type { RateLimitStore } from "../licenses/rate-limit.ts";
+import { CloudApiError, cloudOk, codeOf, toCloudResponse } from "./errors.ts";
+import { cloudLog } from "./log.ts";
+import { isOwnSnapshotPath, SNAPSHOT_MAX_BYTES } from "./service.ts";
+
+export interface CloudBlobRow {
+  org_id: string;
+  version: number;
+  storage_path: string;
+}
+
+/** 사용자 JWT 저장소(RLS: 조직 구성원 SELECT, 엔타이틀먼트 무관). (org, project_uuid) 1행. */
+export interface CloudBlobRepo {
+  findSnapshot(orgId: string, projectUuid: string): Promise<CloudBlobRow | null>;
+}
+
+/** service_role Storage(arch-user). digest = 크기·sha256(없으면 null, 상한 초과는 throw), signDownload = 서명 다운로드 URL. */
+export interface SnapshotReader {
+  digest(path: string, maxBytes: number): Promise<{ bytes: number; sha256: string } | null>;
+  signDownload(path: string, ttlS: number): Promise<string>;
+}
+
+export interface CloudBlobDeps {
+  session: GatewaySessionResolver;
+  repo(session: GatewaySession): CloudBlobRepo;
+  reader(): SnapshotReader;
+  rateLimit: RateLimitStore;
+  now(): number;
+}
+
+/** 목록과 같은 창(조직당 120회/분). 내려받기는 Storage 읽기를 동반하므로 따로 센다. */
+export const BLOB_RATE = { limit: 120, windowS: 60 } as const;
+/** 서명 다운로드 URL 수명(04_API "서명 10분"). */
+export const BLOB_URL_TTL_S = 600;
+
+const MEMBER_PLUS = new Set(["owner", "admin", "member"]);
+const HEX64 = /^[0-9a-f]{64}$/;
+
+export async function handleGetCloudBlob(req: Request, id: string, deps: CloudBlobDeps): Promise<Response> {
+  try {
+    const session = await deps.session.resolve(req);
+    if (!UUID_RE.test(id)) throw new CloudApiError("invalid_input");
+    if ([...new URL(req.url).searchParams.keys()].length > 0) throw new CloudApiError("invalid_input");
+    const hit = await deps.rateLimit.hit(`arch:cloud_projects_blob:${session.orgId}`, BLOB_RATE.limit, BLOB_RATE.windowS, deps.now());
+    if (!hit.allowed) {
+      throw new CloudApiError("rate_limited", undefined, { "retry-after": String(Math.max(1, Math.ceil((hit.resetAtMs - deps.now()) / 1000))) });
+    }
+    if (!MEMBER_PLUS.has(session.role)) throw new CloudApiError("42501");
+    // entitled=false는 거절하지 않는다(데이터 회수 경로).
+
+    let row: CloudBlobRow | null;
+    try {
+      row = await deps.repo(session).findSnapshot(session.orgId, id);
+    } catch {
+      throw new CloudApiError("internal");
+    }
+    if (!row) throw new CloudApiError("not_found");
+    if (row.org_id !== session.orgId || !isOwnSnapshotPath(session.orgId, id, row.storage_path)) {
+      cloudLog.warn("cloud_projects.blob_row_dropped", { route: "cloud_projects_blob", project_uuid: id, reason: "org_or_path" });
+      throw new CloudApiError("not_found");
+    }
+    if (!Number.isSafeInteger(row.version) || row.version < 1) throw new CloudApiError("internal");
+
+    let digest: { bytes: number; sha256: string } | null;
+    let url: string;
+    try {
+      digest = await deps.reader().digest(row.storage_path, SNAPSHOT_MAX_BYTES);
+      if (!digest) throw new CloudApiError("not_found");
+      url = await deps.reader().signDownload(row.storage_path, BLOB_URL_TTL_S);
+    } catch (e) {
+      if (e instanceof CloudApiError) throw e;
+      throw new CloudApiError("storage_unavailable");
+    }
+    if (!Number.isSafeInteger(digest.bytes) || digest.bytes <= 0 || digest.bytes > SNAPSHOT_MAX_BYTES || !HEX64.test(digest.sha256)) {
+      throw new CloudApiError("internal");
+    }
+    if (typeof url !== "string" || !url.startsWith("https://")) throw new CloudApiError("internal");
+
+    cloudLog.info("cloud_projects.blob", { route: "cloud_projects_blob", project_uuid: id, version: row.version });
+    return cloudOk({ url, org_id: session.orgId, version: row.version, bytes: digest.bytes, sha256: digest.sha256 });
+  } catch (error) {
+    cloudLog.warn("cloud_projects.blob_rejected", { route: "cloud_projects_blob", code: codeOf(error) });
+    return toCloudResponse(error);
+  }
+}

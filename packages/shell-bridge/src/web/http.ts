@@ -5,6 +5,8 @@ import { AUTH_STORAGE_KEY, type SecureStore } from "../adapters/secure-store.ts"
 
 export type FetchFn = (input: string, init?: RequestInit) => Promise<Response>;
 export type AccessTokenFn = () => Promise<string | null>;
+/** 지금 로그인한 사용자 id(캐시 범위 키). 모르면 null → 캐시를 쓰지 않는다. */
+export type UserIdFn = () => Promise<string | null>;
 
 export interface ApiResult {
   readonly status: number;
@@ -70,19 +72,27 @@ export class WebHttp {
   }
 }
 
+async function sessionField(secrets: SecureStore, pick: (v: Record<string, unknown>) => unknown): Promise<string | null> {
+  try {
+    const raw = await secrets.get(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const v: unknown = JSON.parse(raw);
+    const t = typeof v === "object" && v !== null ? pick(v as Record<string, unknown>) : undefined;
+    return typeof t === "string" && t !== "" ? t : null;
+  } catch {
+    return null;
+  }
+}
+
 /** 기본 토큰 공급: 메모리 SecureStore의 supabase 세션 JSON에서 access_token만. 형식이 다르면 null(무인증 → 서버 401). */
 export function sessionAccessToken(secrets: SecureStore): AccessTokenFn {
-  return async () => {
-    try {
-      const raw = await secrets.get(AUTH_STORAGE_KEY);
-      if (!raw) return null;
-      const v: unknown = JSON.parse(raw);
-      const t = typeof v === "object" && v !== null ? (v as Record<string, unknown>).access_token : undefined;
-      return typeof t === "string" && t !== "" ? t : null;
-    } catch {
-      return null;
-    }
-  };
+  return () => sessionField(secrets, (v) => v.access_token);
+}
+
+/** 기본 사용자 id: 같은 세션 JSON의 user.id. */
+export function sessionUserId(secrets: SecureStore): UserIdFn {
+  return () =>
+    sessionField(secrets, (v) => (typeof v.user === "object" && v.user !== null ? (v.user as Record<string, unknown>).id : undefined));
 }
 
 /** SHA-256 소문자 16진수(Web Crypto, 브라우저·Node 공통). */
