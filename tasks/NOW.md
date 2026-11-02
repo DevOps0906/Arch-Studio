@@ -68,3 +68,10 @@
 - 보안 레벨 L2 확정·push(2bb18c5). S-1 닫힘.
 - 병렬 진행: A=073(클라우드 blob·RLS·expected_version), B=086(annotations[]), C=058+S-7(CI·SBOM·OSV·cargo audit; 서명·릴리스 실행은 인증서 대기로 뼈대만). 단계: challenger 3명 검토 중 → builder(worktree) → reviewer(Codex 한도 11-04까지 → reviewer 대체).
 - 환경: python은 PATH 없음 → `PATH="$HOME/AppData/Local/Programs/Python/Python312:$PATH"`로 nomad 도구 실행.
+
+## 갱신 (2026-11-02, 058a 병합·073/086 PR 대기)
+- main push(f7b37c7): 058a CI(web·api·db·desktop-build·guard·supply-chain) 병합 → 첫 CI 실행 확인 필요(db `supabase start -x`, frontendDist, Windows Rust). envelope 테스트 CRLF 수정.
+- 073 → origin `feat/ar-06-073`, 086 → `feat/ar-06-086` push(main 병합해 둠). **이 PC에 gh 없음 → 초안 PR은 사람이 링크로 생성**. PR CI(특히 073 db 잡 test:rls) 통과 후 main 병합.
+- 086 리뷰 ACCEPT(🟡5 후속), 073 리뷰 🔴0 반영. 결정·후속은 tasks/logs/AR-06-073·086·058.md.
+- 이 PC 환경: docker·pnpm·cargo·gh·python(PATH) 없음. pnpm은 `npx -y pnpm@10`, python은 `~/AppData/Local/Programs/Python/Python312`.
+- 다음 후보: 072(073 뒤), 049, 050, 071(문서 정정 먼저), 058b(인증서 대기).
