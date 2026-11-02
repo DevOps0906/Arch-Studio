@@ -186,7 +186,7 @@ test("Route Handler·서버 AI 코드에서 consume_credits 직접 호출 0(04_A
       return;
     }
     if (st.isDirectory()) for (const n of readdirSync(p)) walk(path.join(p, n));
-    else if (/\.tsx?$/.test(p) && !p.endsWith(".test.ts") && /consume_credits/.test(readFileSync(p, "utf8").replace(/^\s*\/\/.*$/gm, ""))) hits.push(p);
+    else if (/\.tsx?$/.test(p) && !p.endsWith(".test.ts") && !p.endsWith(path.join("chat", "supabase-repo.ts")) && /consume_credits/.test(readFileSync(p, "utf8").replace(/^\s*\/\/.*$/gm, ""))) hits.push(p);
   };
   for (const d of targets) walk(d);
   assert.deepEqual(hits, []);
@@ -195,6 +195,15 @@ test("Route Handler·서버 AI 코드에서 consume_credits 직접 호출 0(04_A
 // 04_API.md:14 STT 예외(AR-06-053 [DECISION] 5): 동기 받아쓰기는 start_ai_run 밖에서 차감한다. 허용 목록 = server/voice/supabase-repo.ts 하나.
 test("server/voice에서 consume_credits 직접 호출은 supabase-repo.ts 하나뿐(STT 예외 허용 목록)", () => {
   const dir = path.resolve(import.meta.dirname, "../../voice");
+  const hits = readdirSync(dir)
+    .filter((n) => /\.tsx?$/.test(n) && !n.endsWith(".test.ts") && /consume_credits/.test(readFileSync(path.join(dir, n), "utf8").replace(/^\s*\/\/.*$/gm, "")))
+    .sort();
+  assert.deepEqual(hits, ["supabase-repo.ts"]);
+});
+
+// 채팅 턴 차감(AR-06-054 [DECISION] 4): start_ai_run 밖. 허용 목록 = server/ai/chat/supabase-repo.ts 하나.
+test("server/ai/chat에서 consume_credits 직접 호출은 supabase-repo.ts 하나뿐(채팅 예외 허용 목록)", () => {
+  const dir = path.resolve(import.meta.dirname, "../chat");
   const hits = readdirSync(dir)
     .filter((n) => /\.tsx?$/.test(n) && !n.endsWith(".test.ts") && /consume_credits/.test(readFileSync(path.join(dir, n), "utf8").replace(/^\s*\/\/.*$/gm, "")))
     .sort();

@@ -91,6 +91,8 @@ export interface UserTokenInput {
   scope: UserScope;
   feat?: Feature;
   conv?: string;
+  /** 채팅 요청 id(UUID). 토큰을 한 요청에 묶는다(AR-06-054). */
+  req?: string;
   nowS: number;
 }
 
@@ -186,9 +188,11 @@ export function createAiTokenSigner(input: AiSignerKeyInput): AiTokenSigner {
       if (!(USER_SCOPES as readonly string[]).includes(i.scope)) throw new AiTokenClaimError("scope");
       if (i.feat !== undefined && !(FEATURES as readonly string[]).includes(i.feat)) throw new AiTokenClaimError("feat");
       if (i.conv !== undefined && !UUID.test(i.conv)) throw new AiTokenClaimError("conv");
+      if (i.req !== undefined && !UUID.test(i.req)) throw new AiTokenClaimError("req");
       const claims: Record<string, unknown> = { sub: i.userId, org: i.orgId, scope: i.scope };
       if (i.feat) claims.feat = i.feat;
       if (i.conv) claims.conv = i.conv;
+      if (i.req) claims.req = i.req;
       return signClaims(claims, USER_TOKEN_TTL_S, i.nowS);
     },
   };
