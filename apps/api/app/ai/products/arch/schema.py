@@ -19,10 +19,11 @@ zod 의미와 맞추는 규칙:
 
 from __future__ import annotations
 
+import unicodedata
 from collections.abc import Iterable
 from typing import Annotated, Any, Literal
 
-from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, model_validator
+from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, Field, field_validator, model_validator
 
 # ---------------------------------------------------------------------------
 # 공통 타입
@@ -409,14 +410,20 @@ class ReviewEngineValue(Strict):
     unit: Annotated[str, Field(max_length=16), _max_len(16)]
 
 
+# AI 문장 표식: "해석(수치 아님)". 수치는 ReviewItem.engine_value·verdict로만 나간다(AR-06-051 [DECISION]).
+SentenceNature = Literal["interpretation"]
+
+
 class ReviewSentence(Strict):
     text: T_SENTENCE_MAX
     source_ids: Annotated[list[IdStr], Field(min_length=1, max_length=20)]  # 빈 문장 출처 = AR033
+    nature: SentenceNature = "interpretation"
 
 
 class ReviewNeedsCheck(Strict):
     text: T_SENTENCE_MAX
     source_ids: Annotated[list[IdStr], Field(min_length=1, max_length=20)]  # 확인 필요도 출처 필수
+    nature: SentenceNature = "interpretation"
 
 
 class ReviewSource(Strict):
@@ -472,14 +479,38 @@ class ReviewRunInput(Strict):
 
 
 class ReviewRunResult(Strict):
-    """GET 응답 result. refs는 `{ref:<key>.<value|limit>}` 경로 → 치환에 쓴 엔진 값."""
+    """GET 응답 result. refs는 남은 문장의 Ref 경로 `<key>.<value|limit>` → 그 Ref가 가리킨 엔진 값."""
 
     review: ReviewResultV1
     refs: dict[str, float]
 
 
+class TextPart(Strict):
+    """LLM 문장 조각(글). 숫자성 문자·한글 수사 검사는 compliance `validate_free_text`가 한다."""
+
+    type: Literal["text"]
+    text: T_SENTENCE_MAX
+
+    @field_validator("text")
+    @classmethod
+    def _nfc(cls, value: str) -> str:
+        return unicodedata.normalize("NFC", value)
+
+
+class RefPart(Strict):
+    """엔진 값 참조. item = 판정 항목 key(문장이 속한 항목과 같아야 한다), field = value | limit."""
+
+    type: Literal["ref"]
+    item: T_KEY_MAX
+    field: Literal["value", "limit"]
+
+
+SentencePart = Annotated[TextPart | RefPart, Field(discriminator="type")]
+SentenceParts = Annotated[list[SentencePart], Field(min_length=1, max_length=20)]
+
+
 class ReviewLlmSentence(Strict):
-    text: str
+    parts: SentenceParts
     source_ids: list[str]
 
 
@@ -490,13 +521,13 @@ class ReviewLlmItem(Strict):
 
 
 class ReviewLlmOutput(Strict):
-    """interpret 노드의 LLM 구조화 출력. 숫자는 `{ref:경로}`로만 쓴다."""
+    """interpret 노드의 LLM 구조화 출력. 문장은 parts[Text|Ref]이고 엔진 값은 Ref로만 가리킨다."""
 
     items: list[ReviewLlmItem]
 
 
 class ReviewLlmRewrite(Strict):
-    text: str
+    parts: SentenceParts
 
 
 AREA_M2_MAX = 1_000_000  # 1km² : 소형 건축 면적 입력으로는 충분히 큰 보수적 상한(제안)

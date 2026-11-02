@@ -11,18 +11,20 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
-from app.ai.compliance.arch import severity_of
+from app.ai.compliance.arch import char_allowed, severity_of
 from app.ai.graphs.arch_review import ArchReviewRunner, ReviewDeps, ReviewError, run_review
 from app.ai.products.arch.ingest.pipeline import ingest
 from app.ai.products.arch.knowledge.embedding import HashEmbedder
 from app.ai.products.arch.knowledge.example_corpus import EXAMPLE_DOCS
 from app.ai.products.arch.knowledge.store import InMemoryStore
 from app.ai.products.arch.schema import (
+    RefPart,
     ReviewLlmItem,
     ReviewLlmOutput,
     ReviewLlmRewrite,
     ReviewLlmSentence,
     ReviewRunInput,
+    TextPart,
 )
 from app.main import create_app
 from app.runs import MemoryRunStore
@@ -33,10 +35,27 @@ COLS = {"law": "col-law", "district_plan": "col-dp", "reply": "col-rp"}
 DATE = "2025-01-01"
 Auth = Callable[..., dict[str, str]]
 Handler = Callable[[str, type[BaseModel]], BaseModel]
+Part = TextPart | RefPart
+
+
+def t(text: str) -> TextPart:
+    return TextPart(type="text", text=text)
+
+
+def r(item: str, field: str = "value") -> RefPart:
+    return RefPart(type="ref", item=item, field=field)  # type: ignore[arg-type]
+
+
+def sent(parts: str | list[Part], source_ids: list[str]) -> ReviewLlmSentence:
+    return ReviewLlmSentence(parts=[t(parts)] if isinstance(parts, str) else parts, source_ids=source_ids)
+
+
+def rewrite(parts: str | list[Part]) -> ReviewLlmRewrite:
+    return ReviewLlmRewrite(parts=[t(parts)] if isinstance(parts, str) else parts)
 
 
 class FakeLLM:
-    """결정적 가짜. handler가 없으면 프롬프트의 chunk id 첫 개를 인용하고 {ref}만 쓴다."""
+    """결정적 가짜. handler가 없으면 프롬프트의 chunk id 첫 개를 인용하고 숫자 대신 Ref만 쓴다."""
 
     def __init__(self, handler: Handler | None = None) -> None:
         self.handler = handler
@@ -59,11 +78,9 @@ def default_output(prompt: str) -> ReviewLlmOutput:
         key = re.search(r'key="(\w+)"', block)
         ids = re.findall(r'<chunk id="([^"]+)"', block)
         assert key is not None
-        sent = ReviewLlmSentence(
-            text=f"{{ref:{key.group(1)}.value}}이(가) 한도 {{ref:{key.group(1)}.limit}}와 비교됩니다.",
-            source_ids=ids[:1],
-        )
-        items.append(ReviewLlmItem(key=key.group(1), sentences=[sent], needs_check=[]))
+        k = key.group(1)
+        s = sent([r(k), t("이 "), r(k, "limit"), t("과 비교됩니다.")], ids[:1])
+        items.append(ReviewLlmItem(key=k, sentences=[s], needs_check=[]))
     return ReviewLlmOutput(items=items)
 
 
@@ -142,7 +159,8 @@ def test_success_contract(settings: Settings, kb: InMemoryStore, auth: Auth) -> 
     assert item["key"] == "coverage" and item["verdict"] == "FAIL"
     assert item["engine_value"] == {"value": 65.0, "limit": 60.0, "unit": "pct"}
     (sentence,) = item["sentences"]
-    assert sentence["text"] == "65이(가) 한도 60와 비교됩니다."
+    assert sentence["text"] == "산정값이 한도값과 비교됩니다."  # 수치는 engine_value로만
+    assert sentence["nature"] == "interpretation"
     source_ids = {s["id"] for s in review["sources"]}
     assert sentence["source_ids"] and set(sentence["source_ids"]) <= source_ids
     assert data["result"]["refs"] == {"coverage.limit": 60.0, "coverage.value": 65.0}
@@ -165,8 +183,8 @@ def test_cite_check_drops_invented_ids(settings: Settings, kb: InMemoryStore, au
                 ReviewLlmItem(
                     key="coverage",
                     sentences=[
-                        ReviewLlmSentence(text="지어낸 출처만 있는 문장", source_ids=["fake#0"]),
-                        ReviewLlmSentence(text="진짜 출처가 섞인 문장", source_ids=["fake#1", real]),
+                        sent("지어낸 출처만 있는 문장", ["fake#0"]),
+                        sent("진짜 출처가 섞인 문장", ["fake#1", real]),
                     ],
                     needs_check=[],
                 )
@@ -181,7 +199,7 @@ def test_cite_check_drops_invented_ids(settings: Settings, kb: InMemoryStore, au
 
 def test_ar033_when_no_valid_source(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
     def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
-        s = ReviewLlmSentence(text="출처 없음", source_ids=["nope#0"])
+        s = sent("출처 없음", ["nope#0"])
         return ReviewLlmOutput(items=[ReviewLlmItem(key="coverage", sentences=[s], needs_check=[])])
 
     data = run_and_get(make_client(settings, kb, FakeLLM(handler)), auth)
@@ -207,15 +225,15 @@ def run_and_get_org(client: TestClient, auth: Auth, org: str) -> dict[str, Any]:
 def test_invented_number_rewritten_once_then_dropped(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
     def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
         if model is ReviewLlmRewrite:
-            return ReviewLlmRewrite(text="여전히 77로 쓴 문장")
+            return rewrite("여전히 77로 쓴 문장")
         cid = re.findall(r'<chunk id="([^"]+)"', prompt)[0]
         return ReviewLlmOutput(
             items=[
                 ReviewLlmItem(
                     key="coverage",
                     sentences=[
-                        ReviewLlmSentence(text="건폐율은 99입니다", source_ids=[cid]),
-                        ReviewLlmSentence(text="{ref:coverage.value} 입니다", source_ids=[cid]),
+                        sent("건폐율은 99입니다", [cid]),
+                        sent([r("coverage"), t(" 입니다")], [cid]),
                     ],
                     needs_check=[],
                 )
@@ -225,45 +243,52 @@ def test_invented_number_rewritten_once_then_dropped(settings: Settings, kb: InM
     llm = FakeLLM(handler)
     data = run_and_get(make_client(settings, kb, llm), auth)
     (sentence,) = data["result"]["review"]["items"][0]["sentences"]
-    assert sentence["text"] == "65 입니다"
+    assert sentence["text"] == "산정값 입니다"
     assert llm.calls == 2  # interpret 1 + 재작성 1회
 
 
 def test_invented_number_fixed_by_rewrite(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
     def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
         if model is ReviewLlmRewrite:
-            return ReviewLlmRewrite(text="건폐율은 {ref:coverage.value}입니다")
+            return rewrite([t("건폐율은 "), r("coverage"), t("입니다")])
         cid = re.findall(r'<chunk id="([^"]+)"', prompt)[0]
-        s = ReviewLlmSentence(text="건폐율은 99입니다", source_ids=[cid])
+        s = sent("건폐율은 99입니다", [cid])
         return ReviewLlmOutput(items=[ReviewLlmItem(key="coverage", sentences=[s], needs_check=[])])
 
     data = run_and_get(make_client(settings, kb, FakeLLM(handler)), auth)
-    assert data["result"]["review"]["items"][0]["sentences"][0]["text"] == "건폐율은 65입니다"
+    assert data["result"]["review"]["items"][0]["sentences"][0]["text"] == "건폐율은 산정값입니다"
 
 
 def test_compliance_blocks_and_warns(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
     def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
+        if model is ReviewLlmRewrite:
+            return rewrite("이 계획은 허가 가능합니다")  # 고치지 못함 → 제거
         cid = re.findall(r'<chunk id="([^"]+)"', prompt)[0]
         ss = [
-            ReviewLlmSentence(text="이 계획은 허가 가능합니다", source_ids=[cid]),
-            ReviewLlmSentence(text="큰 문제없습니다", source_ids=[cid]),
-            ReviewLlmSentence(text="한도를 초과합니다", source_ids=[cid]),
+            sent("이 계획은 허가 가능합니다", [cid]),
+            sent("큰 문제없습니다", [cid]),
+            sent("한도를 초과합니다", [cid]),
         ]
         return ReviewLlmOutput(items=[ReviewLlmItem(key="coverage", sentences=ss, needs_check=[])])
 
-    review = run_and_get(make_client(settings, kb, FakeLLM(handler)), auth)["result"]["review"]
+    llm = FakeLLM(handler)
+    review = run_and_get(make_client(settings, kb, llm), auth)["result"]["review"]
     assert [s["text"] for s in review["items"][0]["sentences"]] == ["한도를 초과합니다"]
     assert [n["text"] for n in review["needs_check"]] == ["큰 문제없습니다"]
+    assert llm.calls == 2  # 금지 표현도 단일 판정기 위반 → 1회 재작성(WARN은 재작성 없이 옮김)
 
 
 def test_compliance_all_blocked_is_ar033(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
     def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
+        if model is ReviewLlmRewrite:
+            return rewrite("인허가를 보장합니다")
         cid = re.findall(r'<chunk id="([^"]+)"', prompt)[0]
-        s = ReviewLlmSentence(text="인허가를 보장합니다", source_ids=[cid])
+        s = sent("인허가를 보장합니다", [cid])
         return ReviewLlmOutput(items=[ReviewLlmItem(key="coverage", sentences=[s], needs_check=[])])
 
     data = run_and_get(make_client(settings, kb, FakeLLM(handler)), auth)
-    assert data["error"] == {"code": "AR033", "retryable": False, "stage": "compliance"}
+    # 금지 표현은 resolve_refs(같은 판정기)에서 이미 제거된다 → AR033 단계는 interpret
+    assert data["error"] == {"code": "AR033", "retryable": False, "stage": "interpret"}
 
 
 def test_provider_error_retryable_no_message_leak(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
@@ -341,18 +366,21 @@ def test_compliance_rules() -> None:
     assert severity_of("건폐율이 한도를 초과합니다") is None
 
 
-def _out_with(prompt: str, sentences: list[tuple[str, bool]], needs: list[tuple[str, bool]] | None = None) -> BaseModel:
+Spec = tuple[str | list[Part], bool]
+
+
+def _out_with(prompt: str, sentences: list[Spec], needs: list[Spec] | None = None) -> BaseModel:
     cid = re.findall(r'<chunk id="([^"]+)"', prompt)[0]
 
-    def mk(t: str, ok: bool) -> ReviewLlmSentence:
-        return ReviewLlmSentence(text=t, source_ids=[cid] if ok else [])
+    def mk(parts: str | list[Part], ok: bool) -> ReviewLlmSentence:
+        return sent(parts, [cid] if ok else [])
 
     return ReviewLlmOutput(
         items=[
             ReviewLlmItem(
                 key="coverage",
-                sentences=[mk(t, ok) for t, ok in sentences],
-                needs_check=[mk(t, ok) for t, ok in (needs or [])],
+                sentences=[mk(p, ok) for p, ok in sentences],
+                needs_check=[mk(p, ok) for p, ok in (needs or [])],
             )
         ]
     )
@@ -363,20 +391,20 @@ def test_bare_numbers_never_allowed_even_if_equal_to_engine_or_article(
 ) -> None:
     def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
         if model is ReviewLlmRewrite:
-            return ReviewLlmRewrite(text="제61조에 따라 60입니다")  # 재작성도 맨숫자
+            return rewrite("제61조에 따라 60입니다")  # 재작성도 맨숫자
         return _out_with(
             prompt,
             [
                 ("제61조에 따라 건폐율 61%입니다", True),  # 조문 번호 → 값 우회
                 ("건폐율 65%, 한도 60%입니다", True),  # 엔진 값과 같은 맨숫자
-                ("{ref:coverage.value}입니다", True),
+                ([r("coverage"), t("입니다")], True),
             ],
         )
 
     llm = FakeLLM(handler)
     data = run_and_get(make_client(settings, kb, llm), auth)
     (sentence,) = data["result"]["review"]["items"][0]["sentences"]
-    assert sentence["text"] == "65입니다"
+    assert sentence["text"] == "산정값입니다"
     assert llm.calls == 3  # interpret 1 + 맨숫자 문장 2개 각 1회 재작성
 
 
@@ -384,7 +412,7 @@ def test_needs_check_requires_source(settings: Settings, kb: InMemoryStore, auth
     def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
         return _out_with(
             prompt,
-            [("{ref:coverage.value}입니다", True)],
+            [([r("coverage"), t("입니다")], True)],
             [("출처 없는 확인 사항", False), ("출처 있는 확인 사항", True)],
         )
 
@@ -397,7 +425,7 @@ def test_needs_check_requires_source(settings: Settings, kb: InMemoryStore, auth
 def test_llm_calls_get_remaining_time_timeout(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
     def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
         if model is ReviewLlmRewrite:
-            return ReviewLlmRewrite(text="{ref:coverage.value}입니다")
+            return rewrite([r("coverage"), t("입니다")])
         return _out_with(prompt, [("건폐율 99입니다", True)])
 
     llm = FakeLLM(handler)
@@ -417,3 +445,64 @@ def test_resolve_refs_checks_deadline_before_rewrite(settings: Settings, kb: InM
     data = run_and_get(make_client(settings, kb, llm, clock=lambda: now[0]), auth, body(timeout_s=150))
     assert data["error"]["code"] == "PROVIDER" and data["error"]["retryable"] is True
     assert llm.calls == 1  # 재작성 호출 없음
+
+
+# --- 로컬 숫자 차단 구조(parts[Text|Ref]·단일 판정기) 그래프 경로 ---
+
+
+def test_prompt_item_lines_have_no_engine_numbers(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
+    prompts: list[str] = []
+
+    def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
+        prompts.append(prompt)
+        return default_output(prompt)
+
+    run_and_get(make_client(settings, kb, FakeLLM(handler)), auth)
+    item_lines = [line for line in prompts[0].splitlines() if line.startswith("## item ")]
+    assert item_lines and not any(ch.isdigit() for line in item_lines for ch in line)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        "건폐율은 육십 퍼센트를 넘습니다.",  # 한글 수사
+        "건폐율 六十 수준입니다.",  # 한자 숫자
+        "건폐율 Ⅵ 단계입니다.",  # 로마 숫자 문자
+        "건폐율 ⑥ 수준입니다.",  # 원문자
+        "건폐율 ６５ 수준입니다.",  # 전각
+        "건폐율 한도 육십이다.",  # 연결어 건너뛰기
+    ],
+)
+def test_numeral_bypass_dropped_through_graph(settings: Settings, kb: InMemoryStore, auth: Auth, bad: str) -> None:
+    def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
+        if model is ReviewLlmRewrite:
+            return rewrite(bad)  # 고치지 못함
+        return _out_with(prompt, [(bad, True), ([t("건폐율 "), r("coverage"), t("이 한도값을 넘습니다.")], True)])
+
+    llm = FakeLLM(handler)
+    data = run_and_get(make_client(settings, kb, llm), auth)
+    review = data["result"]["review"]
+    assert [s["text"] for s in review["items"][0]["sentences"]] == ["건폐율 산정값이 한도값을 넘습니다."]
+    assert llm.calls == 2
+    for s in review["items"][0]["sentences"]:
+        assert all(char_allowed(ch) for ch in s["text"])
+
+
+def test_ref_binding_enforced_through_graph(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
+    def handler(prompt: str, model: type[BaseModel]) -> BaseModel:
+        if model is ReviewLlmRewrite:
+            return rewrite("조례 기준을 확인하세요.")
+        return _out_with(
+            prompt,
+            [([t("용적률 "), r("far")], True), ([r("coverage", "limit"), t("을 넘습니다.")], True)],
+            [([r("coverage"), t(" 확인")], True)],  # needs_check Ref 금지
+        )
+
+    llm = FakeLLM(handler)
+    data = run_and_get(make_client(settings, kb, llm), auth)
+    review = data["result"]["review"]
+    assert [s["text"] for s in review["items"][0]["sentences"]] == ["조례 기준을 확인하세요.", "한도값을 넘습니다."]
+    assert [n["text"] for n in review["needs_check"]] == ["조례 기준을 확인하세요."]
+    assert all(n["nature"] == "interpretation" for n in review["needs_check"])
+    assert data["result"]["refs"] == {"coverage.limit": 60.0}
+    assert llm.calls == 3
