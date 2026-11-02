@@ -1,6 +1,7 @@
 # NOW — 재진입 스냅샷 (30줄 이내, 매 작업 끝에 덮어쓴다)
 
-- 갱신: 2026-11-02. 85개 중 완료 53(050·051·053 포함). 053 음성 받아쓰기·UI·읽어 주기 완료(ARCH_VOICE_STT_ENABLED 기본 off, 상담 녹음은 052로 이관). 진행: 054. 이전 스냅샷은 git 이력, 작업별 결정은 tasks/logs/AR-06-NNN.md.
+- 갱신: 2026-11-02 세션 종료(사용자 요청으로 중단). 작업표 92개 중 완료 56·진행 9·대기 27. 이전 스냅샷은 git 이력, 작업별 결정은 tasks/logs/AR-06-NNN.md.
+- **재개 1순위 054**: (A) FastAPI /tools/answer 완료·검증 → `feat/ar-06-054-api`(6bb9692). (B) web /api/ai/chat는 중단 시점 미검증 백업 → `wip/ar-06-054-web`(병합 금지). 재개: wip 브랜치 기반으로 A 계약({ok,data} 봉투·no_source 문구 web 표시·503/502 환불·요청별 토큰) 반영 확인 → lint·typecheck·test → A와 병합 → reviewer(code)+reviewer(security) → main. ARCH_AI_CHAT_ENABLED도 .env.example에.
 - 방금 완료: 051 클라우드 법규 검토(api 그래프·웹 서버 재계산+팩 서명 검증·워커 중계). **과금 경로 기본 off**(ARCH_AI_REVIEW_ENABLED). 켜기 전: 실제 LLM 제공자·Postgres 지식 저장소·공유 레이트리밋·FastAPI 실행 저장소 영속화.
 - .env.example에 추가 필요(에이전트 읽기 차단): ARCH_AI_REVIEW_ENABLED, ARCH_API_URL, ARCH_RULEPACK_PUBKEYS(웹 서버), ARCH_VOICE_STT_ENABLED. 이전분 AI_TOKEN_JWKS_URL 등 5개도.
 
