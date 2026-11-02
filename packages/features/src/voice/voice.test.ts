@@ -78,7 +78,7 @@ test("첫 사용은 고지부터, 거절하면 녹음 시작 안 함", () => {
   assert.equal(timers.length, 0);
 });
 
-test("60초 자동 정지 → 전송 → 결과(자동 전송 없이 result 상태)", async () => {
+test("59초 자동 정지 → 전송 → 결과(자동 전송 없이 result 상태)", async () => {
   const { deps, timers, sent, rec } = harness();
   const d = createDictation(deps);
   d.start();
@@ -86,7 +86,7 @@ test("60초 자동 정지 → 전송 → 결과(자동 전송 없이 result 상�
   await tick();
   assert.equal(d.state().kind, "recording");
   assert.equal(timers[0]?.ms, MAX_RECORD_MS);
-  assert.equal(MAX_RECORD_MS, 60_000);
+  assert.equal(MAX_RECORD_MS, 59_000); // 서버 상한 60초보다 1초 일찍
   timers[0]!.fn();
   await tick();
   await tick();
@@ -138,7 +138,7 @@ test("전송: 바이너리 본문·audio/* · x-request-id · 503도 자동 재�
   await assert.rejects(() => transcribeAudio(api, AUDIO, "audio/webm", "rid-1"));
   assert.equal(calls.length, 1);
   assert.equal(calls[0]!.headers["x-request-id"], "rid-1");
-  assert.equal(calls[0]!.headers["Idempotency-Key"], "rid-1");
+  assert.equal(calls[0]!.headers["Idempotency-Key"], undefined); // 서버가 읽지 않는 헤더는 보내지 않는다
   assert.equal(calls[0]!.headers["Content-Type"], "audio/webm");
   assert.equal(calls[0]!.binaryBody, AUDIO);
 });
@@ -179,6 +179,65 @@ test("전송 실패 후 다시 보내기 = 같은 녹음·같은 request_id, 새
   assert.equal(calls.length, 2);
   assert.equal(calls[0]!.headers["x-request-id"], "id-1");
   assert.equal(calls[1]!.headers["x-request-id"], "id-1");
+});
+
+async function sendAndWait(d: ReturnType<typeof createDictation>) {
+  d.start();
+  await tick();
+  d.stop();
+  for (let k = 0; k < 6; k++) await tick();
+}
+const refundedBody = (code: string, refunded: boolean) => ({ ok: false, error: { code, details: { refunded } } });
+
+test("환불 확정 실패(502 refunded:true) → 다시 보내기는 같은 녹음 + 새 request_id", async () => {
+  const { api, calls } = apiWith([
+    { status: 502, body: refundedBody("stt_failed", true) },
+    { status: 200, body: { ok: true, data: { text: "ok", duration_s: 3, credits: 1 } } },
+  ]);
+  const { deps } = harness({ transcribe: (a, ct, id, sig) => transcribeAudio(api, a, ct, id, sig) });
+  const d = createDictation(deps, { noticeAccepted: true });
+  await sendAndWait(d);
+  const e = d.state();
+  assert.equal(e.kind === "error" && e.canResend, true);
+  assert.match(e.kind === "error" ? e.message : "", /환불되었습니다/);
+  d.resend();
+  for (let k = 0; k < 6; k++) await tick();
+  assert.equal(d.state().kind, "result");
+  assert.equal(calls[0]!.headers["x-request-id"], "id-1");
+  assert.equal(calls[1]!.headers["x-request-id"], "id-2");
+  assert.equal(calls[0]!.binaryBody, calls[1]!.binaryBody);
+});
+
+test("환불 실패(refunded:false) → 재전송 숨김·\"환불 처리됩니다\", 409 → 재전송 숨김·정직한 문구", async () => {
+  for (const [status, body, re] of [
+    [502, refundedBody("stt_failed", false), /환불 처리됩니다/],
+    [409, { ok: false, error: { code: "IDEMPOTENT_REPLAY" } }, /사용되었을 수 있습니다/],
+  ] as const) {
+    const { api } = apiWith([{ status, body }]);
+    const { deps } = harness({ transcribe: (a, ct, id, sig) => transcribeAudio(api, a, ct, id, sig) });
+    const d = createDictation(deps, { noticeAccepted: true });
+    await sendAndWait(d);
+    const s = d.state();
+    assert.equal(s.kind, "error");
+    assert.equal(s.kind === "error" && s.canResend, false);
+    assert.match(s.kind === "error" ? s.message : "", re);
+  }
+});
+
+test("전사 중 취소 → AbortSignal 전달, 늦은 응답 무시", async () => {
+  let signal: { aborted: boolean } | undefined;
+  const { deps } = harness({
+    transcribe: (_a, _c, _i, sig) => {
+      signal = sig;
+      return new Promise(() => {});
+    },
+  });
+  const d = createDictation(deps, { noticeAccepted: true });
+  await sendAndWait(d);
+  assert.equal(d.state().kind, "transcribing");
+  d.cancel();
+  assert.equal(signal?.aborted, true);
+  assert.equal(d.state().kind, "idle");
 });
 
 test("본문 JSON과 rawBody 동시 사용 금지, 소스 규칙(hex·px 없음)", async () => {

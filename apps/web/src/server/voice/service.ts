@@ -1,6 +1,6 @@
 // POST /api/voice/stt 본체(04_API.md:14 STT 예외 · :87 상한 60초·5MB, AR-06-053 서버). 동기 받아쓰기, 요청당 1크레딧 정액. 순서:
 // 실패 닫힘 스위치(503, 인증 전·차감 0) → 인증 → 역할 member+(403) → 엔타이틀먼트(402) → 형식(415) → request_id(422)
-// → 본문 읽기(5MB 초과 AR031 413) → 매직바이트(415) → 레이트 리밋(429) → 멱등 확인(중복이면 제공자 미호출 409)
+// → 레이트 리밋(429, 본문 버퍼링 전) → 본문 읽기(5MB 초과 AR031 413) → 매직바이트(415) → 멱등 확인(중복이면 제공자 미호출 409)
 // → 선차감(consume_credits, 부족 402) → 제공자 호출 → 길이>60초·빈 전사·제공자 실패는 전액 환불.
 // 결과 텍스트·오디오는 저장하지 않는다. 응답·로그에 본문·토큰·예외 원문을 넣지 않는다. server-only를 import하지 않는다(node --test 대상).
 import { logger } from "../../lib/logger.ts";
@@ -38,9 +38,13 @@ export interface VoiceDeps {
 
 type VoiceCode = "stt_disabled" | "IDEMPOTENT_REPLAY" | "stt_failed" | "stt_too_long" | "stt_empty";
 
+// 503은 stt_disabled 하나만 쓴다(스위치 off). 클라이언트는 모든 503을 "사용 불가"로 단순 취급한다.
 const VOICE_ERRORS: Readonly<Record<VoiceCode, { status: number; message: string }>> = {
   stt_disabled: { status: 503, message: "지금은 음성 받아쓰기를 사용할 수 없습니다. 크레딧은 차감되지 않았습니다." },
-  IDEMPOTENT_REPLAY: { status: 409, message: "이미 처리한 요청입니다. 새 요청으로 다시 시도하세요." },
+  IDEMPOTENT_REPLAY: {
+    status: 409,
+    message: "이미 처리된 요청입니다. 결과를 받지 못했다면 다시 녹음해 주세요. 크레딧 1이 사용되었을 수 있습니다.",
+  },
   stt_failed: { status: 502, message: "받아쓰기에 실패했습니다. 크레딧은 환불되었습니다." },
   stt_too_long: { status: 422, message: "녹음이 60초를 넘습니다. 짧게 나누어 다시 시도하세요. 크레딧은 환불되었습니다." },
   stt_empty: { status: 422, message: "인식된 내용이 없습니다. 크레딧은 환불되었습니다." },
@@ -48,16 +52,23 @@ const VOICE_ERRORS: Readonly<Record<VoiceCode, { status: number; message: string
 
 class VoiceReject extends Error {
   readonly code: VoiceCode;
-  constructor(code: VoiceCode) {
+  /** 차감 뒤 실패에서만 값이 있다: 환불이 확정됐는가. 클라이언트는 true일 때만 새 request_id로 다시 보낸다. */
+  readonly refunded: boolean | undefined;
+  constructor(code: VoiceCode, refunded?: boolean) {
     super(code);
     this.name = "VoiceReject";
     this.code = code;
+    this.refunded = refunded;
   }
 }
 
-function voiceReject(code: VoiceCode): Response {
+function voiceReject(code: VoiceCode, refunded?: boolean): Response {
   const spec = VOICE_ERRORS[code];
-  return new Response(JSON.stringify({ ok: false, error: { code, message: spec.message } }), {
+  // 환불 확정 실패는 "환불 처리됩니다"(정산 대기)로 정직하게 안내한다.
+  const message = refunded === false ? spec.message.replace("환불되었습니다", "환불 처리됩니다") : spec.message;
+  const error: Record<string, unknown> = { code, message };
+  if (refunded !== undefined) error["details"] = { refunded };
+  return new Response(JSON.stringify({ ok: false, error }), {
     status: spec.status,
     headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
   });
@@ -69,7 +80,9 @@ function logReject(code: string): void {
 
 const MEMBER_PLUS = new Set(["owner", "admin", "member"]);
 
-// 같은 프로세스 안의 동시 중복(원장 확인과 차감 사이의 틈)을 막는다. 프로세스 간 중복은 DB 멱등 키가 추가 차감을 막는다.
+// 같은 프로세스 안의 동시 중복(원장 확인과 차감 사이의 틈)을 막는다. has·add는 await 없이 동기로 처리한다.
+// 한계(운영 전 보강 후보): 프로세스·인스턴스 사이 경합은 DB 멱등 키가 추가 차감만 막을 뿐 제공자 이중 호출은 막지 못한다
+// (consume이 "신규 여부"를 돌려주도록 DB 쪽을 보강하면 해결).
 const inflight = new Set<string>();
 
 async function readBodyLimited(req: Request, maxBytes: number): Promise<Uint8Array> {
@@ -99,12 +112,14 @@ function requestIdOf(req: Request): string {
   return id;
 }
 
-async function refundSafe(deps: VoiceDeps, session: GatewaySession, ledgerId: string, key: string, reason: string): Promise<void> {
+/** 환불이 확정됐으면 true. 실패하면 수동 정산 대상으로 원장 id·조직을 구조화 로그에 남긴다(전사 텍스트 금지). */
+async function refundSafe(deps: VoiceDeps, session: GatewaySession, ledgerId: string, key: string, reason: string): Promise<boolean> {
   try {
     await deps.ledger.refund({ ledgerId, reason, key: `${key}:refund`, actorId: session.userId });
+    return true;
   } catch {
-    // 환불 실패는 운영 경보(원장이 정본이라 수동 정산 필요). 사용자 응답은 그대로.
-    logger.error("voice_stt.refund_failed", { route: "voice_stt", reason });
+    logger.error("voice_stt.refund_failed", { route: "voice_stt", reason, ledger_id: ledgerId, org_id: session.orgId });
+    return false;
   }
 }
 
@@ -121,19 +136,20 @@ export async function handleVoiceStt(req: Request, deps: VoiceDeps): Promise<Res
     if (!mime) throw new GatewayError("unsupported_media_type");
     const requestId = requestIdOf(req);
 
-    const audio = await readBodyLimited(req, STT_MAX_BYTES);
-    if (audio.byteLength === 0) throw new GatewayError("invalid_input");
-    if (!matchesMagic(mime, audio)) throw new GatewayError("unsupported_media_type");
-
     const hit = await deps.rateLimit.hit(`arch:voice_stt:${session.orgId}:${session.userId}`, STT_RATE.limit, STT_RATE.windowS, deps.now());
     if (!hit.allowed) {
       throw new GatewayError("rate_limited", undefined, { "retry-after": String(Math.max(1, Math.ceil((hit.resetAtMs - deps.now()) / 1000))) });
     }
 
+    const audio = await readBodyLimited(req, STT_MAX_BYTES);
+    if (audio.byteLength === 0) throw new GatewayError("invalid_input");
+    if (!matchesMagic(mime, audio)) throw new GatewayError("unsupported_media_type");
+
     const key = `voice:${session.orgId}:${requestId}`;
-    if (inflight.has(key) || (await deps.ledger.exists(key))) throw new VoiceReject("IDEMPOTENT_REPLAY");
-    inflight.add(key);
+    if (inflight.has(key)) throw new VoiceReject("IDEMPOTENT_REPLAY");
+    inflight.add(key); // has와 add 사이에 await 없음
     claimed = key;
+    if (await deps.ledger.exists(key)) throw new VoiceReject("IDEMPOTENT_REPLAY");
 
     let ledgerId: string;
     try {
@@ -148,22 +164,19 @@ export async function handleVoiceStt(req: Request, deps: VoiceDeps): Promise<Res
       const token = await deps.token({ orgId: session.orgId, userId: session.userId });
       result = await deps.provider.transcribe({ audio, mime, maxSeconds: STT_MAX_SECONDS, token });
     } catch {
-      await refundSafe(deps, session, ledgerId, key, "stt_provider_failed");
-      throw new VoiceReject("stt_failed");
+      throw new VoiceReject("stt_failed", await refundSafe(deps, session, ledgerId, key, "stt_provider_failed"));
     }
     if (!Number.isFinite(result.durationS) || result.durationS > STT_MAX_SECONDS) {
-      await refundSafe(deps, session, ledgerId, key, "stt_too_long");
-      throw new VoiceReject("stt_too_long");
+      throw new VoiceReject("stt_too_long", await refundSafe(deps, session, ledgerId, key, "stt_too_long"));
     }
     if (result.durationS <= 0 || result.text.trim() === "") {
-      await refundSafe(deps, session, ledgerId, key, "stt_empty");
-      throw new VoiceReject("stt_empty");
+      throw new VoiceReject("stt_empty", await refundSafe(deps, session, ledgerId, key, "stt_empty"));
     }
     return okResponse({ text: result.text, duration_s: result.durationS, credits: STT_CREDITS });
   } catch (error) {
     if (error instanceof VoiceReject) {
       logReject(error.code);
-      return voiceReject(error.code);
+      return voiceReject(error.code, error.refunded);
     }
     const code: GatewayErrorCode = error instanceof GatewayError ? error.code : "internal";
     logReject(code);

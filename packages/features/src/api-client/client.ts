@@ -40,6 +40,7 @@ interface Entry {
   readonly contentType: string | undefined;
   readonly extraHeaders: Readonly<Record<string, string>> | undefined;
   readonly autoRetry: boolean;
+  readonly idemHeader: boolean;
   readonly idemKey: string | undefined;
   readonly parse: ((d: unknown) => unknown) | undefined;
   readonly enqueuedAt: number;
@@ -246,7 +247,7 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       const headers: Record<string, string> = { ...en.extraHeaders, Authorization: `Bearer ${token}`, Accept: "application/json" };
       if (en.bodyText !== undefined) headers["Content-Type"] = "application/json";
       else if (en.rawBody !== undefined && en.contentType !== undefined) headers["Content-Type"] = en.contentType;
-      if (en.idemKey) headers["Idempotency-Key"] = en.idemKey;
+      if (en.idemKey && en.idemHeader) headers["Idempotency-Key"] = en.idemKey;
 
       let err: ApiError;
       let retry = true;
@@ -383,6 +384,7 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       contentType,
       extraHeaders: req.method === "GET" ? undefined : req.headers,
       autoRetry: req.method === "GET" ? true : req.autoRetry !== false,
+      idemHeader: req.method === "GET" ? true : req.idempotencyHeader !== false,
       idemKey,
       parse: req.parse as ((d: unknown) => unknown) | undefined,
       enqueuedAt: now(),

@@ -8,6 +8,8 @@ export interface SafeDetails {
   readonly required?: number;
   readonly balance?: number;
   readonly available_at?: string;
+  /** 음성 받아쓰기: 차감 뒤 실패에서 환불이 확정됐는가. */
+  readonly refunded?: boolean;
 }
 
 export function pickSafeDetails(raw: unknown): SafeDetails | undefined {
@@ -19,6 +21,7 @@ export function pickSafeDetails(raw: unknown): SafeDetails | undefined {
   if (Number.isSafeInteger(r["required"])) out.required = r["required"] as number;
   if (Number.isSafeInteger(r["balance"])) out.balance = r["balance"] as number;
   if (typeof r["available_at"] === "string" && r["available_at"].length <= 40) out.available_at = r["available_at"];
+  if (typeof r["refunded"] === "boolean") out.refunded = r["refunded"];
   return Object.keys(out).length > 0 ? out : undefined;
 }
 

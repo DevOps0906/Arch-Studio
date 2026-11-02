@@ -228,3 +228,57 @@ test("레이트 리밋: 한도 초과는 429", async () => {
   }
   assert.equal(last, 429);
 });
+
+test("환불 확정 실패 응답은 details.refunded 를 싣는다(true/false), 환불 실패 문구는 \"환불 처리됩니다\"", async () => {
+  const fail: SttProvider = {
+    transcribe: async () => {
+      throw new Error("x");
+    },
+  };
+  const ok = harness({ provider: fail });
+  const a = (await (await handleVoiceStt(request(webm()), ok.deps)).json()) as { error: { details?: { refunded?: boolean }; message: string } };
+  assert.equal(a.error.details?.refunded, true);
+  const bad = harness({ provider: fail });
+  bad.deps.ledger.refund = async () => {
+    throw new Error("db down");
+  };
+  const b = (await (await handleVoiceStt(request(webm()), bad.deps)).json()) as { error: { details?: { refunded?: boolean }; message: string } };
+  assert.equal(b.error.details?.refunded, false);
+  assert.match(b.error.message, /환불 처리됩니다/);
+});
+
+test("409 문구는 크레딧이 사용되었을 수 있음을 알린다", async () => {
+  const h = harness();
+  await handleVoiceStt(request(webm()), h.deps);
+  const res = await handleVoiceStt(request(webm()), h.deps);
+  assert.match(((await res.json()) as { error: { message: string } }).error.message, /크레딧 1이 사용되었을 수 있습니다/);
+});
+
+test("동시 같은 request_id 두 요청: 차감 1회·제공자 1회, 나머지는 409", async () => {
+  const h = harness();
+  const [x, y] = await Promise.all([handleVoiceStt(request(webm()), h.deps), handleVoiceStt(request(webm()), h.deps)]);
+  assert.deepEqual([x.status, y.status].sort(), [200, 409]);
+  assert.equal(h.consumed.length, 1);
+  assert.equal(h.providerCalls.n, 1);
+});
+
+test("레이트 리밋은 본문 읽기 전: 한도 초과 요청은 본문 스트림을 열지 않는다", async () => {
+  const h = harness();
+  for (let i = 0; i < 12; i++) {
+    const rid = `11111111-1111-4111-8111-${String(i).padStart(12, "0")}`;
+    await handleVoiceStt(request(webm(), { "x-request-id": rid }), h.deps);
+  }
+  let pulled = false;
+  const stream = new ReadableStream<Uint8Array>(
+    {
+      pull(c) {
+        pulled = true;
+        c.close();
+      },
+    },
+    { highWaterMark: 0 },
+  );
+  const req = new Request("http://localhost/api/voice/stt", { method: "POST", headers: { "content-type": "audio/webm", "x-request-id": RID }, body: stream, duplex: "half" } as RequestInit);
+  assert.equal((await handleVoiceStt(req, h.deps)).status, 429);
+  assert.equal(pulled, false);
+});

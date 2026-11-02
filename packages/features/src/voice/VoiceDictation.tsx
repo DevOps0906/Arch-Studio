@@ -18,7 +18,7 @@ export function VoiceDictation({ onInsert, disabled = false }: { onInsert: (text
         {
           supported: micSupported,
           startRecording: startMicRecording,
-          transcribe: (audio, contentType, requestId) => transcribeAudio(api, audio, contentType, requestId),
+          transcribe: (audio, contentType, requestId, signal) => transcribeAudio(api, audio, contentType, requestId, signal),
           newRequestId: () => api.newIdempotencyKey(),
           setTimer: (fn, ms) => setTimeout(fn, ms),
           clearTimer: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
@@ -87,6 +87,9 @@ export function VoiceDictation({ onInsert, disabled = false }: { onInsert: (text
         <div role="status" aria-live="polite" className="flex items-center gap-2 text-caption text-fg-2">
           <Spinner />
           {M.TRANSCRIBING}
+          <Button size="sm" onClick={() => dictation.cancel()}>
+            {M.TRANSCRIBE_CANCEL}
+          </Button>
         </div>
       ) : null}
 

@@ -9,6 +9,10 @@ import { fakeSttProvider } from "./provider.ts";
 import type { VoiceDeps } from "./service.ts";
 import { supabaseVoiceLedger } from "./supabase-repo.ts";
 
+// 실제 제공자를 연결하기 전 차단 조건(운영 전 필수):
+//  1) rateLimit는 프로세스 메모리라 인스턴스 사이에 공유되지 않는다 -> 공유 저장소(DB·Redis)로 교체.
+//  2) token은 고정 자리표시다 -> scope=voice 단기 토큰 발급으로 교체.
+//  3) 매직바이트 검사는 컨테이너 시작 바이트만 본다(얕음) -> 제공자 쪽 디코드 검증.
 let deps: VoiceDeps | undefined;
 
 export function voiceDeps(): VoiceDeps {

@@ -59,6 +59,8 @@ export interface WriteRequest<T> extends CommonOptions<T> {
   readonly headers?: Readonly<Record<string, string>>;
   /** false면 5xx·네트워크 오류도 자동 재시도하지 않는다(사용자가 다시 누른다). 기본 재시도. */
   readonly autoRetry?: false;
+  /** false면 Idempotency-Key 헤더를 보내지 않는다(서버가 본문·헤더의 request_id로 멱등을 처리할 때). 중복 합치기는 계속 idempotencyKey로. */
+  readonly idempotencyHeader?: false;
 }
 
 export type BinaryBody = Uint8Array | Blob;

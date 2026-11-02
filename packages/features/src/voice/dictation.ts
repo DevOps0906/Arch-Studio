@@ -1,9 +1,11 @@
-// 받아쓰기 상태기계: 고지 → 권한 → 녹음(60초 자동 정지) → 전송 → 결과 확인. 순수 로직(브라우저 API는 deps로 주입).
+// 받아쓰기 상태기계: 고지 → 권한 → 녹음(59초 자동 정지) → 전송 → 결과 확인. 순수 로직(브라우저 API는 deps로 주입).
 // 어떤 실패에서도 텍스트 입력은 막지 않는다(fallback 상태는 안내일 뿐 화면 입력은 그대로).
+import type { AbortSignalLike } from "../api-client/index.ts";
 import { MIC_DENIED, MIC_UNSUPPORTED, STT_EMPTY } from "./messages.ts";
 import { classifySttError, type SttResult } from "./transcribe.ts";
 
-export const MAX_RECORD_MS = 60_000;
+/** 서버 상한은 60초. 네트워크·인코딩 여유로 클라이언트는 59초에서 멈춘다. */
+export const MAX_RECORD_MS = 59_000;
 
 export interface RecordingHandle {
   /** 녹음을 끝낸다. done이 소리 덩어리와 함께 끝난다. */
@@ -17,7 +19,7 @@ export interface DictationDeps {
   supported(): boolean;
   /** 권한 요청 + 녹음 시작. 권한 거부는 reject. */
   startRecording(): Promise<RecordingHandle>;
-  transcribe(audio: Blob, contentType: string, requestId: string): Promise<SttResult>;
+  transcribe(audio: Blob, contentType: string, requestId: string, signal?: AbortSignalLike): Promise<SttResult>;
   newRequestId(): string;
   setTimer(fn: () => void, ms: number): unknown;
   clearTimer(handle: unknown): void;
@@ -44,7 +46,7 @@ export interface Dictation {
   declineNotice(): void;
   stop(): void;
   cancel(): void;
-  /** 실패한 같은 녹음을 같은 request_id로 다시 보낸다. */
+  /** 실패한 같은 녹음을 다시 보낸다(결과 불명이면 같은 request_id, 환불 확정 실패면 새 request_id). */
   resend(): void;
   /** 결과·안내를 닫고 처음으로. */
   reset(): void;
@@ -57,6 +59,7 @@ export function createDictation(deps: DictationDeps, opts: { noticeAccepted?: bo
   let handle: RecordingHandle | null = null;
   let timer: unknown = null;
   let generation = 0; // 취소·재시작 시 늦게 도착한 응답을 버린다
+  let sending: AbortController | null = null;
   let pending: { audio: Blob; contentType: string; requestId: string } | null = null;
   const subs = new Set<() => void>();
 
@@ -77,13 +80,17 @@ export function createDictation(deps: DictationDeps, opts: { noticeAccepted?: bo
     const p = pending;
     if (!p) return;
     set({ kind: "transcribing" });
+    const ac = new AbortController();
+    sending = ac;
     try {
-      const r = await deps.transcribe(p.audio, p.contentType, p.requestId);
+      const r = await deps.transcribe(p.audio, p.contentType, p.requestId, ac.signal);
       if (gen !== generation) return;
       pending = null;
+      sending = null;
       set({ kind: "result", text: r.text });
     } catch (e) {
       if (gen !== generation) return;
+      sending = null;
       const f = classifySttError(e);
       if (f.kind === "disabled") {
         pending = null;
@@ -92,6 +99,7 @@ export function createDictation(deps: DictationDeps, opts: { noticeAccepted?: bo
         pending = null; // 서버가 이미 처리했다: 같은 녹음 재전송은 무의미
         set({ kind: "error", message: f.message, canResend: false });
       } else {
+        if (f.newRequestId) p.requestId = deps.newRequestId(); // 환불 확정: 같은 녹음을 새 id로
         set({ kind: "error", message: f.message, canResend: f.retryable });
       }
     }
@@ -163,6 +171,8 @@ export function createDictation(deps: DictationDeps, opts: { noticeAccepted?: bo
     stop,
     cancel() {
       generation += 1;
+      sending?.abort();
+      sending = null;
       clearTimer();
       closeHandle();
       pending = null;
@@ -173,11 +183,15 @@ export function createDictation(deps: DictationDeps, opts: { noticeAccepted?: bo
     },
     reset() {
       generation += 1;
+      sending?.abort();
+      sending = null;
       pending = null;
       set({ kind: "idle" });
     },
     dispose() {
       generation += 1;
+      sending?.abort();
+      sending = null;
       clearTimer();
       closeHandle();
       subs.clear();
