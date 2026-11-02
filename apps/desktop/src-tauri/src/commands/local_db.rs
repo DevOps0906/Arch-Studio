@@ -272,6 +272,77 @@ impl LocalDb {
             Ok(())
         })
     }
+
+    /// 클라우드 사본 연결(AR-06-077): 로컬 id → 서버 `project_uuid`·마지막으로 맞춘 서버 version.
+    /// 0001의 `projects.cloud_project_id`·`cloud_version` 열을 쓴다(새 마이그레이션 없음). 연결이 없거나 삭제됐으면 None.
+    pub fn get_cloud_link(&self, id: &str) -> Result<Option<CloudLink>, AppError> {
+        validate_id(id)?;
+        self.read(|conn| {
+            let row: Option<(Option<String>, Option<i64>)> = conn
+                .query_row(
+                    "SELECT cloud_project_id, cloud_version FROM projects
+                     WHERE id = ?1 AND deleted_at IS NULL",
+                    params![id],
+                    |r| Ok((r.get(0)?, r.get(1)?)),
+                )
+                .optional()
+                .map_err(db_err)?;
+            Ok(match row {
+                Some((Some(project_uuid), Some(cloud_version))) => Some(CloudLink {
+                    project_uuid,
+                    cloud_version,
+                }),
+                _ => None,
+            })
+        })
+    }
+
+    /// 업로드·내려받기 성공 뒤 연결을 기록한다. 같은 사본이면 version은 줄지 않는다(VERSION_CONFLICT).
+    /// 다른 사본으로 바꾸는 것은 허용한다(서버 사본이 지워져 새로 올린 경우). 프로젝트 행·리비전은 건드리지 않는다.
+    pub fn set_cloud_link(&self, id: &str, link: &CloudLink) -> Result<(), AppError> {
+        validate_id(id)?;
+        validate_id(&link.project_uuid)
+            .map_err(|_| AppError::new(code::INVALID_INPUT, "project_uuid"))?;
+        if link.cloud_version < 1 {
+            return Err(AppError::new(code::INVALID_INPUT, "cloud_version"));
+        }
+        self.write(|tx| {
+            let row: Option<(Option<String>, Option<String>, Option<i64>)> = tx
+                .query_row(
+                    "SELECT deleted_at, cloud_project_id, cloud_version FROM projects WHERE id = ?1",
+                    params![id],
+                    |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
+                )
+                .optional()
+                .map_err(db_err)?;
+            match row {
+                Some((None, Some(prev_uuid), Some(prev_version)))
+                    if prev_uuid == link.project_uuid && link.cloud_version < prev_version =>
+                {
+                    return Err(AppError::new(
+                        code::VERSION_CONFLICT,
+                        prev_version.to_string(),
+                    ));
+                }
+                Some((None, _, _)) => {}
+                _ => return Err(AppError::new(code::NOT_FOUND, "project")),
+            }
+            tx.execute(
+                "UPDATE projects SET cloud_project_id = ?2, cloud_version = ?3 WHERE id = ?1",
+                params![id, link.project_uuid, link.cloud_version],
+            )
+            .map_err(db_err)?;
+            Ok(())
+        })
+    }
+}
+
+/// 로컬 프로젝트 ↔ 클라우드 사본 연결(AR-06-077). 폴더 키·서버 정본 키는 `project_uuid`이고 로컬 id는 `local_id`로만 보낸다.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CloudLink {
+    pub project_uuid: String,
+    pub cloud_version: i64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -524,6 +595,23 @@ pub fn local_db_delete_project(
     expected_version: i64,
 ) -> Result<(), AppError> {
     state_db(&state)?.delete_project(&id, expected_version)
+}
+
+#[tauri::command(async)]
+pub fn local_db_get_cloud_link(
+    state: State<'_, LocalDbState>,
+    id: String,
+) -> Result<Option<CloudLink>, AppError> {
+    state_db(&state)?.get_cloud_link(&id)
+}
+
+#[tauri::command(async)]
+pub fn local_db_set_cloud_link(
+    state: State<'_, LocalDbState>,
+    id: String,
+    link: CloudLink,
+) -> Result<(), AppError> {
+    state_db(&state)?.set_cloud_link(&id, &link)
 }
 
 #[cfg(test)]
@@ -795,6 +883,73 @@ mod tests {
         let mut i = input(&id, None);
         i.name = "  ".into();
         assert_eq!(db.save_project(&i).unwrap_err().code, code::INVALID_INPUT);
+    }
+
+    #[test]
+    fn cloud_link_round_trip_keeps_revisions_and_rejects_rollback() {
+        let dir = temp_dir("cloud-link");
+        let db = LocalDb::open(&dir).unwrap();
+        let id = new_id();
+        db.save_project(&input(&id, None)).unwrap();
+        assert!(db.get_cloud_link(&id).unwrap().is_none());
+        let first = CloudLink {
+            project_uuid: new_id(),
+            cloud_version: 1,
+        };
+        db.set_cloud_link(&id, &first).unwrap();
+        assert_eq!(db.get_cloud_link(&id).unwrap(), Some(first.clone()));
+        let next = CloudLink {
+            cloud_version: 2,
+            ..first.clone()
+        };
+        db.set_cloud_link(&id, &next).unwrap();
+        // 같은 사본의 version은 되돌리지 않는다.
+        assert_eq!(
+            db.set_cloud_link(&id, &first).unwrap_err().code,
+            code::VERSION_CONFLICT
+        );
+        // 다른 사본으로 다시 연결(서버 사본이 지워진 뒤 새로 올림)은 허용.
+        let other = CloudLink {
+            project_uuid: new_id(),
+            cloud_version: 1,
+        };
+        db.set_cloud_link(&id, &other).unwrap();
+        assert_eq!(db.get_cloud_link(&id).unwrap(), Some(other.clone()));
+        // 연결은 로컬 리비전을 만들지 않고, 저장해도 연결은 남는다.
+        assert_eq!(db.get_project(&id).unwrap().unwrap().version, 1);
+        db.save_project(&input(&id, Some(1))).unwrap();
+        assert_eq!(db.get_cloud_link(&id).unwrap(), Some(other.clone()));
+        // 없는·삭제된 프로젝트, 잘못된 값.
+        assert_eq!(
+            db.set_cloud_link(&new_id(), &other).unwrap_err().code,
+            code::NOT_FOUND
+        );
+        let bad_uuid = CloudLink {
+            project_uuid: "../x".into(),
+            cloud_version: 1,
+        };
+        assert_eq!(
+            db.set_cloud_link(&id, &bad_uuid).unwrap_err().code,
+            code::INVALID_INPUT
+        );
+        let bad_version = CloudLink {
+            cloud_version: 0,
+            ..other.clone()
+        };
+        assert_eq!(
+            db.set_cloud_link(&id, &bad_version).unwrap_err().code,
+            code::INVALID_INPUT
+        );
+        db.delete_project(&id, 2).unwrap();
+        assert!(db.get_cloud_link(&id).unwrap().is_none());
+        assert_eq!(
+            db.set_cloud_link(&id, &other).unwrap_err().code,
+            code::NOT_FOUND
+        );
+        assert!(serde_json::from_str::<CloudLink>(
+            r#"{"projectUuid":"x","cloudVersion":1,"sql":"DROP TABLE projects"}"#
+        )
+        .is_err());
     }
 
     #[test]

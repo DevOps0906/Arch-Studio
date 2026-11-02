@@ -2,6 +2,7 @@
 // 비밀은 메모리뿐(persistentSecrets=false, 인증은 Bearer): 토큰은 영속 웹 스토리지·읽기 캐시·쿠키 어디에도 저장하지 않는다.
 // 로그아웃(clearSecrets)은 비밀과 IndexedDB 읽기 캐시를 함께 지운다. 한쪽이 실패해도 다른 쪽을 지운 뒤 첫 오류를 던진다.
 import { WEB_CAPABILITIES } from "../adapters/capabilities.ts";
+import type { CloudProjectStore } from "../adapters/cloud-link.ts";
 import type { PlatformAdapters } from "../adapters/index.ts";
 import { clearAllSecrets, MemorySecureStore } from "../adapters/secure-store.ts";
 import { WebEntitlementClient } from "./entitlement.ts";
@@ -23,11 +24,30 @@ export interface CreateWebAdaptersOptions extends WebApiOptions {
   readonly getPrincipal?: () => Promise<string | null>;
 }
 
-export function createWebAdapters(options: CreateWebAdaptersOptions): PlatformAdapters {
-  const api = new WebApi(options);
+function webCache(options: CreateWebAdaptersOptions) {
   const getPrincipal =
     options.getPrincipal ?? (async () => principalFromToken(await options.getAccessToken().catch(() => null)));
-  const cache = createGuardedCache(options.cache ?? createIndexedDbReadCache(), getPrincipal);
+  return createGuardedCache(options.cache ?? createIndexedDbReadCache(), getPrincipal);
+}
+
+/**
+ * 설치형 클라우드 모드·수동 업로드(AR-06-077)가 쓰는 클라우드 사본 저장소. 웹 묶음과 같은 구현(서버 API + 읽기 캐시)이고
+ * 업로드 때 `local_id`를 함께 보낼 수 있다. 로그아웃 때 호출자가 `clearCache()`를 부른다.
+ */
+export function createCloudProjectStore(options: CreateWebAdaptersOptions): CloudProjectStore & { clearCache(): Promise<void> } {
+  const cache = webCache(options);
+  const store = new WebProjectStore({ api: new WebApi(options), cache });
+  return Object.assign(store, {
+    async clearCache() {
+      store.reset();
+      await cache.clear();
+    },
+  });
+}
+
+export function createWebAdapters(options: CreateWebAdaptersOptions): PlatformAdapters {
+  const api = new WebApi(options);
+  const cache = webCache(options);
   const secrets = new MemorySecureStore();
   const projects = new WebProjectStore({ api, cache });
   return Object.freeze({

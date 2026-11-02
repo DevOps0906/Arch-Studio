@@ -7,7 +7,7 @@ import { LEAK, runAdapterContract, testProjectId } from "../testing/contract.ts"
 import { createFileFixture, type FileFixture } from "../testing/files.ts";
 import { spyWebStorage } from "../test-helpers.ts";
 import type { ExportFormat } from "../adapters/exporter.ts";
-import { createWebAdapters } from "./adapters.ts";
+import { createCloudProjectStore, createWebAdapters } from "./adapters.ts";
 import { BASE, createFakeCloud, createFakeIdb, fakeJwt, STORAGE, type FakeCloud } from "./fakes.ts";
 import { WebApi } from "./http.ts";
 import type { WebFileHost } from "./file-gateway.ts";
@@ -298,4 +298,51 @@ test("저장: 서버 version이 expected+1보다 커도 성공(서버 값 반환
   const r = await a.projects.save(input(12));
   assert.equal(r.version, 2);
   assert.equal((idb.data.get(`project:${testProjectId(12)}`) as { version: number }).version, 2);
+});
+
+// ---- 설치형 수동 업로드(AR-06-077): local_id·폴더 키 ----------------------------------------------
+function cloudStore(cloud: FakeCloud) {
+  return createCloudProjectStore({ baseUrl: BASE, getAccessToken: async () => cloud.token, fetch: cloud.fetch, cache: createIndexedDbReadCache(createFakeIdb().factory) });
+}
+const postBody = (cloud: FakeCloud) =>
+  cloud.calls
+    .filter((c) => c.method === "POST" && new URL(c.url).pathname === "/api/cloud-projects")
+    .map((c) => JSON.parse(c.body ?? "{}") as Record<string, unknown>);
+
+test("업로드: 새 사본만 local_id를 보내고, 폴더 키·upload-url은 항상 project_uuid", async () => {
+  const cloud = createFakeCloud();
+  const store = cloudStore(cloud);
+  const local = testProjectId(40);
+  const uuid = testProjectId(41);
+  assert.equal((await store.save(input(41), { localId: local })).version, 1);
+  assert.equal((await store.save(input(41, { expectedVersion: 1 }), { localId: local })).version, 2);
+  const [first, second] = postBody(cloud);
+  assert.equal(first!.local_id, local);
+  assert.equal("local_id" in second!, false, "기존 사본에는 local_id를 보내지 않는다");
+  for (const b of [first!, second!]) {
+    assert.equal(b.project_uuid, uuid);
+    assert.equal(String(b.storage_path).split("/")[3], uuid);
+    assert.ok(!String(b.storage_path).includes(local));
+  }
+  const signs = cloud.calls.filter((c) => c.url.endsWith("/upload-url")).map((c) => new URL(c.url).pathname);
+  assert.deepEqual(signs, [`/api/cloud-projects/${uuid}/upload-url`, `/api/cloud-projects/${uuid}/upload-url`]);
+  assert.deepEqual(await store.findByLocalId(local), { projectUuid: uuid, version: 2 });
+  assert.equal(await store.findByLocalId(testProjectId(49)), null);
+});
+
+test("업로드: 서명 경로의 프로젝트 폴더가 project_uuid가 아니면(local_id 폴더) 올리지도 저장하지도 않는다", async () => {
+  const cloud = createFakeCloud();
+  const store = cloudStore(cloud);
+  cloud.signFolder = testProjectId(42);
+  await assert.rejects(store.save(input(43), { localId: testProjectId(42) }), (e) => isBridgeError(e, "PROJECT_UNAVAILABLE"));
+  assert.equal(cloud.blobs.size, 0);
+  assert.equal(postBody(cloud).length, 0);
+});
+
+test("업로드: 같은 local_id가 이미 다른 사본이면(23505) VERSION_CONFLICT", async () => {
+  const cloud = createFakeCloud();
+  const store = cloudStore(cloud);
+  await store.save(input(44), { localId: testProjectId(46) });
+  await assert.rejects(store.save(input(45), { localId: testProjectId(46) }), (e) => isBridgeError(e, "VERSION_CONFLICT"));
+  assert.equal(cloud.rows.has(testProjectId(45)), false);
 });

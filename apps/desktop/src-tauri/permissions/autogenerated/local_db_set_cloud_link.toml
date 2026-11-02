@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-local-db-set-cloud-link"
+description = "Enables the local_db_set_cloud_link command without any pre-configured scope."
+commands.allow = ["local_db_set_cloud_link"]
+
+[[permission]]
+identifier = "deny-local-db-set-cloud-link"
+description = "Denies the local_db_set_cloud_link command without any pre-configured scope."
+commands.deny = ["local_db_set_cloud_link"]

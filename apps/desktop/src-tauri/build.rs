@@ -4,6 +4,8 @@ const APP_COMMANDS: &[&str] = &[
     "local_db_get_project",
     "local_db_save_project",
     "local_db_delete_project",
+    "local_db_get_cloud_link",
+    "local_db_set_cloud_link",
     "fs_open_import",
     "export_save_file",
     "secret_get",

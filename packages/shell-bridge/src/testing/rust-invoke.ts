@@ -1,5 +1,6 @@
 // Rust 명령(build.rs APP_COMMANDS 중 화면용 10개)을 흉내 내는 invoke 모킹. 규칙은 apps/desktop/src-tauri/src/commands/*.rs와 같게 둔다:
 // - local_db: UUIDv7 id, expected_version 규칙, 소프트 삭제, 오류 `{code, detail}`(detail에 현재 version — TS가 버려야 하는 값).
+//   클라우드 사본 연결(AR-06-077): link는 projectUuid·cloudVersion만(deny_unknown_fields), 같은 사본의 version 감소는 VERSION_CONFLICT.
 // - fs_open_import: 대화상자가 고른 파일(`files.offerImport`)의 확장자·크기를 읽기 전에 검사(AR055 detail = 상한).
 // - export_save_file: 원시 본문 + `x-export-format` 헤더, 취소는 null, 결과는 pathHash·bytes·sha256.
 // - rasterize_svg(AR-06-080): `{svg, options}`(옵션 키 정확히 하나), 8MiB 상한 AR055, 허용 밖 요소·깨진 SVG INVALID_INPUT, 동시 호출 BUSY.
@@ -24,6 +25,8 @@ interface Row {
   createdAt: string;
   updatedAt: string;
   deleted: boolean;
+  /** projects.cloud_project_id·cloud_version(AR-06-077). */
+  cloud?: { projectUuid: string; cloudVersion: number };
   revisions: { schemaVersion: number; engineVersion: string; designModel: string; sha256: string }[];
 }
 
@@ -151,6 +154,30 @@ export function createRustInvoke(keychain: Map<string, string> = new Map()): Rus
         Object.assign(row, fields, { updatedAt: now() });
         row.revisions.push(rev);
         return { version: version(row), sha256: rev.sha256 };
+      }
+      case "local_db_get_cloud_link": {
+        const id = String(a.id);
+        if (!UUID_V7.test(id)) fail("INVALID_INPUT", "id");
+        const r = projects.get(id);
+        return r && !r.deleted && r.cloud ? { ...r.cloud } : null;
+      }
+      case "local_db_set_cloud_link": {
+        const id = String(a.id);
+        if (!UUID_V7.test(id)) fail("INVALID_INPUT", "id");
+        const link = (a.link ?? {}) as Record<string, unknown>;
+        for (const k of Object.keys(link)) if (k !== "projectUuid" && k !== "cloudVersion") fail("INVALID_INPUT", `unknown field ${k}`);
+        if (typeof link.projectUuid !== "string" || !UUID_V7.test(link.projectUuid)) fail("INVALID_INPUT", "project_uuid");
+        if (typeof link.cloudVersion !== "number" || !Number.isSafeInteger(link.cloudVersion) || link.cloudVersion < 1) {
+          fail("INVALID_INPUT", "cloud_version");
+        }
+        const r = projects.get(id);
+        if (!r || r.deleted) fail("NOT_FOUND", "project");
+        const prev = r!.cloud;
+        if (prev && prev.projectUuid === link.projectUuid && (link.cloudVersion as number) < prev.cloudVersion) {
+          fail("VERSION_CONFLICT", String(prev.cloudVersion));
+        }
+        r!.cloud = { projectUuid: link.projectUuid as string, cloudVersion: link.cloudVersion as number };
+        return null;
       }
       case "local_db_delete_project": {
         const id = String(a.id);

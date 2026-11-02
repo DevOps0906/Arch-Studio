@@ -17,6 +17,10 @@ export {
   type MemoryAdapters,
 } from "./memory.ts";
 export { createRustInvoke, type RustInvoke, type RustInvokeCall } from "./rust-invoke.ts";
+// 설치형 어댑터 묶음을 Rust 모킹 invoke에 바로 붙인다(기능 테스트가 런타임 판정 없이 쓰도록, AR-06-077).
+export { createTauriAdapters } from "../tauri/adapters.ts";
+// 웹 가짜 서버·IDB(AR-06-077: features/cloud-sync 테스트가 실제 WebProjectStore를 가짜 서버에 붙인다).
+export { BASE as FAKE_CLOUD_BASE, createFakeCloud, createFakeIdb, type FakeCloud } from "../web/fakes.ts";
 
 /** 가짜 Exporter: 저장 내역을 기록하고, `failWith`가 있으면 그 코드로 실패. 크기 상한은 실제와 같다. */
 export class FakeExporter implements Exporter {

@@ -189,6 +189,29 @@ fn local_db_contract_over_ipc() {
     assert!(json_call(&w, "local_db_save_project", json!({"input": with_sql})).is_err());
     let inj = json_call(&w, "local_db_get_project", json!({"id": "x' OR 1=1 --"})).unwrap_err();
     assert_eq!(inj["code"], "INVALID_INPUT");
+    // 클라우드 사본 연결(AR-06-077): camelCase 왕복, 모르는 필드 거부.
+    assert!(json_call(&w, "local_db_get_cloud_link", json!({"id": id}))
+        .unwrap()
+        .is_null());
+    let cloud = uuid::Uuid::now_v7().to_string();
+    let link = json!({"projectUuid": cloud, "cloudVersion": 1});
+    json_call(
+        &w,
+        "local_db_set_cloud_link",
+        json!({"id": id, "link": link}),
+    )
+    .unwrap();
+    assert_eq!(
+        json_call(&w, "local_db_get_cloud_link", json!({"id": id})).unwrap(),
+        link
+    );
+    let extra = json!({"projectUuid": cloud, "cloudVersion": 2, "path": "../x"});
+    assert!(json_call(
+        &w,
+        "local_db_set_cloud_link",
+        json!({"id": id, "link": extra})
+    )
+    .is_err());
     json_call(
         &w,
         "local_db_delete_project",
