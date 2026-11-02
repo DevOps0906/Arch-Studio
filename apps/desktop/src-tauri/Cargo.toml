@@ -33,7 +33,7 @@ ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std
 # png =0.17.5: resvg-js가 쓴 버전. 최신 0.17.x는 기본 필터·압축이 달라 PNG 바이트가 달라진다(픽셀은 같음).
 resvg = { version = "=0.34.0", default-features = false, features = ["text"] }
 usvg = { version = "=0.34.1", default-features = false, features = ["text"] }
-tiny-skia = "=0.10.0"
+tiny-skia = "=0.12.0"
 fontdb = { version = "=0.14.1", default-features = false }
 png = "=0.17.5"
 # deflate =1.0.0(MIT/Apache-2.0): png 0.17.5가 IDAT 압축에 쓰는 같은 크레이트·같은 버전(새 크레이트 아님, 이미 Cargo.lock에 있음).
