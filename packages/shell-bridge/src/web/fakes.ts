@@ -21,6 +21,8 @@ export interface FakeRow {
   version: number;
   name: string;
   path: string;
+  /** 설치형에서 올린 사본이면 로컬 id(AR-06-077). */
+  localId?: string | null;
 }
 
 export interface FakeCloudOptions {
@@ -45,6 +47,8 @@ export interface FakeCloud {
   rights: Record<string, boolean>;
   seat: string;
   products: { kind: string; term_ends_at: string | null }[];
+  /** 설정하면 upload-url이 이 폴더로 서명한다(잘못된 서명기 재현: 예 local_id 폴더). */
+  signFolder: string | null;
   /** 다른 사람이 먼저 저장한 것처럼 서버 version을 올린다. */
   bump(id: string): void;
   mutating(): FakeCall[];
@@ -66,6 +70,7 @@ export function createFakeCloud(opts: FakeCloudOptions = {}): FakeCloud {
     online: true,
     rejectAuth: false,
     gate: null,
+    signFolder: null,
     token: fakeJwt("user-a"),
     rights: opts.rights ?? { view_export: true, desktop_edit: true, web_edit: true, ai_render: true, cloud_review: true },
     seat: opts.seat ?? "assigned",
@@ -105,26 +110,39 @@ export function createFakeCloud(opts: FakeCloudOptions = {}): FakeCloud {
         const from = Number(url.searchParams.get("cursor") ?? 0);
         const page = all.slice(from, from + size);
         return ok({
-          items: page.map(([id, r]) => ({ project_uuid: id, local_id: null, name: r.name, version: r.version, bytes: 1, updated_at: "2026-11-02T00:00:00Z" })),
+          items: page.map(([id, r]) => ({ project_uuid: id, local_id: r.localId ?? null, name: r.name, version: r.version, bytes: 1, updated_at: "2026-11-02T00:00:00Z" })),
           next: from + size < all.length ? String(from + size) : null,
           max: 3,
           retention_until: null,
         });
       }
       if (p === "/api/cloud-projects" && method === "POST") {
-        const b = JSON.parse(body ?? "{}") as { project_uuid: string; name: string; storage_path: string; expected_version: number };
+        const b = JSON.parse(body ?? "{}") as {
+          project_uuid: string;
+          local_id?: string;
+          name: string;
+          storage_path: string;
+          expected_version: number;
+        };
+        // 서버 isOwnSnapshotPath: 프로젝트 폴더 = project_uuid(local_id 폴더면 422 23514).
+        if (!b.storage_path.startsWith(`${ORG}/arch/project_snapshot/${b.project_uuid}/`)) return err(422, "23514");
         const row = rows.get(b.project_uuid);
         if ((row?.version ?? 0) !== b.expected_version) return err(409, "AR041");
         if (!blobs.has(b.storage_path)) return err(422, "23514");
+        // arch.save_cloud_project: local_id는 조직 안에서 유일(23505), 기존 행의 다른 값으로 바꾸기는 22023.
+        if (b.local_id !== undefined) {
+          if (row?.localId && row.localId !== b.local_id) return err(422, "22023");
+          if ([...rows.entries()].some(([k, r]) => k !== b.project_uuid && r.localId === b.local_id)) return err(409, "23505");
+        }
         const version = b.expected_version + 1;
-        rows.set(b.project_uuid, { version, name: b.name, path: b.storage_path });
+        rows.set(b.project_uuid, { version, name: b.name, path: b.storage_path, localId: row?.localId ?? b.local_id ?? null });
         return ok({ project_uuid: b.project_uuid, version });
       }
       const m = /^\/api\/cloud-projects\/([^/]+)(\/upload-url|\/blob)?$/.exec(p);
       if (m) {
         const id = m[1] as string;
         if (m[2] === "/upload-url" && method === "POST") {
-          const path = `${ORG}/arch/project_snapshot/${id}/${crypto.randomUUID()}.arch`;
+          const path = `${ORG}/arch/project_snapshot/${state.signFolder ?? id}/${crypto.randomUUID()}.arch`;
           return ok({ signed_upload_url: `${STORAGE}/up/${encodeURIComponent(path)}`, path, expires_at: "2026-11-02T01:00:00Z" });
         }
         const row = rows.get(id);

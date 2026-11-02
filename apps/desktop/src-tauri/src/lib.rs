@@ -21,6 +21,8 @@ pub fn builder<R: tauri::Runtime>(builder: tauri::Builder<R>) -> tauri::Builder<
             commands::local_db::local_db_get_project,
             commands::local_db::local_db_save_project,
             commands::local_db::local_db_delete_project,
+            commands::local_db::local_db_get_cloud_link,
+            commands::local_db::local_db_set_cloud_link,
             commands::fs::fs_open_import,
             commands::export::export_save_file,
             commands::secrets::secret_get,

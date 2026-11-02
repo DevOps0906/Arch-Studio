@@ -3,13 +3,13 @@
 // IndexedDB는 읽기 캐시뿐이다: list·open이 읽은 결과를 넣고, 서버에 닿지 못할 때만 되돌려 준다. save·delete는 캐시를 읽지 않는다.
 // 서버가 사본을 하드 삭제하므로 "삭제된 id로 다시 저장 = NOT_FOUND"는 이 인스턴스(세션) 안에서만 지킨다(메모리 묘비).
 // 오류에는 코드만(이름·모델·버전 값 없음). 입력 검사는 070 공용 함수(Rust와 같은 한도).
+import type { CloudCopyRef, CloudProjectStore, CloudUploadOptions, SourcedRecord } from "../adapters/cloud-link.ts";
 import { BridgeError, type ProjectErrorCode } from "../adapters/errors.ts";
 import {
   assertExpectedVersion,
   assertProjectId,
   assertSaveProjectInput,
   type ProjectRecord,
-  type ProjectStore,
   type ProjectSummary,
   type SaveProjectInput,
   type SaveProjectResult,
@@ -65,7 +65,8 @@ const isVersion = (v: unknown): v is number => typeof v === "number" && Number.i
 /** 서버 오류 → 도메인 코드. 상태·코드만 본다. */
 function projectError(r: ApiResult): BridgeError {
   if (r.status === 404) return new BridgeError("NOT_FOUND");
-  if (r.status === 409 && r.code === "AR041") return new BridgeError("VERSION_CONFLICT");
+  // 23505 = 같은 local_id가 이미 다른 사본(설치형 업로드만, AR-06-077). 화면에는 같은 충돌 2선택으로 보인다.
+  if (r.status === 409 && (r.code === "AR041" || r.code === "23505")) return new BridgeError("VERSION_CONFLICT");
   if (r.status === 413 || r.status === 422) return new BridgeError("INVALID_INPUT");
   return new BridgeError("PROJECT_UNAVAILABLE");
 }
@@ -74,6 +75,12 @@ function projectError(r: ApiResult): BridgeError {
 function listName(name: string): string {
   const cleaned = name.replace(/[\u0000-\u001f\u007f]/g, " ").trim();
   return Array.from(cleaned).slice(0, NAME_MAX_CHARS).join("").trim() || "-";
+}
+
+/** `<org>/arch/project_snapshot/<project_uuid>/<file>` 모양이고 프로젝트 폴더가 `projectUuid`인지. */
+export function snapshotPathMatches(path: string, projectUuid: string): boolean {
+  const parts = path.split("/");
+  return parts.length === 5 && parts[1] === "arch" && parts[2] === "project_snapshot" && parts[3] === projectUuid && parts[4] !== "";
 }
 
 function parseBlob(bytes: Uint8Array): BlobBody {
@@ -109,7 +116,7 @@ export interface WebProjectStoreOptions {
   readonly now?: () => Date;
 }
 
-export class WebProjectStore implements ProjectStore {
+export class WebProjectStore implements CloudProjectStore {
   readonly #api: WebApi;
   readonly #cache: ReadCache;
   readonly #now: () => Date;
@@ -130,18 +137,25 @@ export class WebProjectStore implements ProjectStore {
     this.#createdAt.clear();
   }
 
-  async list(): Promise<readonly ProjectSummary[]> {
-    const epoch = this.#cache.epoch();
+  /** 목록 전체(커서 끝까지). 실패하면 그 응답. */
+  async #listItems(): Promise<Record<string, unknown>[] | ApiResult> {
     const items: Record<string, unknown>[] = [];
     let cursor: string | null = null;
     for (let page = 0; page < MAX_LIST_PAGES; page++) {
       const q: string = cursor === null ? "" : `?cursor=${encodeURIComponent(cursor)}`;
       const r = await this.#api.call("GET", `/api/cloud-projects${q}`);
-      if (r.status !== 200 || !isRecord(r.data) || !Array.isArray(r.data.items)) return this.#listFallback(r);
+      if (r.status !== 200 || !isRecord(r.data) || !Array.isArray(r.data.items)) return r;
       for (const it of r.data.items) if (isRecord(it)) items.push(it);
       cursor = typeof r.data.next === "string" ? r.data.next : null;
       if (cursor === null) break;
     }
+    return items;
+  }
+
+  async list(): Promise<readonly ProjectSummary[]> {
+    const epoch = this.#cache.epoch();
+    const items = await this.#listItems();
+    if (!Array.isArray(items)) return this.#listFallback(items);
     const previous = new Map((await this.#cache.getList())?.map((s) => [s.id, s]) ?? []);
     const out: ProjectSummary[] = [];
     for (const it of items) {
@@ -190,6 +204,18 @@ export class WebProjectStore implements ProjectStore {
   }
 
   async open(id: string): Promise<ProjectRecord | null> {
+    return (await this.openSourced(id))?.record ?? null;
+  }
+
+  async openSourced(id: string): Promise<SourcedRecord | null> {
+    let cached = false;
+    const record = await this.#open(id, () => {
+      cached = true;
+    });
+    return record ? { record, cached } : null;
+  }
+
+  async #open(id: string, fromCache: () => void): Promise<ProjectRecord | null> {
     const epoch = this.#cache.epoch();
     assertProjectId(id);
     if (this.#deleted.has(id)) return null;
@@ -200,7 +226,10 @@ export class WebProjectStore implements ProjectStore {
       // 서버에 닿지 못할 때만 읽기 캐시(읽기 전용). 그 밖의 오류는 그대로.
       if (e instanceof Unreachable) {
         const cached = await this.#cache.getRecord(id);
-        if (cached) return cached;
+        if (cached) {
+          fromCache();
+          return cached;
+        }
       }
       throw e;
     }
@@ -233,9 +262,18 @@ export class WebProjectStore implements ProjectStore {
     return record;
   }
 
-  async save(input: SaveProjectInput): Promise<SaveProjectResult> {
+  async findByLocalId(localId: string): Promise<CloudCopyRef | null> {
+    assertProjectId(localId);
+    const items = await this.#listItems();
+    if (!Array.isArray(items)) throw projectError(items);
+    const hit = items.find((it) => it.local_id === localId && typeof it.project_uuid === "string" && isVersion(it.version));
+    return hit ? { projectUuid: hit.project_uuid as string, version: hit.version as number } : null;
+  }
+
+  async save(input: SaveProjectInput, options: CloudUploadOptions = {}): Promise<SaveProjectResult> {
     const epoch = this.#cache.epoch();
     assertSaveProjectInput(input);
+    if (options.localId !== undefined) assertProjectId(options.localId);
     // 설계 모델은 JSON 객체여야 한다(저장소가 최종 판정, 070 계약).
     try {
       if (!isRecord(JSON.parse(input.designModel))) return fail("INVALID_INPUT");
@@ -282,10 +320,14 @@ export class WebProjectStore implements ProjectStore {
     if (sign.status !== 200 || !isRecord(sign.data)) throw projectError(sign);
     const { signed_upload_url: uploadUrl, path } = sign.data;
     if (!this.#api.isSafeSignedUrl(uploadUrl) || typeof path !== "string") return fail("PROJECT_UNAVAILABLE");
+    // 폴더 키 대조: 서버 경로의 프로젝트 폴더는 project_uuid여야 한다(local_id 폴더면 서버가 23514 422로 거절 — 올리기 전에 막는다).
+    if (!snapshotPathMatches(path, id)) return fail("PROJECT_UNAVAILABLE");
     if ((await this.#api.transfer(uploadUrl, { method: "PUT", body: bytes })) !== true) return fail("PROJECT_UNAVAILABLE");
 
     const saved = await this.#api.call("POST", "/api/cloud-projects", {
       project_uuid: id,
+      // local_id는 새 사본에만(서버는 기존 행 값을 유지). 폴더 키는 위 upload-url의 id(= project_uuid).
+      ...(expectedVersion === null && options.localId !== undefined ? { local_id: options.localId } : {}),
       name: listName(input.name),
       storage_path: path,
       expected_version: expectedVersion ?? 0,

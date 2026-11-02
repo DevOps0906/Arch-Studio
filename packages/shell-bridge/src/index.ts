@@ -121,6 +121,17 @@ export {
 } from "./supabase/client.ts";
 export type { InvokeFn } from "./tauri/invoke.ts";
 // 웹 어댑터(AR-06-072). `createPlatformAdapters({ web: () => createWebAdapters({ baseUrl, getAccessToken }) })`.
-export { createWebAdapters, type CreateWebAdaptersOptions } from "./web/adapters.ts";
+export { createCloudProjectStore, createWebAdapters, type CreateWebAdaptersOptions } from "./web/adapters.ts";
+// 설치형 로컬 ↔ 클라우드 사본 연결(AR-06-077).
+export {
+  assertCloudLink,
+  cloudLinksOf,
+  type CloudCopyRef,
+  type CloudLink,
+  type CloudLinkStore,
+  type CloudProjectStore,
+  type CloudUploadOptions,
+  type SourcedRecord,
+} from "./adapters/cloud-link.ts";
 export { createBrowserFileHost, type PickedFile, type WebFileHost } from "./web/file-gateway.ts";
 export { createIndexedDbReadCache, NO_READ_CACHE, type ReadCache } from "./web/read-cache.ts";

@@ -213,3 +213,15 @@ test("tauri rasterizer: 동시 호출은 줄 세워 Rust BUSY를 피하고, 대�
   assert.ok((await bad) instanceof BridgeError);
   assert.ok((await ok) instanceof Uint8Array);
 });
+
+test("tauri cloudLinks: Rust 읽기 전용(AR061 = DB_READ_ONLY)·DB 불가(AR060)는 코드 그대로, detail은 버림", async () => {
+  for (const code of ["AR061", "AR060"] as const) {
+    const a = createTauriAdapters(async () => {
+      throw { code, detail: `C:/secret/${TOKEN}` };
+    });
+    await assert.rejects(
+      a.cloudLinks!.set(testProjectId(1), { projectUuid: testProjectId(2), cloudVersion: 1 }),
+      (e) => e instanceof BridgeError && e.code === code && !JSON.stringify(e).includes(TOKEN),
+    );
+  }
+});

@@ -2,6 +2,7 @@
 // 화면·기능 코드는 `PlatformAdapters`를 주입받아서만 데이터·파일·비밀·권한에 닿는다.
 import type { NativeBridge } from "../bridge.ts";
 import type { PlatformCapabilities } from "./capabilities.ts";
+import type { CloudLinkStore } from "./cloud-link.ts";
 import type { EntitlementClient } from "./entitlement.ts";
 import type { FileGateway } from "./file-gateway.ts";
 import type { ProjectStore } from "./project-store.ts";
@@ -32,9 +33,14 @@ export interface PlatformAdapters extends NativeBridge {
    * 서명 규칙 팩 설치·불러오기(AR-06-042, 선택 필드). 설치형만 채운다. 화면·셸은 `rulePacksOf(adapters)`로 꺼낸다(없으면 null).
    */
   readonly rulePacks?: RulePackStore;
+  /**
+   * 로컬 프로젝트 ↔ 클라우드 사본 연결(AR-06-077, 선택 필드). 설치형만 채운다. 기능 코드는 `cloudLinksOf(adapters)`로 꺼낸다(없으면 null).
+   */
+  readonly cloudLinks?: CloudLinkStore;
 }
 
 export * from "./capabilities.ts";
+export * from "./cloud-link.ts";
 export * from "./entitlement.ts";
 export * from "./errors.ts";
 export * from "./exporter.ts";

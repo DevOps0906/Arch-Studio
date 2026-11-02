@@ -4,6 +4,7 @@ import type { PlatformAdapters } from "../adapters/index.ts";
 import { clearAllSecrets } from "../adapters/secure-store.ts";
 import { TauriEntitlementClient } from "./entitlement.ts";
 import { TauriFileGateway } from "./file-gateway.ts";
+import { TauriCloudLinkStore } from "./cloud-link.ts";
 import { tauriInvoke, type InvokeFn } from "./invoke.ts";
 import { TauriProjectStore } from "./project-store.ts";
 import { TauriRasterizer } from "./rasterizer.ts";
@@ -22,6 +23,7 @@ export function createTauriAdapters(invoke: InvokeFn = tauriInvoke): PlatformAda
     updater: null,
     rasterizer: new TauriRasterizer(invoke),
     rulePacks: new TauriRulePackStore(invoke),
+    cloudLinks: new TauriCloudLinkStore(invoke),
     clearSecrets: () => clearAllSecrets(secrets),
   });
 }

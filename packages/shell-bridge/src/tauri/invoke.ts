@@ -9,6 +9,8 @@ export type ProjectCommand =
   | "local_db_get_project"
   | "local_db_save_project"
   | "local_db_delete_project";
+/** CloudLinkStore 명령(`commands/local_db.rs`, AR-06-077). */
+export type CloudLinkCommand = "local_db_get_cloud_link" | "local_db_set_cloud_link";
 /** FileGateway 명령(`commands/fs.rs`·`commands/export.rs`). */
 export type FileCommand = "fs_open_import" | "export_save_file";
 
@@ -22,7 +24,7 @@ export const RULE_PACK_LOAD_COMMAND = "rule_pack_load";
 export type RulePackCommand = typeof RULE_PACK_INSTALL_COMMAND | typeof RULE_PACK_LOAD_COMMAND;
 
 /** 이 패키지가 부르는 명령 이름(build.rs APP_COMMANDS 중 화면용). */
-export type BridgeCommand = SecretCommand | ProjectCommand | FileCommand | RasterCommand | RulePackCommand;
+export type BridgeCommand = SecretCommand | ProjectCommand | CloudLinkCommand | FileCommand | RasterCommand | RulePackCommand;
 
 /** 명령 인자: JSON 객체 또는 원시 본문(`export_save_file`은 바이트 본문 + 헤더). */
 export type InvokeArgs = Record<string, unknown> | Uint8Array;

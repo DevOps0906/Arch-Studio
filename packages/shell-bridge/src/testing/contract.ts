@@ -10,6 +10,7 @@ import { DENY_REASONS, ENTITLEMENT_FEATURES, type EntitlementFeature } from "../
 import { BridgeError, type BridgeErrorCode } from "../adapters/errors.ts";
 import { IMPORT_MAX_BYTES, type ImportKind } from "../adapters/file-gateway.ts";
 import type { ExportFormat } from "../adapters/exporter.ts";
+import { cloudLinksOf } from "../adapters/cloud-link.ts";
 import type { PlatformAdapters } from "../adapters/index.ts";
 import type { SaveProjectInput } from "../adapters/project-store.ts";
 import { RASTER_LIMITS, rasterizerOf, type RasterizeOptions } from "../adapters/rasterizer.ts";
@@ -135,6 +136,27 @@ export function runAdapterContract(name: string, factory: ContractFactory): void
     await rejectsWith(() => projects.delete(testProjectId(4), 1), "NOT_FOUND");
     await rejectsWith(() => projects.save(input(4)), "NOT_FOUND");
     await rejectsWith(() => projects.delete(testProjectId(99), 1), "NOT_FOUND");
+  });
+
+  // ---- CloudLinkStore(AR-06-077, 설치형만) -----------------------------------------------------
+  t("cloudLinks: 없으면 null, 있으면 연결 왕복·같은 사본 version 역행 거절·삭제·없는 프로젝트 NOT_FOUND", async ({ adapters }) => {
+    const links = cloudLinksOf(adapters);
+    if (!links) return;
+    const local = testProjectId(30);
+    const cloud = testProjectId(31);
+    await adapters.projects.save(input(30));
+    assert.equal(await links.get(local), null);
+    await links.set(local, { projectUuid: cloud, cloudVersion: 2 });
+    assert.deepEqual(await links.get(local), { projectUuid: cloud, cloudVersion: 2 });
+    await rejectsWith(() => links.set(local, { projectUuid: cloud, cloudVersion: 1 }), "VERSION_CONFLICT");
+    // 연결은 로컬 리비전을 만들지 않는다(업로드 후 원본 로컬 유지).
+    assert.equal((await adapters.projects.open(local))?.version, 1);
+    await rejectsWith(() => links.set(local, { projectUuid: "../x", cloudVersion: 1 }), "INVALID_INPUT");
+    await rejectsWith(() => links.set(local, { projectUuid: cloud, cloudVersion: 0 }), "INVALID_INPUT");
+    await rejectsWith(() => links.set(testProjectId(32), { projectUuid: cloud, cloudVersion: 1 }), "NOT_FOUND");
+    await adapters.projects.delete(local, 1);
+    assert.equal(await links.get(local), null);
+    await rejectsWith(() => links.set(local, { projectUuid: cloud, cloudVersion: 3 }), "NOT_FOUND");
   });
 
   t("projects: 잘못된 id·입력은 INVALID_INPUT(입력 원문 미포함)", async ({ adapters: { projects } }) => {
