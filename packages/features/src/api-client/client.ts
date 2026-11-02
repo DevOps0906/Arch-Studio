@@ -10,6 +10,7 @@ import {
   type ApiRequest,
   type BinaryBody,
   type FetchLike,
+  type StreamBodyLike,
 } from "./types.ts";
 
 const normKey = (k: string): string => k.replace(/_/g, "").toLowerCase();
@@ -42,6 +43,7 @@ interface Entry {
   readonly autoRetry: boolean;
   readonly idemHeader: boolean;
   readonly idemKey: string | undefined;
+  readonly stream: boolean;
   readonly parse: ((d: unknown) => unknown) | undefined;
   readonly enqueuedAt: number;
   readonly subscribers: Set<Subscriber>;
@@ -103,6 +105,23 @@ export function parseRetryAfter(value: string | null, nowMs: number): number | n
   if (/^\d+$/.test(v)) return Math.min(Number(v), 86_400) * 1000;
   const t = Date.parse(v);
   return Number.isNaN(t) ? null : Math.max(0, t - nowMs);
+}
+
+/** 본문 스트림이 없는 응답(주입 fetch·테스트)은 text()를 한 덩어리 스트림으로 바꾼다. */
+function textStream(text: string): StreamBodyLike {
+  let sent = false;
+  return {
+    getReader: () => ({
+      read: async () => {
+        if (sent || text.length === 0) return { done: true };
+        sent = true;
+        return { done: false, value: new TextEncoder().encode(text) };
+      },
+      cancel: async () => {
+        sent = true;
+      },
+    }),
+  };
 }
 
 function buildUrl(baseUrl: string, path: string, query: Readonly<Record<string, string | number | boolean>> | undefined): string {
@@ -259,6 +278,7 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
           ...(en.bodyText !== undefined ? { body: en.bodyText } : en.rawBody !== undefined ? { binaryBody: en.rawBody } : {}),
           signal: en.abort.signal,
         });
+        if (en.stream && res.status >= 200 && res.status < 300) return succeed(en, res.body ?? textStream(await res.text()), res.status);
         const text = await res.text();
         const out = interpret(en, res.status, text);
         if (out.ok) return succeed(en, out.value, res.status);
@@ -383,9 +403,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       rawBody,
       contentType,
       extraHeaders: req.method === "GET" ? undefined : req.headers,
-      autoRetry: req.method === "GET" ? true : req.autoRetry !== false,
+      autoRetry: req.method === "GET" ? true : req.autoRetry !== false && req.stream !== true,
       idemHeader: req.method === "GET" ? true : req.idempotencyHeader !== false,
       idemKey,
+      stream: req.method !== "GET" && req.stream === true,
       parse: req.parse as ((d: unknown) => unknown) | undefined,
       enqueuedAt: now(),
       subscribers: new Set(),

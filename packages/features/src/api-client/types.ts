@@ -61,6 +61,11 @@ export interface WriteRequest<T> extends CommonOptions<T> {
   readonly autoRetry?: false;
   /** false면 Idempotency-Key 헤더를 보내지 않는다(서버가 본문·헤더의 request_id로 멱등을 처리할 때). 중복 합치기는 계속 idempotencyKey로. */
   readonly idempotencyHeader?: false;
+  /**
+   * true면 2xx 응답 본문을 읽지 않고 스트림(StreamBodyLike)으로 돌려준다(SSE: fetch + ReadableStream, AR-06-055).
+   * 오류 응답(비 2xx)은 평소처럼 JSON 봉투를 읽어 ApiError로 던진다. 자동 재시도는 하지 않는다(autoRetry false와 같음).
+   */
+  readonly stream?: true;
 }
 
 export type BinaryBody = Uint8Array | Blob;
@@ -82,10 +87,20 @@ export interface FetchInit {
   readonly binaryBody?: BinaryBody;
   readonly signal?: AbortSignalLike;
 }
+/** 스트림 본문의 구조적 최소형(ReadableStream<Uint8Array>와 호환). */
+export interface StreamReaderLike {
+  read(): Promise<{ readonly done: boolean; readonly value?: Uint8Array | undefined }>;
+  cancel(): Promise<void>;
+}
+export interface StreamBodyLike {
+  getReader(): StreamReaderLike;
+}
 export interface FetchResponseLike {
   readonly status: number;
   readonly headers: { get(name: string): string | null };
   text(): Promise<string>;
+  /** 스트림 요청(stream: true)에서만 읽는다. 없으면 text()를 한 덩어리 스트림으로 바꾼다. */
+  readonly body?: StreamBodyLike | null;
 }
 export type FetchLike = (url: string, init: FetchInit) => Promise<FetchResponseLike>;
 
