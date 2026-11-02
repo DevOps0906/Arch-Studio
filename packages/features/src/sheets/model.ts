@@ -313,6 +313,7 @@ export function ar058Text(paper: Paper): string {
   return next ? `${paper}에 1/600으로도 들어가지 않습니다. 더 큰 용지(${next})를 고르세요.` : `${paper}에 1/600으로도 들어가지 않습니다. 대지나 매스 범위를 확인하세요.`;
 }
 
+export const MIGRATION_DROPPED_TEXT = "형식이 맞지 않는 항목만 뺐고 나머지는 그대로 옮겼습니다. 이전 저장본은 지우지 않았습니다.";
 export const AR059_TEXT = "이전 엔진으로 만든 시트입니다. 다시 만들면 현재 엔진 기준으로 바뀝니다. 주석 위치는 유지합니다.";
 
 /** 도면 엔진은 법규 판정이 끝나야 시트를 만든다(validateDraftingInput: 판정 항목 없음 = AR050). 판정이 없거나 실패했을 때의 안내. */

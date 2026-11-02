@@ -1,4 +1,5 @@
 // 사람 주석(AR-06-086, 03_SCREENS_UX.md 9.6절): SheetSpec.annotations의 dim·text·leader·cloud → A-ANNO-USER 주석.
+// 단, 이행한 자유 메모(`ov-note:*`, 앵커 없는 text)는 기존과 같은 A-ANNO-TEXT에 그린다([DECISION] 3).
 // 위치는 앵커(모델 객체 + 부위)를 엔진 기하로 풀어 정수 mm로 정하고, 오프셋은 용지 mm(0.01mm 반올림)이다. 결정 규칙은
 // tasks/logs/AR-06-086.md [DECISION] 5~8: 앵커 대상 없음·번호 범위 밖·기준 좌표(snap) 불일치는 고아 → 출력 0건 + unapplied.
 // 이 시트 뷰에 그려지지 않는 대상(다른 층의 실, 단면 시트의 매스 등)은 고아가 아니라 그냥 그리지 않는다.
@@ -8,6 +9,8 @@ import type { Annotation, DraftingInput, Mm, PaperUm, Prim, Vec } from "../sheet
 import { cmpStr, dimension, paperMmToUm, paperToModel, type AnnotateContext, type UnappliedAnnotation, type UnappliedReason } from "./index.ts";
 
 const L = "A-ANNO-USER" as const;
+/** 이행 메모 레이어(기존 note:* 출력과 같다). */
+const L_NOTE = "A-ANNO-TEXT" as const;
 const r = roundHalfAway;
 /** 여러 줄 문자 폭(용지 0.01mm). 기존 자유 메모와 같다. */
 const NOTE_WIDTH: PaperUm = 8_000;
@@ -99,8 +102,8 @@ function pointOf(a: Anchor, s: Shape, other: Vec<Mm> | null): Resolved {
   return { ok: true, pt: [pt[0] + 0, pt[1] + 0] };
 }
 
-function textPrim(at: Vec<number>, h: PaperUm, s: string, align: "l" | "c"): Prim<number> {
-  return s.includes("\n") ? { layer: L, key: "text", t: "mtext", at, h, width: NOTE_WIDTH, s } : { layer: L, key: "text", t: "text", at, h, s, align };
+function textPrim(at: Vec<number>, h: PaperUm, s: string, align: "l" | "c", layer: typeof L | typeof L_NOTE = L): Prim<number> {
+  return s.includes("\n") ? { layer, key: "text", t: "mtext", at, h, width: NOTE_WIDTH, s } : { layer, key: "text", t: "text", at, h, s, align };
 }
 
 /** 구름: 용지 2.5mm 반지름 반원 호를 사각형 네 변에 이어 붙인다(크기는 호 지름의 배수로 맞춤). */
@@ -196,7 +199,7 @@ export function applyUserAnnotations(src: Src, view_id: string | undefined, ctx:
       continue;
     }
     if (a.kind === "text" && a.anchor === undefined) {
-      annotations.push({ anno_id: a.id, kind: "note", prims: [textPrim([dx, dy], ctx.text_h, a.text, "l")], overridable: [] });
+      annotations.push({ anno_id: a.id, kind: "note", prims: [textPrim([dx, dy], ctx.text_h, a.text, "l", a.id.startsWith("ov-") ? L_NOTE : L)], overridable: [] });
       continue;
     }
     const anchor = a.kind === "text" ? (a.anchor as Anchor) : a.anchor;
@@ -206,6 +209,10 @@ export function applyUserAnnotations(src: Src, view_id: string | undefined, ctx:
       continue;
     }
     const at: Vec<Mm> = [base.pt[0] + m(dx), base.pt[1] + m(dy)];
+    if (a.kind === "leader" && at[0] === base.pt[0] && at[1] === base.pt[1]) {
+      fail("zero_length");
+      continue;
+    }
     const prims: Prim<Mm>[] = [];
     if (a.kind === "leader") prims.push({ layer: L, key: "leader", t: "line", a: base.pt, b: at });
     if (a.kind === "cloud") prims.push(...cloudPrims(at, a.size_mm ?? CLOUD_DEFAULT_MM, ctx));

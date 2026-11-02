@@ -402,7 +402,7 @@ interface DraftingProfile {              // 클라우드 arch.drafting_profiles,
 type StdLayer =
   | 'A-SITE-BNDY' | 'A-SITE-ROAD' | 'A-SITE-SETB' | 'A-ENVL' | 'A-MASS' | 'A-WALL' | 'A-DOOR' | 'A-GLAZ'
   | 'A-AREA' | 'A-AREA-IDEN' | 'A-PARK' | 'A-ANNO-DIMS' | 'A-ANNO-TEXT' | 'A-ANNO-NRTH' | 'A-TTLB' | 'A-REFR'
-  | 'A-ANNO-USER'                        // 사람 주석(AR-06-086). 쓸 때만 레이어 표·SVG 그룹에 낸다
+  | 'A-ANNO-USER'                        // 사람이 만든 u- 주석(AR-06-086). 쓸 때만 레이어 표·SVG 그룹에 낸다. 이행 메모(ov-note:)는 A-ANNO-TEXT
 ```
 
 레이어 색·선 종류는 PRD 9.6절 표 그대로다(1점 쇄선 `DASHDOT`, 파선 `DASHED`, 실선 `CONTINUOUS`). `A-ANNO-USER`는 ACI 6·실선(제안).
@@ -456,7 +456,7 @@ type EngineRequest =                    // 봉투·레인·seq 규칙은 02장 2
 
 type EngineResponse =                   // 성공은 { req_id, seq?, ok: true, op, result, engine_version, elapsed_ms }. result 형식:
   | { op: 'progress'; req_id: string; stage: string; pct: number }
-  | { op: 'build_sheet'; result: { sheet: SheetModel; svg_preview: string } }
+  | { op: 'build_sheet'; result: { sheet: SheetModel; svg_preview: string; unapplied: Array<{ id: string; reason: string }> } }  // unapplied: 출력에서 빠진 주석(고아 orphan_*·대상 없는 덮어쓰기 등, 4.7.3절)
   | { op: 'write'; result: { files: Array<{ name: string; bytes: ArrayBuffer; sha256: string }> } }  // bytes 는 Transferable
   | { op: 'suggest_mass'; result: { candidates: Array<{ label: 'max_coverage' | 'sunlight_margin' | 'regular_plan'; masses: DesignModelV1['masses']; judgment: JudgmentResult }>; max_gross_area_m2?: number } }  // 모두 PASS
   | { op: 'validate_layout'; result: { rooms: Array<{ room_id: string; area_m2: number; target_diff_m2: number | null }>; errors: Array<{ code: 'AR051'; room_ids: string[]; kind: 'overlap' | 'outside' }> } }

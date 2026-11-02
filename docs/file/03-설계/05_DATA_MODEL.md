@@ -291,7 +291,7 @@ RLS: SELECT `is_org_member(org_id)`, 쓰기 GRANT 없음·service 정리 잡만.
 | | `program{checklist_answers, targets[], user_locked_rows[]}` | JSON | intake 후보는 채택한 항목만 들어온다 |
 | | `meta.created_by_engine_version` | 문자열 | |
 | SheetSpec | `id`, `kind`, `paper`, `orientation`, `scale`, `floor_id?`, `section_line?`, `elevation_face?` | JSON | `elevation`은 Phase 2 |
-| | `annotation_overrides[]{target, dx_mm?, dy_mm?, text?, hidden?}` | JSON | 주석만. 치수·면적 값·형상·표제란 고지는 대상이 될 수 없다(엔진이 무시) |
+| | `annotations[]`(override·dim·text·leader·cloud, 04장 4.7.3절) | JSON | 주석만(최대 500개). 치수·면적 값·형상·표제란 고지는 대상이 될 수 없다(엔진이 무시). 기존 `annotation_overrides`는 같은 target 병합 후 `ov-` + target 1건으로 이행(AR-06-086) |
 | | `include_in_proposal` | 불리언 | |
 | 파생(D, 저장 안 함) | JudgmentResult(스냅샷 제외), 엔벨로프, SheetModel, DXF/SVG/PDF/PNG 바이트 | - | 내보낼 때만 사용자가 고른 경로에 파일로 |
 

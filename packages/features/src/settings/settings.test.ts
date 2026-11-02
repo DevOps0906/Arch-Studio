@@ -77,7 +77,10 @@ test("레이어 매핑 표: 17행 × 2(표·좁은 화면 카드), 경고 문구
   assert.match(ro, /대소문자만 다르거나/);
   assert.match(ro, /레이어 3개는 표준 이름으로 내보냅니다/);
   const rw = render(h(sections.LayerSection, { ...base, editable: true }));
-  assert.equal(count(rw, /<input[^>]*disabled=""/g), 0);
+  // A-ANNO-USER(표·카드 2칸)만 읽기 전용: 서버 DB가 아직 받지 않는다(AR-06-086).
+  assert.equal(count(rw, /<input[^>]*disabled=""/g), 2);
+  assert.match(rw, /aria-label="A-ANNO-USER 사무소 이름"[^>]*disabled=""|disabled=""[^>]*aria-label="A-ANNO-USER 사무소 이름"/);
+  assert.match(rw, /서버 저장 지원 전까지 표준 이름으로 내보냅니다/);
 });
 
 test("표제란 섹션: 고정 고지·날인 없음 안내, member(읽기 전용)는 입력·올리기·저장 비활성", () => {

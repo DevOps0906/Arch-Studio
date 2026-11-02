@@ -40,6 +40,10 @@ export const LAYER_ROWS: readonly LayerRow[] = Object.freeze(
 
 export const LINETYPE_LABEL: Readonly<Record<Linetype, string>> = { CONTINUOUS: "실선", DASHED: "파선", DASHDOT: "1점 쇄선" };
 
+/** 이름을 바꿀 수 없는(읽기 전용) 레이어: 서버 DB(upsert_drafting_profile v_std)가 아직 받지 않는다(AR-06-086, 마이그레이션 후 해제). */
+export const LOCKED_LAYERS: ReadonlySet<StdLayer> = new Set<StdLayer>(["A-ANNO-USER"]);
+export const LOCKED_LAYER_TEXT = "사람 주석 레이어는 서버 저장 지원 전까지 표준 이름으로 내보냅니다.";
+
 const ORDER: Readonly<Record<string, number>> = Object.freeze(Object.fromEntries(STD_LAYERS.map((name, i) => [name, i])));
 
 export function isStdLayer(key: string): key is StdLayer {
@@ -154,6 +158,8 @@ export interface LayerTableRow extends LayerRow {
   warning: SaveLayerWarning["kind"] | null;
   /** 저장 불가(서버 422): 제어 문자·64자 초과. */
   blocked: boolean;
+  /** 읽기 전용 행(LOCKED_LAYERS): 입력은 무시하고 표준 이름. */
+  locked: boolean;
 }
 
 /**
@@ -165,7 +171,7 @@ export function layerTable(inputs: Readonly<Partial<Record<StdLayer, string>>>):
   const blocked = new Set<StdLayer>();
   for (const std of STD_LAYERS) {
     const v = inputs[std];
-    if (v === undefined || v === "") continue;
+    if (v === undefined || v === "" || LOCKED_LAYERS.has(std)) continue;
     if (REJECT_CHARS.test(v) || [...v].length > LAYER_NAME_MAX) blocked.add(std);
     else raw[std] = v;
   }
@@ -176,10 +182,11 @@ export function layerTable(inputs: Readonly<Partial<Record<StdLayer, string>>>):
   const resolved = resolveLayerMap(map as Record<string, string>);
   const rows = LAYER_ROWS.map((row) => ({
     ...row,
-    input: inputs[row.name] ?? "",
+    input: LOCKED_LAYERS.has(row.name) ? "" : (inputs[row.name] ?? ""),
     output: resolved.names[row.name],
     warning: blocked.has(row.name) ? null : (warn.get(row.name) ?? null),
     blocked: blocked.has(row.name),
+    locked: LOCKED_LAYERS.has(row.name),
   }));
   return { rows, saveMap: blocked.size > 0 ? null : map };
 }

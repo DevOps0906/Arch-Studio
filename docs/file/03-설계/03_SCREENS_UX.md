@@ -1164,7 +1164,7 @@ FortuneDocs(이식 원천, 기획만 약 40%, `docs/reference/reviews/FortuneDoc
 | 서체·크기·색 | DraftingProfile에서만(주석마다 두지 않음) |
 | 고아 주석 | 앵커 `ref`가 모델에 없거나 `index`가 범위 밖이면 고아. 위치를 추측하지 않고 출력(DXF·PDF·SVG·PNG)에서 뺀다. 편집 화면에서만 빨간 파선(`--color-danger`) + "앵커 없음", 목록에 "주석 4 · 고아 1", 행동 [앵커 다시 고르기]·[삭제]. 내보내기 대화상자에 "고아 주석 n개는 출력에서 빠집니다"(막지 않음), 기존 `unapplied`와 같은 경로로 보고 |
 | 결정성 | 출력 = `drafting(model, sheetSpec, profile)` 순수 함수. 그리기 순서는 `id` 사전순(배열 순서 무관), 앵커 좌표는 엔진 기하·mm 정수. 주석 없는 시트 출력은 지금 골든과 바이트 동일(회귀 0), 주석 포함·고아 포함 골든 추가. 상태줄 출력 지문(해시 앞자리) 표시는 선택 |
-| 이행 | `annotation_overrides[i]` → `{ id: "ov-" + target, kind: "override", … }` 1:1 변환. 외부 계약(zod `packages/domain/src/sheet.ts`, 04장 4.7.3 SheetSpec, 계약 corpus `apps/api/tests/contract/corpus/sheet_spec.json`) 변경이라 위험 높음(AR-06-086) |
+| 이행 | `annotation_overrides`의 같은 target 항목을 병합(뒤 항목이 이김)한 뒤 target당 `{ id: "ov-" + target, kind: "override", … }` 1건(`note:` target은 앵커 없는 `text`, `A-ANNO-TEXT` 유지). 외부 계약(zod `packages/domain/src/sheet.ts`, 04장 4.7.3 SheetSpec, 계약 corpus `apps/api/tests/contract/corpus/sheet_spec.json`) 변경이라 위험 높음(AR-06-086) |
 
 zod 스키마 초안(앵커·discriminatedUnion)은 `git show 06c3d55:docs/design/WORKSPACE_SPEC_DRAFT.md` 3.2절. 확정 스키마의 정본은 04장 SheetSpec(AR-06-086에서 갱신).
 

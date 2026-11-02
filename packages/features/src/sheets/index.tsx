@@ -30,6 +30,7 @@ import {
 import { ExportDialog, type ExportRun, type ExportSelection } from "./ExportDialog.tsx";
 import {
   AR059_TEXT,
+  MIGRATION_DROPPED_TEXT,
   JUDGMENT_REQUIRED_TEXT,
   ar058Text,
   kindSupport,
@@ -49,6 +50,7 @@ import {
   MAX_SHEETS,
   type SheetInput,
   type SheetKind,
+  type StoredRead,
   type StoredSheets,
   type UnappliedNote,
 } from "./model.ts";
@@ -80,13 +82,13 @@ export function Screen() {
 }
 
 /** v2 저장본, 없으면 v1(annotation_overrides)을 이행해 읽고 v2로 써 둔다(v1은 지우지 않는다, AR-06-086). */
-function readStored(storage: StorageLike | null, projectId: string): StoredSheets {
+function readStored(storage: StorageLike | null, projectId: string): StoredRead {
   try {
     const r = readStoredSheets((k) => storage?.getItem(k) ?? null, projectId);
     if (r.migrated && r.stored.specs.length > 0) storage?.setItem(storeKey(projectId), serializeStored(r.stored));
-    return r.stored;
+    return r;
   } catch {
-    return parseStored(null);
+    return { stored: parseStored(null), migrated: false, dropped: 0 };
   }
 }
 
@@ -104,7 +106,10 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
 
   const parsed = useMemo(() => parseModel(record.designModel), [record.designModel]);
   const storage = useMemo(() => defaultStorage(), []);
-  const [stored, setStored] = useState<StoredSheets>(() => (forcedEmpty ? parseStored(null) : readStored(storage, record.id)));
+  const [initial] = useState<StoredRead>(() => (forcedEmpty ? { stored: parseStored(null), migrated: false, dropped: 0 } : readStored(storage, record.id)));
+  const [stored, setStored] = useState<StoredSheets>(initial.stored);
+  // v1 이행 중 버린 시트·주석 수(0이면 안내 없음). 닫으면 이번 실행 동안 다시 띄우지 않는다.
+  const [migrationDropped, setMigrationDropped] = useState(initial.dropped);
   const [selectedId, setSelectedId] = useState<string | null>(stored.specs[0]?.id ?? null);
   const [zoom, setZoom] = useState(100);
   const [exportOpen, setExportOpen] = useState(false);
@@ -314,8 +319,21 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
   const hasSheets = !noLegacyAndLocked && specs.length > 0;
 
   const notices =
-    access.exportState === "denied" || (access.viewOnly && access.editReason && !noLegacyAndLocked) || stale || (ar058 && selected && summary) || access.watermark ? (
+    access.exportState === "denied" || (access.viewOnly && access.editReason && !noLegacyAndLocked) || stale || (ar058 && selected && summary) || access.watermark || migrationDropped > 0 ? (
       <>
+        {migrationDropped > 0 ? (
+          <Banner
+            tone="warn"
+            title={`이전 형식 시트·주석 ${migrationDropped}건을 옮기지 못했습니다`}
+            action={
+              <Button size="sm" variant="ghost" onClick={() => setMigrationDropped(0)}>
+                닫기
+              </Button>
+            }
+          >
+            {MIGRATION_DROPPED_TEXT}
+          </Banner>
+        ) : null}
         {access.exportState === "denied" ? <LockedState title="내보내기를 쓸 수 없습니다" reason={access.exportReason ?? "내보내기 권한을 확인하지 못했습니다."} action={<LicenseLink />} /> : null}
         {access.viewOnly && access.editReason && !noLegacyAndLocked ? (
           <Banner tone="info" title="마지막으로 만든 시트만 다시 내보낼 수 있습니다" action={<LicenseLink />}>

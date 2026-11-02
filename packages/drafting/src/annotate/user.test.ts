@@ -34,7 +34,7 @@ function build(annotations: SheetAnnotation[], over: Partial<DraftingInput["shee
   return buildSheet(input, sampleView(model));
 }
 
-const user = (s: SheetModel) => s.annotations.filter((a) => a.prims.some((p) => p.layer === "A-ANNO-USER"));
+const user = (s: SheetModel) => s.annotations.filter((a) => a.anno_id.startsWith("u-") || a.anno_id.startsWith("ov-note:"));
 
 test("사람 주석은 A-ANNO-USER, 앵커 좌표 + 용지 mm 오프셋, 치수 값은 두 앵커 거리(엔진 계산)", () => {
   assert.ok(annotationsSchema.safeParse(ANNOS).success);
@@ -42,7 +42,8 @@ test("사람 주석은 A-ANNO-USER, 앵커 좌표 + 용지 mm 오프셋, 치수 
   assert.deepEqual(unapplied, []);
   const ids = user(sheet).map((a) => a.anno_id);
   assert.deepEqual(ids, ["ov-note:1", "u-cloud-1", "u-dim-1", "u-leader-1", "u-text-1"]);
-  for (const a of user(sheet)) assert.ok(a.prims.every((p) => p.layer === "A-ANNO-USER"), a.anno_id);
+  // 사람이 만든 u- 주석은 A-ANNO-USER, 이행 메모(ov-note:)는 기존과 같은 A-ANNO-TEXT.
+  for (const a of user(sheet)) assert.ok(a.prims.every((p) => p.layer === (a.anno_id.startsWith("u-") ? "A-ANNO-USER" : "A-ANNO-TEXT")), a.anno_id);
   const k = sheet.scale / 100;
 
   const dim = sheet.annotations.find((a) => a.anno_id === "u-dim-1");
@@ -110,17 +111,19 @@ test("주석 배열 순서를 섞어도 같은 시트(input_hash 포함)·같은
   assert.equal(writeSvg(c), writeSvg(a));
 });
 
-test("빈 문자·0 길이 치수·foot 단독은 unapplied, 숨긴 메모는 조용히 뺀다", () => {
+test("빈 문자·0 길이 치수·0 길이 지시선·foot 단독은 unapplied, 숨긴 메모는 조용히 뺀다", () => {
   const { sheet, unapplied } = build([
     { id: "u-e", kind: "text", anchor: { ref: "m000", part: "center", snap: [10000, 7500] }, dx_mm: 0, dy_mm: 0, text: "  " },
     { id: "u-f", kind: "dim", a: { ref: "m000", part: "vertex", index: 0, snap: [1200, 1200] }, b: { ref: "m000", part: "vertex", index: 0, snap: [1200, 1200] }, offset_mm: 0 },
     { id: "u-g", kind: "leader", anchor: { ref: "m000", part: "edge", index: 0, at: "foot", snap: [0, 0] }, dx_mm: 0, dy_mm: 0, text: "x" },
+    { id: "u-h", kind: "leader", anchor: { ref: "m000", part: "center", snap: [10000, 7500] }, dx_mm: 0, dy_mm: 0, text: "길이 0" },
     { id: "ov-note:h", kind: "text", dx_mm: 0, dy_mm: 0, text: "숨김", hidden: true },
   ]);
   assert.deepEqual(unapplied, [
     { id: "u-e", reason: "empty_text" },
     { id: "u-f", reason: "zero_length" },
     { id: "u-g", reason: "invalid_anchor" },
+    { id: "u-h", reason: "zero_length" },
   ]);
   assert.deepEqual(user(sheet), []);
 });

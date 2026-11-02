@@ -37,7 +37,7 @@ import { classifyStoreError, localError, storeErrorText, TEXT, viewOnlyReason } 
 import { copyName, newProjectInput, uuidV7, type NewProjectValues } from "./new-project.ts";
 import { todayItems } from "./today.ts";
 import { parseDesignModel } from "../site/model.ts";
-import { parseStored, storeKey } from "../sheets/model.ts";
+import { readStoredSheets } from "../sheets/model.ts";
 import { buildCard, projectTodos, sortCards, summarize, type VerdictFacts } from "./dashboard.ts";
 import { CloudActivityCard, CreditCard, DASH_TEXT, ProjectCard, ProjectCardSkeleton, RevisionCard, SummaryStrip, TodoPanel } from "./cards.tsx";
 import { applyListQuery, isFiltered, parseListQuery, writeListQuery, type ListQuery } from "./list-query.ts";
@@ -125,7 +125,8 @@ interface Facts {
 
 function readSheets(id: string): readonly SheetSpec[] {
   try {
-    return parseStored(globalThis.localStorage?.getItem(storeKey(id)) ?? null).specs;
+    // v2 저장본, 없으면 v1(annotation_overrides)을 이행해 읽는다(쓰지 않는다 — 도면 화면이 v2로 저장).
+    return readStoredSheets((k) => globalThis.localStorage?.getItem(k) ?? null, id).stored.specs;
   } catch {
     return [];
   }
