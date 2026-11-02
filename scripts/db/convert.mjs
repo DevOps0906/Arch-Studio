@@ -52,6 +52,13 @@ export const TARGETS = [
     origin: 'supabase/modular/2402_arch_cloud_projects.sql',
     seed: null,
   },
+  {
+    src: 'supabase/modular/2403_arch_ai_routing.sql',
+    out: 'supabase/migrations/20261102000002_arch_ai_routing.sql',
+    title: '20261102000002_arch_ai_routing.sql (모놀리스 arch-studio)',
+    origin: 'supabase/modular/2403_arch_ai_routing.sql',
+    seed: null,
+  },
 ];
 
 const SEED_BEGIN = '-- @monolith-seed-begin';
@@ -107,7 +114,21 @@ export function mergeSeed(seedText, seedBlock, file) {
   return s.slice(0, at) + seedBlock;
 }
 
+// 라우팅 기본값 14행: 2400 seed 블록(→ seed.sql)과 2403(→ 마이그레이션)의 insert 문이 같아야 한다(AR-06-049).
+const ROUTING_INSERT = /insert into core\.ai_routing_settings[\s\S]*?do update\n\s+set [^;]*;/;
+export function assertRoutingParity(root = ROOT) {
+  const pick = (rel) => {
+    const m = ROUTING_INSERT.exec(toLf(readFileSync(resolve(root, rel), 'utf8')));
+    if (!m) throw new Error(`${rel}: ai_routing_settings insert 문을 찾지 못했다`);
+    return m[0];
+  };
+  if (pick('supabase/modular/2400_arch.sql') !== pick('supabase/modular/2403_arch_ai_routing.sql')) {
+    throw new Error('라우팅 14행이 2400 seed 블록과 2403 이 다르다(둘을 같게 맞춘다)');
+  }
+}
+
 export function buildAll(root = ROOT) {
+  assertRoutingParity(root);
   const files = new Map();
   for (const t of TARGETS) {
     const { migration, seedBlock } = convertModular(readFileSync(resolve(root, t.src), 'utf8'), t);
