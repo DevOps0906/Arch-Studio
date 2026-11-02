@@ -1,8 +1,8 @@
 -- =====================================================================
--- 20261102000001_arch_ai_routing.sql (모놀리스 arch-studio)
+-- 20261102000002_arch_ai_routing.sql (모놀리스 arch-studio)
 -- 원본: supabase/modular/2403_arch_ai_routing.sql 의 변환본(DB_CONVENTIONS.md 12장: 스키마 블록 제거, core.·arch. → public.,
 --   @monolith-seed 블록은 seed.sql 로 이동). 본문은 변환 외에 같다. 직접 고치지 말고 조각을 고친 뒤 다시 변환한다.
--- arch-studio AI 라우팅 강제 행 + 공개 지식 컬렉션. 선행: 2400, 2401(2402 와 서로 독립). 2400 은 수정하지 않는다(AR-06-049).
+-- arch-studio AI 라우팅 강제 행 + 공개 지식 컬렉션. 선행: 2400, 2401, 2402. 적용 순서 2400 → 2401 → 2402 → 2403. 2400 은 수정하지 않는다(AR-06-049).
 -- 1) 라우팅 기본값 14행(org null, app 'arch')을 마이그레이션으로도 멱등 upsert 한다. 2400 의 seed 블록은 모놀리스에서 seed.sql 로
 --    빠지므로, 운영에서 seed 를 안 돌리면 오픈소스 강제 행(public.intake_consult·consult_recording·dify.aux)이 없어
 --    '*' auto 행으로 떨어질 수 있었다. 값은 2400 seed 블록과 같아야 하며 scripts/db/convert.mjs(buildAll)가 대조한다(다르면 convert --check·pnpm test:db 실패).

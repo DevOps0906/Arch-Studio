@@ -1,6 +1,6 @@
 // 업로드 목적별 정책과 서버 경로 생성(04_API.md 1장 "업로드", 2.1절 `POST /api/uploads/sign`, 05장 storage_path CHECK).
 // 경로는 서버만 만든다: <org_id>/arch/<purpose>/[<project_ref>/]<uuid>.<ext>. 클라이언트는 경로·파일명을 보내지 않는다.
-// project_ref 폴더는 project_snapshot에만 둔다(arch.cloud_projects.storage_path CHECK가 <local_id>/ 폴더를 요구, 2400_arch.sql:231).
+// project_ref 폴더는 project_snapshot에만 둔다(arch.cloud_projects.storage_path CHECK가 <project_uuid>/ 폴더를 요구(AR-06-073 이후), 2400_arch.sql:231).
 // 상한 값의 근거: render_input 10MB·녹음 200MB(01_PRD.md 5장 "업로드 상한", 제안), proposal_sheet 2MB(04_API.md 6.2절, 제안),
 // project_snapshot 100MB(버킷 arch-user file_size_limit, 2400_arch.sql:1839). 확장자 목록은 제안(consult_audio 형식은 미확인).
 // server-only를 import하지 않는다(node --test 대상).
