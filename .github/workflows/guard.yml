@@ -38,4 +38,4 @@ jobs:
           cache: false
       # 모듈 프록시·sumdb 가 무결성을 검증한다(버전 고정)
       - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
-      - run: "$(go env GOPATH)/bin/actionlint"
+      - run: '"$(go env GOPATH)/bin/actionlint"'
