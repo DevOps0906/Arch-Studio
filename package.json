@@ -21,6 +21,7 @@
     "test:ci": "node --test \"scripts/ci/*.test.mjs\"",
     "scan:secrets": "node scripts/ci/scan-secrets.mjs repo",
     "db:seed-users": "node scripts/dev/seed-users.mjs --app arch",
+    "test:ai-routing": "node --test \"scripts/ai-routing/*.test.mjs\"",
     "test:rls": "node scripts/test-rls/run.mjs --target mono"
   },
   "devDependencies": {

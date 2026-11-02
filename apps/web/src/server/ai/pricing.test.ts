@@ -69,21 +69,41 @@ test("크레딧팩: seed credit_packs와 같은 크레딧·원 금액(정수)", 
   }
 });
 
-test("하드코딩 단가는 pricing.ts에만: server/ai·app/api 아래 다른 파일에 price.<variant> 표가 없다", () => {
-  const dirs = [path.join(ROOT, "apps/web/src/server/ai"), path.join(ROOT, "apps/web/src/app/api")];
+// 스캔에서 빼는 파일은 정본 pricing.ts 경로 하나뿐(이름이 같은 다른 파일은 스캔한다).
+const PRICING_TS = path.join(ROOT, "apps/web/src/server/ai/pricing.ts");
+
+function sourceFiles(dirs: string[]): string[] {
   const files: string[] = [];
   const walk = (dir: string) => {
     for (const ent of readdirSafe(dir)) {
       const p = path.join(dir, ent.name);
-      if (ent.isDirectory()) walk(p);
-      else if (/\.tsx?$/.test(ent.name) && !ent.name.endsWith(".test.ts") && !p.endsWith("pricing.ts")) files.push(p);
+      if (ent.isDirectory()) {
+        if (ent.name !== "node_modules" && ent.name !== "__pycache__") walk(p);
+      } else if (/\.(tsx?|py)$/.test(ent.name) && !/\.test\.tsx?$|^test_.*\.py$/.test(ent.name) && p !== PRICING_TS) files.push(p);
     }
   };
   for (const d of dirs) walk(d);
-  for (const f of files) {
+  return files;
+}
+
+test("하드코딩 단가는 pricing.ts에만: server/ai·app/api·server/voice·workers 아래 다른 파일에 price.<variant> 표가 없다", () => {
+  const dirs = ["apps/web/src/server/ai", "apps/web/src/app/api", "apps/web/src/server/voice", "workers"].map((d) => path.join(ROOT, d));
+  for (const f of sourceFiles(dirs)) {
     const text = readFileSync(f, "utf8");
-    assert.doesNotMatch(text, /render_std\s*:\s*\d|review\s*:\s*15\b|credits\s*:\s*\d/, f);
+    assert.doesNotMatch(text, /render_std\s*:\s*\d|review\s*:\s*15|credits\s*:\s*\d/, f);
   }
+});
+
+// AR-06-049: STT 분당·채팅 턴당 크레딧의 정의는 pricing.ts 하나(사본 금지).
+test("STT 1/분·채팅 1/턴 상수 정의는 pricing.ts뿐", () => {
+  const dirs = ["apps/web/src", "workers", "apps/api/app", "packages"].map((d) => path.join(ROOT, d));
+  const found: string[] = [];
+  for (const f of sourceFiles(dirs)) {
+    if (/(STT_CREDITS_PER_MINUTE|CHAT_TURN_CREDITS)\s*(:[^=]*)?=(?!=)/.test(readFileSync(f, "utf8"))) found.push(f);
+  }
+  assert.deepEqual(found, []);
+  assert.equal(STT_CREDITS_PER_MINUTE.credits, 1);
+  assert.equal(CHAT_TURN_CREDITS.credits, 1);
 });
 
 function readdirSafe(dir: string): Dirent[] {
