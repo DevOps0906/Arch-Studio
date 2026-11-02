@@ -35,7 +35,7 @@ def main() -> None:
         want
         in {
             h.chunk.metadata["doc_id"]
-            for h in search_effective(store, emb, org_id=ORG, query=q, application_date=d, k=K)
+            for h in search_effective(store, emb, org_id=ORG, query=q, application_date=d, k=K).hits
         }
         for q, d, want in EVAL_SET
     )

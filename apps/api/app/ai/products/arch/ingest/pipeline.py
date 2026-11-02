@@ -71,10 +71,11 @@ def to_chunks(doc: SourceDocument, *, org_id: str, collection_id: str, embedder:
 def ingest(
     docs: list[SourceDocument], *, store: KnowledgeStore, embedder: Embedder, org_id: str, collections: dict[str, str]
 ) -> int:
-    """collections: SourceKind -> collection_id. 색인한 청크 수. 같은 입력 재실행은 같은 id 로 덮어쓴다(멱등)."""
+    """collections: SourceKind -> collection_id. 색인한 청크 수. 문서 단위로 교체한다(멱등, 줄어든 청크 잔존 없음)."""
     total = 0
     for doc in docs:
-        chunks = to_chunks(doc, org_id=org_id, collection_id=collections[doc.kind], embedder=embedder)
-        store.upsert(chunks)
+        cid = collections[doc.kind]
+        chunks = to_chunks(doc, org_id=org_id, collection_id=cid, embedder=embedder)
+        store.replace_document(org_id, cid, doc.doc_id, chunks)
         total += len(chunks)
     return total

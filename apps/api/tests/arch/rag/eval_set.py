@@ -43,3 +43,13 @@ EVAL_SET: list[tuple[str, date, str]] = [
     ("필로티 벽이 없는 부분", OLD, "rp-pilotis"),
     ("지하층 평균 높이 2분의 1", OLD, "rp-basement"),
 ]
+
+# 개정 이력 문항의 정답 버전 -> 오답(다른 시행본). 정답은 1위, 오답은 결과에 없어야 한다.
+WRONG_VERSION: dict[str, str] = {
+    "law-cov-v1": "law-cov-v2",
+    "law-cov-v2": "law-cov-v1",
+    "law-far-v1": "law-far-v2",
+    "law-far-v2": "law-far-v1",
+    "law-sun-v1": "law-sun-v2",
+    "law-sun-v2": "law-sun-v1",
+}
