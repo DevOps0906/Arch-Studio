@@ -13,6 +13,12 @@ import { GOLDEN, goldenFiles, MANIFEST, type GoldenManifest } from "./harness.ts
 const sha256 = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
 const old = existsSync(MANIFEST) ? (JSON.parse(readFileSync(MANIFEST, "utf8")) as GoldenManifest) : null;
 const bumped = old === null || old.writer_version !== DXF_WRITER_VERSION;
+// --hash-only: 버전을 올리지 않고, 64자 16진 토큰(input_hash)만 다른 비 DXF 파일(input.json)을 갱신한다.
+// DXF 본문은 한 바이트도 바뀌면 안 된다(AR-06-086 결정 1: 주석 없는 DXF 바이트 동일).
+const hashOnly = process.argv.includes("--hash-only");
+const maskHash = (s: string) => s.replace(/[0-9a-f]{64}/g, "<hash>");
+const onlyHashDiffers = (name: string, u: URL, body: string) =>
+  !name.endsWith(".dxf") && existsSync(u) && maskHash(readFileSync(u, "utf8")) === maskHash(body);
 
 const refused: string[] = [];
 const writes: Array<[URL, string]> = [];
@@ -28,6 +34,10 @@ for (const c of CASES) {
   });
   const stale = isNew ? [] : readdirSync(dir).filter((f) => !(f in files));
   if (changed.length === 0 && stale.length === 0) continue;
+  if (!bumped && !isNew && hashOnly && stale.length === 0 && changed.every(([n, b]) => onlyHashDiffers(n, new URL(n, dir), b))) {
+    for (const [name, body] of changed) writes.push([new URL(name, dir), body]);
+    continue;
+  }
   if (!bumped && !isNew) {
     refused.push(`${c.id}: ${[...changed.map(([n]) => n), ...stale.map((n) => `${n}(남는 파일)`)].join(", ")}`);
     continue;

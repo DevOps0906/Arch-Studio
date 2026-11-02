@@ -1,0 +1,10 @@
+{
+  "case_id": "writer-user-annotations-orphan",
+  "note": "고아 주석(없는 ref·범위 밖 index·다중 앵커 중 하나 고아)은 출력에서 빠지고 정상 주석 하나만 남는다",
+  "writer_version": "dxf-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

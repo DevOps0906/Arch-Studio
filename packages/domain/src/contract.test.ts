@@ -28,6 +28,10 @@ function describe(schema: ZodTypeAny): Shape {
       }
       return out;
     }
+    case "ZodEffects":
+      return describe(def.schema); // 중복 id 검사 같은 refine 은 코퍼스가 고정한다
+    case "ZodDiscriminatedUnion":
+      return { [`oneOf(${def.discriminator})`]: [...def.options.values()].map((o: ZodTypeAny) => describe(o)) };
     case "ZodArray":
       return [describe(def.type)];
     case "ZodTuple":
@@ -57,6 +61,7 @@ function describe(schema: ZodTypeAny): Shape {
 }
 
 const point: Shape = ["tuple", "int", "int"];
+const anchor: Shape = { ref: "string", part: '"vertex" | "edge" | "center"', "index?": "int", "at?": '"start" | "end" | "mid"' };
 const polygon: Shape = { outer: [point], "holes?": [[point]] };
 
 // 버전별 스냅샷. schema_version을 올리면 새 키를 추가한다(이전 키는 남긴다).
@@ -148,8 +153,16 @@ test("SheetSpec 스키마가 4.7.3 필드와 일치한다", () => {
     "floor_id?": "string",
     "section_line?": { a: point, b: point },
     "elevation_face?": '"N" | "S" | "E" | "W"',
-    annotation_overrides: [
-      { target: "string", "dx_mm?": "number", "dy_mm?": "number", "text?": "string", "hidden?": "boolean" },
+    "annotations?": [
+      {
+        "oneOf(kind)": [
+          { id: "string", kind: '"override"', target: "string", "dx_mm?": "number", "dy_mm?": "number", "text?": "string", "hidden?": "boolean" },
+          { id: "string", kind: '"dim"', a: anchor, b: anchor, offset_mm: "number", "text?": "string" },
+          { id: "string", kind: '"text"', "anchor?": anchor, dx_mm: "number", dy_mm: "number", text: "string" },
+          { id: "string", kind: '"leader"', anchors: [anchor], dx_mm: "number", dy_mm: "number", text: "string" },
+          { id: "string", kind: '"cloud"', anchors: [anchor], "text?": "string" },
+        ],
+      },
     ],
     include_in_proposal: "boolean",
   });

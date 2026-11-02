@@ -374,8 +374,22 @@ interface SheetSpec {
   floor_id?: string                                  // floor_plan, area_plan(층별)
   section_line?: { a: Point; b: Point }              // sunlight_section. 없으면 매스 무게중심을 지나는 정북 방향
   elevation_face?: 'N' | 'S' | 'E' | 'W'
-  annotation_overrides: Array<{ target: string; dx_mm?: number; dy_mm?: number; text?: string; hidden?: boolean }>  // 주석만. 형상은 고칠 수 없다
+  annotations?: Annotation[]                         // 주석 편집층(AR-06-086). 주석만, 형상은 고칠 수 없다. 최대 500개, 빈 배열은 저장하지 않는다(키 생략)
   include_in_proposal: boolean
+}
+// 옛 `annotation_overrides` 키는 거부한다(이행 함수 migrateLegacySheetSpec 만 받는다). id 는 시트 안에서 유일(zod·pydantic 모두 거부), 1~200자.
+// 문구는 200자, 용지 mm 오프셋은 ±10000. 그리는 순서는 id 사전순(배열 순서 무관). 서체·크기·색은 DraftingProfile 에서만.
+type Annotation =
+  | { id: string; kind: 'override'; target: string; dx_mm?: number; dy_mm?: number; text?: string; hidden?: boolean }  // 자동 주석 1개 이동·문구·숨김. 이행 id "ov-<target>"
+  | { id: string; kind: 'dim'; a: Anchor; b: Anchor; offset_mm: number; text?: string }   // 값은 엔진이 두 앵커 거리(mm 반올림)로 채운다. text 는 {값} 포함 필수(기본 "{값}")
+  | { id: string; kind: 'text'; anchor?: Anchor; dx_mm: number; dy_mm: number; text: string }  // anchor 없음 = 용지 좌표 메모(이행 id "note-<id>")
+  | { id: string; kind: 'leader'; anchors: Anchor[]; dx_mm: number; dy_mm: number; text: string }  // 앵커 1~16, 마지막 앵커 + 오프셋에 문구
+  | { id: string; kind: 'cloud'; anchors: Anchor[]; text?: string }                         // 앵커 3~64 닫힌 외곽
+interface Anchor {                                   // 모델 객체 위의 한 점. 위치는 화면 좌표가 아니라 앵커 + 용지 mm 오프셋
+  ref: string                                        // 모델 객체 id(1~128자): 'site' · 매스 id(site_plan) · 실 id(floor_plan)
+  part: 'vertex' | 'edge' | 'center'                 // center = 외곽 상자 중심
+  index?: number                                     // vertex 번호, edge = index → index+1 변(닫힘)
+  at?: 'start' | 'end' | 'mid'                       // edge 위 위치, 기본 mid
 }
 interface DraftingProfile {              // 클라우드 arch.drafting_profiles, 로컬 drafting_profile_cache
   office_name: string
@@ -393,6 +407,12 @@ type StdLayer =
 ```
 
 레이어 색·선 종류는 PRD 9.6절 표 그대로다(1점 쇄선 `DASHDOT`, 파선 `DASHED`, 실선 `CONTINUOUS`).
+
+사람 주석은 `A-ANNO-USER` 레이어에 그린다. 이 레이어는 `StdLayer`·`layer_map`·DB 표준 레이어 표에 없고, 사람 주석이 있을 때만 DXF LAYER 표에 붙는다(주석 없는 DXF는 기존과 바이트 동일). 사무소 매핑으로 이름을 바꾸는 것은 후속(DB 변경 필요).
+
+**고아 주석**: 앵커 `ref` 가 이 시트에 그려지지 않거나(없는 id, area_plan·sunlight_section 은 앵커 대상 없음) `index` 가 범위 밖이면 고아다. 다중 앵커 주석은 하나라도 고아면 전체 고아다. 고아는 DXF·SVG·PDF·PNG 출력에서 뺀다. 워커 `build_sheet` 응답의 `unapplied_overrides[]`(`{ target, reason }`)로 보고하며 새 `reason` 은 `orphan_anchor`(target = 주석 id)다. 그 밖에 치수 두 점이 같으면 `degenerate_dim`, 치수 문구에 `{값}` 이 없으면 `invalid_template`. 기존 사유(`missing_target` 등)는 그대로다. 정점 수가 바뀌어 index 가 다른 정점을 가리키는 경우는 안정 정점 id 가 필요해 후속이다.
+
+**저장 이행**: 로컬 시트 목록은 `arch.sheets.v2.<프로젝트>` 에 저장한다. v1(`arch.sheets.v1.<프로젝트>`)은 읽기만 하며 읽을 때 시트 단위로 이행한다(한 시트가 깨져도 나머지는 유지). 이행 규칙: 같은 target 은 뒤 항목이 이기는 병합 하나로 `ov-<target>`, `note:<id>` 는 `text` 주석 `note-<id>`(숨김·빈 문구 메모는 출력이 없었으므로 뺀다). 출력 해시(`input_hash`)는 정규화한 SheetSpec 으로 계산한다(빈 `annotations` 는 키 생략).
 
 #### 4.7.4 SheetModel 프리미티브
 

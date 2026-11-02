@@ -1,5 +1,5 @@
 // site_plan 골든·테스트 공용 케이스(테스트 전용, 배포 코드에서 import하지 않는다).
-import type { DesignModelV1, JudgmentResult, Polygon } from "@arch-studio/domain";
+import type { DesignModelV1, JudgmentResult, Polygon, SheetAnnotation } from "@arch-studio/domain";
 import type { DraftingInput } from "../../sheet/types.ts";
 import { sampleInput, sampleModel } from "../../sheet/test-fixtures.ts";
 import type { SitePlanExtras } from "./index.ts";
@@ -81,6 +81,35 @@ function multiMass(): DraftingInput {
   return make(model, passItems({ setback: 2000, parking: 4 }));
 }
 
+function annotated(list: SheetAnnotation[]): DraftingInput {
+  const input = make(siteModel(), passItems());
+  return { ...input, sheet: { ...input.sheet, annotations: list } };
+}
+
+/** 주석 편집층(AR-06-086) 골든 입력. 배열 순서는 일부러 id 순이 아니다(출력은 id 순). */
+export const ANNOTATED: SheetAnnotation[] = [
+  { id: "text-1", kind: "text", anchor: { ref: "site", part: "center" }, dx_mm: 5, dy_mm: 5, text: "대지 메모" },
+  { id: "note-1", kind: "text", dx_mm: 20, dy_mm: 20, text: "일반 메모\n두 줄" },
+  { id: "dim-1", kind: "dim", a: { ref: "m000", part: "vertex", index: 0 }, b: { ref: "m000", part: "vertex", index: 1 }, offset_mm: -5, text: "폭 {값}" },
+  { id: "leader-1", kind: "leader", anchors: [{ ref: "m000", part: "vertex", index: 2 }], dx_mm: 10, dy_mm: 8, text: "철거" },
+  {
+    id: "cloud-1",
+    kind: "cloud",
+    anchors: [0, 1, 2, 3].map((index) => ({ ref: "site", part: "vertex" as const, index })),
+    text: "검토",
+  },
+  { id: "ov-label:road:edge0", kind: "override", target: "label:road:edge0", dx_mm: 3, dy_mm: -2 },
+];
+
+/** 앵커를 잃은 주석(없는 ref·범위 밖 index·다중 앵커 중 하나가 고아·이 시트에 없는 객체)과 정상 주석 하나. */
+export const WITH_ORPHANS: SheetAnnotation[] = [
+  { id: "a-ok", kind: "text", anchor: { ref: "site", part: "center" }, dx_mm: 1, dy_mm: 1, text: "정상" },
+  { id: "b-no-ref", kind: "text", anchor: { ref: "m999", part: "center" }, dx_mm: 1, dy_mm: 1, text: "ref 없음" },
+  { id: "c-range", kind: "dim", a: { ref: "m000", part: "vertex", index: 0 }, b: { ref: "m000", part: "vertex", index: 9 }, offset_mm: 3 },
+  { id: "d-multi", kind: "leader", anchors: [{ ref: "m000", part: "vertex", index: 0 }, { ref: "m999", part: "vertex", index: 0 }], dx_mm: 2, dy_mm: 2, text: "하나만 고아" },
+  { id: "e-edge", kind: "cloud", anchors: [{ ref: "site", part: "edge", index: 0 }, { ref: "site", part: "edge", index: 1 }, { ref: "site", part: "edge", index: 4 }] },
+];
+
 export const CASES: SitePlanCase[] = [
   {
     id: "site_plan-basic",
@@ -105,5 +134,17 @@ export const CASES: SitePlanCase[] = [
     note: "매스 3개(겹침 포함): 합집합 투영, 지번 라벨, 건축선",
     input: multiMass(),
     extras: {},
+  },
+  {
+    id: "site_plan-user-annotations",
+    note: "사람 주석(dim·text·메모·leader·cloud·override)이 A-ANNO-USER에 id 순으로 그려진다",
+    input: annotated(ANNOTATED),
+    extras: { parking_accessible: 1 },
+  },
+  {
+    id: "site_plan-orphan-annotations",
+    note: "고아 주석(ref 없음·index 범위 밖·다중 앵커 중 하나 고아·변 index 범위 밖)은 출력에서 빠지고 정상 주석만 남는다",
+    input: annotated(WITH_ORPHANS),
+    extras: { parking_accessible: 1 },
   },
 ];

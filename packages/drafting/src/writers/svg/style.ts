@@ -1,7 +1,7 @@
 // 레이어 그리기 스타일(SVG·PDF 공용). 색은 DXF ACI(CAD 색 체계)를 흰 용지에서 읽히게 옮긴 출력 상수라 UI 디자인 토큰이 아니다
 // (layers/index.ts 머리 주석과 같은 이유). 선 굵기·선 종류 패턴은 용지 mm.
 import { layerDef, type Linetype } from "../../layers/index.ts";
-import type { StdLayer } from "@arch-studio/domain";
+import type { DraftLayer } from "../../layers/index.ts";
 
 export type Rgb = readonly [number, number, number];
 
@@ -27,7 +27,7 @@ const DASH: Readonly<Record<Linetype, readonly number[]>> = Object.freeze({
 });
 
 /** 레이어별 선 굵기(용지 mm, 제안). 표에 없는 레이어는 0.18. */
-const WIDTH: Readonly<Partial<Record<StdLayer, number>>> = Object.freeze({
+const WIDTH: Readonly<Partial<Record<DraftLayer, number>>> = Object.freeze({
   "A-SITE-BNDY": 0.35,
   "A-MASS": 0.5,
   "A-WALL": 0.35,
@@ -52,7 +52,7 @@ export interface LayerStyle {
   dash: readonly number[];
 }
 
-export function layerStyle(layer: StdLayer): LayerStyle {
+export function layerStyle(layer: DraftLayer): LayerStyle {
   const def = layerDef(layer);
   return { rgb: ACI_RGB[def.aci] ?? BLACK, width: WIDTH[layer] ?? DEFAULT_WIDTH, dash: DASH[def.linetype] };
 }

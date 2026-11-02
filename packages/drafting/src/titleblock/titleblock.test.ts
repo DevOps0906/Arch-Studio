@@ -42,11 +42,11 @@ test("DraftingProfile 값·모르는 칸으로 고지가 바뀌지 않는다", (
 test("덮어쓰기로 표제란·고지를 숨기거나 바꿀 수 없다", () => {
   const model = sampleModel();
   const input = sampleInput(model);
-  input.sheet.annotation_overrides = [
-    { target: "ttlb:disclaimer", hidden: true },
-    { target: "ttlb:disclaimer", text: "삭제" },
-    { target: "ttlb:frame", dx_mm: 100 },
-    { target: "disclaimer", text: "" },
+  input.sheet.annotations = [
+    { id: "o1", kind: "override", target: "ttlb:disclaimer", hidden: true },
+    { id: "o2", kind: "override", target: "ttlb:disclaimer", text: "삭제" },
+    { id: "o3", kind: "override", target: "ttlb:frame", dx_mm: 100 },
+    { id: "o4", kind: "override", target: "disclaimer", text: "" },
   ];
   input.profile.layer_map = { "A-TTLB": "OFFICE-TB" };
   const { sheet, unapplied_overrides } = buildSheet(input, sampleView(model));

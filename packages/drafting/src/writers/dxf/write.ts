@@ -1,7 +1,7 @@
 // DXF 작성기(D-20 (a), AR-F-038, 02_ARCHITECTURE.md 2.3절 "DXF 작성기"·"결정성 규칙").
 // ASCII, $ACADVER=AC1027, UTF-8, 줄 끝 \r\n, $INSUNITS=4(mm). 구조는 AR-06-019 스파이크에서 AutoCAD 열기가 확인된 구성을 따른다.
 // 좌표: 모델 공간 1:1(실제 mm). 첫 뷰의 모델 좌표를 그대로 두고, 용지 요소(도곽·표제란·용지 주석)는 축척 분모를 곱해 놓는다.
-import { layerOrder, resolveLayerMap, type LayerMapWarning, type Linetype } from "../../layers/index.ts";
+import { layerOrder, resolveLayerMap, USER_LAYER, USER_LAYER_DEF, type DraftLayer, type LayerMapWarning, type Linetype, type ResolvedLayer } from "../../layers/index.ts";
 import { comparePrim } from "../../sheet/assemble.ts";
 import { DraftingError } from "../../sheet/errors.ts";
 import { PRIM_KINDS, type BlockDef, type Prim, type SheetModel, type Vec } from "../../sheet/types.ts";
@@ -129,6 +129,17 @@ export function writeDxf(sheet: SheetModel, options: DxfOptions = {}): DxfResult
       cmpStr(a.p.key, b.p.key),
   );
 
+  // 사람 주석 레이어: 그린 것이 있을 때만 표에 넣는다(없으면 기존 DXF와 바이트 동일). 사무소 이름이 대소문자 무시로 같으면 그 레이어에 합친다.
+  let userName: string = USER_LAYER;
+  const layerTable: ResolvedLayer[] = [...layers.table];
+  if (items.some((it) => it.p.layer === USER_LAYER)) {
+    const key = USER_LAYER.toUpperCase();
+    const same = layerTable.find((l) => l.name.replace(/[a-z]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 32)) === key);
+    if (same) userName = same.name;
+    else layerTable.push({ name: USER_LAYER, aci: USER_LAYER_DEF.aci, linetype: USER_LAYER_DEF.linetype });
+  }
+  const outLayerName = (l: DraftLayer): string => (l === USER_LAYER ? userName : layers.names[l]);
+
   const blocks: BlockDef[] = [...sheet.blocks].sort((a, b) => cmpStr(a.name, b.name));
   const blockByName = new Map<string, BlockDef>();
   for (const b of blocks) {
@@ -184,7 +195,7 @@ export function writeDxf(sheet: SheetModel, options: DxfOptions = {}): DxfResult
   const ltH = new Map<Linetype, string>();
   for (const [name] of LINETYPES) ltH.set(name, H.next());
   const layerH: Array<[string, string]> = [["0", H.next()]];
-  for (const l of layers.table) layerH.push([l.name, H.next()]);
+  for (const l of layerTable) layerH.push([l.name, H.next()]);
   const brH = new Map<string, string>();
   for (const b of blocks) brH.set(b.name, H.next());
 
@@ -263,7 +274,7 @@ export function writeDxf(sheet: SheetModel, options: DxfOptions = {}): DxfResult
       o.g(2, name).g(70, 0).g(62, aci).g(6, lt).g(290, 1).g(370, -3).g(390, h.plotNormal);
     };
     layerRec(layerH[0]?.[1] as string, "0", 7, "CONTINUOUS");
-    layers.table.forEach((l, i) => layerRec(layerH[i + 1]?.[1] as string, l.name, l.aci, l.linetype));
+    layerTable.forEach((l, i) => layerRec(layerH[i + 1]?.[1] as string, l.name, l.aci, l.linetype));
     o.g(0, "ENDTAB");
 
     tableHead("STYLE", h.styleT, 2);
@@ -308,7 +319,7 @@ export function writeDxf(sheet: SheetModel, options: DxfOptions = {}): DxfResult
     const X = (v: Vec<number>) => v[0] * place.len + place.dx;
     const Y = (v: Vec<number>) => v[1] * place.len + place.dy;
     const head = (type: string, sub: string) =>
-      o.g(0, type).g(5, H.next()).g(330, owner).g(100, "AcDbEntity").g(8, layers.names[p.layer]).g(100, sub);
+      o.g(0, type).g(5, H.next()).g(330, owner).g(100, "AcDbEntity").g(8, outLayerName(p.layer)).g(100, sub);
     switch (p.t) {
       case "line":
         head("LINE", "AcDbLine").g(10, X(p.a)).g(20, Y(p.a)).g(30, 0).g(11, X(p.b)).g(21, Y(p.b)).g(31, 0);

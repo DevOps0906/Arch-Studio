@@ -31,6 +31,8 @@ export interface ExportDialogProps {
   png: { ok: true } | { ok: false; reason: string };
   /** 사무소 레이어 매핑이 있는가(없으면 "표준 이름"만 의미가 있다). */
   hasOfficeMap: boolean;
+  /** 지금 보는 시트의 고아 주석 수(앵커를 잃어 출력에서 빠진다). */
+  orphanCount?: number;
   onRun(sel: ExportSelection, onProgress: (p: ExportProgress) => void): Promise<ExportRun>;
 }
 
@@ -111,6 +113,7 @@ export function ExportDialog(p: ExportDialogProps) {
                 표제란에 "체험판"이 표시됩니다. 라이선스나 구독이 있으면 표시되지 않습니다.
               </Banner>
             ) : null}
+            {(p.orphanCount ?? 0) > 0 ? <p className="text-caption text-fg-2">고아 주석 {p.orphanCount}개는 출력에서 빠집니다.</p> : null}
             {p.access.viewOnly ? <p className="text-caption text-fg-2">편집 권한이 없어 마지막으로 만든 시트를 다시 내보내기만 됩니다.</p> : null}
             <fieldset className="flex flex-col gap-1">
               <legend className="text-caption font-medium text-fg-2">시트</legend>

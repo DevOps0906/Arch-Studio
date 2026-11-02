@@ -1,7 +1,7 @@
 // annotate — 치수·라벨·경고·메모 주석과 덮어쓰기(02_ARCHITECTURE.md 2.3절 "주석과 치수").
 // 치수는 분해형(LINE + TEXT, A-ANNO-DIMS). 값은 호출자가 넘긴 판정·측정 값 그대로이고 source_ref가 필수다.
 // 덮어쓰기는 anno_id별 위치 이동(offset)·숨김(hide)과 자유 메모(note:*)만. 치수·면적 문자 값은 바꿀 수 없다.
-import type { SheetSpec, StdLayer } from "@arch-studio/domain";
+import type { StdLayer } from "@arch-studio/domain";
 import { roundHalfAway } from "@arch-studio/geometry";
 import { DraftingError } from "../sheet/errors.ts";
 import type { Annotation, Mm, PaperUm, Prim, Scale, Vec } from "../sheet/types.ts";
@@ -157,15 +157,34 @@ export function label(spec: LabelSpec, ctx: AnnotateContext): Annotation {
   return out;
 }
 
-export type AnnotationOverride = SheetSpec["annotation_overrides"][number];
+/** 자동 주석 1개의 수정(SheetSpec.annotations 의 kind "override" 를 풀어 넘긴 모양). */
+export interface AnnotationOverride {
+  target: string;
+  dx_mm?: number;
+  dy_mm?: number;
+  text?: string;
+  hidden?: boolean;
+}
 
 export interface UnappliedOverride {
   target: string;
-  reason: "missing_target" | "text_not_allowed" | "not_overridable" | "note_without_text" | "invalid_offset";
+  /**
+   * orphan_anchor: 앵커 ref 없음·index 범위 밖·이 시트에 그려지지 않는 객체(출력에서 뺌). degenerate_dim: 치수 두 점이 같음.
+   * invalid_template: 치수 문구에 {값}이 없음. 이 셋의 target 은 주석 id.
+   */
+  reason:
+    | "missing_target"
+    | "text_not_allowed"
+    | "not_overridable"
+    | "note_without_text"
+    | "invalid_offset"
+    | "orphan_anchor"
+    | "degenerate_dim"
+    | "invalid_template";
 }
 
 export const NOTE_PREFIX = "note:";
-const NOTE_WIDTH: PaperUm = 8_000;
+export const NOTE_WIDTH: PaperUm = 8_000;
 
 function shiftPrim<U extends number>(p: Prim<U>, dx: number, dy: number): Prim<U> {
   const mv = (v: Vec<U>): Vec<U> => [(v[0] + dx) as U, (v[1] + dy) as U];

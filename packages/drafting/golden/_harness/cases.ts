@@ -1,6 +1,6 @@
 // DXF 작성기 골든 케이스(AR-06-021). 뷰 생성기(023~026)가 아직 없어 SheetModel을 buildSheet + 직접 만든 ViewModel로 구성한다.
 // 케이스 정의만 바꾸고 골든을 다시 만들려면 DXF_WRITER_VERSION을 올린 뒤 golden:update(update.ts가 강제).
-import type { DesignModelV1 } from "@arch-studio/domain";
+import type { DesignModelV1, SheetAnnotation } from "@arch-studio/domain";
 import { buildSheet, label, validateDraftingInput, type DraftingInput, type Prim, type SheetModel, type ViewModel } from "../../src/index.ts";
 import { sampleInput, sampleModel, sampleView } from "../../src/sheet/test-fixtures.ts";
 import type { DxfOptions } from "../../src/writers/dxf/index.ts";
@@ -44,6 +44,21 @@ function withExtras(extra: { prims?: Prim<number>[]; paper?: Prim<number>[]; blo
     };
   };
 }
+
+const USER_ANNOTATIONS: SheetAnnotation[] = [
+  { id: "text-1", kind: "text", anchor: { ref: "site", part: "center" }, dx_mm: 5, dy_mm: 5, text: "대지 메모" },
+  { id: "note-1", kind: "text", dx_mm: 20, dy_mm: 20, text: "일반 메모\n두 줄" },
+  { id: "dim-1", kind: "dim", a: { ref: "m000", part: "vertex", index: 0 }, b: { ref: "m000", part: "vertex", index: 1 }, offset_mm: -5, text: "폭 {값}" },
+  { id: "leader-1", kind: "leader", anchors: [{ ref: "m000", part: "vertex", index: 2 }], dx_mm: 10, dy_mm: 8, text: "철거" },
+  { id: "cloud-1", kind: "cloud", anchors: [0, 1, 2, 3].map((index) => ({ ref: "m000", part: "vertex" as const, index })), text: "검토" },
+  { id: "ov-label:room:r000", kind: "override", target: "label:room:r000", dx_mm: 2, dy_mm: -1 },
+];
+const ORPHAN_ANNOTATIONS: SheetAnnotation[] = [
+  { id: "a-ok", kind: "text", anchor: { ref: "site", part: "center" }, dx_mm: 1, dy_mm: 1, text: "정상" },
+  { id: "b-no-ref", kind: "text", anchor: { ref: "m999", part: "center" }, dx_mm: 1, dy_mm: 1, text: "ref 없음" },
+  { id: "c-range", kind: "dim", a: { ref: "m000", part: "vertex", index: 0 }, b: { ref: "m000", part: "vertex", index: 9 }, offset_mm: 3 },
+  { id: "d-multi", kind: "leader", anchors: [{ ref: "m000", part: "vertex", index: 0 }, { ref: "m999", part: "vertex", index: 0 }], dx_mm: 2, dy_mm: 2, text: "하나만 고아" },
+];
 
 const LONG_OFFICE = "가나다라마바사아자차카타파하 종합건축사사무소 부설 도시건축연구소";
 const LONG_PROJECT = "서울특별시 종로구 세종대로 일원 근린생활시설 및 다세대주택 신축 기획설계 검토";
@@ -317,6 +332,16 @@ export const CASES: GoldenCase[] = [
       m.floor_layouts.forEach((l) => l.rooms.forEach((r) => shift(r.polygon.outer as [number, number][])));
       return ok(sheetOf(m, {}));
     },
+  },
+  {
+    id: "writer-user-annotations",
+    note: "사람 주석(AR-06-086): dim·text·메모·leader·cloud·override가 A-ANNO-USER 레이어에 id 순으로(DXF 표에 레이어가 추가됨)",
+    build: () => ok(sheetOf(sampleModel(), { sheet: { annotations: USER_ANNOTATIONS } }), {}),
+  },
+  {
+    id: "writer-user-annotations-orphan",
+    note: "고아 주석(없는 ref·범위 밖 index·다중 앵커 중 하나 고아)은 출력에서 빠지고 정상 주석 하나만 남는다",
+    build: () => ok(sheetOf(sampleModel(), { sheet: { annotations: ORPHAN_ANNOTATIONS } }), {}),
   },
   {
     id: "writer-font-timestamps",

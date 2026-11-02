@@ -1,6 +1,6 @@
 // 도면 시트 화면 모델(03장 3.8절, 5.3절 AR050~AR059). 순수 함수만: 시트 목록·설정, 입력 누락, 권리→화면 상태, 엔진 요청·응답 해석.
 // 기하·도면·판정 값은 만들지 않는다(워커의 결정적 순수 함수가 만든다). 이 파일은 요청 봉투를 짜고 응답을 해석할 뿐이다.
-import { designModelV1Schema, sheetSpecSchema, type DesignModelV1, type DraftingProfile, type JudgmentResult, type SheetSpec } from "@arch-studio/domain";
+import { designModelV1Schema, migrateLegacySheetSpec, normalizeSheetSpec, sheetSpecSchema, type DesignModelV1, type DraftingProfile, type JudgmentResult, type SheetSpec } from "@arch-studio/domain";
 import type { EntitlementDecision, EntitlementStatus } from "@arch-studio/shell-bridge";
 import { DENY_TEXT } from "../shell/nav.ts";
 
@@ -100,6 +100,11 @@ export interface StoredSheets {
 export const EMPTY_STORED: StoredSheets = Object.freeze({ engine_version: null, specs: [] });
 
 export function storeKey(projectId: string): string {
+  return `arch.sheets.v2.${projectId}`;
+}
+
+/** v1(annotation_overrides) 저장 키. 읽기만 한다 — 덮어쓰기·삭제 없음(AR-06-086 결정 4). */
+export function legacyStoreKey(projectId: string): string {
   return `arch.sheets.v1.${projectId}`;
 }
 
@@ -127,8 +132,47 @@ export function parseStored(raw: string | null): StoredSheets {
   return { engine_version: o.engine_version as string | null, specs };
 }
 
+/**
+ * v1 저장 문자열 → 목록(v2 모양으로 이행). 겉 구조(키·20장 초과·engine_version)가 깨지면 통째로 버리지만,
+ * 시트 하나가 깨졌거나 id가 겹치면 그 시트만 건너뛰고 나머지는 유지한다(깨진 원본은 v1 키에 그대로 남는다).
+ */
+export function parseStoredLegacy(raw: string | null): StoredSheets {
+  if (!raw || raw.length > STORE_MAX_RAW) return EMPTY_STORED;
+  let v: unknown;
+  try {
+    v = JSON.parse(raw);
+  } catch {
+    return EMPTY_STORED;
+  }
+  if (v === null || typeof v !== "object" || Array.isArray(v)) return EMPTY_STORED;
+  const o = v as Record<string, unknown>;
+  if (Object.keys(o).sort().join(",") !== "engine_version,specs" || !Array.isArray(o.specs) || o.specs.length > MAX_SHEETS) return EMPTY_STORED;
+  if (o.engine_version !== null && (typeof o.engine_version !== "string" || o.engine_version === "" || o.engine_version.length > 64)) return EMPTY_STORED;
+  const specs: SheetSpec[] = [];
+  const ids = new Set<string>();
+  for (const s of o.specs) {
+    const r = migrateLegacySheetSpec(s);
+    if (r === null || ids.has(r.id) || r.id.length > 64) continue;
+    ids.add(r.id);
+    specs.push(r);
+  }
+  return { engine_version: o.engine_version as string | null, specs };
+}
+
+/** 프로젝트의 시트 목록 읽기: v2가 있으면 그것만, 없으면 v1을 이행해 읽는다. 저장소 오류는 빈 목록. 화면·대시보드가 같은 함수를 쓴다. */
+export function readStoredSheets(storage: { getItem(key: string): string | null } | null | undefined, projectId: string): StoredSheets {
+  try {
+    if (!storage) return EMPTY_STORED;
+    const v2 = storage.getItem(storeKey(projectId));
+    if (v2 !== null) return parseStored(v2);
+    return parseStoredLegacy(storage.getItem(legacyStoreKey(projectId)));
+  } catch {
+    return EMPTY_STORED;
+  }
+}
+
 export function serializeStored(s: StoredSheets): string {
-  return JSON.stringify({ engine_version: s.engine_version, specs: s.specs });
+  return JSON.stringify({ engine_version: s.engine_version, specs: s.specs.map(normalizeSheetSpec) });
 }
 
 /** 새 시트 설정. id는 종류 + 가장 작은 빈 번호(난수·시각 없음). */
@@ -142,7 +186,6 @@ export function newSpec(kind: SheetKind, existing: readonly SheetSpec[], model: 
     paper: defaultPaper,
     orientation: "landscape",
     scale: "auto",
-    annotation_overrides: [],
     include_in_proposal: true,
   };
   if (kind === "floor_plan") {
@@ -309,6 +352,8 @@ export interface BuiltSheet {
   readonly sheet: unknown;
   readonly svg: string;
   readonly engineVersion: string;
+  /** 앵커를 잃어 출력에서 빠진 사람 주석 수(워커 unapplied_overrides 의 orphan_anchor). */
+  readonly orphanCount: number;
 }
 
 export type BuildOutcome =
@@ -340,7 +385,9 @@ export function readBuildResponse(res: unknown, reqId: string): BuildOutcome {
     const summary = r ? asSummary(r.sheet) : null;
     const svg = r?.svg_preview;
     if (!r || !summary || !isStr(svg) || !svg.startsWith("<svg") || !isStr(res.engine_version)) return { kind: "error", code: "invalid_response" };
-    return { kind: "ok", built: { summary, sheet: r.sheet, svg, engineVersion: res.engine_version } };
+    const un = Array.isArray(r.unapplied_overrides) ? (r.unapplied_overrides as unknown[]) : [];
+    const orphanCount = un.filter((u) => isRec(u) && u.reason === "orphan_anchor").length;
+    return { kind: "ok", built: { summary, sheet: r.sheet, svg, engineVersion: res.engine_version, orphanCount } };
   }
   if (res.ok === false) return { kind: "error", code: isStr(res.code) ? res.code : "AR050" };
   return { kind: "ignore" };

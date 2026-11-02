@@ -4,8 +4,13 @@ import { STD_LAYERS, type StdLayer } from "@arch-studio/domain";
 
 export type Linetype = "CONTINUOUS" | "DASHED" | "DASHDOT";
 
+/** 사람 주석 레이어(AR-06-086). 표준 레이어 표(STD_LAYERS)에 없고, 이 레이어에 그린 것이 있을 때만 출력 표에 들어간다. */
+export const USER_LAYER = "A-ANNO-USER" as const;
+/** 도면 요소가 쓸 수 있는 레이어: 표준 16개 + 사람 주석. */
+export type DraftLayer = StdLayer | typeof USER_LAYER;
+
 export interface LayerDef {
-  name: StdLayer;
+  name: DraftLayer;
   /** AutoCAD Color Index(1~255). */
   aci: number;
   linetype: Linetype;
@@ -40,15 +45,19 @@ const ORDER: Readonly<Record<string, number>> = Object.freeze(
   Object.fromEntries(STD_LAYERS.map((name, i) => [name, i])),
 );
 
-/** 레이어 표 순서(0부터). 표준 밖 이름은 RangeError. */
-export function layerOrder(name: StdLayer): number {
+/** 사람 주석 레이어의 정의(색 ACI 30, 실선). LAYER_TABLE 밖. */
+export const USER_LAYER_DEF: LayerDef = Object.freeze({ name: USER_LAYER, aci: 30, linetype: "CONTINUOUS", description: "사람 주석(치수·문자·지시선·구름)" });
+
+/** 레이어 표 순서(0부터). 사람 주석 레이어는 표준 16개 뒤. 그 밖의 이름은 RangeError. */
+export function layerOrder(name: DraftLayer): number {
+  if (name === USER_LAYER) return LAYER_TABLE.length;
   const i = ORDER[name];
   if (i === undefined) throw new RangeError(`표준 레이어가 아닙니다: ${name}`);
   return i;
 }
 
-export function layerDef(name: StdLayer): LayerDef {
-  return LAYER_TABLE[layerOrder(name)] as LayerDef;
+export function layerDef(name: DraftLayer): LayerDef {
+  return name === USER_LAYER ? USER_LAYER_DEF : (LAYER_TABLE[layerOrder(name)] as LayerDef);
 }
 
 /** DXF 레이어 이름 금지 문자(02_ARCHITECTURE.md 2.3절) + 제어 문자(DXF 줄 구조를 깬다). */
@@ -110,7 +119,7 @@ export function resolveLayerMap(layerMap: Readonly<Record<string, string>> | und
       warnings.push({ kind: "name_conflict", key: def.name, name });
       name = taken.get(nameKey(def.name)) ?? def.name;
     }
-    names[def.name] = name;
+    names[def.name as StdLayer] = name;
     if (!taken.has(nameKey(name))) {
       taken.set(nameKey(name), name);
       table.push({ name, aci: def.aci, linetype: def.linetype });

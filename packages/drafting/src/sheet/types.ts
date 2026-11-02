@@ -1,5 +1,6 @@
 // SheetModel 계약(04_API.md 4.7.4, 02_ARCHITECTURE.md 2.3절). 뷰 안 형상은 모델 mm 정수, 용지 고정 요소는 0.01mm 정수.
-import type { DesignModelV1, DraftingProfile, JudgmentResult, SheetSpec, StdLayer } from "@arch-studio/domain";
+import type { DesignModelV1, DraftingProfile, JudgmentResult, SheetSpec } from "@arch-studio/domain";
+import type { DraftLayer } from "../layers/index.ts";
 
 /** 모델 좌표(정수 mm). */
 export type Mm = number;
@@ -17,7 +18,7 @@ export const PRIM_KINDS = ["line", "pline", "arc", "circle", "text", "mtext", "h
 export type PrimKind = (typeof PRIM_KINDS)[number];
 
 /** key: 결정적 정렬 키(같은 컨테이너 안에서 유일). 수치 TEXT는 source_ref 필수. */
-export type Prim<U> = { layer: StdLayer; key: string } & (
+export type Prim<U> = { layer: DraftLayer; key: string } & (
   | { t: "line"; a: Vec<U>; b: Vec<U> }
   | { t: "pline"; pts: Vec<U>[]; closed: boolean }
   | { t: "arc"; c: Vec<U>; r: U; a0: number; a1: number }

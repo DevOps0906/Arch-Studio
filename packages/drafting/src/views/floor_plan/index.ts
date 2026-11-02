@@ -120,6 +120,7 @@ export function tryBuildFloorPlanView(input: DraftingInput, options: FloorPlanOp
       views: [{ view_id: FLOOR_PLAN_VIEW_ID, prims }],
       blocks: op.blocks,
       checks: { area_table_m2 },
+      anchors: g.rooms.map((r) => ({ ref: r.id, ring: ringPts(r.polygon.outer) })),
       annotate,
     },
   };

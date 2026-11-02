@@ -187,7 +187,9 @@ test("결정성: 같은 입력 같은 출력, 형상 입력 순서와 무관(속
         const input = sampleInput(model, {
           license: fallback === undefined ? { drafting_watermark: watermark } : { drafting_watermark: watermark, fallback_revisions: fallback },
         });
-        input.sheet.annotation_overrides = ovs.map((o) => ({
+        input.sheet.annotations = ovs.map((o, n) => ({
+          id: `o${String(n).padStart(3, "0")}`,
+          kind: "override" as const,
           target: o.i % 2 ? `dim:setback:edge0:mass-m${String(o.i % masses).padStart(3, "0")}` : `label:room:r${String(o.i).padStart(3, "0")}`,
           dx_mm: o.dx,
           hidden: o.hide,

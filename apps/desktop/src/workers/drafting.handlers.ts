@@ -114,6 +114,8 @@ export function createDraftingHandlers(options: DraftingHandlerOptions = {}): Pi
     await ctx.checkpoint();
     const a = await getAssets();
     const svg_preview = writeSvg(built.sheet, a ? { metrics: a.metrics } : {});
+    // unapplied_overrides[]: { target, reason }. reason "orphan_anchor"(AR-06-086)는 앵커를 잃어 출력에서 뺀 사람 주석 — target 은 주석 id.
+    // 화면은 이 개수를 "고아 주석 n개는 출력에서 빠집니다"로 보인다(04_API.md 4.7.3절).
     return { result: { sheet: built.sheet, svg_preview, unapplied_overrides: built.unapplied_overrides }, engine_version: ENGINE_VERSION };
   };
 
