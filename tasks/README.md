@@ -40,18 +40,18 @@
 | AR-06-047 | AI 게이트: 토큰·pricing·업로드 서명 | W2 | 003, 046 | 높음 | challenger→builder | 완료 |
 | AR-06-050 | RAG 색인·평가셋·위키 설정 | W2 | 046 | 보통 | builder | 완료 |
 | AR-06-058 | CI: 데스크톱 빌드·서명 릴리스·비밀 검사 | W2 | 001, 003, 004 | 높음 | builder | 진행(058a 완료·058b 대기) |
-| AR-06-073 | 클라우드 프로젝트 blob 저장·RLS·expected_version 충돌 | W2 | 001, 002, 003 | 높음 | challenger→builder | 진행 |
+| AR-06-073 | 클라우드 프로젝트 blob 저장·RLS·expected_version 충돌 | W2 | 001, 002, 003 | 높음 | challenger→builder | 완료 |
 | AR-06-071 | 웹 스튜디오 셸 (studio): 서브도메인·워커·CSP | W2 | 070, 071a, 003, 008 | 높음 | challenger→builder | 대기 |
-| AR-06-072 | 웹 어댑터 구현(web/): 캐시·파일·세션·권한 | W2 | 070, 073 | 보통 | builder | 진행 |
+| AR-06-072 | 웹 어댑터 구현(web/): 캐시·파일·세션·권한 | W2 | 070, 073 | 보통 | builder | 완료 |
 | AR-06-022 | SVG·PNG·PDF 작성기, 글꼴 폭 표 | W3 | 020, 021 | 보통 | builder | 완료 |
 | AR-06-023 | 배치도 뷰와 골든 | W3 | 016, 020 | 보통 | builder | 완료 |
 | AR-06-024 | 면적 산정도·면적표 뷰와 골든 | W3 | 015, 020 | 보통 | builder | 완료 |
 | AR-06-025 | 일조사선 단면 뷰와 골든 | W3 | 016, 020 | 보통 | builder | 완료 |
 | AR-06-042 | 업데이트·규칙 팩·단가표 배포 | W3 | 040, 041 | 높음 | challenger→builder | 완료 |
-| AR-06-049 | 라우팅 seed·AI 보안 테스트 | W3 | 046, 047 | 높음 | challenger→builder | 진행 |
+| AR-06-049 | 라우팅 seed·AI 보안 테스트 | W3 | 046, 047 | 높음 | challenger→builder | 완료 |
 | AR-06-051 | 클라우드 법규 검토 그래프·API | W3 | 015, 047, 048, 050 | 보통 | builder | 완료 |
 | AR-06-053 | 음성: STT API·음성 UI·읽어 주기 | W3 | 012, 047, 048 | 보통 | builder | 완료 |
-| AR-06-054 | Dify arch-chat·채팅 SSE 중계 | W3 | 047, 050 | 보통 | builder | 진행 |
+| AR-06-054 | Dify arch-chat·채팅 SSE 중계 | W3 | 047, 050 | 보통 | builder | 완료 |
 | AR-06-074 | 라이선스 3종(영구·기간제·구독) 서버 판정·SKU | W3 | 040, 041, 043, 073 | 높음 | challenger→builder | 대기 |
 | AR-06-074a | 좌석 관리(seats 컬럼·배정·초과 판정) | W3 | 074 | 높음 | challenger→builder | 대기 |
 | AR-06-074b | 휴대폰 본인인증 크레딧(1인증 1회 지급) | W3 | 008, 074 | 높음 | challenger→builder | 대기 |
@@ -84,7 +84,7 @@
 | AR-06-083 | 모델러 코어·발코니(DesignModel 선택 필드) | W5 | 036, 081, 사람(면적 산입 규칙) | 높음 | challenger→builder | 대기 |
 | AR-06-084 | 단면·측정 도구 | W5 | 036, 081 | 보통 | builder | 완료 |
 | AR-06-085 | 3D 표시 품질(조명·그림자·재질·층 라벨·층 숨김/분해도) | W5 | 036, 081 | 보통 | builder | 완료 |
-| AR-06-086 | 도면 주석 편집층(annotations[] 계약 변경·고아 주석 출력 제외) | W5 | 020, 021, 022, 030, 081 | 높음 | challenger→builder | 진행 |
+| AR-06-086 | 도면 주석 편집층(annotations[] 계약 변경·고아 주석 출력 제외) | W5 | 020, 021, 022, 030, 081 | 높음 | challenger→builder | 완료 |
 | AR-06-087 | 새 프로젝트 지도 운영 연결(VWorld D-14·셸, 지금은 mock) | W5 | 035, 081, D-14(사람) | 높음 | challenger→builder | 대기 |
 | AR-06-059 | 보안 점검(리뷰 전용, 위험 14건) | W6 | 005, 006, 040, 041, 042, 058 | 높음 | reviewer(security) | 대기 |
 | AR-06-060 | 데스크톱 E2E 시나리오 5개+ | W6 | 030, 036, 041, 044 | 보통 | tester | 대기 |
@@ -122,5 +122,6 @@
 | 2026-10-29 | AR-06-006 사람 확인 | 실제 Windows 열기·저장·덮어쓰기 대화상자, OneDrive·junction·260자+ 경로 미검증(테스트는 picker 대체) | 대표님 확인 후 tasks/logs/AR-06-006.md에 기록 |
 | 2026-10-29 | 규칙 팩 2026.10.0 | 근거 문서에 조문이 붙은 법규 수치가 없어 10개 규칙 전부 `미확인`(판정 전부 WARN), 지원 지자체 0, 허가 도서 평가셋 30건 미측정 | 사용자: 법규 수치·조문·시행일 제공 또는 원문 표 작성 후 검수 → 팩 2026.10.1 |
 | 2026-11-03 | AR-06-054 채팅 `apps/api/app/routes/tools.py`·`apps/web/src/server/ai/chat/**` | ① FastAPI가 토큰 `req`·`conv` 클레임을 본문 request_id와 대조하지 않음(jti 1회로 재사용은 막힘) ② 일일 턴 상한은 원장 건수 근사(동시 요청 소폭 초과) ③ 레이트리밋 메모리 ④ 재전송은 같은 조직이면 다른 사용자도 저장 답을 받을 수 있음(request_id UUID v4 추측 불가 전제) ⑤ FastAPI 운영 배선(검색·LLM 주입) 없음 → 미주입 503 | ①④ 후속 보강(토큰 클레임 대조·findAnswer에 user 조건), ② 원자 카운터 마이그레이션, ③⑤ 운영 전 차단 |
+| 2026-11-03 | 두 세션 병렬 구현 정리(tasks/logs/RECONCILE-2026-11-03.md) | 050·053·073·072·086은 원격 구현, 049·051·054는 원격+로컬 합치기. 로컬 원본은 브랜치 local/parallel-2026-11-02 보존. 잔여: 054 일일 상한이 조직 단위라 상류 장애 환불 턴도 소진(🟡), 054 search_effective 시간 상한 없음, 채팅 숫자 검사에 한글 수사 미적용, schema.ChatLlmOutput 미사용, .env.example에 ARCH_AI_CHAT_ENABLED·ARCH_API_URL 이름 추가 필요(읽기 차단 규칙으로 사람이 수정) | 각 항목 후속 작업에서 처리 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
