@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "kind": "district_plan",
+    "source_id": "yeoksam-district-plan",
+    "title": "[예시] 역삼 지구단위계획 시행지침",
+    "effective_from": "2023-09-01",
+    "retrieved_on": "2026-11-02",
+    "is_example": true,
+    "jurisdiction": "11680"
+  },
+  "text": "예시(미확인): 실제 법령 문구·수치가 아니며 사람이 원문을 확인해 교체한다.\n제1조(건축한계선) 가로변 건축한계선에서 OO미터 후퇴하여 벽면을 설치하고 저층부는 가로 활성화 용도로 한다.\n제2조(공개공지) 연면적 OO제곱미터 이상 건축물은 공개공지를 대지면적의 OO퍼센트 이상 확보한다."
+}

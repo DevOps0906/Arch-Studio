@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "kind": "law",
+    "source_id": "parking-ordinance-gangnam",
+    "title": "[예시] 강남구 주차장 설치 및 관리 조례",
+    "effective_from": "2022-05-01",
+    "retrieved_on": "2026-11-02",
+    "is_example": true,
+    "jurisdiction": "11680"
+  },
+  "text": "예시(미확인): 실제 법령 문구·수치가 아니며 사람이 원문을 확인해 교체한다.\n제1조(부설주차장 설치 기준) 다가구주택과 다세대주택의 부설주차장은 세대당 OO대 이상 설치한다.\n제2조(기계식 주차장치) 기계식 주차장치는 진입로 전면 공지를 확보한다."
+}

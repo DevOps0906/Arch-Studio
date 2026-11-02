@@ -1,0 +1,11 @@
+{
+  "meta": {
+    "kind": "qa_reply",
+    "source_id": "qa-balcony-extension",
+    "title": "[예시] 질의회신 발코니 확장과 바닥면적",
+    "effective_from": "2020-08-20",
+    "retrieved_on": "2026-11-02",
+    "is_example": true
+  },
+  "text": "예시(미확인): 실제 법령 문구·수치가 아니며 사람이 원문을 확인해 교체한다.\n질의: 노대 발코니를 거실로 확장하면 바닥면적에 포함되는지. 회신: 발코니 깊이 OO미터를 넘는 부분은 바닥면적에 산입한다."
+}
