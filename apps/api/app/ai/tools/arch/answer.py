@@ -23,11 +23,10 @@ from app.ai.products.arch.knowledge.search import search_effective
 from app.ai.products.arch.knowledge.store import Hit, KnowledgeStore
 from app.ai.products.arch.schema import (
     ChatAnswer,
-    ChatLlmOutput,
     ChatResponse,
     ChatSentence,
     ChatSource,
-    ReviewLlmRewrite,
+    Strict,
 )
 
 logger = logging.getLogger(__name__)
@@ -43,6 +42,24 @@ MAX_REWRITES = 2  # 요청당 재작성 LLM 호출 상한
 MIN_CALL_S = 1.0  # 남은 시간이 이보다 짧으면 LLM을 부르지 않는다
 
 _NUM = re.compile(r"\d+(?:\.\d+)?")
+
+
+class ChatLlmSentence(Strict):
+    """채팅 LLM 문장. review의 parts[Text|Ref](AR-06-051)와 달리 평문이다: 채팅에는 엔진 값(Ref 대상)이 없고,
+    숫자는 인용 청크 원문에 있는 것만 허용한다(_numbers_ok). 그래서 validate_free_text(숫자 문자 금지)는 쓰지 않는다."""
+
+    text: str
+    source_ids: list[str]
+
+
+class ChatLlmAnswer(Strict):
+    """answer 노드의 LLM 구조화 출력."""
+
+    sentences: list[ChatLlmSentence]
+
+
+class ChatLlmRewrite(Strict):
+    text: str
 
 
 class AnswerError(Exception):
@@ -113,7 +130,7 @@ def answer(deps: ChatDeps, *, org: str, message: str, application_date: date) ->
             feature=FEATURE,
             org=org,
             prompt=_prompt(message, found.hits),
-            output_model=ChatLlmOutput,
+            output_model=ChatLlmAnswer,
             timeout_s=remaining(),
         )
     except Exception as exc:
@@ -138,7 +155,7 @@ def answer(deps: ChatDeps, *, org: str, message: str, application_date: date) ->
                     feature=FEATURE,
                     org=org,
                     prompt="다음 문장에서 근거 chunk에 없는 숫자를 빼고 다시 써라: " + _esc(s.text),
-                    output_model=ReviewLlmRewrite,
+                    output_model=ChatLlmRewrite,
                     timeout_s=remaining(),
                 ).text
             except Exception as exc:

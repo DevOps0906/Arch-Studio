@@ -17,8 +17,7 @@ from app.ai.products.arch.ingest.pipeline import ingest
 from app.ai.products.arch.knowledge.embedding import HashEmbedder
 from app.ai.products.arch.knowledge.example_corpus import EXAMPLE_DOCS
 from app.ai.products.arch.knowledge.store import InMemoryStore
-from app.ai.products.arch.schema import ChatLlmOutput, ReviewLlmRewrite, ReviewLlmSentence
-from app.ai.tools.arch.answer import ChatDeps
+from app.ai.tools.arch.answer import ChatDeps, ChatLlmAnswer, ChatLlmRewrite, ChatLlmSentence
 from app.main import create_app
 from app.settings import Settings
 from tests.conftest import ORG_A, ORG_B
@@ -78,8 +77,8 @@ def post(client: TestClient, auth: Auth, payload: dict[str, Any], **claims: Any)
     return client.post("/tools/answer", json=payload, headers=auth(**claims))
 
 
-def sentences(*items: tuple[str, list[str]]) -> ChatLlmOutput:
-    return ChatLlmOutput(sentences=[ReviewLlmSentence(text=t, source_ids=i) for t, i in items])
+def sentences(*items: tuple[str, list[str]]) -> ChatLlmAnswer:
+    return ChatLlmAnswer(sentences=[ChatLlmSentence(text=t, source_ids=i) for t, i in items])
 
 
 def test_success(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
@@ -151,8 +150,8 @@ def test_invented_id_stripped_keeps_real(settings: Settings, kb: InMemoryStore, 
 
 def test_number_outside_chunk_rewritten_once_then_removed(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
     def h(prompt: str, model: type[BaseModel]) -> BaseModel:
-        if model is ReviewLlmRewrite:
-            return ReviewLlmRewrite(text="여전히 건폐율은 77입니다.")
+        if model is ChatLlmRewrite:
+            return ChatLlmRewrite(text="여전히 건폐율은 77입니다.")
         return sentences(
             ("건폐율은 77입니다.", [cov_id(prompt)]), ("건폐율은 100분의 50 이하입니다.", [cov_id(prompt)])
         )
@@ -165,8 +164,8 @@ def test_number_outside_chunk_rewritten_once_then_removed(settings: Settings, kb
 
 def test_number_rewrite_success(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
     def h(prompt: str, model: type[BaseModel]) -> BaseModel:
-        if model is ReviewLlmRewrite:
-            return ReviewLlmRewrite(text="건폐율은 100분의 50 이하입니다.")
+        if model is ChatLlmRewrite:
+            return ChatLlmRewrite(text="건폐율은 100분의 50 이하입니다.")
         return sentences(("건폐율은 77입니다.", [cov_id(prompt)]))
 
     client, _ = make(settings, kb, h)
@@ -195,7 +194,7 @@ def test_llm_failure_502(settings: Settings, kb: InMemoryStore, auth: Auth) -> N
 
 @pytest.mark.parametrize(
     ("claims", "status"),
-    [({"req": "99999999-9999-4999-8999-999999999999"}, 403), ({"req": 123}, 403), ({"conv": ""}, 401)],
+    [({"req": "99999999-9999-4999-8999-999999999999"}, 403), ({"req": 123}, 401), ({"conv": ""}, 401)],
 )
 def test_token_binding_rejected(
     settings: Settings, kb: InMemoryStore, auth: Auth, claims: dict[str, Any], status: int
@@ -210,8 +209,8 @@ def test_token_binding_rejected(
 
 def test_rewrites_capped(settings: Settings, kb: InMemoryStore, auth: Auth) -> None:
     def h(prompt: str, model: type[BaseModel]) -> BaseModel:
-        if model is ReviewLlmRewrite:
-            return ReviewLlmRewrite(text="여전히 77입니다.")
+        if model is ChatLlmRewrite:
+            return ChatLlmRewrite(text="여전히 77입니다.")
         c = cov_id(prompt)
         return sentences(*[(f"건폐율은 7{i}입니다.", [c]) for i in range(5)])
 
@@ -226,8 +225,8 @@ def test_deadline_stops_llm_calls(kb: InMemoryStore) -> None:
 
     def h(prompt: str, model: type[BaseModel]) -> BaseModel:
         t[0] += 49.5  # 생성 한 번에 49.5초 소모 -> 재작성 차례엔 남은 시간 < 1초
-        if model is ReviewLlmRewrite:
-            return ReviewLlmRewrite(text="건폐율은 100분의 50 이하입니다.")
+        if model is ChatLlmRewrite:
+            return ChatLlmRewrite(text="건폐율은 100분의 50 이하입니다.")
         return sentences(("건폐율은 77입니다.", [cov_id(prompt)]))
 
     llm = FakeLLM(h)
