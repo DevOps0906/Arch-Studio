@@ -10,6 +10,8 @@ from fastapi import FastAPI
 from app.ai.interfaces import GraphRunner, NotConfiguredRunner
 from app.ai.products import registered_products
 from app.ai.products.arch import APP as ARCH_APP
+from app.ai.tools.arch import ChatTools
+from app.ai.tools.arch import router as arch_tools_router
 from app.auth.deps import AuthContext
 from app.auth.keys import KeyStore
 from app.auth.replay import JtiStore, MemoryJtiStore
@@ -39,9 +41,11 @@ def create_app(
     app.state.products = registered_products()
     app.state.runs = runs or MemoryRunStore()
     app.state.runner = runner or NotConfiguredRunner()
+    app.state.arch_chat = ChatTools(internal_key=settings.dify_internal_api_key.get_secret_value())
 
     install_error_handlers(app)
     app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.max_body_bytes)
     app.include_router(health.router)
     app.include_router(graphs.router)
+    app.include_router(arch_tools_router)
     return app
