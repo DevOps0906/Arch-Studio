@@ -35,12 +35,27 @@ test("축출: 만료 항목을 앞에서부터 버린다(살아 있는 항목은
 });
 
 test("성능(회귀 ⚪): 상한에 꽉 찬 저장소에 새 키 10만 개를 넣어도 삽입당 O(1)", () => {
+  // 절대 시간 상한(3초)은 CI 러너 속도에 따라 흔들렸다(CI에서 3.9초로 실패). 같은 기계에서 잰 기준선
+  // (같은 크기 Map에 같은 수의 키를 넣고 가장 오래된 키를 지우는 루프) 대비 배수로 판정한다.
+  // 실측(로컬): 지금 구현은 기준선의 약 1.8배, 옛 구현(삽입마다 5,000개 순회)은 약 8~10배 → 4배를 경계로 둔다.
+  const baseline = (): number => {
+    const m = new Map<string, number>();
+    for (let i = 0; i < 5_000; i++) m.set(`warm${i}`, i);
+    const started = performance.now();
+    for (let i = 0; i < 100_000; i++) {
+      m.delete(m.keys().next().value as string);
+      m.set(`k${i}`, i);
+    }
+    return performance.now() - started;
+  };
+  baseline(); // 워밍업(JIT)
+  const base = Math.max(baseline(), 1);
   const store = new MemoryRateLimitStore(5_000);
   for (let i = 0; i < 5_000; i++) store.hit(`warm${i}`, 10, 3600, 0);
   const started = performance.now();
   for (let i = 0; i < 100_000; i++) store.hit(`k${i}`, 10, 3600, 1);
   const elapsed = performance.now() - started;
-  assert.ok(elapsed < 3_000, `${Math.round(elapsed)}ms (옛 구현은 삽입마다 전체 순회: 약 5억 회)`);
+  assert.ok(elapsed < base * 4, `${Math.round(elapsed)}ms, 기준선 ${Math.round(base)}ms의 ${Math.round(elapsed / base)}배`);
 });
 
 test("프록시 설정: TRUSTED_PROXY_HOPS 0 → 헤더 불신, 1 이상 → XFF 오른쪽 N번째", () => {
