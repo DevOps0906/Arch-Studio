@@ -530,6 +530,45 @@ class ReviewLlmRewrite(Strict):
     parts: SentenceParts
 
 
+# --- 법규 질의 답변 /tools/answer (AR-06-054). org는 받지 않는다(토큰 org만 신뢰). ---
+
+CHAT_MESSAGE_MAX = 2000
+
+
+class ChatRequest(Strict):
+    request_id: Annotated[str, Field(pattern=_RUN_UUID_PATTERN)]
+    message: Annotated[str, Field(min_length=1, max_length=CHAT_MESSAGE_MAX), _max_len(CHAT_MESSAGE_MAX)]
+    application_date: Annotated[str, Field(pattern=_DATE_PATTERN)] | None = None  # KST 날짜. 없으면 오늘
+
+
+class ChatSentence(Strict):
+    text: T_SENTENCE_MAX
+    source_ids: Annotated[list[IdStr], Field(min_length=1, max_length=20)]
+
+
+class ChatAnswer(Strict):
+    sentences: list[ChatSentence]
+
+
+class ChatSource(Strict):
+    chunk_id: IdStr
+    title: T_SHORT_MAX
+    article: T_SHORT_MAX
+    effective_from: T_32
+
+
+class ChatResponse(Strict):
+    answer: ChatAnswer
+    sources: list[ChatSource]
+    no_source: bool
+
+
+class ChatLlmOutput(Strict):
+    """answer 노드의 LLM 구조화 출력. 숫자는 인용 청크 원문에 있는 것만 쓴다."""
+
+    sentences: list[ReviewLlmSentence]
+
+
 AREA_M2_MAX = 1_000_000  # 1km² : 소형 건축 면적 입력으로는 충분히 큰 보수적 상한(제안)
 IntakeAnswer = (
     Annotated[str, Field(max_length=300), _max_len(300)] | float | bool | Annotated[list[IdStr], Field(max_length=20)]

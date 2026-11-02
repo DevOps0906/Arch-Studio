@@ -121,5 +121,6 @@
 | 2026-10-29 | AR-06-006 로컬 명령 | 내부 오류 코드 5개(CANCELLED·READ_FAILED·INVALID_INPUT·NOT_FOUND·VERSION_CONFLICT)가 04_API 7.3 AR 코드 밖, 저장 기본 파일명 export.<ext>(4.7.6 이름 규칙 미반영), 리비전 보존 정책 없음, 100MiB 내보내기 쓰기가 async 스레드를 잠시 점유, cargo audit 미설치 | 7.3 정식 코드화는 070 어댑터 때, 파일명은 030 ExportDialog, 보존 정책·cargo audit은 CI(S-7) |
 | 2026-10-29 | AR-06-006 사람 확인 | 실제 Windows 열기·저장·덮어쓰기 대화상자, OneDrive·junction·260자+ 경로 미검증(테스트는 picker 대체) | 대표님 확인 후 tasks/logs/AR-06-006.md에 기록 |
 | 2026-10-29 | 규칙 팩 2026.10.0 | 근거 문서에 조문이 붙은 법규 수치가 없어 10개 규칙 전부 `미확인`(판정 전부 WARN), 지원 지자체 0, 허가 도서 평가셋 30건 미측정 | 사용자: 법규 수치·조문·시행일 제공 또는 원문 표 작성 후 검수 → 팩 2026.10.1 |
+| 2026-11-03 | AR-06-054 채팅 `apps/api/app/routes/tools.py`·`apps/web/src/server/ai/chat/**` | ① FastAPI가 토큰 `req`·`conv` 클레임을 본문 request_id와 대조하지 않음(jti 1회로 재사용은 막힘) ② 일일 턴 상한은 원장 건수 근사(동시 요청 소폭 초과) ③ 레이트리밋 메모리 ④ 재전송은 같은 조직이면 다른 사용자도 저장 답을 받을 수 있음(request_id UUID v4 추측 불가 전제) ⑤ FastAPI 운영 배선(검색·LLM 주입) 없음 → 미주입 503 | ①④ 후속 보강(토큰 클레임 대조·findAnswer에 user 조건), ② 원자 카운터 마이그레이션, ③⑤ 운영 전 차단 |
 ## 교훈 (다음 작업에 그대로 적용할 것만, 20줄 이내 유지)
 - 디자인 시안 확정: design/reference/landing(다크)·dashboard(라이트) — 009~012·057·065~069는 이 시안 기준
