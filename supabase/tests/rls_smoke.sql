@@ -501,3 +501,10 @@ insert into @S@.public_knowledge_collections (collection_id) values ('c0000001-0
 -- AS anon
 -- TEST 공개 지식 anon 검색 호출 42501 | expect=sqlstate:42501
 select * from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10);
+-- AS service
+-- TEST 공개 지식 운영자 강등(platform_admin 해제) | expect=rows:1
+update @C@.profiles set platform_role = 'user' where id = 'ffffffff-0000-4000-8000-000000000006' returning 1;
+-- TEST 공개 지식 운영자 강등 후 oA 검색에서 공개 컬렉션 청크 0 | expect=rows:0
+select content from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10) where content = 'chunk-1';
+-- TEST 공개 지식 운영자 강등 후 공개 컬렉션 지정 42501 | expect=sqlstate:42501
+select * from @S@.match_public_knowledge((select oa from t_ids), (select vec from t_kn), 10, 'c0000001-0000-4000-8000-000000000001');

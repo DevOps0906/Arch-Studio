@@ -16,6 +16,7 @@
 -- =====================================================================
 -- 1. AI·음성 기능별 라우팅 기본값 14행 (2400 14절 seed 블록과 같은 값)
 -- =====================================================================
+-- 의도: do update 는 운영에서 손댄 기본 행(mode·chain·force)을 이 파일 값으로 되돌린다. 이 14행은 마이그레이션이 정본이다(조정은 org 행 또는 새 마이그레이션).
 insert into public.ai_routing_settings (org_id, app_id, feature, kind, mode, chain, force_open_source) values
   (null, 'arch', 'arch.review',             'llm',       'auto',        '[{"provider":"anthropic","model":"*"},{"provider":"openai","model":"*"},{"provider":"google","model":"*"},{"provider":"oss-llm","model":"*"}]', false),
   (null, 'arch', 'arch.intake',             'llm',       'auto',        '[{"provider":"anthropic","model":"*"},{"provider":"openai","model":"*"},{"provider":"oss-llm","model":"*"}]', false),
@@ -50,7 +51,10 @@ begin
       raise exception 'arch routing defaults: invalid chain providers %', v_bad;
     end if;
   end if;
-  if (select count(*) from public.ai_routing_settings s where s.org_id is null and s.app_id = 'arch') <> 14 then
+  if (select count(*) from public.ai_routing_settings s
+      where s.org_id is null and s.app_id = 'arch'
+        and s.feature in ('arch.review','arch.intake','arch.intake_consult','arch.proposal_narrative','arch.chat','arch.layout','arch.compliance',
+                          'wiki.ingest','wiki.query','wiki.lint','dify.aux','arch.knowledge','consult_recording','voice_chat')) <> 14 then
     raise exception 'arch routing defaults: expected 14 rows';
   end if;
 end $$;
@@ -100,6 +104,7 @@ grant all on table public.public_knowledge_collections to service_role;
 
 -- 벡터 검색 래퍼(service_role 전용). p_org 는 Route Handler 가 세션에서 정한 자기 조직이다(다른 조직 id 를 받는 인자는 없다).
 -- 결과 = 자기 조직의 arch 청크 + 등록된 공개 컬렉션의 청크. p_collection_id 를 주면 그 두 범위 안이어야 한다(42501).
+-- 공개 자격(소유 조직 owner 가 platform_admin)은 등록 때만이 아니라 검색 때마다 다시 확인한다(운영자 강등 시 즉시 0건).
 -- 본문 쿼리는 public.match_ai_chunks 와 같은 모양이고, 코어 함수는 호출하지 않는다.
 create or replace function public.match_public_knowledge(
   p_org            uuid,
@@ -117,7 +122,7 @@ set hnsw.ef_search = 100
 set hnsw.iterative_scan = relaxed_order
 as $$
 begin
-  if not public.is_privileged_session() then
+  if not public.is_service_caller() then
     raise exception 'match_public_knowledge: service_role only' using errcode = '42501';
   end if;
   if p_org is null or p_embedding is null then
@@ -129,7 +134,11 @@ begin
   if p_collection_id is not null and not exists (
     select 1 from public.ai_collections c
     where c.id = p_collection_id and c.app_id = 'arch'
-      and (c.org_id = p_org or exists (select 1 from public.public_knowledge_collections k where k.collection_id = c.id))
+      and (c.org_id = p_org or exists (select 1 from public.public_knowledge_collections k
+                  join public.ai_collections kc on kc.id = k.collection_id and kc.app_id = 'arch'
+                  join public.organizations ko on ko.id = kc.org_id
+                  join public.profiles kp on kp.id = ko.owner_id and kp.platform_role = 'platform_admin'
+                  where k.collection_id = c.id))
   ) then
     raise exception 'match_public_knowledge: collection not in org or public set' using errcode = '42501';
   end if;
@@ -140,7 +149,11 @@ begin
     join public.ai_documents d on d.id = ch.document_id and d.org_id = ch.org_id and d.status = 'ready'
     where ch.app_id = 'arch'
       and (ch.org_id = p_org
-           or exists (select 1 from public.public_knowledge_collections k where k.collection_id = ch.collection_id))
+           or exists (select 1 from public.public_knowledge_collections k
+                  join public.ai_collections kc on kc.id = k.collection_id and kc.app_id = 'arch'
+                  join public.organizations ko on ko.id = kc.org_id
+                  join public.profiles kp on kp.id = ko.owner_id and kp.platform_role = 'platform_admin'
+                  where k.collection_id = ch.collection_id))
       and (p_collection_id is null or ch.collection_id = p_collection_id)
       and (1 - (ch.embedding operator(extensions.<=>) p_embedding)) >= p_min_similarity
     order by ch.embedding operator(extensions.<=>) p_embedding
