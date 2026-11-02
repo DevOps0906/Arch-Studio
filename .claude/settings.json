@@ -32,7 +32,8 @@
       "Read(./**/.env.test)",
       "Read(./**/.env.staging)",
       "Read(./**/target/**)",
-      "Read(./**/.venv/**)"
+      "Read(./**/.venv/**)",
+      "Read(./.env.*)"
     ]
   }
 }
