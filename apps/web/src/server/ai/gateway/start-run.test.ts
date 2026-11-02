@@ -191,3 +191,12 @@ test("Route Handler·서버 AI 코드에서 consume_credits 직접 호출 0(04_A
   for (const d of targets) walk(d);
   assert.deepEqual(hits, []);
 });
+
+// 04_API.md:14 STT 예외(AR-06-053 [DECISION] 5): 동기 받아쓰기는 start_ai_run 밖에서 차감한다. 허용 목록 = server/voice/supabase-repo.ts 하나.
+test("server/voice에서 consume_credits 직접 호출은 supabase-repo.ts 하나뿐(STT 예외 허용 목록)", () => {
+  const dir = path.resolve(import.meta.dirname, "../../voice");
+  const hits = readdirSync(dir)
+    .filter((n) => /\.tsx?$/.test(n) && !n.endsWith(".test.ts") && /consume_credits/.test(readFileSync(path.join(dir, n), "utf8").replace(/^\s*\/\/.*$/gm, "")))
+    .sort();
+  assert.deepEqual(hits, ["supabase-repo.ts"]);
+});
