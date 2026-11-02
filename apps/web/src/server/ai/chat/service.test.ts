@@ -1,5 +1,5 @@
 // POST /api/ai/chat(AR-06-054): 답변마다 출처 1개 이상 또는 "근거를 찾지 못했습니다", Dify 입력에 토큰·org 없음,
-// Dify 장애 시 answer-direct(폴백 턴 0크레딧), request_id 재사용 409, 일일 상한, 실패 닫힘.
+// Dify 장애 시 answer-direct(출처 있으면 1크레딧), FastAPI 4xx는 폴백 없음, 환불 실패·중단, request_id 재사용 409, 일일 상한, 실패 닫힘.
 // 원장은 consume_credits·refund_credits와 같은 멱등 규칙의 가짜. Dify·FastAPI는 가짜 fetch(외부 호출 없음).
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -76,6 +76,8 @@ interface World {
   difyCalls: Call[];
   directCalls: Call[];
   tokenIssued: Array<Record<string, string>>;
+  refundFails?: boolean;
+  onDifyCall?: () => void;
 }
 
 function world(over: Partial<World> = {}): World {
@@ -121,7 +123,7 @@ function deps(w: World): ChatDeps {
   let nonceSeq = 0;
   return {
     config: () => w.config,
-    dify: (c) => difyClient({ baseUrl: c.dify.baseUrl, appKey: c.dify.appKey, fetch: fakeFetch(() => w.difyMode, w.difyCalls), idleMs: 50 }),
+    dify: (c) => difyClient({ baseUrl: c.dify.baseUrl, appKey: c.dify.appKey, fetch: fakeFetch(() => (w.onDifyCall?.(), w.difyMode), w.difyCalls), idleMs: 50 }),
     direct: (c) =>
       directClient({
         baseUrl: c.aiServiceUrl,
@@ -151,6 +153,7 @@ function deps(w: World): ChatDeps {
         return { ledgerId: row.id, orgId: row.orgId, actorId: row.actorId, amount: row.amount, conversationId: row.conversationId, nonce: row.nonce };
       },
       async refund({ ledgerId, orgId, requestId, amount, reason }) {
+        if (w.refundFails) throw Object.assign(new Error("db"), { code: "57014" });
         const key = chatRefundKey(orgId, requestId);
         if (w.refunds.has(key)) return;
         w.refunds.set(key, { ledgerId, amount, reason });
@@ -181,11 +184,12 @@ function deps(w: World): ChatDeps {
   };
 }
 
-function req(body: unknown): Request {
+function req(body: unknown, signal?: AbortSignal): Request {
   return new Request("http://local/api/ai/chat", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${ACCESS}` },
     body: JSON.stringify(body),
+    ...(signal ? { signal } : {}),
   });
 }
 
@@ -253,13 +257,14 @@ test("출처 없음: '근거를 찾지 못했습니다' + no_source 이벤트, �
   }
 });
 
-test("Dify 장애(5xx·연결 실패·error 이벤트·10초 무응답·계약 위반) → answer-direct, 폴백 턴 0크레딧", async () => {
+test("Dify 장애(5xx·연결 실패·error 이벤트·10초 무응답·계약 위반·FastAPI 503 봉투) → answer-direct, 출처 있으면 1크레딧", async () => {
   const modes: Mode[] = [
     { status: 502, body: "bad gateway" },
     "network",
     { status: 200, body: difySse(toolBody(), { error: true }) },
     "hang",
     { status: 200, body: difySse({ ok: true, data: { answer: "x" } }) },
+    { status: 200, body: difySse({ ok: false, error: { code: "AI_UNAVAILABLE", message: "x" } }) },
   ];
   for (const difyMode of modes) {
     const w = world({ difyMode });
@@ -267,9 +272,9 @@ test("Dify 장애(5xx·연결 실패·error 이벤트·10초 무응답·계약 �
     assert.equal(res.status, 200);
     const evs = await events(res);
     assert.ok((find(evs, "citations")?.citations as unknown[]).length >= 1);
-    assert.deepEqual(find(evs, "done"), { conversation_id: CONV, request_id: REQ, credits: 0, fallback: true });
-    assert.equal(w.balance, 10, "폴백 턴은 환불");
-    assert.equal(w.refunds.get(chatRefundKey(ORG, REQ))?.reason, "chat_fallback");
+    assert.deepEqual(find(evs, "done"), { conversation_id: CONV, request_id: REQ, credits: 1, fallback: true });
+    assert.equal(w.balance, 9, "폴백이어도 출처가 있으면 1크레딧");
+    assert.equal(w.refunds.size, 0);
     // answer-direct: 서명 토큰(scope chat, conv 바인딩)으로, 본문에 org 없음.
     assert.equal(w.directCalls.length, 1);
     const d = w.directCalls[0]!;
@@ -384,9 +389,8 @@ test("toChatAnswer: 출처 0개면 답 문장을 버림, 계약 위반은 예외
 });
 
 test("크레딧 규칙·키·한국 시간 0시·설정 판정", () => {
-  assert.equal(chatChargeFor("dify", false), 1);
-  assert.equal(chatChargeFor("dify", true), 0);
-  assert.equal(chatChargeFor("direct", false), 0);
+  assert.equal(chatChargeFor(false), 1);
+  assert.equal(chatChargeFor(true), 0);
   assert.equal(chatIdempotencyKey(ORG, REQ), `chat:${ORG}:${REQ}`);
   assert.equal(chatRefundKey(ORG, REQ), `chat:${ORG}:${REQ}:refund`);
   assert.equal(kstDayStartIso(Date.UTC(2026, 10, 2, 3, 0, 0)), "2026-11-01T15:00:00.000Z");
@@ -400,4 +404,64 @@ test("크레딧 규칙·키·한국 시간 0시·설정 판정", () => {
   assert.equal(du, difyUserOf(SECRET, ORG, USER));
   assert.notEqual(du, difyUserOf(SECRET, ORG, OTHER_USER));
   assert.equal(du.includes(USER.slice(0, 8)), false);
+});
+
+test("따옴표·줄바꿈 질문으로 FastAPI가 422를 돌려주면 폴백 없이 422, 환불", async () => {
+  const q = ["그는 \"건폐율\"이라고 했다", "다음 줄"].join(String.fromCharCode(10));
+  const rejected = { ok: false, error: { code: "VALIDATION", message: "입력이 계약과 다릅니다" } };
+  const w = world({ difyMode: { status: 200, body: difySse(rejected) } });
+  const res = await handleChat(req({ request_id: REQ, conversation_id: CONV, message: q }), deps(w));
+  assert.equal(res.status, 422);
+  assert.equal(((await res.json()) as { error: { code: string } }).error.code, "invalid_input");
+  assert.equal(w.directCalls.length, 0, "FastAPI 거절은 장애가 아니므로 폴백하지 않는다");
+  assert.equal(w.balance, 10);
+  assert.equal(w.refunds.get(chatRefundKey(ORG, REQ))?.reason, "chat_rejected");
+  // 웹 → Dify 본문은 JSON 직렬화라 따옴표·줄바꿈이 보존된다.
+  assert.equal((JSON.parse(w.difyCalls[0]!.body) as { query: string }).query, q);
+
+  // 폴백 중 direct가 4xx(예: 401·422)여도 오류·환불.
+  const w2 = world({ difyMode: { status: 502 }, directMode: { status: 422, body: JSON.stringify(rejected) } });
+  const r2 = await handleChat(req({ request_id: REQ, conversation_id: CONV, message: q }), deps(w2));
+  assert.equal(r2.status, 422);
+  assert.equal(w2.directCalls.length, 1);
+  assert.equal(w2.balance, 10);
+  const w3 = world({ difyMode: { status: 502 }, directMode: { status: 401 } });
+  const r3 = await handleChat(req({ request_id: REQ, conversation_id: CONV, message: MSG }), deps(w3));
+  assert.equal(r3.status, 503);
+  assert.equal(w3.balance, 10);
+});
+
+test("answer-direct 성공(출처 있음) → 1크레딧", async () => {
+  const w = world({ difyMode: "network" });
+  const evs = await events(await handleChat(req({ request_id: REQ, conversation_id: CONV, message: MSG }), deps(w)));
+  assert.equal(find(evs, "done")?.credits, 1);
+  assert.equal(find(evs, "done")?.fallback, true);
+  assert.equal(w.balance, 9);
+});
+
+test("환불 실패: alert 로그, 답은 그대로 전달(done.credits = 실제 차감), 실패 경로는 503 유지", async (t) => {
+  const lines: string[] = [];
+  t.mock.method(console, "error", (line: string) => lines.push(line));
+  t.mock.method(console, "warn", () => undefined);
+  t.mock.method(console, "log", () => undefined);
+  const w = world({ refundFails: true, difyMode: { status: 200, body: difySse(toolBody({ citations: [] })) } });
+  const res = await handleChat(req({ request_id: REQ, conversation_id: CONV, message: MSG }), deps(w));
+  assert.equal(res.status, 200);
+  const evs = await events(res);
+  assert.equal(find(evs, "delta")?.text, NO_SOURCE_ANSWER);
+  assert.equal(find(evs, "done")?.credits, 1);
+  assert.ok(lines.some((l) => l.includes("ai_chat.refund_failed") && l.includes('"alert":true')));
+
+  const w2 = world({ refundFails: true, difyMode: { status: 500 }, directMode: { status: 500 } });
+  const r2 = await handleChat(req({ request_id: REQ, conversation_id: CONV, message: MSG }), deps(w2));
+  assert.equal(r2.status, 503);
+});
+
+test("확정 직전 클라이언트 중단 → 환불, 과금 0", async () => {
+  const ctrl = new AbortController();
+  const w = world({ onDifyCall: () => ctrl.abort() });
+  const res = await handleChat(req({ request_id: REQ, conversation_id: CONV, message: MSG }, ctrl.signal), deps(w));
+  assert.equal(res.status, 499);
+  assert.equal(w.balance, 10);
+  assert.equal(w.refunds.get(chatRefundKey(ORG, REQ))?.reason, "chat_aborted");
 });

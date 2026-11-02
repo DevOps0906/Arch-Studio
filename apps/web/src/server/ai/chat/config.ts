@@ -1,7 +1,7 @@
 // 채팅 중계 설정(env → 값). 비밀 값은 존재·형식만 보고 로그에 넣지 않는다.
 // DIFY_API_URL·DIFY_APP_KEY_ARCH·DIFY_USER_HMAC_SECRET·AI_SERVICE_URL은 serverEnv 스키마(소유 밖)에 없어 process.env에서 읽는다(053 voice와 같은 방식).
 // - Dify(URL·앱 키)·dify_user HMAC 비밀·폴백 경로(AI_SERVICE_URL)는 모두 필수: 하나라도 없으면 /api/ai/chat 503(인증·차감 전).
-//   설정 누락을 무료 폴백으로 돌리지 않는다(실패 닫힘). 무료 폴백은 Dify가 설정돼 있는데 런타임 장애가 났을 때만.
+//   설정 누락을 폴백으로 돌리지 않는다(실패 닫힘). answer-direct 폴백은 Dify가 설정돼 있는데 런타임 장애가 났을 때만.
 // server-only를 import하지 않는다(node --test 대상).
 import { createHmac } from "node:crypto";
 

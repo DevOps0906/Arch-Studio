@@ -5,7 +5,8 @@
 //   → 본문 → 일일 턴 상한(`ai_chat_turns_per_day`, 0이면 폴백 상태 포함 AI_DAILY_LIMIT) → 대화 확인(본인 것만)
 //   → 선차감 1(`chat:<org_id>:<request_id>`, 새 원장만 통과·재사용은 409) → 새 대화면 core.ai_conversations 생성
 //   → Dify(실패 시 answer-direct + 운영 알림 로그) → 확정/환불 → SSE.
-// 크레딧: Dify 경로로 출처가 붙은 답만 1. 출처 없음·폴백·실패는 전액 환불(0). 차감은 credits.reserve 한 곳에서만.
+// 크레딧: 출처가 붙은 답이면 1(Dify·answer-direct 폴백 모두). 출처 없음·실패·FastAPI 거절(4xx, 폴백 안 함)·클라이언트 중단은 전액 환불(0).
+// 환불이 실패하면 alert 로그를 남기고 답이 있으면 그대로 전달한다(done.credits는 실제 차감값). 차감은 credits.reserve 한 곳에서만.
 // 상류 답은 출처 규칙을 다시 검사한 뒤에만 내보내므로(answer.ts) 전체를 받은 다음 SSE로 보낸다.
 // 응답·로그에 질문·답변 원문·토큰·키·예외 원문을 넣지 않는다. 조직·행위자는 세션에서만.
 // server-only를 import하지 않는다(node --test 대상).
@@ -18,7 +19,7 @@ import type { RateLimitStore } from "../../licenses/rate-limit.ts";
 import type { ChatAnswer, Citation } from "./answer.ts";
 import { CHAT_TURN_COST, chatChargeFor, type ChatRoute } from "./billing.ts";
 import { difyUserOf, type ChatConfig } from "./config.ts";
-import type { DifyClient, DirectClient } from "./upstream.ts";
+import { UpstreamRejected, type DifyClient, type DirectClient } from "./upstream.ts";
 
 export interface ChatReserveInput {
   orgId: string;
@@ -195,6 +196,7 @@ async function askUpstream(deps: ChatDeps, config: ChatConfig, session: GatewayS
     const r = await deps.dify(config).ask({ query, platformConversationId: conv.id, difyUser: conv.difyUser, difyConversationId: conv.difyConversationId });
     return { answer: r, route: "dify", difyConversationId: r.difyConversationId };
   } catch (error) {
+    if (error instanceof UpstreamRejected) throw error; // FastAPI 거절(4xx)은 장애가 아니다: 폴백 없음
     // 런타임 장애만 여기로 온다(설정 누락은 앞에서 503). 운영 알림 대상(04_API.md 12장 Dify 행). 사유 코드만.
     const reason = error instanceof Error && "reason" in error && typeof error.reason === "string" ? error.reason : "unknown";
     logger.error("ai_chat.dify_unavailable", { route: "ai_chat", reason: /^[a-z0-9_]{1,40}$/.test(reason) ? reason : "unknown", alert: true });
@@ -246,16 +248,36 @@ export async function handleChat(req: Request, deps: ChatDeps): Promise<Response
       conversationId: conv.id,
       amount: CHAT_TURN_COST,
     });
-    const refund = (reason: string) =>
-      credits.refund({ ledgerId, orgId: session.orgId, requestId: input.request_id, amount: CHAT_TURN_COST, reason });
+    /** 전액 환불. 실패하면 alert 로그만 남기고 false(호출자는 응답을 계속한다). */
+    const refund = async (reason: string): Promise<boolean> => {
+      try {
+        await credits.refund({ ledgerId, orgId: session.orgId, requestId: input.request_id, amount: CHAT_TURN_COST, reason });
+        return true;
+      } catch (error) {
+        logger.error("ai_chat.refund_failed", { route: "ai_chat", reason, code: dbCode(error) ?? "internal", ledger_id: ledgerId, alert: true });
+        return false;
+      }
+    };
 
     let answered: Answered;
     try {
       if (isNew) await conversations.create({ id: conv.id, orgId: session.orgId, userId: session.userId, difyUser: conv.difyUser });
       answered = await askUpstream(deps, config, session, conv, input.message);
-    } catch {
+    } catch (error) {
+      if (error instanceof UpstreamRejected) {
+        await refund("chat_rejected");
+        logger.warn("ai_chat.upstream_rejected", { route: "ai_chat", code: error.code });
+        throw error.code === "VALIDATION" || error.code === "http_422" ? new GatewayError("invalid_input") : new ChatReject("AI_UNAVAILABLE");
+      }
       await refund("chat_failed");
       throw new ChatReject("AI_UNAVAILABLE");
+    }
+
+    // 확정 직전 클라이언트가 끊었으면 답을 전달할 수 없으므로 환불(01_PRD 4.9 "결과가 전달되지 않으면 전액 환불").
+    if (req.signal.aborted) {
+      await refund("chat_aborted");
+      logger.info("ai_chat.aborted", { route: "ai_chat" });
+      return new Response(null, { status: 499 });
     }
 
     if (answered.difyConversationId && !conv.difyConversationId) {
@@ -266,8 +288,8 @@ export async function handleChat(req: Request, deps: ChatDeps): Promise<Response
       }
     }
 
-    const charged = chatChargeFor(answered.route, answered.answer.noSource);
-    if (charged === 0) await refund(answered.answer.noSource ? "chat_no_source" : "chat_fallback");
+    let charged = chatChargeFor(answered.answer.noSource);
+    if (charged === 0 && !(await refund("chat_no_source"))) charged = CHAT_TURN_COST;
     logger.info("ai_chat.done", { route: "ai_chat", upstream: answered.route, no_source: answered.answer.noSource, credits: charged });
     return sseResponse({ answer: answered.answer, conversationId: conv.id, requestId: input.request_id, credits: charged, fallback: answered.route === "direct" });
   } catch (error) {

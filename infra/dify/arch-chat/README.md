@@ -26,7 +26,8 @@ Dify는 질문을 받아 FastAPI `/tools/answer`에 넘기고, 그 응답 JSON�
 3. **답변**: `{{#tools_answer.body#}}` 를 그대로 출력합니다(가공·LLM 요약 금지).
    - 출력은 FastAPI 봉투 `{ "ok": true, "data": { "answer", "citations": [{ "law", "article", "effective_from", "source_id" }], "no_source", "usage" } }` 입니다.
    - Next.js가 `message` 조각을 모아 `message_end`에서 한 번에 파싱하고, 출처가 0개면 문장을 버리고 "근거를 찾지 못했습니다"로 바꿉니다.
-   - HTTP 노드가 실패하면 본문이 봉투가 아니므로 웹이 계약 위반으로 보고 `/tools/answer-direct`로 폴백합니다.
+   - HTTP 노드 오류 처리는 "실패 시 계속"으로 두어 FastAPI 4xx 봉투(`{ ok:false, error:{ code } }`)도 답변 노드로 보냅니다. 웹은 code가 `AI_UNAVAILABLE`이 아니면 거절로 보고 폴백하지 않습니다(환불). 그 밖의 비정상 출력·Dify 장애는 `/tools/answer-direct`로 폴백합니다.
+   - 본문 템플릿에 `sys.query`를 문자열로 끼우면 질문의 따옴표·줄바꿈이 JSON을 깨 422가 납니다. 설치 버전에서 JSON 본문 변수 이스케이프 방식을 확인해 설정합니다(미확인).
 
 보조 LLM 노드(질문 분류 등, `dify.aux` 오픈소스 강제)는 MVP에서 두지 않습니다.
 
@@ -45,9 +46,10 @@ Dify는 질문을 받아 FastAPI `/tools/answer`에 넘기고, 그 응답 JSON�
 |---|---|
 | Dify 경로, 출처 1개 이상 | 1 (선차감 확정) |
 | 출처 없음 | 0 (전액 환불, 04_API "제안") |
-| Dify 장애 → answer-direct(폴백) | 0 (전액 환불) |
+| Dify 런타임 장애 → answer-direct(폴백), 출처 있음 | 1 |
+| FastAPI 거절(4xx, 예: 본문 JSON 깨짐 422) | 0 (환불, 폴백 안 함, 422·503) |
 | 둘 다 실패 | 0 (환불 + 503 `AI_UNAVAILABLE`) |
-| Dify 설정 누락(URL·앱 키·HMAC 비밀·AI_SERVICE_URL) | 503 `AI_UNAVAILABLE`, 차감 전 거부(무료 폴백 없음) |
+| Dify 설정 누락(URL·앱 키·HMAC 비밀·AI_SERVICE_URL) | 503 `AI_UNAVAILABLE`, 차감 전 거부(폴백 없음) |
 
 멱등 키 `chat:<org_id>:<request_id>`(환불 `...:refund`). 같은 request_id 재사용은 원장 nonce 대조로 409.
 

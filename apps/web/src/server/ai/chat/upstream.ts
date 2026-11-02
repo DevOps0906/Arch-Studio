@@ -2,14 +2,17 @@
 // Dify 요청에는 질문·platform_conversation_id·dify_user(HMAC)·dify 대화 id만 넣는다. 토큰·org·사용자 id·프로젝트·주소는 넣지 않는다.
 // Dify 앱의 Answer 노드는 `/tools/answer` 응답 본문(JSON 봉투)을 그대로 내보낸다(infra/dify/arch-chat/README.md). 웹은 message 조각을
 // 모아 message_end에서 한 번에 파싱하고 출처 규칙을 다시 검사한다(answer.ts). Dify API 필드는 공개 문서 기준이며 설치 버전 확인 전(미확인).
-// 장애 판정: 연결 실패·비 2xx·10초 무응답(조각 사이 간격)·error 이벤트·계약 위반 → DifyUnavailable(호출자가 answer-direct로 폴백).
+// 장애 판정: 연결 실패·비 2xx·10초 무응답(조각 사이 간격)·error 이벤트·계약 위반 → UpstreamError(호출자가 answer-direct로 폴백).
+// FastAPI가 요청을 거절한 4xx(답변 본문이 `{ ok:false, error:{ code } }`이고 code가 AI_UNAVAILABLE이 아님, direct는 HTTP 4xx)는
+// 장애가 아니다 → UpstreamRejected(폴백하지 않고 오류·환불). 예: Dify 본문 템플릿에서 질문의 따옴표·줄바꿈이 JSON을 깨 422.
 // 오류 원문(URL·키·토큰·본문)은 예외 메시지에 넣지 않는다.
 // server-only를 import하지 않는다(node --test 대상).
 import { toChatAnswer, type ChatAnswer } from "./answer.ts";
 
 export const DIFY_IDLE_TIMEOUT_MS = 10_000;
-export const DIFY_TOTAL_TIMEOUT_MS = 60_000;
-export const DIRECT_TIMEOUT_MS = 30_000;
+// 합(45 + 25 = 70초)이 route.ts maxDuration(120초)보다 충분히 작게.
+export const DIFY_TOTAL_TIMEOUT_MS = 45_000;
+export const DIRECT_TIMEOUT_MS = 25_000;
 const MAX_STREAM_BYTES = 256 * 1024;
 
 type Fetch = typeof globalThis.fetch;
@@ -21,6 +24,25 @@ export class UpstreamError extends Error {
     this.name = "UpstreamError";
     this.reason = reason;
   }
+}
+
+/** FastAPI가 요청을 거절함(4xx). 폴백하지 않는다. code는 FastAPI 오류 코드 또는 `http_<status>`. */
+export class UpstreamRejected extends Error {
+  readonly code: string;
+  constructor(code: string) {
+    super("upstream rejected");
+    this.name = "UpstreamRejected";
+    this.code = /^[A-Za-z0-9_]{1,40}$/.test(code) ? code : "unknown";
+  }
+}
+
+/** FastAPI 오류 봉투면 코드, 아니면 null. */
+function rejectionCode(raw: unknown): string | null {
+  if (raw === null || typeof raw !== "object") return null;
+  const r = raw as { ok?: unknown; error?: unknown };
+  if (r.ok !== false || r.error === null || typeof r.error !== "object") return null;
+  const code = (r.error as { code?: unknown }).code;
+  return typeof code === "string" ? code : "unknown";
 }
 
 export interface DifyTurn {
@@ -133,6 +155,8 @@ export function difyClient(opts: { baseUrl: string; appKey: string; fetch: Fetch
         } catch {
           throw new UpstreamError("dify", "bad_answer");
         }
+        const rejected = rejectionCode(raw);
+        if (rejected !== null && rejected !== "AI_UNAVAILABLE") throw new UpstreamRejected(rejected);
         try {
           return { ...toChatAnswer(raw), difyConversationId: conv };
         } catch {
@@ -174,6 +198,15 @@ export function directClient(opts: {
           });
         } catch {
           throw new UpstreamError("direct", "network");
+        }
+        if (res.status >= 400 && res.status < 500) {
+          let code = `http_${res.status}`;
+          try {
+            code = rejectionCode(await res.json()) ?? code;
+          } catch {
+            // 본문 없음: 상태 코드만
+          }
+          throw new UpstreamRejected(code);
         }
         if (!res.ok) throw new UpstreamError("direct", `status_${res.status}`);
         let raw: unknown;
