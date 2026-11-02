@@ -16,5 +16,7 @@ export type {
   JsonValue,
   FetchLike,
   FetchResponseLike,
+  StreamBodyLike,
+  StreamReaderLike,
   AbortSignalLike,
 } from "./types.ts";
