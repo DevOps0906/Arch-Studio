@@ -216,6 +216,8 @@ export interface JobView {
   readonly stage?: string;
   readonly result?: unknown;
   readonly errorCode?: string;
+  /** 서버 공개 실패 문구(jobs/service.ts PUBLIC_FAILURES). 모르는 코드일 때 이 문구를 쓴다. */
+  readonly errorMessage?: string;
   readonly refunded: boolean;
 }
 export function parseJob(data: unknown): JobView {
@@ -227,6 +229,7 @@ export function parseJob(data: unknown): JobView {
     ...(isStr(data["stage"]) ? { stage: data["stage"] } : {}),
     ...(data["result"] !== undefined ? { result: data["result"] } : {}),
     ...(isObj(e) && isStr(e["code"]) ? { errorCode: e["code"] } : {}),
+    ...(isObj(e) && isStr(e["message"]) && e["message"].trim() !== "" ? { errorMessage: e["message"].slice(0, 300) } : {}),
   };
 }
 
@@ -239,9 +242,14 @@ export type ReviewPhase =
   | { readonly kind: "succeeded"; readonly review: ReviewResultV1 }
   | { readonly kind: "failed"; readonly message: string; readonly refunded: boolean };
 
+/** 잡 실패 코드 → 문구(서버 jobs/service.ts PUBLIC_FAILURES의 코드와 같다). 환불 여부는 refunded로 따로 붙인다. */
 const FAIL_TEXT: Readonly<Record<string, string>> = {
   AR033: "근거 출처를 확인하지 못해 검토 결과를 보여 드리지 않습니다.",
-  review_timeout: "검토 시간이 10분을 넘었습니다.",
+  AR032: "AI 결과가 형식 검사를 통과하지 못했습니다.",
+  JOB_TIMEOUT: "검토 시간이 초과되었습니다(10분).",
+  AI_UNAVAILABLE: "AI 제공자를 지금 사용할 수 없습니다. 잠시 뒤 다시 요청하세요.",
+  JOB_FAILED: "검토를 마치지 못했습니다.",
+  JOB_CANCELED: "검토가 취소되었습니다.",
 };
 
 export function reviewPhase(job: JobView): ReviewPhase {
@@ -253,8 +261,11 @@ export function reviewPhase(job: JobView): ReviewPhase {
     return { kind: "failed", message: "검토 결과 형식을 읽지 못했습니다. 고객지원에 문의하세요.", refunded: false };
   }
   if (failed) {
-    const base = (job.errorCode && FAIL_TEXT[job.errorCode]) || "검토를 마치지 못했습니다.";
-    return { kind: "failed", message: `${base} ${job.refunded ? "크레딧은 환불되었습니다." : "크레딧 환불을 처리하고 있습니다."}`, refunded: job.refunded };
+    const known = job.errorCode !== undefined ? FAIL_TEXT[job.errorCode] : undefined;
+    const base = known ?? job.errorMessage ?? FAIL_TEXT.JOB_FAILED!;
+    // 서버 문구가 이미 환불을 말하면 덧붙이지 않는다(모르는 코드의 서버 문구).
+    const refund = !known && base.includes("환불") ? "" : job.refunded ? " 크레딧은 환불되었습니다." : " 크레딧 환불을 처리하고 있습니다.";
+    return { kind: "failed", message: `${base}${refund}`, refunded: job.refunded };
   }
   return { kind: "running", step: job.stage !== undefined ? (STAGE_STEP[job.stage] ?? 0) : 0 };
 }

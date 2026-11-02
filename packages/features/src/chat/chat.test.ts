@@ -9,7 +9,8 @@ import {
   applyEvent,
   classifyChatError,
   keepsRequestId,
-  requestIdFor,
+  placeTurn,
+  resendId,
   sendChatTurn,
   turnCostText,
   visibleSentences,
@@ -103,43 +104,55 @@ test("done 없이 끊긴 스트림 = 결과 모름(unknown) → 같은 request_i
   assert.equal(keepsRequestId("unknown"), true);
 });
 
-test("request_id 재전송: 같은 질문 재시도는 같은 id, 새 질문·새 요청은 새 id", () => {
+test("재전송 id: 다시 보내기·다시 확인은 그 턴 id, 새 요청만 새 id · 재전송은 그 자리를 바꾼다", () => {
   let n = 0;
   const gen = () => `new-${++n}`;
-  const pending = { message: "질문", requestId: "keep-1" };
-  assert.equal(requestIdFor(pending, "질문", gen), "keep-1");
-  assert.equal(requestIdFor(pending, "다른 질문", gen), "new-1");
-  assert.equal(requestIdFor(null, "질문", gen), "new-2");
+  const q1 = { id: "id-q1", question: "Q1" };
+  assert.equal(resendId(q1, "same", gen), "id-q1");
+  assert.equal(resendId(q1, "fresh", gen), "new-1");
+  const q2 = { id: "id-q2", question: "Q2" };
+  assert.deepEqual(placeTurn([q1, q2], { id: "id-q1", question: "Q1" }, "id-q1").map((t) => t.id), ["id-q1", "id-q2"], "같은 id 재전송: 질문이 두 번 보이지 않음");
+  assert.deepEqual(placeTurn([q1, q2], { id: "new-9", question: "Q1" }, "id-q1").map((t) => t.id), ["new-9", "id-q2"], "새 요청: 실패 턴 자리 교체");
+  assert.deepEqual(placeTurn([q1], q2, null).map((t) => t.id), ["id-q1", "id-q2"]);
 });
 
-test("같은 id 재전송 → 서버 재송출(replay): 0 크레딧 표시, 두 요청 본문의 request_id 동일", async () => {
-  const ids: string[] = [];
-  let call = 0;
+test("실패 Q1 → Q2 성공 → Q1 다시 보내기: Q1의 request_id로 나가고(이중 차감 없음) 재송출 0 크레딧", async () => {
+  const sent: Array<{ id: string; message: string }> = [];
+  let q1Calls = 0;
   const api = client(async (_url, init) => {
-    ids.push(JSON.parse(init.body!).request_id);
-    call += 1;
-    if (call === 1) throw new Error("socket closed");
-    return streamResponse(sse("sentence", { index: 0, text: "답", source_ids: ["c1"] }) + sse("sources", [SRC]) + sse("done", { conversation_id: "c", no_source: false, credits: 0, replay: true }), 3);
+    const b = JSON.parse(init.body!);
+    sent.push({ id: b.request_id, message: b.message });
+    if (b.message === "Q1" && ++q1Calls === 1) throw new Error("socket closed");
+    const replay = b.message === "Q1";
+    return streamResponse(
+      sse("sentence", { index: 0, text: "답", source_ids: ["c1"] }) + sse("sources", [SRC]) + sse("done", { conversation_id: "c", no_source: false, credits: replay ? 0 : 1, ...(replay ? { replay: true } : {}) }),
+      2,
+    );
   });
-  let pending: { message: string; requestId: string } | null = null;
-  const attempt = async () => {
-    const requestId = requestIdFor(pending, "질문", () => api.newIdempotencyKey());
-    pending = { message: "질문", requestId };
+  type T = { id: string; question: string; failed: boolean };
+  let turns: T[] = [];
+  const send = async (question: string, retry?: { turn: T; mode: "same" | "fresh" }) => {
+    const newId = () => api.newIdempotencyKey();
+    const id = retry ? resendId(retry.turn, retry.mode, newId) : newId();
+    turns = placeTurn(turns, { id, question, failed: false }, retry ? retry.turn.id : null);
     try {
-      const s = await sendChatTurn(api, { requestId, message: "질문", conversationId: null }, () => undefined);
-      pending = null;
-      return s;
+      return await sendChatTurn(api, { requestId: id, message: question, conversationId: null }, () => undefined);
     } catch (e) {
       const f = classifyChatError(e);
-      if (!keepsRequestId(f.kind)) pending = null;
-      throw f;
+      turns = turns.map((t) => (t.id === id ? { ...t, failed: keepsRequestId(f.kind) } : t));
+      return null;
     }
   };
-  await assert.rejects(attempt(), (e: unknown) => e instanceof ChatFailure && e.kind === "unknown" && e.code === "network_offline");
-  const ok = await attempt();
-  assert.equal(ids.length, 2);
-  assert.equal(ids[0], ids[1], "결과를 모르는 실패 뒤 재전송은 같은 request_id");
-  assert.equal(turnCostText(ok.done!), "이전 답변 다시 받기 · 0 크레딧");
+  assert.equal(await send("Q1"), null);
+  assert.ok(await send("Q2"));
+  const q1 = turns.find((t) => t.question === "Q1")!;
+  assert.equal(q1.failed, true);
+  const again = await send("Q1", { turn: q1, mode: "same" });
+  assert.deepEqual(sent.map((s) => s.message), ["Q1", "Q2", "Q1"]);
+  assert.equal(sent[2]!.id, sent[0]!.id, "Q1 재전송은 Q1의 id");
+  assert.notEqual(sent[1]!.id, sent[0]!.id);
+  assert.deepEqual(turns.map((t) => t.question), ["Q1", "Q2"], "질문이 두 번 보이지 않음");
+  assert.equal(turnCostText(again!.done!), "이전 답변 다시 받기 · 0 크레딧");
 });
 
 test("409 IDEMPOTENT_REPLAY: 자동 재시도 없이 replay_conflict, id 유지(다시 확인) · 새 요청은 새 id", async () => {

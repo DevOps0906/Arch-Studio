@@ -85,6 +85,14 @@ test("잡 상태 → 단계: 서버 stage만, 실패는 환불 문구, AR033 차
   const blocked = reviewPhase(parseJob({ status: "failed", error: { code: "AR033", message: "" }, refunded: true }));
   assert.equal(blocked.kind, "failed");
   assert.match(blocked.kind === "failed" ? blocked.message : "", /출처.*환불되었습니다/);
+  for (const [code, re] of [["JOB_TIMEOUT", /시간이 초과/], ["AR032", /형식 검사/], ["AI_UNAVAILABLE", /AI 제공자/], ["JOB_FAILED", /마치지 못했습니다/]] as const) {
+    const p = reviewPhase(parseJob({ status: "failed", error: { code, message: "서버 문구" }, refunded: true }));
+    assert.match(p.kind === "failed" ? p.message : "", re, code);
+  }
+  const unknown = reviewPhase(parseJob({ status: "failed", error: { code: "NEW_CODE", message: "새 실패 사유입니다." }, refunded: true }));
+  assert.equal(unknown.kind === "failed" ? unknown.message : "", "새 실패 사유입니다. 크레딧은 환불되었습니다.", "모르는 코드는 서버 문구");
+  const dup = reviewPhase(parseJob({ status: "failed", error: { code: "X_CODE", message: "중단됐습니다. 크레딧은 환불됩니다." }, refunded: true }));
+  assert.equal(dup.kind === "failed" ? dup.message : "", "중단됐습니다. 크레딧은 환불됩니다.", "환불 문구 중복 없음");
   const pending = reviewPhase(parseJob({ status: "failed", refunded: false }));
   assert.match(pending.kind === "failed" ? pending.message : "", /환불을 처리하고/);
 });

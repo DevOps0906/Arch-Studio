@@ -13,7 +13,8 @@ import {
   EMPTY_ANSWER,
   classifyChatError,
   keepsRequestId,
-  requestIdFor,
+  placeTurn,
+  resendId,
   sendChatTurn,
   turnCostText,
   visibleSentences,
@@ -114,8 +115,6 @@ export function ChatPanel({ variant = "page" }: { variant?: "page" | "side" }) {
   const [draft, setDraft] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [locked, setLocked] = useState<string | null>(null);
-  // 결과를 모르는 마지막 시도(같은 질문을 다시 보내면 같은 request_id).
-  const pending = useRef<{ message: string; requestId: string } | null>(null);
   const ctrl = useRef<AbortController | null>(null);
   const inputId = useId();
   const hintId = useId();
@@ -157,26 +156,27 @@ export function ChatPanel({ variant = "page" }: { variant?: "page" | "side" }) {
 
   const update = (id: string, patch: Partial<Turn>): void => setTurns((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
 
-  const send = async (message: string, fresh = false): Promise<void> => {
+  /**
+   * 보내기. 입력창 = 새 request_id. 재전송(retry) = 그 턴의 id(same) 또는 새 id(fresh, "새 요청으로 보내기")이고 그 턴 자리를 바꾼다.
+   * request_id를 턴 id로 들고 다니므로 다른 턴을 보낸 뒤에도 재전송이 같은 키로 나간다(이중 차감 방지).
+   */
+  const send = async (message: string, retry?: { turn: Turn; mode: "same" | "fresh" }): Promise<void> => {
     const text = message.trim();
     if (!text || busy) return;
-    if (fresh) pending.current = null;
-    const requestId = requestIdFor(pending.current, text, () => api.newIdempotencyKey());
-    pending.current = { message: text, requestId };
+    const newId = (): string => api.newIdempotencyKey();
+    const requestId = retry ? resendId(retry.turn, retry.mode, newId) : newId();
     const turnId = requestId;
-    setTurns((ts) => [...ts.filter((t) => t.id !== turnId), { id: turnId, question: text, answer: EMPTY_ANSWER, failure: null, streaming: true }]);
-    setDraft("");
+    setTurns((ts) => placeTurn(ts, { id: turnId, question: text, answer: EMPTY_ANSWER, failure: null, streaming: true }, retry ? retry.turn.id : null));
+    if (!retry) setDraft("");
     const ac = new AbortController();
     ctrl.current = ac;
     try {
       const answer = await sendChatTurn(api, { requestId, message: text, conversationId }, (a) => update(turnId, { answer: a }), ac.signal);
-      pending.current = null;
       if (answer.done) setConversationId(answer.done.conversationId);
       update(turnId, { answer, streaming: false });
     } catch (error) {
       if (ac.signal.aborted) return;
       const failure = classifyChatError(error);
-      if (!keepsRequestId(failure.kind)) pending.current = null;
       if (failure.kind === "locked") setLocked(failure.message);
       update(turnId, { failure, streaming: false });
     }
@@ -207,13 +207,13 @@ export function ChatPanel({ variant = "page" }: { variant?: "page" | "side" }) {
                       tone={t.failure.kind === "final" ? "danger" : "warn"}
                       title="답변을 받지 못했습니다"
                       action={
-                        t.failure.kind === "unknown" || t.failure.kind === "replay_conflict" ? (
+                        keepsRequestId(t.failure.kind) ? (
                           <div className="flex flex-wrap gap-2">
-                            <Button size="sm" disabled={busy || !online} onClick={() => void send(t.question)}>
+                            <Button size="sm" disabled={busy || !online} onClick={() => void send(t.question, { turn: t, mode: "same" })}>
                               {t.failure.kind === "unknown" ? "다시 보내기" : "다시 확인"}
                             </Button>
                             {t.failure.kind === "replay_conflict" ? (
-                              <Button size="sm" variant="ghost" disabled={busy || !online} onClick={() => void send(t.question, true)}>
+                              <Button size="sm" variant="ghost" disabled={busy || !online} onClick={() => void send(t.question, { turn: t, mode: "fresh" })}>
                                 새 요청으로 보내기
                               </Button>
                             ) : null}

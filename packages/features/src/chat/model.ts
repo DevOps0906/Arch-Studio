@@ -148,14 +148,30 @@ export function classifyChatError(error: unknown): ChatFailure {
 }
 
 /* ---------- request_id 정책 ---------- */
-/** 결과를 모르는 실패 뒤에만 같은 id를 남긴다(그 외에는 다음 전송이 새 id). */
+/** 결과를 모르는 실패(재전송 버튼을 보일 실패)인가. 그 밖의 실패는 같은 id가 409가 되므로 재전송 버튼이 없다. */
 export function keepsRequestId(kind: ChatFailureKind | "ok"): boolean {
   return kind === "unknown" || kind === "replay_conflict";
 }
 
-/** 보낼 id: 남겨 둔 시도가 같은 질문이면 그 id, 아니면 새 id. */
-export function requestIdFor(pending: { readonly message: string; readonly requestId: string } | null, message: string, newId: () => string): string {
-  return pending && pending.message === message ? pending.requestId : newId();
+/** 턴의 화면 id = 그 턴의 request_id. */
+export interface TurnLike {
+  readonly id: string;
+  readonly question: string;
+}
+
+/**
+ * 재전송 id: "다시 보내기"·"다시 확인"(same)은 그 턴의 id 그대로(서버가 같은 키로 재송출 → 이중 차감 없음),
+ * "새 요청으로 보내기"(fresh)만 새 id. 입력창 전송은 항상 새 id(newId 직접).
+ */
+export function resendId(turn: TurnLike, mode: "same" | "fresh", newId: () => string): string {
+  return mode === "same" ? turn.id : newId();
+}
+
+/** 턴 배치: replaceId 턴이 있으면 그 자리를 바꾸고(같은 질문이 두 번 보이지 않게), 없으면 뒤에 붙인다. */
+export function placeTurn<T extends TurnLike>(turns: readonly T[], next: T, replaceId: string | null): T[] {
+  const i = replaceId === null ? -1 : turns.findIndex((t) => t.id === replaceId);
+  if (i < 0) return [...turns.filter((t) => t.id !== next.id), next];
+  return turns.flatMap((t, k) => (k === i ? [next] : t.id === next.id ? [] : [t]));
 }
 
 /* ---------- 전송 ---------- */
