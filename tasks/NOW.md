@@ -75,3 +75,9 @@
 - 086 리뷰 ACCEPT(🟡5 후속), 073 리뷰 🔴0 반영. 결정·후속은 tasks/logs/AR-06-073·086·058.md.
 - 이 PC 환경: docker·pnpm·cargo·gh·python(PATH) 없음. pnpm은 `npx -y pnpm@10`, python은 `~/AppData/Local/Programs/Python/Python312`.
 - 다음 후보: 072(073 뒤), 049, 050, 071(문서 정정 먼저), 058b(인증서 대기).
+
+## 갱신 (2026-11-02, 049·071·072 진행)
+- D-071a 문서 정정 완료·push(0132a03). 071 결정 1~11 기록(tasks/logs/AR-06-071.md): 071은 072 병합 뒤 착수, 팝업 OAuth, 메모리 Bearer 재로그인 수용, Vercel, CORS 스튜디오1+설치형.
+- 049: 결정 8항(국외 제공자 0, 공개 표식 컬렉션, 강제 14행 마이그레이션화). 구현 커밋(워크트리) → 073 병합·마이그레이션 `20261102000002`로 변경 중. 리뷰 전.
+- 072: 구현 완료(shell-bridge 118건), 리뷰 REVISE 🔴0 🟠2(캐시 principal·로그아웃 epoch) 반영 중. 서버에 GET /api/cloud-projects/{id}/blob·/api/entitlement 없음 → 071 전에 apps/web 라우트 신설 필요(작업 표 밖, 073 후속으로 기록).
+- 병합 순서: 073(PR CI db 잡) → 072·049(073 기반) → 071. 086은 독립.
