@@ -22,3 +22,4 @@
 - dev 포트 `next dev -H 127.0.0.1 -p 3123`(3000 예약). bash cargo는 `export PATH="$HOME/.cargo/bin:$PATH"`.
 - Codex 한도 → 2026-11-04 17:54 재개, 그 전 리뷰는 reviewer(Opus). Codex astra 금지.
 - 테스트 상태: main pnpm -r lint·typecheck·test 통과(최근 확인 058a), api 159건(050 워크트리).
+- (2026-11-02) main CI: api 수정(mypy)·SBOM cdxgen 12.9.0 교체(3ea0493). guard·web·desktop-build(Windows)는 058a 이후 계속 실패 — 로그 토큰(scratchpad/gh_token.txt, Actions Read) 대기. 051 착수: challenger 검토 중(위험 높음, ai-settle 501 의존).
