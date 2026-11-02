@@ -1,1 +1,4 @@
 dist/
+# 웹 스튜디오 빌드(AR-06-071)·Vercel Build Output
+build/
+.vercel/

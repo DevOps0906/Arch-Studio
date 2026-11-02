@@ -55,6 +55,14 @@ export function rustRulePackProvider(store: RulePackStore | null, licenseFile: (
   };
 }
 
+/**
+ * 웹 스튜디오 공급원(AR-06-071 결정 11): 웹 규칙 팩(서명 URL 수신·서명 검증)은 075와 함께 온다. 그 전까지는 항상 팩 없음(AR063)
+ * → 판정·엔벨로프 화면이 "규칙 팩 없음" 안내를 띄운다(모델 무효 AR050과 구분).
+ */
+export function webRulePackProvider(): RulePackProvider {
+  return { current: async () => ({ kind: "unavailable", code: "AR063" }) };
+}
+
 /** 공급 결과를 워커 메시지로. 반환값은 화면 진단용(본문 없음). */
 export async function connectRulePacks(
   engine: EngineHost,

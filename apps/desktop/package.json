@@ -6,11 +6,13 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:web": "vite build --mode web",
     "check:release": "node scripts/check-release-bundle.mjs dist",
+    "check:web": "node scripts/check-web-dist.mjs",
     "tauri": "tauri",
-    "lint": "eslint src scripts vite.config.ts env-allowlist.ts env-allowlist.test.ts",
+    "lint": "eslint src scripts vite.config.ts env-allowlist.ts env-allowlist.test.ts web-hosting.ts web-hosting.test.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node --test env-allowlist.test.ts \"src/workers/*.test.ts\" \"src/shell/*.test.ts\""
+    "test": "node --test env-allowlist.test.ts web-hosting.test.ts \"src/workers/*.test.ts\" \"src/shell/*.test.ts\" \"src/web/*.test.ts\""
   },
   "dependencies": {
     "@arch-studio/domain": "workspace:*",

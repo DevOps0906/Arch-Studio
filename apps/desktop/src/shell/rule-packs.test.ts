@@ -5,7 +5,7 @@ import type { EngineHost, EngineRequestLike } from "@arch-studio/features/shell"
 import type { RulePackLoadResult, RulePackStore } from "@arch-studio/shell-bridge";
 import { parseRequest } from "../workers/protocol.ts";
 import { demoRulePackProvider } from "./demo-rule-pack.ts";
-import { connectRulePacks, rustRulePackProvider, supplyFromLoad } from "./rule-packs.ts";
+import { connectRulePacks, rustRulePackProvider, supplyFromLoad, webRulePackProvider } from "./rule-packs.ts";
 
 function host(): { engine: EngineHost; sent: EngineRequestLike[] } {
   const sent: EngineRequestLike[] = [];
@@ -52,4 +52,8 @@ test("데모 공급원: 저장소 개발용 팩(2026.10.0), 호출마다 새 복
   assert.ok(a.kind === "pack" && b.kind === "pack");
   assert.equal(a.kind === "pack" && a.version, "2026.10.0");
   assert.notEqual(a.kind === "pack" && a.pack, b.kind === "pack" && b.pack);
+});
+
+test("웹 공급원(AR-06-071 결정 11): 075 전까지 항상 팩 없음 AR063", async () => {
+  assert.deepEqual(await webRulePackProvider().current(), { kind: "unavailable", code: "AR063" });
 });
