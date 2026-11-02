@@ -1,5 +1,5 @@
 // SVG 작성기(AR-F-038 "SVG(화면 미리보기와 같은 결과)", 02_ARCHITECTURE.md 2.3절). 결정적 순수 함수: 같은 입력 → 같은 바이트.
-// 화면 미리보기와 내보내기는 이 함수 하나를 쓴다(따로 그리는 경로 없음). 표준 레이어마다 <g id="레이어명">(16개 전부, 빈 그룹 포함),
+// 화면 미리보기와 내보내기는 이 함수 하나를 쓴다(따로 그리는 경로 없음). 표준 레이어마다 <g id="레이어명">(16개 전부, 빈 그룹 포함 — A-ANNO-USER만 쓸 때만),
 // layer_map은 적용하지 않는다(DXF 전용, 2.3절 "레이어"). 단위: viewBox 1 = 모델 mm(scene.ts 좌표 규약), width·height는 용지 mm.
 // 한글 글꼴은 font-family 이름만 참조하고 글꼴 파일은 넣지 않는다(번들 Noto Sans KR). 줄 끝 \n, XML 선언 없음(HTML 인라인 삽입과 파일이 같은 바이트).
 import { assertDisclaimer } from "../../titleblock/index.ts";

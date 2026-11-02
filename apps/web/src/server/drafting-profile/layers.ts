@@ -4,7 +4,10 @@
 // 화면 사본(packages/features/src/settings/drafting/layer-map.ts)도 같은 테스트 벡터로 고정한다.
 // server-only를 import하지 않는다(node --test 대상).
 
-/** 표준 레이어 16개(packages/domain/src/sheet.ts STD_LAYERS와 같은 순서, DB upsert_drafting_profile v_std와 같은 목록). */
+/**
+ * 표준 레이어 17개(packages/domain/src/sheet.ts STD_LAYERS와 같은 순서). DB upsert_drafting_profile v_std는 아직 16개 —
+ * A-ANNO-USER(AR-06-086) 이름 바꾸기 저장은 DB 마이그레이션(후속) 전까지 22023으로 거부된다.
+ */
 export const STD_LAYERS = [
   "A-SITE-BNDY",
   "A-SITE-ROAD",
@@ -22,6 +25,7 @@ export const STD_LAYERS = [
   "A-ANNO-NRTH",
   "A-TTLB",
   "A-REFR",
+  "A-ANNO-USER",
 ] as const;
 export type StdLayer = (typeof STD_LAYERS)[number];
 

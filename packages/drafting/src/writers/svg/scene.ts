@@ -4,7 +4,7 @@
 // 용지 요소(도곽·표제란·용지 주석)는 × k. 문자 높이는 항상 용지 0.01mm × k. SVG는 y를 뒤집고, PDF는 다시 축척 분모로 나눠 용지 mm로 쓴다.
 // INSERT는 블록 정의를 펼친다(SVG <use>는 정화기가 지우는 경우가 많아 쓰지 않는다). 펼친 엔티티는 자기 레이어 그룹에 들어간다(DXF와 같음).
 import type { StdLayer } from "@arch-studio/domain";
-import { LAYER_TABLE, layerOrder } from "../../layers/index.ts";
+import { LAYER_TABLE, layerOrder, ON_DEMAND_LAYERS } from "../../layers/index.ts";
 import { comparePrim } from "../../sheet/assemble.ts";
 import { DraftingError } from "../../sheet/errors.ts";
 import { PRIM_KINDS, type BlockDef, type Prim, type SheetModel, type Vec } from "../../sheet/types.ts";
@@ -208,7 +208,10 @@ export function buildScene(sheet: SheetModel, options: SceneOptions = {}): Scene
     w: sheet.paper.w * k,
     h: sheet.paper.h * k,
     scale: sheet.scale,
-    layers: LAYER_TABLE.map((d) => ({ layer: d.name, items: buckets.get(d.name) as SceneItem[] })),
+    // 쓸 때만 레이어(A-ANNO-USER)는 그릴 것이 있을 때만 그룹을 낸다(주석 없는 시트는 이전과 같은 바이트).
+    layers: LAYER_TABLE.map((d) => ({ layer: d.name, items: buckets.get(d.name) as SceneItem[] })).filter(
+      (l) => l.items.length > 0 || !ON_DEMAND_LAYERS.includes(l.layer),
+    ),
   };
 }
 

@@ -58,7 +58,7 @@ function inputOf(model: Model, kind: DraftingInput["sheet"]["kind"], projectName
   return {
     model,
     judgment: { engine_version: ENGINE_VERSION, rule_pack_version: RULE_PACK, application_date: model.rule_context.application_date, items, pending_changes: 0 },
-    sheet: { id: `sample-${kind}`, kind, paper: "A3", orientation: "landscape", scale: "auto", annotation_overrides: [], include_in_proposal: false },
+    sheet: { id: `sample-${kind}`, kind, paper: "A3", orientation: "landscape", scale: "auto", annotations: [], include_in_proposal: false },
     profile: { office_name: "예시 사무소(가상)", layer_map: {}, default_paper: "A3", default_text_height_mm: 2.5, font_family: "Pretendard" },
     license: { drafting_watermark: true },
     engine_version: ENGINE_VERSION,

@@ -1,4 +1,4 @@
-// 도면 시트 화면의 조각들(03장 3.8절): 시트 목록 · 시트 설정 · 표제란 · 레이어 매핑 · 미리보기. 상태·권한은 index.tsx가 정한다.
+// 도면 시트 화면의 조각들(03장 3.8절): 시트 목록 · 시트 설정 · 표제란 · 레이어 매핑 · 주석 · 미리보기. 상태·권한은 index.tsx가 정한다.
 import type { DesignModelV1, DraftingProfile, SheetSpec } from "@arch-studio/domain";
 import { Badge, Banner, Button, Field, Select, Switch, Table, cn } from "@arch-studio/ui";
 import { useId, type ReactNode } from "react";
@@ -19,6 +19,8 @@ import {
   type ScaleChoice,
   type SheetKind,
   type SheetSummary,
+  type UnappliedNote,
+  isOrphan,
 } from "./model.ts";
 
 export function Panel({ title, id, children, className }: { title: string; id: string; children: ReactNode; className?: string }) {
@@ -280,6 +282,67 @@ export function LayerPanel({ profile }: { profile: DraftingProfile }) {
         매핑 바꾸기
       </Link>
     </Panel>
+  );
+}
+
+/* ---------- 주석(03장 9.6절) ---------- */
+
+const ANNO_KIND_LABEL: Readonly<Record<SheetSpec["annotations"][number]["kind"], string>> = {
+  override: "자동 주석 옮기기",
+  dim: "치수",
+  text: "문자",
+  leader: "지시선",
+  cloud: "구름",
+};
+
+const UNAPPLIED_TEXT: Readonly<Record<string, string>> = {
+  orphan_missing: "앵커 대상이 모델에 없습니다",
+  orphan_index: "앵커 꼭짓점·변 번호가 범위 밖입니다",
+  orphan_moved: "앵커 위치가 바뀌었습니다",
+  missing_target: "옮길 자동 주석이 없습니다",
+  text_not_allowed: "치수·면적 값 문구는 바꿀 수 없습니다",
+  not_overridable: "이 주석은 옮기거나 숨길 수 없습니다",
+  invalid_offset: "위치 값이 올바르지 않습니다",
+  empty_text: "문구가 비었습니다",
+  invalid_anchor: "앵커 지정이 올바르지 않습니다",
+  zero_length: "치수 두 점이 같습니다",
+};
+
+/** 주석 수·고아 수와 고아 목록([삭제]). 위치를 추측하지 않고 출력에서 빼며, 편집 화면에서만 알린다. */
+export function AnnotationPanel({ spec, unapplied, canEdit, onDelete }: { spec: SheetSpec; unapplied: readonly UnappliedNote[] | null; canEdit: boolean; onDelete(id: string): void }) {
+  const byId = new Map(spec.annotations.map((a) => [a.id, a]));
+  const orphans = (unapplied ?? []).filter(isOrphan);
+  const others = (unapplied ?? []).filter((u) => !isOrphan(u));
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-body text-fg" aria-live="polite">
+        주석 {spec.annotations.length}
+        {orphans.length > 0 ? <span className="text-danger"> · 고아 {orphans.length}</span> : null}
+      </p>
+      {spec.annotations.length === 0 ? (
+        <p className="text-caption text-fg-2">자동 작도 레이어는 잠겨 있습니다. 주석(자동 주석 옮기기·숨기기, 사람 치수·문자·지시선·구름)만 편집합니다.</p>
+      ) : null}
+      {orphans.length > 0 ? (
+        <ul className="flex flex-col gap-1" aria-label="고아 주석">
+          {orphans.map((u) => {
+            const a = byId.get(u.id);
+            return (
+              <li key={u.id} className="flex flex-wrap items-center gap-2 rounded-control border border-dashed border-danger p-2">
+                <Badge tone="danger">앵커 없음</Badge>
+                <span className="min-w-0 flex-1 text-caption text-fg">
+                  {a ? ANNO_KIND_LABEL[a.kind] : "주석"} {a && "text" in a && a.text ? `“${a.text}”` : u.id}
+                  <span className="block text-fg-2">{UNAPPLIED_TEXT[u.reason] ?? u.reason} · 출력에서 빠집니다</span>
+                </span>
+                <Button size="sm" disabled={!canEdit} aria-label={`${u.id} 주석 삭제`} onClick={() => onDelete(u.id)}>
+                  삭제
+                </Button>
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+      {others.length > 0 ? <p className="text-caption text-fg-2">적용되지 않은 주석 수정 {others.length}건</p> : null}
+    </div>
   );
 }
 

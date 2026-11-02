@@ -1,5 +1,5 @@
 // 테스트·벤치 전용 고정 입력(배포 코드에서 import하지 않는다). 뷰 생성기(023~026)가 없어 단순 뷰를 직접 만든다.
-import type { DesignModelV1, Polygon } from "@arch-studio/domain";
+import type { DesignModelV1, Polygon, SheetAnnotation } from "@arch-studio/domain";
 import { dimension, label } from "../annotate/index.ts";
 import type { ViewModel } from "./build.ts";
 import type { DraftingInput, Prim } from "./types.ts";
@@ -83,7 +83,7 @@ export function sampleInput(model: DesignModelV1 = sampleModel(), over: Partial<
       paper: "A3",
       orientation: "landscape",
       scale: "auto",
-      annotation_overrides: [],
+      annotations: [],
       include_in_proposal: false,
     },
     profile: { office_name: "테스트건축", layer_map: {}, default_paper: "A3", default_text_height_mm: 2.5, font_family: "Pretendard" },
@@ -134,4 +134,37 @@ export function sampleView(model: DesignModelV1): ViewModel {
       return out;
     },
   };
+}
+
+/**
+ * sampleModel() 기본값(대지 20m×15m, 매스 m000 (1200,1200)-(18800,13800), 도로 0번 변) 기준 사람 주석 5종 + 자동 주석 덮어쓰기 1건.
+ * 배열은 일부러 id 순이 아니다(그리기 순서는 id 사전순).
+ */
+export function sampleUserAnnotations(): SheetAnnotation[] {
+  return [
+    { id: "u-text-1", kind: "text", anchor: { ref: "m000", part: "center", snap: [10000, 7500] }, dx_mm: 1, dy_mm: 2, text: "주출입" },
+    {
+      id: "u-dim-1",
+      kind: "dim",
+      a: { ref: "m000", part: "vertex", index: 0, snap: [1200, 1200] },
+      b: { ref: "site:boundary", part: "edge", index: 0, at: "foot", snap: [1200, 0] },
+      offset_mm: 5,
+      text: "이격 {값}",
+    },
+    { id: "u-leader-1", kind: "leader", anchor: { ref: "road:0", part: "edge", index: 0, at: "mid", snap: [10000, 0] }, dx_mm: 0, dy_mm: -10, text: "전면도로" },
+    { id: "u-cloud-1", kind: "cloud", anchor: { ref: "m000", part: "vertex", index: 2, snap: [18800, 13800] }, dx_mm: 0, dy_mm: 0, text: "검토", size_mm: 10 },
+    { id: "ov-note:1", kind: "text", dx_mm: 30, dy_mm: 50, text: "메모 1\n둘째 줄" },
+    { id: "ov-label:room:r000", kind: "override", target: "label:room:r000", dx_mm: 2, dy_mm: -1.5 },
+  ];
+}
+
+/** 고아 3종(ref 없음·index 범위 밖·기준 좌표 불일치) + 대상 없는 덮어쓰기 1건 + 정상 문자 1건. */
+export function sampleOrphanAnnotations(): SheetAnnotation[] {
+  return [
+    { id: "u-ok", kind: "text", anchor: { ref: "site:boundary", part: "vertex", index: 2, snap: [20000, 15000] }, dx_mm: -20, dy_mm: -5, text: "정상" },
+    { id: "u-gone", kind: "text", anchor: { ref: "m999", part: "center", snap: [0, 0] }, dx_mm: 0, dy_mm: 0, text: "없는 매스" },
+    { id: "u-range", kind: "leader", anchor: { ref: "m000", part: "vertex", index: 9, snap: [0, 0] }, dx_mm: 0, dy_mm: 5, text: "범위 밖" },
+    { id: "u-moved", kind: "cloud", anchor: { ref: "m000", part: "vertex", index: 1, snap: [1200, 1200] }, dx_mm: 0, dy_mm: 0, text: "밀림" },
+    { id: "ov-dim:gone", kind: "override", target: "dim:gone", dx_mm: 1 },
+  ];
 }

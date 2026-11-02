@@ -1,9 +1,9 @@
-// annotate: 분해 치수, 수치 TEXT source_ref 필수, 값 덮어쓰기 불가, offset(용지 mm)·hide·note.
+// annotate: 분해 치수, 수치 TEXT source_ref 필수, 값 덮어쓰기 불가, offset(용지 mm)·hide. 사람 주석은 user.test.ts.
 // eslint-disable-next-line no-restricted-imports -- 테스트는 Node 테스트 러너만 쓴다
 import assert from "node:assert/strict";
 // eslint-disable-next-line no-restricted-imports -- 테스트는 Node 테스트 러너만 쓴다
 import { test } from "node:test";
-import { applyOverrides, buildSheet, dimension, DraftingError, label, type Annotation } from "../index.ts";
+import { applyOverrides, buildSheet, dimension, DraftingError, label, type Annotation, type AnnotationOverride } from "../index.ts";
 import { sampleInput, sampleModel, sampleView } from "../sheet/test-fixtures.ts";
 
 const ctx = { scale: 200 as const, text_h: 250 };
@@ -52,9 +52,11 @@ test("엔진 계산 값(치수·값 줄)만 source_ref 필수, 실명 라벨은 
   assert.throws(() => buildSheet(sampleInput(model), view), isCode("NUMERIC_TEXT_SOURCE"));
 });
 
+const ov = (target: string, o: Partial<AnnotationOverride> = {}): AnnotationOverride => ({ id: `ov-${target}`, kind: "override", target, ...o });
+
 test("치수·라벨 값은 덮어쓸 수 없다(text 무시 + unapplied), 위치 이동은 적용", () => {
-  const { annotations, unapplied } = applyOverrides([dim()], [{ target: "dim:a", text: "9999", dx_mm: 1.5, dy_mm: -2 }], ctx);
-  assert.deepEqual(unapplied, [{ target: "dim:a", reason: "text_not_allowed" }]);
+  const { annotations, unapplied } = applyOverrides([dim()], [ov("dim:a", { text: "9999", dx_mm: 1.5, dy_mm: -2 })], ctx);
+  assert.deepEqual(unapplied, [{ id: "ov-dim:a", reason: "text_not_allowed" }]);
   const text = annotations[0]?.prims.find((p) => p.t === "text");
   assert.ok(text?.t === "text" && text.s === "10000");
   const before = dim().prims.find((p) => p.key === "line");
@@ -64,38 +66,23 @@ test("치수·라벨 값은 덮어쓸 수 없다(text 무시 + unapplied), 위�
   assert.deepEqual(after.a, [before.a[0] + 300, before.a[1] - 400]);
 });
 
-test("용지 주석은 0.01mm 그대로 이동, hide·없는 대상·note", () => {
+test("용지 주석은 0.01mm 그대로 이동, hide·없는 대상", () => {
   const paperLabel = label({ anno_id: "lab", kind: "warning", at: [1_000, 1_000], lines: [{ s: "검토 필요" }] }, ctx);
   const { annotations, unapplied } = applyOverrides(
     [dim(), paperLabel],
-    [
-      { target: "lab", dx_mm: 2.345 },
-      { target: "dim:a", hidden: true },
-      { target: "dim:gone", dx_mm: 1 },
-      { target: "note:1", text: "메모 1", dx_mm: 30, dy_mm: 50 },
-      { target: "note:2", dx_mm: 1 },
-      { target: "note:3", text: "숨김", hidden: true },
-    ],
+    [ov("lab", { dx_mm: 2.345 }), ov("dim:a", { hidden: true }), ov("dim:gone", { dx_mm: 1 })],
     ctx,
   );
-  assert.deepEqual(annotations.map((a) => a.anno_id), ["lab", "note:1"]);
+  assert.deepEqual(annotations.map((a) => a.anno_id), ["lab"]);
   const lp = annotations[0]?.prims[0];
   assert.deepEqual(lp?.t === "text" && lp.at, [1_235, 1_000]);
-  const note = annotations[1];
-  assert.equal(note?.kind, "note");
-  assert.equal(note?.view_id, undefined);
-  const np = note?.prims[0];
-  assert.deepEqual(np?.t === "text" && [np.at, np.s, np.layer], [[3_000, 5_000], "메모 1", "A-ANNO-TEXT"]);
-  assert.deepEqual(unapplied, [
-    { target: "dim:gone", reason: "missing_target" },
-    { target: "note:2", reason: "note_without_text" },
-  ]);
+  assert.deepEqual(unapplied, [{ id: "ov-dim:gone", reason: "missing_target" }]);
 });
 
 test("덮어쓰기 불가 주석·잘못된 offset", () => {
   const fixed: Annotation = { ...dim(), overridable: [] };
-  const r = applyOverrides([fixed], [{ target: "dim:a", dx_mm: 1 }], ctx);
-  assert.deepEqual(r.unapplied, [{ target: "dim:a", reason: "not_overridable" }]);
-  const nan = applyOverrides([dim()], [{ target: "dim:a", dx_mm: Number.NaN }], ctx);
-  assert.deepEqual(nan.unapplied, [{ target: "dim:a", reason: "invalid_offset" }]);
+  const r = applyOverrides([fixed], [ov("dim:a", { dx_mm: 1 })], ctx);
+  assert.deepEqual(r.unapplied, [{ id: "ov-dim:a", reason: "not_overridable" }]);
+  const nan = applyOverrides([dim()], [ov("dim:a", { dx_mm: Number.NaN })], ctx);
+  assert.deepEqual(nan.unapplied, [{ id: "ov-dim:a", reason: "invalid_offset" }]);
 });

@@ -33,6 +33,7 @@ export const LAYER_ROWS: readonly LayerRow[] = Object.freeze(
       ["A-ANNO-NRTH", 7, "CONTINUOUS", "방위표, 축척 막대"],
       ["A-TTLB", 7, "CONTINUOUS", "도곽, 표제란"],
       ["A-REFR", 9, "CONTINUOUS", "참조 언더레이(Phase 2)"],
+      ["A-ANNO-USER", 6, "CONTINUOUS", "사람 주석(치수·문자·지시선·구름)"],
     ] as const
   ).map(([name, aci, linetype, description]) => Object.freeze({ name, aci, linetype, description })),
 );

@@ -1,6 +1,6 @@
 // 도면 시트 화면 모델(03장 3.8절, 5.3절 AR050~AR059). 순수 함수만: 시트 목록·설정, 입력 누락, 권리→화면 상태, 엔진 요청·응답 해석.
 // 기하·도면·판정 값은 만들지 않는다(워커의 결정적 순수 함수가 만든다). 이 파일은 요청 봉투를 짜고 응답을 해석할 뿐이다.
-import { designModelV1Schema, sheetSpecSchema, type DesignModelV1, type DraftingProfile, type JudgmentResult, type SheetSpec } from "@arch-studio/domain";
+import { designModelV1Schema, migrateSheetSpecV1, sheetSpecSchema, type DesignModelV1, type DraftingProfile, type JudgmentResult, type SheetSpec } from "@arch-studio/domain";
 import type { EntitlementDecision, EntitlementStatus } from "@arch-studio/shell-bridge";
 import { DENY_TEXT } from "../shell/nav.ts";
 
@@ -89,7 +89,8 @@ export function kindSupport(kind: SheetKind): { ok: true } | { ok: false; reason
 /* ---------- 시트 목록(로컬 저장) ---------- */
 
 export const MAX_SHEETS = 20;
-const STORE_MAX_RAW = 262_144;
+// 시트 20장 × 주석 500개(문자 200자)를 담을 수 있게(AR-06-086 상한). localStorage 기본 한도(약 5MB) 안.
+const STORE_MAX_RAW = 2_097_152;
 
 export interface StoredSheets {
   /** 이 목록을 마지막으로 확인한 엔진 버전. 지금 엔진과 다르면 AR059. 아직 모르면 null. */
@@ -99,32 +100,85 @@ export interface StoredSheets {
 
 export const EMPTY_STORED: StoredSheets = Object.freeze({ engine_version: null, specs: [] });
 
+/** 저장 키(v2: SheetSpec.annotations, AR-06-086). v1(annotation_overrides)은 읽기만 하고 지우지 않는다(구버전 롤백 안전). */
 export function storeKey(projectId: string): string {
+  return `arch.sheets.v2.${projectId}`;
+}
+
+export function legacyStoreKey(projectId: string): string {
   return `arch.sheets.v1.${projectId}`;
 }
 
-/** 저장 문자열 → 목록. 깨진 JSON·추가 키·스키마 위반·20장 초과·중복 id는 통째로 버린다(신뢰하지 않는다). */
-export function parseStored(raw: string | null): StoredSheets {
-  if (!raw || raw.length > STORE_MAX_RAW) return EMPTY_STORED;
+function parseEnvelope(raw: string | null): { engine_version: string | null; specs: unknown[] } | null {
+  if (!raw || raw.length > STORE_MAX_RAW) return null;
   let v: unknown;
   try {
     v = JSON.parse(raw);
   } catch {
-    return EMPTY_STORED;
+    return null;
   }
-  if (v === null || typeof v !== "object" || Array.isArray(v)) return EMPTY_STORED;
+  if (v === null || typeof v !== "object" || Array.isArray(v)) return null;
   const o = v as Record<string, unknown>;
-  if (Object.keys(o).sort().join(",") !== "engine_version,specs" || !Array.isArray(o.specs) || o.specs.length > MAX_SHEETS) return EMPTY_STORED;
-  if (o.engine_version !== null && (typeof o.engine_version !== "string" || o.engine_version === "" || o.engine_version.length > 64)) return EMPTY_STORED;
+  if (Object.keys(o).sort().join(",") !== "engine_version,specs" || !Array.isArray(o.specs) || o.specs.length > MAX_SHEETS) return null;
+  if (o.engine_version !== null && (typeof o.engine_version !== "string" || o.engine_version === "" || o.engine_version.length > 64)) return null;
+  return { engine_version: o.engine_version as string | null, specs: o.specs };
+}
+
+/** 저장 문자열(v2) → 목록. 깨진 JSON·추가 키·스키마 위반·20장 초과·중복 id는 통째로 버린다(신뢰하지 않는다). */
+export function parseStored(raw: string | null): StoredSheets {
+  const env = parseEnvelope(raw);
+  if (env === null) return EMPTY_STORED;
   const specs: SheetSpec[] = [];
   const ids = new Set<string>();
-  for (const s of o.specs) {
+  for (const s of env.specs) {
     const r = sheetSpecSchema.safeParse(s);
     if (!r.success || ids.has(r.data.id) || r.data.id.length > 64) return EMPTY_STORED;
     ids.add(r.data.id);
     specs.push(r.data);
   }
-  return { engine_version: o.engine_version as string | null, specs };
+  return { engine_version: env.engine_version, specs };
+}
+
+/**
+ * v1 저장 문자열 → v2 목록. 이행(migrateSheetSpecV1)을 safeParse 앞에서 하고, 시트·주석 1건이 틀려도 그 항목만 버린다
+ * (버린 개수 = dropped, tasks/logs/AR-06-086.md [DECISION] 2). 봉투(JSON·키·20장)가 깨졌으면 빈 목록.
+ */
+export function parseStoredV1(raw: string | null): { stored: StoredSheets; dropped: number } {
+  const env = parseEnvelope(raw);
+  if (env === null) return { stored: EMPTY_STORED, dropped: 0 };
+  const specs: SheetSpec[] = [];
+  const ids = new Set<string>();
+  let dropped = 0;
+  for (const s of env.specs) {
+    const m = migrateSheetSpecV1(s);
+    dropped += m.dropped;
+    const r = sheetSpecSchema.safeParse(m.spec);
+    if (!r.success || ids.has(r.data.id) || r.data.id.length > 64) {
+      dropped++;
+      continue;
+    }
+    ids.add(r.data.id);
+    specs.push(r.data);
+  }
+  return { stored: { engine_version: env.engine_version, specs }, dropped };
+}
+
+export interface StoredRead {
+  stored: StoredSheets;
+  /** v1에서 옮겨 읽었다(호출자가 v2로 저장한다). */
+  migrated: boolean;
+  /** 옮기지 못하고 버린 시트·주석 수. */
+  dropped: number;
+}
+
+/** v2가 있으면 v2, 없으면 v1을 이행해 읽는다. */
+export function readStoredSheets(getItem: (key: string) => string | null, projectId: string): StoredRead {
+  const v2 = getItem(storeKey(projectId));
+  if (v2 !== null) return { stored: parseStored(v2), migrated: false, dropped: 0 };
+  const v1 = getItem(legacyStoreKey(projectId));
+  if (v1 === null) return { stored: EMPTY_STORED, migrated: false, dropped: 0 };
+  const m = parseStoredV1(v1);
+  return { stored: m.stored, migrated: true, dropped: m.dropped };
 }
 
 export function serializeStored(s: StoredSheets): string {
@@ -142,7 +196,7 @@ export function newSpec(kind: SheetKind, existing: readonly SheetSpec[], model: 
     paper: defaultPaper,
     orientation: "landscape",
     scale: "auto",
-    annotation_overrides: [],
+    annotations: [],
     include_in_proposal: true,
   };
   if (kind === "floor_plan") {
@@ -302,9 +356,25 @@ export interface SheetSummary {
   };
 }
 
+/** 출력에서 빠진 주석(워커 buildSheet의 unapplied). 고아는 reason이 orphan_*. */
+export interface UnappliedNote {
+  readonly id: string;
+  readonly reason: string;
+}
+
+export const isOrphan = (u: UnappliedNote) => u.reason.startsWith("orphan_");
+
+/** 내보내기 대화상자 안내(03장 3.8절): 고른 시트의 고아 주석 수 합. 없으면 null. */
+export function orphanNotice(orphans: Readonly<Record<string, number>> | undefined, ids: readonly string[]): string | null {
+  const n = ids.reduce((sum, id) => sum + (orphans?.[id] ?? 0), 0);
+  return n > 0 ? `고아 주석 ${n}개는 출력에서 빠집니다.` : null;
+}
+
 export interface BuiltSheet {
   /** 화면용 요약. */
   readonly summary: SheetSummary;
+  /** 출력에서 빠진 주석(id 순). */
+  readonly unapplied: readonly UnappliedNote[];
   /** 워커가 돌려준 시트 모델 원본(내보내기 요청에 그대로 실린다). */
   readonly sheet: unknown;
   readonly svg: string;
@@ -340,7 +410,8 @@ export function readBuildResponse(res: unknown, reqId: string): BuildOutcome {
     const summary = r ? asSummary(r.sheet) : null;
     const svg = r?.svg_preview;
     if (!r || !summary || !isStr(svg) || !svg.startsWith("<svg") || !isStr(res.engine_version)) return { kind: "error", code: "invalid_response" };
-    return { kind: "ok", built: { summary, sheet: r.sheet, svg, engineVersion: res.engine_version } };
+    const un = Array.isArray(r.unapplied) ? r.unapplied.filter((u): u is UnappliedNote => isRec(u) && isStr(u.id) && isStr(u.reason)) : [];
+    return { kind: "ok", built: { summary, unapplied: un.map((u) => ({ id: u.id, reason: u.reason })), sheet: r.sheet, svg, engineVersion: res.engine_version } };
   }
   if (res.ok === false) return { kind: "error", code: isStr(res.code) ? res.code : "AR050" };
   return { kind: "ignore" };

@@ -35,14 +35,15 @@ export {
   checkValueText,
   dimension,
   label,
-  NOTE_PREFIX,
   paperToModel,
   type AnnotateContext,
   type AnnotationOverride,
   type DimensionSpec,
   type LabelSpec,
-  type UnappliedOverride,
+  type UnappliedAnnotation,
+  type UnappliedReason,
 } from "./annotate/index.ts";
+export { applyUserAnnotations, DIM_VALUE_TOKEN, USER_DIM_SOURCE_REF, type UserAnnotationResult } from "./annotate/user.ts";
 export { buildSitePlanView, SITE_PLAN_VIEW_ID, type SitePlanExtras } from "./views/site_plan/index.ts";
 export { buildAreaPlanView, type AreaPlanInput, type AreaBreakdown } from "./views/area_plan/index.ts";
 export {

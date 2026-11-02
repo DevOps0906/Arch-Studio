@@ -63,13 +63,16 @@ test("결정성: 같은 입력 → 같은 바이트(복제 입력·다른 키 �
   }
 });
 
-test("표준 레이어 16개가 표 순서대로 <g id>, 다른 그룹 없음", () => {
+test("표준 레이어 16개가 표 순서대로 <g id>, 다른 그룹 없음(사람 주석 A-ANNO-USER는 쓸 때만)", () => {
   const svg = writeSvg(sheetOf());
   assert.deepEqual(
     groups(svg).map(([id]) => id),
-    [...STD_LAYERS],
+    STD_LAYERS.filter((l) => l !== "A-ANNO-USER"),
   );
   assert.equal((svg.match(/<g /g) ?? []).length, 16);
+  const s = sheetOf();
+  s.annotations.push({ anno_id: "u-1", kind: "note", prims: [{ layer: "A-ANNO-USER", key: "text", t: "text", at: [1000, 1000], h: 250, s: "메모", align: "l" }], overridable: [] });
+  assert.deepEqual(groups(writeSvg(s)).map(([id]) => id), [...STD_LAYERS]);
 });
 
 test("루트: 용지 mm 크기·viewBox(모델 mm)·font-family 이름만, 글꼴 파일·외부 참조 없음", () => {

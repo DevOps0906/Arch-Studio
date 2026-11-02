@@ -19,6 +19,7 @@ zod 의미와 맞추는 규칙:
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 from typing import Annotated, Any, Literal
 
@@ -260,6 +261,7 @@ StdLayer = Literal[
     "A-ANNO-NRTH",
     "A-TTLB",
     "A-REFR",
+    "A-ANNO-USER",
 ]
 Paper = Literal["A3", "A2", "A1"]
 
@@ -275,12 +277,101 @@ class SectionLine(Strict):
     b: Point
 
 
-class AnnotationOverride(Strict):
-    target: str
+# 도면 주석 편집층(AR-06-086, packages/domain/src/sheet.ts annotationSchema). 상한·id 규칙은 zod와 같다.
+ANNOTATIONS_MAX = 500
+ANNOTATION_TEXT_MAX = 200
+AnnoText = Annotated[str, Field(max_length=ANNOTATION_TEXT_MAX), _max_len(ANNOTATION_TEXT_MAX)]
+Ref = Annotated[str, Field(min_length=1, max_length=128), _max_len(128)]
+_USER_ID = re.compile(r"u-[A-Za-z0-9_.:-]{1,64}")
+
+
+class Anchor(Strict):
+    ref: Ref
+    part: Literal["vertex", "edge", "center"]
+    index: NonNegInt | None = None
+    at: Literal["start", "end", "mid", "foot"] | None = None
+    snap: Point
+
+
+class OverrideAnnotation(Strict):
+    id: str
+    kind: Literal["override"]
+    target: Ref
     dx_mm: float | None = None
     dy_mm: float | None = None
-    text: str | None = None
+    text: AnnoText | None = None
     hidden: bool | None = None
+
+
+class DimAnnotation(Strict):
+    id: str
+    kind: Literal["dim"]
+    a: Anchor
+    b: Anchor
+    offset_mm: float
+    text: AnnoText | None = None
+
+
+class TextAnnotation(Strict):
+    id: str
+    kind: Literal["text"]
+    anchor: Anchor | None = None
+    dx_mm: float
+    dy_mm: float
+    text: AnnoText
+    hidden: bool | None = None
+
+
+class LeaderAnnotation(Strict):
+    id: str
+    kind: Literal["leader"]
+    anchor: Anchor
+    dx_mm: float
+    dy_mm: float
+    text: AnnoText
+
+
+class CloudAnnotation(Strict):
+    id: str
+    kind: Literal["cloud"]
+    anchor: Anchor
+    dx_mm: float
+    dy_mm: float
+    text: AnnoText
+    size_mm: Annotated[float, Field(gt=0, le=400)] | None = None
+
+
+Annotation = OverrideAnnotation | DimAnnotation | TextAnnotation | LeaderAnnotation | CloudAnnotation
+
+
+def _annotation_id_issue(a: Annotation) -> str | None:
+    """zod annotationIdIssue와 같은 규칙.
+
+    override = "ov-" + target, 이행 메모 = "ov-note:…"(앵커 없음), 그 밖은 "u-…".
+    """
+    if isinstance(a, OverrideAnnotation):
+        if a.target.startswith("note:"):
+            return "자유 메모는 kind text로 둡니다"
+        return None if a.id == "ov-" + a.target else "override id는 ov- + target이어야 합니다"
+    if isinstance(a, TextAnnotation) and a.id.startswith("ov-note:"):
+        short = len(a.id.encode("utf-16-le")) // 2 <= 3 + 128
+        return None if short and a.anchor is None else "이행 메모는 앵커가 없습니다"
+    return None if _USER_ID.fullmatch(a.id) else "사용자 주석 id는 u-로 시작합니다"
+
+
+def _check_annotations(items: list[Annotation]) -> list[Annotation]:
+    seen: set[str] = set()
+    for a in items:
+        issue = _annotation_id_issue(a)
+        if issue is not None:
+            raise ValueError(f"{a.id}: {issue}")
+        if a.id in seen:
+            raise ValueError(f"주석 id 중복: {a.id}")
+        seen.add(a.id)
+    return items
+
+
+Annotations = Annotated[list[Annotation], Field(max_length=ANNOTATIONS_MAX), AfterValidator(_check_annotations)]
 
 
 class SheetSpec(Strict):
@@ -292,7 +383,7 @@ class SheetSpec(Strict):
     floor_id: str | None = None
     section_line: SectionLine | None = None
     elevation_face: Literal["N", "S", "E", "W"] | None = None
-    annotation_overrides: list[AnnotationOverride]
+    annotations: Annotations
     include_in_proposal: bool
 
 

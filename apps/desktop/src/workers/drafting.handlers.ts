@@ -114,7 +114,7 @@ export function createDraftingHandlers(options: DraftingHandlerOptions = {}): Pi
     await ctx.checkpoint();
     const a = await getAssets();
     const svg_preview = writeSvg(built.sheet, a ? { metrics: a.metrics } : {});
-    return { result: { sheet: built.sheet, svg_preview, unapplied_overrides: built.unapplied_overrides }, engine_version: ENGINE_VERSION };
+    return { result: { sheet: built.sheet, svg_preview, unapplied: built.unapplied }, engine_version: ENGINE_VERSION };
   };
 
   const exportHandler: Handler = async (req: LaneRequest, ctx) => {

@@ -1,6 +1,6 @@
 // zod v3 스키마(_def) → JSON Schema(2020-12 부분집합). 동치 테스트 전용, 새 의존성 없음.
 // packages/domain 은 zod 3.25(v3 API)를 쓴다. `z.toJSONSchema`는 v4 스키마만 받으므로 _def 를 직접 걷는다.
-// 표현할 수 없는 타입(refine/transform 등)을 만나면 조용히 넘기지 않고 예외를 던진다.
+// 표현할 수 없는 타입(transform 등)을 만나면 조용히 넘기지 않고 예외를 던진다. refine은 구조에서 빼고 코퍼스로 동작을 맞춘다.
 
 export type JsonSchema = { [key: string]: unknown };
 
@@ -93,7 +93,14 @@ export function zodToJsonSchema(schema: ZodLike): JsonSchema {
     case "ZodNullable":
       return { anyOf: [zodToJsonSchema(def.innerType as ZodLike), { type: "null" }] };
     case "ZodUnion":
+    case "ZodDiscriminatedUnion": // 판별 키(kind)는 각 멤버의 const로 드러난다
       return { anyOf: (def.options as ZodLike[]).map(zodToJsonSchema) };
+    case "ZodEffects": {
+      // superRefine(시트 내 id 유일·형식, AR-06-086)은 JSON Schema로 표현하지 않는다 — 동작은 코퍼스가 양쪽에서 고정한다.
+      const effect = def.effect as { type: string };
+      if (effect.type !== "refinement") unsupported(`effects.${effect.type}`);
+      return zodToJsonSchema(def.schema as ZodLike);
+    }
     case "ZodRecord": {
       const out: JsonSchema = { type: "object", additionalProperties: zodToJsonSchema(def.valueType as ZodLike) };
       const key = zodToJsonSchema(def.keyType as ZodLike);

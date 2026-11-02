@@ -1,6 +1,7 @@
 // 레이어 표준(PRD 9.6절, D-24 (a)). SheetModel은 표준 이름만 쓰고, 사무소 이름 매핑(layer_map)은 DXF 작성기만 적용한다.
 // 색은 DXF ACI 번호(CAD 색 체계)라 디자인 토큰이 아니다 — 작성기 상수로 고정.
 import { STD_LAYERS, type StdLayer } from "@arch-studio/domain";
+import type { SheetModel } from "../sheet/types.ts";
 
 export type Linetype = "CONTINUOUS" | "DASHED" | "DASHDOT";
 
@@ -32,6 +33,7 @@ export const LAYER_TABLE: readonly LayerDef[] = Object.freeze(
       ["A-ANNO-NRTH", 7, "CONTINUOUS", "방위표, 축척 막대"],
       ["A-TTLB", 7, "CONTINUOUS", "도곽, 표제란"],
       ["A-REFR", 9, "CONTINUOUS", "참조 언더레이(Phase 2)"],
+      ["A-ANNO-USER", 6, "CONTINUOUS", "사람 주석(치수·문자·지시선·구름)"],
     ] as const
   ).map(([name, aci, linetype, description]) => Object.freeze({ name, aci, linetype, description })),
 );
@@ -74,7 +76,7 @@ export interface LayerMapWarning {
 }
 
 export interface ResolvedLayerMap {
-  /** 표준 이름 → 출력 이름(16개 전부). */
+  /** 표준 이름 → 출력 이름(표준 레이어 전부). */
   names: Record<StdLayer, string>;
   /** 출력 레이어 표(이름 중복 제거, 표 순서상 앞 레이어의 색·선 종류). */
   table: ResolvedLayer[];
@@ -117,4 +119,32 @@ export function resolveLayerMap(layerMap: Readonly<Record<string, string>> | und
     }
   }
   return { names, table, warnings };
+}
+
+/** 쓸 때만 출력하는 레이어(AR-06-086 [DECISION] 1): 사람 주석이 없는 시트의 레이어 표·SVG 그룹은 이전과 바이트 동일. */
+export const ON_DEMAND_LAYERS: readonly StdLayer[] = Object.freeze(["A-ANNO-USER"]);
+
+/**
+ * 출력 레이어 표에서 쓰지 않은 쓸 때만 레이어를 뺀다. 그 레이어가 표에 새 이름을 들인 경우만 빼고,
+ * 다른 표준 레이어와 같은 이름으로 합쳐졌으면 그대로 둔다(STD_LAYERS 맨 뒤라 앞 레이어 해석은 바뀌지 않는다).
+ */
+export function outputLayerTable(resolved: ResolvedLayerMap, used: ReadonlySet<StdLayer>): ResolvedLayer[] {
+  let table = resolved.table;
+  for (const std of ON_DEMAND_LAYERS) {
+    if (used.has(std)) continue;
+    const name = resolved.names[std];
+    const shared = STD_LAYERS.some((other) => other !== std && resolved.names[other] === name);
+    if (!shared) table = table.filter((l) => l.name !== name);
+  }
+  return table;
+}
+
+/** 시트가 쓰는 표준 레이어(뷰·주석·용지 요소·블록 정의). */
+export function sheetLayers(sheet: SheetModel): Set<StdLayer> {
+  const used = new Set<StdLayer>();
+  for (const v of sheet.views) for (const p of v.prims) used.add(p.layer);
+  for (const a of sheet.annotations) for (const p of a.prims) used.add(p.layer);
+  for (const p of sheet.paper_prims) used.add(p.layer);
+  for (const b of sheet.blocks) for (const p of b.entities) used.add(p.layer);
+  return used;
 }

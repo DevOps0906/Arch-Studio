@@ -19,12 +19,14 @@
     "writer-mtext-escapes/sheet-site_plan.dxf": "83068a0bb5dcced36284c5c468710dd732f89b0492925848198890743755ddf6",
     "writer-multi-view/sheet-site_plan.dxf": "c6c8d7bf0a33a21d0136c49bba067fbe6f844ac842a53f315aee78fd713706e0",
     "writer-negative-coords/sheet-site_plan.dxf": "bd03f87286add7b4afa43d810538f7e4a7bea7a3bd833745c1b1b2a65a875dd0",
+    "writer-orphan-annotations/sheet-site_plan.dxf": "4db5c32555ecd00c0ee77174fa8c547963e30ffc7db06c4d5172b9d7a63125bb",
     "writer-scale-600-large-site/sheet-site_plan.dxf": "a27e8c61fe7ee88b4f5240bda640e86a133722d7d3760607c93cbdf79078bc5d",
     "writer-site-a3-basic/sheet-site_plan.dxf": "7698d67b7f84a41ddf8a6018425c84b6e24bb0f8d30c3da13e29f91ad27b7362",
     "writer-site-a3-fallback/sheet-site_plan.dxf": "d25233b544724fd02262f81620077d66a6ab63630a6b7d98105e30dad26ec736",
     "writer-site-a3-watermark-fallback/sheet-site_plan.dxf": "2323c7b251ffa74f8497fef48c261c9f499e6f0e6e72f91ad93bebfc7901ee5d",
     "writer-site-a3-watermark/sheet-site_plan.dxf": "7401fa1545b41338e0e4ca92aa952bda6d4ee3d162b43727654c38a80e9f3130",
     "writer-sunlight-a3/sheet-sunlight_section.dxf": "694189d0207eb84694abe1d74663cbdfb5b9c93fd018b8eefde1727981e49656",
-    "writer-text-align/sheet-site_plan.dxf": "05418364a93be851e64881aaf7164fc5827c612d4cf0e4f54acfcf20f64956a4"
+    "writer-text-align/sheet-site_plan.dxf": "05418364a93be851e64881aaf7164fc5827c612d4cf0e4f54acfcf20f64956a4",
+    "writer-user-annotations/sheet-site_plan.dxf": "a957c1f89e1f455d8ef32301790cff1301f3a6a532f72572e482e0e3c49ebf41"
   }
 }

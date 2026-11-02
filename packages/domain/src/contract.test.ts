@@ -44,6 +44,10 @@ function describe(schema: ZodTypeAny): Shape {
       return JSON.stringify(def.value);
     case "ZodEnum":
       return def.values.map((v: string) => JSON.stringify(v)).join(" | ");
+    case "ZodEffects":
+      return describe(def.schema);
+    case "ZodDiscriminatedUnion":
+      return def.options.map((o: ZodTypeAny) => JSON.stringify(describe(o))).join(" | ");
     case "ZodUnion":
       return def.options
         .map((o: ZodTypeAny) => {
@@ -139,6 +143,7 @@ test("JudgmentResult 스키마가 4.7.2 필드와 일치한다", () => {
 });
 
 test("SheetSpec 스키마가 4.7.3 필드와 일치한다", () => {
+  const anchor: Shape = { ref: "string", part: '"vertex" | "edge" | "center"', "index?": "int", "at?": '"start" | "end" | "mid" | "foot"', snap: point };
   assert.deepEqual(describe(sheetSpecSchema), {
     id: "string",
     kind: '"site_plan" | "area_plan" | "sunlight_section" | "floor_plan" | "elevation"',
@@ -148,8 +153,16 @@ test("SheetSpec 스키마가 4.7.3 필드와 일치한다", () => {
     "floor_id?": "string",
     "section_line?": { a: point, b: point },
     "elevation_face?": '"N" | "S" | "E" | "W"',
-    annotation_overrides: [
-      { target: "string", "dx_mm?": "number", "dy_mm?": "number", "text?": "string", "hidden?": "boolean" },
+    annotations: [
+      [
+        { id: "string", kind: '"override"', target: "string", "dx_mm?": "number", "dy_mm?": "number", "text?": "string", "hidden?": "boolean" },
+        { id: "string", kind: '"dim"', a: anchor, b: anchor, offset_mm: "number", "text?": "string" },
+        { id: "string", kind: '"text"', "anchor?": anchor, dx_mm: "number", dy_mm: "number", text: "string", "hidden?": "boolean" },
+        { id: "string", kind: '"leader"', anchor, dx_mm: "number", dy_mm: "number", text: "string" },
+        { id: "string", kind: '"cloud"', anchor, dx_mm: "number", dy_mm: "number", text: "string", "size_mm?": "number" },
+      ]
+        .map((o) => JSON.stringify(o))
+        .join(" | "),
     ],
     include_in_proposal: "boolean",
   });
@@ -158,7 +171,7 @@ test("SheetSpec 스키마가 4.7.3 필드와 일치한다", () => {
 test("DraftingProfile 스키마가 4.7.3 필드와 일치한다", () => {
   const layers =
     '"A-SITE-BNDY" | "A-SITE-ROAD" | "A-SITE-SETB" | "A-ENVL" | "A-MASS" | "A-WALL" | "A-DOOR" | "A-GLAZ" | ' +
-    '"A-AREA" | "A-AREA-IDEN" | "A-PARK" | "A-ANNO-DIMS" | "A-ANNO-TEXT" | "A-ANNO-NRTH" | "A-TTLB" | "A-REFR"';
+    '"A-AREA" | "A-AREA-IDEN" | "A-PARK" | "A-ANNO-DIMS" | "A-ANNO-TEXT" | "A-ANNO-NRTH" | "A-TTLB" | "A-REFR" | "A-ANNO-USER"';
   assert.deepEqual(describe(draftingProfileSchema), {
     office_name: "string",
     "architect_name?": "string",

@@ -1,7 +1,7 @@
 // annotate — 치수·라벨·경고·메모 주석과 덮어쓰기(02_ARCHITECTURE.md 2.3절 "주석과 치수").
 // 치수는 분해형(LINE + TEXT, A-ANNO-DIMS). 값은 호출자가 넘긴 판정·측정 값 그대로이고 source_ref가 필수다.
-// 덮어쓰기는 anno_id별 위치 이동(offset)·숨김(hide)과 자유 메모(note:*)만. 치수·면적 문자 값은 바꿀 수 없다.
-import type { SheetSpec, StdLayer } from "@arch-studio/domain";
+// 덮어쓰기는 anno_id별 위치 이동(offset)·숨김(hide)만. 치수·면적 문자 값은 바꿀 수 없다. 사람 주석(A-ANNO-USER)은 ./user.ts.
+import type { SheetAnnotation, StdLayer } from "@arch-studio/domain";
 import { roundHalfAway } from "@arch-studio/geometry";
 import { DraftingError } from "../sheet/errors.ts";
 import type { Annotation, Mm, PaperUm, Prim, Scale, Vec } from "../sheet/types.ts";
@@ -25,6 +25,11 @@ export function checkValueText(a: Pick<Annotation, "anno_id" | "kind" | "prims">
       throw new DraftingError("NUMERIC_TEXT_SOURCE", `${a.anno_id}/${p.key}: 치수 값 "${p.s}"에 source_ref가 없습니다`);
     }
   }
+}
+
+/** UTF-16 코드 단위 사전순(localeCompare 금지 — 실행 환경 로캘과 무관해야 한다). */
+export function cmpStr(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 /** 용지 0.01mm → 모델 mm. 축척 분모가 100의 배수라 정수 그대로. */
@@ -157,17 +162,28 @@ export function label(spec: LabelSpec, ctx: AnnotateContext): Annotation {
   return out;
 }
 
-export type AnnotationOverride = SheetSpec["annotation_overrides"][number];
+export type AnnotationOverride = Extract<SheetAnnotation, { kind: "override" }>;
 
-export interface UnappliedOverride {
-  target: string;
-  reason: "missing_target" | "text_not_allowed" | "not_overridable" | "note_without_text" | "invalid_offset";
+/** 출력에서 빠진 주석(화면 "적용되지 않은 주석 n건"·"고아 주석 n개"). 고아는 orphan_*만. */
+export type UnappliedReason =
+  | "missing_target"
+  | "text_not_allowed"
+  | "not_overridable"
+  | "invalid_offset"
+  | "empty_text"
+  | "invalid_anchor"
+  | "zero_length"
+  | "orphan_missing"
+  | "orphan_index"
+  | "orphan_moved";
+
+export interface UnappliedAnnotation {
+  /** SheetSpec.annotations[].id */
+  id: string;
+  reason: UnappliedReason;
 }
 
-export const NOTE_PREFIX = "note:";
-const NOTE_WIDTH: PaperUm = 8_000;
-
-function shiftPrim<U extends number>(p: Prim<U>, dx: number, dy: number): Prim<U> {
+export function shiftPrim<U extends number>(p: Prim<U>, dx: number, dy: number): Prim<U> {
   const mv = (v: Vec<U>): Vec<U> => [(v[0] + dx) as U, (v[1] + dy) as U];
   switch (p.t) {
     case "line":
@@ -187,24 +203,21 @@ function shiftPrim<U extends number>(p: Prim<U>, dx: number, dy: number): Prim<U
 }
 
 /** 용지 mm(실수) → 0.01mm 정수. 유한하지 않으면 null. */
-function paperMmToUm(v: number | undefined): PaperUm | null {
+export function paperMmToUm(v: number | undefined): PaperUm | null {
   if (v === undefined) return 0;
   return Number.isFinite(v) ? r(v * 100) : null;
 }
 
 /**
- * annotation_overrides 적용. dx_mm·dy_mm는 용지 mm(tasks/logs/AR-06-020.md [DECISION] 후보):
- * 뷰 주석은 모델 mm(× 축척 분모)로, 용지 주석은 그대로 옮긴다. 같은 target이 여러 번 오면 뒤 항목의 칸이 이긴다.
- * `note:<id>` target은 자유 메모(A-ANNO-TEXT, 용지 좌표 (dx_mm, dy_mm)). 대상이 없는 덮어쓰기는 버리고 unapplied로 돌려준다
- * (화면 "적용되지 않은 주석 수정 n건").
+ * 자동 주석 덮어쓰기(`kind: "override"`) 적용. dx_mm·dy_mm는 용지 mm(tasks/logs/AR-06-020.md [DECISION] 후보):
+ * 뷰 주석은 모델 mm(× 축척 분모)로, 용지 주석은 그대로 옮긴다. target당 1건(id = "ov-" + target, 스키마가 강제).
+ * 대상이 없거나 허용되지 않은 덮어쓰기는 버리고 unapplied로 돌려준다(id 순).
  */
 export function applyOverrides(
   annotations: readonly Annotation[],
   overrides: readonly AnnotationOverride[],
   ctx: AnnotateContext,
-): { annotations: Annotation[]; unapplied: UnappliedOverride[] } {
-  const merged: Record<string, AnnotationOverride> = Object.create(null);
-  for (const o of overrides) merged[o.target] = { ...merged[o.target], ...o };
+): { annotations: Annotation[]; unapplied: UnappliedAnnotation[] } {
   const byId: Record<string, Annotation> = Object.create(null);
   for (const a of annotations) {
     if (Object.prototype.hasOwnProperty.call(byId, a.anno_id)) {
@@ -213,48 +226,30 @@ export function applyOverrides(
     byId[a.anno_id] = a;
   }
 
-  const unapplied: UnappliedOverride[] = [];
+  const unapplied: UnappliedAnnotation[] = [];
   const hidden: Record<string, true> = Object.create(null);
-  const notes: Annotation[] = [];
-  for (const target of Object.keys(merged).sort()) {
-    const o = merged[target] as AnnotationOverride;
-    const dx = paperMmToUm(o.dx_mm);
-    const dy = paperMmToUm(o.dy_mm);
-    if (target.startsWith(NOTE_PREFIX)) {
-      if (o.hidden === true) continue;
-      if (dx === null || dy === null) {
-        unapplied.push({ target, reason: "invalid_offset" });
-        continue;
-      }
-      if (typeof o.text !== "string" || o.text.trim() === "") {
-        unapplied.push({ target, reason: "note_without_text" });
-        continue;
-      }
-      const L = "A-ANNO-TEXT" as const;
-      const prim: Prim<PaperUm> = o.text.includes("\n")
-        ? { layer: L, key: "text", t: "mtext", at: [dx, dy], h: ctx.text_h, width: NOTE_WIDTH, s: o.text }
-        : { layer: L, key: "text", t: "text", at: [dx, dy], h: ctx.text_h, s: o.text, align: "l" };
-      notes.push({ anno_id: target, kind: "note", prims: [prim], overridable: ["offset", "hide"] });
-      continue;
-    }
+  for (const o of [...overrides].sort((x, y) => cmpStr(x.id, y.id))) {
+    const { id, target } = o;
     const a = byId[target];
     if (a === undefined) {
-      unapplied.push({ target, reason: "missing_target" });
+      unapplied.push({ id, reason: "missing_target" });
       continue;
     }
-    if (o.text !== undefined) unapplied.push({ target, reason: "text_not_allowed" });
+    if (o.text !== undefined) unapplied.push({ id, reason: "text_not_allowed" });
     if (o.hidden === true) {
       if (a.overridable.includes("hide")) hidden[target] = true;
-      else unapplied.push({ target, reason: "not_overridable" });
+      else unapplied.push({ id, reason: "not_overridable" });
       continue;
     }
     if (o.dx_mm === undefined && o.dy_mm === undefined) continue;
+    const dx = paperMmToUm(o.dx_mm);
+    const dy = paperMmToUm(o.dy_mm);
     if (dx === null || dy === null) {
-      unapplied.push({ target, reason: "invalid_offset" });
+      unapplied.push({ id, reason: "invalid_offset" });
       continue;
     }
     if (!a.overridable.includes("offset")) {
-      unapplied.push({ target, reason: "not_overridable" });
+      unapplied.push({ id, reason: "not_overridable" });
       continue;
     }
     const [mx, my] = a.view_id === undefined ? [dx, dy] : [paperToModel(dx, ctx.scale), paperToModel(dy, ctx.scale)];
@@ -263,9 +258,5 @@ export function applyOverrides(
 
   const out: Annotation[] = [];
   for (const a of annotations) if (!hidden[a.anno_id]) out.push(byId[a.anno_id] as Annotation);
-  for (const n of notes) {
-    if (Object.prototype.hasOwnProperty.call(byId, n.anno_id)) throw new DraftingError("DUPLICATE_KEY", `anno_id 중복: ${n.anno_id}`);
-    out.push(n);
-  }
   return { annotations: out, unapplied };
 }

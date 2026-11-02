@@ -1,5 +1,5 @@
 // 표제란(02_ARCHITECTURE.md 2.3절 "표제란", PRD 9.1·9.4·9.7절). 고지는 이 파일의 상수이고
-// DraftingProfile·annotation_overrides 어느 쪽에서도 바꾸거나 지울 경로가 없다(표제란은 paper_prims라 덮어쓰기 대상 밖).
+// DraftingProfile·annotations(덮어쓰기) 어느 쪽에서도 바꾸거나 지울 경로가 없다(표제란은 paper_prims라 덮어쓰기 대상 밖).
 // 건축사 날인·서명란은 만들지 않는다(PRD 9.7절).
 import type { DraftingProfile } from "@arch-studio/domain";
 import { roundHalfAway } from "@arch-studio/geometry";

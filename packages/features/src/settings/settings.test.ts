@@ -67,10 +67,10 @@ test("도면 설정 화면: h1 하나·설정 내비·로딩 상태(세션 확�
   assert.match(html, /role="status"/);
 });
 
-test("레이어 매핑 표: 16행 × 2(표·좁은 화면 카드), 경고 문구는 resolveLayerMap 결과, 읽기 전용이면 입력·저장 비활성", () => {
+test("레이어 매핑 표: 17행 × 2(표·좁은 화면 카드), 경고 문구는 resolveLayerMap 결과, 읽기 전용이면 입력·저장 비활성", () => {
   const ro = render(h(sections.LayerSection, { ...base, editable: false }));
-  assert.equal(count(ro, /aria-label="A-[A-Z-]+ 사무소 이름"/g), 32);
-  assert.equal(count(ro, /<input[^>]*disabled=""/g), 32);
+  assert.equal(count(ro, /aria-label="A-[A-Z-]+ 사무소 이름"/g), 34);
+  assert.equal(count(ro, /<input[^>]*disabled=""/g), 34);
   assert.match(ro, /<button[^>]*disabled=""[^>]*aria-label="레이어 이름 저장"|<button[^>]*aria-label="레이어 이름 저장"[^>]*disabled=""/);
   assert.match(ro, /DXF 레이어 이름에 쓸 수 없는 문자가 있어/);
   assert.match(ro, /영문·숫자·_ - \$만 저장할 수 있어/);

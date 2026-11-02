@@ -1,0 +1,10 @@
+{
+  "case_id": "writer-user-annotations",
+  "note": "사람 주석(AR-06-086): 치수·문자·지시선·구름·이행 메모(A-ANNO-USER) + 자동 주석 옮기기",
+  "writer_version": "dxf-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

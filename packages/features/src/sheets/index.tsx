@@ -39,7 +39,9 @@ import {
   nextPaper,
   outputErrorText,
   parseModel,
+  isOrphan,
   parseStored,
+  readStoredSheets,
   serializeStored,
   sheetAccess,
   sheetName,
@@ -48,8 +50,9 @@ import {
   type SheetInput,
   type SheetKind,
   type StoredSheets,
+  type UnappliedNote,
 } from "./model.ts";
-import { LayerPanel, PreviewPane, SettingsPanel, SheetList, TitleBlockPanel, type PreviewData } from "./parts.tsx";
+import { AnnotationPanel, LayerPanel, PreviewPane, SettingsPanel, SheetList, TitleBlockPanel, type PreviewData } from "./parts.tsx";
 import { createSheetBuilder, runExport } from "./runner.ts";
 import { useDraftingProfile } from "./useProfile.ts";
 
@@ -76,9 +79,12 @@ export function Screen() {
   return <SheetsScreen key={`${load.record.id}:${load.record.version}`} record={load.record} forcedEmpty={forced === "empty"} />;
 }
 
+/** v2 저장본, 없으면 v1(annotation_overrides)을 이행해 읽고 v2로 써 둔다(v1은 지우지 않는다, AR-06-086). */
 function readStored(storage: StorageLike | null, projectId: string): StoredSheets {
   try {
-    return parseStored(storage?.getItem(storeKey(projectId)) ?? null);
+    const r = readStoredSheets((k) => storage?.getItem(k) ?? null, projectId);
+    if (r.migrated && r.stored.specs.length > 0) storage?.setItem(storeKey(projectId), serializeStored(r.stored));
+    return r.stored;
   } catch {
     return parseStored(null);
   }
@@ -105,6 +111,8 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
   const [toast, setToast] = useState<string | null>(null);
   const [staleDismissed, setStaleDismissed] = useState(false);
   const [preview, setPreview] = useState<PreviewData>({ status: "loading" });
+  // 시트 id별 출력에서 빠진 주석(미리보기로 만든 시트만). 고아 표시·내보내기 안내에 쓴다.
+  const [unappliedBy, setUnappliedBy] = useState<Readonly<Record<string, readonly UnappliedNote[]>>>({});
   const [date] = useState(() => localDate(new Date()));
   const reqCounter = useRef(0);
   const engineVersionRef = useRef<string | null>(null);
@@ -171,6 +179,7 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
         setPreview({ status: "error", code: r.code, title: "시트를 만들지 못했습니다", description: outputErrorText(r.code) });
         return;
       }
+      setUnappliedBy((prev) => ({ ...prev, [input.sheet.id]: r.built.unapplied }));
       urlRef.current = URL.createObjectURL(new Blob([r.built.svg], { type: "image/svg+xml" }));
       setPreview({ status: "ready", url: urlRef.current, summary: r.built.summary });
       // 처음 만든 엔진 버전을 기록한다(이후 엔진이 바뀌면 AR059).
@@ -248,6 +257,12 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
     if (!access.edit) return;
     persist({ ...stored, specs: specs.map((s) => (s.id === next.id ? next : s)) });
   };
+  const deleteAnnotation = (annoId: string) => {
+    if (!selected) return;
+    change({ ...selected, annotations: selected.annotations.filter((a) => a.id !== annoId) });
+  };
+  const selectedUnapplied = selected ? (unappliedBy[selected.id] ?? null) : null;
+  const orphanCounts = Object.fromEntries(Object.entries(unappliedBy).map(([k, v]) => [k, v.filter(isOrphan).length]));
 
   const names = specs.map((s) => ({ id: s.id, name: sheetName(s, specs, model) }));
   const selectedName = selected ? sheetName(selected, specs, model) : "";
@@ -421,6 +436,9 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
         hasSheets
           ? [
               ...(selected ? [{ id: "settings", title: "시트 설정", content: <SettingsPanel spec={selected} name={selectedName} model={model} canEdit={access.edit} onChange={change} /> }] : []),
+              ...(selected
+                ? [{ id: "annotations", title: "주석", content: <AnnotationPanel spec={selected} unapplied={selectedUnapplied} canEdit={access.edit} onDelete={deleteAnnotation} /> }]
+                : []),
               { id: "titleblock", title: "표제란", content: <TitleBlockPanel summary={summary} officeMissing={officeMissing} /> },
               ...(profileState.status === "ready" ? [{ id: "layers", title: "레이어 매핑", content: <LayerPanel profile={profileState.profile} /> }] : []),
             ]
@@ -431,6 +449,12 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
       status={
         <>
           {selected ? <span>{selectedName}</span> : null}
+          {selected && selected.annotations.length > 0 ? (
+            <span>
+              주석 {selected.annotations.length}
+              {(orphanCounts[selected.id] ?? 0) > 0 ? ` · 고아 ${orphanCounts[selected.id]}` : ""}
+            </span>
+          ) : null}
           <span>확대 {zoom}%</span>
           <span>0 크레딧 · 오프라인 출력</span>
         </>
@@ -444,6 +468,7 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
         access={access}
         png={pngSupport}
         hasOfficeMap={profileState.status === "ready" && Object.keys(profileState.profile.layer_map).length > 0}
+        orphans={orphanCounts}
         onRun={onRun}
       />
 

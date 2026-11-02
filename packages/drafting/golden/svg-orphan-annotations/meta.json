@@ -1,0 +1,11 @@
+{
+  "case_id": "svg-orphan-annotations",
+  "source_case": "writer-orphan-annotations",
+  "note": "고아 주석(AR-06-086): ref 없음·번호 범위 밖·기준 좌표 불일치는 출력 0건, 정상 문자 1건만",
+  "writer_version": "svg-1.1.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}
