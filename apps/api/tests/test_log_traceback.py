@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from app.log import RedactFilter, install_log_redaction
 from app.main import create_app
 from app.settings import Settings
+from tests.conftest import review_body
 
 RUN_ID = "33333333-3333-4333-8333-333333333333"
 LEAK = "leak Bearer abc.def.ghi prompt=집 평면"
@@ -85,7 +86,7 @@ def test_traceback_from_real_app_500_is_redacted(settings: Settings, auth: Auth)
 
     with captured() as lines:
         with TestClient(create_app(settings, runner=Boom()), raise_server_exceptions=False) as c:
-            res = c.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers=auth())
+            res = c.post("/graphs/arch.review/runs", json=review_body(RUN_ID), headers=auth())
             assert res.status_code == 500
             try:  # uvicorn이 하는 일: 다시 던져진 예외를 exc_info로 기록
                 Boom().start(object())

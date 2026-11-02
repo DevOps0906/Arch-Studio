@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from app.ai.interfaces import GraphRunner
 from app.ai.products import ProductConfig
+from app.ai.products.arch.schema import ReviewRunInput
 from app.auth.deps import consume_jti, require_job_binding, require_job_scope, require_run_binding, token_claims
 from app.auth.tokens import TokenClaims
 from app.errors import ApiError, ok, validation_details
@@ -37,8 +38,19 @@ def _not_found() -> ApiError:
     return ApiError(404, "NOT_FOUND", "찾을 수 없습니다")
 
 
-def _run_view(run: GraphRun) -> dict[str, str]:
-    return {"graph_run_id": run.id, "graph": run.graph, "run_id": run.run_id, "status": run.status}
+def _run_view(run: GraphRun) -> dict[str, Any]:
+    view: dict[str, Any] = {
+        "graph_run_id": run.id,
+        "graph": run.graph,
+        "run_id": run.run_id,
+        "status": run.status,
+        "attempt": run.attempt,
+    }
+    if run.result is not None:
+        view["result"] = run.result
+    if run.error is not None:
+        view["error"] = run.error  # {code: AR033|PROVIDER|INVALID_INPUT, retryable, stage}. 예외 메시지는 담지 않는다
+    return view
 
 
 def _product_for(request: Request, claims: TokenClaims) -> ProductConfig:
@@ -59,8 +71,13 @@ async def start_graph_run(
         raise _not_found()
     job_id = require_job_scope(claims, f"graph:{graph_name}")
 
+    body: GraphRunRequest | ReviewRunInput
     try:
-        body = GraphRunRequest.model_validate_json(await request.body())
+        raw = await request.body()
+        if graph_name == "arch.review":
+            body = ReviewRunInput.model_validate_json(raw)
+        else:
+            body = GraphRunRequest.model_validate_json(raw)
     except ValidationError as exc:
         raise ApiError(422, "VALIDATION", "입력이 계약과 다릅니다", details=validation_details(exc.errors())) from None
 
@@ -70,7 +87,13 @@ async def start_graph_run(
     store: RunStore = request.app.state.runs
     try:
         run, created = store.create_or_get(
-            app=claims.app, org=claims.org, graph=graph_name, run_id=body.run_id, job_id=job_id
+            app=claims.app,
+            org=claims.org,  # 조직은 토큰에서만 읽는다(본문 org 거부)
+            graph=graph_name,
+            run_id=body.run_id,
+            job_id=job_id,
+            attempt=body.attempt if isinstance(body, ReviewRunInput) else 1,
+            payload=body if isinstance(body, ReviewRunInput) else None,
         )
     except RunConflict:
         raise ApiError(409, "RUN_CONFLICT", "이미 다른 잡이 처리 중인 실행입니다") from None

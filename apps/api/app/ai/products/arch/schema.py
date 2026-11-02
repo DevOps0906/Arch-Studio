@@ -385,6 +385,50 @@ class ReviewResultV1(Strict):
         return self
 
 
+# --- arch.review 실행 계약(AR-06-051). 워커가 서버 재계산한 JudgmentResult를 본문으로 넘긴다(DB 없음). ---
+
+_DATE_PATTERN = r"^\d{4}-\d{2}-\d{2}$"
+_RUN_UUID_PATTERN = r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+
+
+class ReviewRunInput(Strict):
+    """POST /graphs/arch.review/runs 본문. org는 받지 않는다(토큰 org만 신뢰)."""
+
+    run_id: Annotated[str, Field(pattern=_RUN_UUID_PATTERN)]
+    attempt: Annotated[int, Field(ge=1, le=10)]
+    application_date: Annotated[str, Field(pattern=_DATE_PATTERN)]
+    timeout_s: Annotated[int, Field(ge=1, le=600)] = 600  # 전체 10분 중 남은 시간(시도당 상한)
+    judgment: JudgmentResult
+
+
+class ReviewRunResult(Strict):
+    """GET 응답 result. refs는 `{ref:<key>.<value|limit>}` 경로 → 치환에 쓴 엔진 값."""
+
+    review: ReviewResultV1
+    refs: dict[str, float]
+
+
+class ReviewLlmSentence(Strict):
+    text: str
+    source_ids: list[str]
+
+
+class ReviewLlmItem(Strict):
+    key: str
+    sentences: list[ReviewLlmSentence]
+    needs_check: list[ReviewLlmSentence]
+
+
+class ReviewLlmOutput(Strict):
+    """interpret 노드의 LLM 구조화 출력. 숫자는 `{ref:경로}`로만 쓴다."""
+
+    items: list[ReviewLlmItem]
+
+
+class ReviewLlmRewrite(Strict):
+    text: str
+
+
 AREA_M2_MAX = 1_000_000  # 1km² : 소형 건축 면적 입력으로는 충분히 큰 보수적 상한(제안)
 IntakeAnswer = (
     Annotated[str, Field(max_length=300), _max_len(300)] | float | bool | Annotated[list[IdStr], Field(max_length=20)]

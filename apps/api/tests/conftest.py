@@ -109,3 +109,19 @@ def auth(issuer: Issuer) -> Callable[..., dict[str, str]]:
         return {"Authorization": f"Bearer {issuer.token(**overrides)}"}
 
     return make
+
+
+def review_body(run_id: str = RUN_A, attempt: int = 1) -> dict[str, Any]:
+    """arch.review 시작 본문 최소 예(판정 항목 없음 = 검토할 항목 없음)."""
+    return {
+        "run_id": run_id,
+        "attempt": attempt,
+        "application_date": "2025-01-01",
+        "judgment": {
+            "engine_version": "1.0.0",
+            "rule_pack_version": "2025.1",
+            "application_date": "2025-01-01",
+            "items": [],
+            "pending_changes": 0,
+        },
+    }

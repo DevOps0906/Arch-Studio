@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from app.log import install_log_redaction, logger, redact
 from app.main import create_app
 from app.settings import Settings
+from tests.conftest import review_body
 
 RUN_ID = "33333333-3333-4333-8333-333333333333"
 Auth = Callable[..., dict[str, str]]
@@ -68,7 +69,7 @@ def test_500_is_generic(settings: Settings, auth: Auth) -> None:
 
     app: FastAPI = create_app(settings, runner=Boom())
     with TestClient(app, raise_server_exceptions=False) as c:
-        res = c.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers=auth())
+        res = c.post("/graphs/arch.review/runs", json=review_body(RUN_ID), headers=auth())
     assert res.status_code == 500
     assert res.json() == {"ok": False, "error": {"code": "INTERNAL", "message": "내부 오류가 발생했습니다"}}
     assert "hunter2" not in res.text
@@ -78,8 +79,8 @@ def test_logs_do_not_contain_token(client: TestClient, auth: Auth, caplog: pytes
     caplog.set_level(logging.DEBUG)
     headers = auth(scope="graph:arch.intake")  # scope 불일치 → 403 기록
     token = headers["Authorization"].split(" ", 1)[1]
-    client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers=headers)
-    client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers={"Authorization": f"Bearer {token}x"})
+    client.post("/graphs/arch.review/runs", json=review_body(RUN_ID), headers=headers)
+    client.post("/graphs/arch.review/runs", json=review_body(RUN_ID), headers={"Authorization": f"Bearer {token}x"})
     assert "auth rejected" in caplog.text
     assert token not in caplog.text
     assert token[:40] not in caplog.text

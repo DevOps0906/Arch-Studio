@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 from app.auth.keys import KeyStore, parse_jwks
 from app.auth.tokens import AuthError, verify_token
-from tests.conftest import KID, Issuer, public_jwk
+from tests.conftest import KID, Issuer, public_jwk, review_body
 
 RUN_ID = "33333333-3333-4333-8333-333333333333"
 
@@ -172,7 +172,7 @@ def test_key_bound_to_other_product_rejects_arch_token(issuer: Issuer, signing_k
 
 
 def test_no_token_401(client: TestClient) -> None:
-    res = client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID})
+    res = client.post("/graphs/arch.review/runs", json=review_body(RUN_ID))
     assert res.status_code == 401
     assert res.headers["www-authenticate"].startswith("Bearer")
     assert res.json() == {"ok": False, "error": {"code": "UNAUTHORIZED", "message": "인증이 필요합니다"}}
@@ -184,7 +184,7 @@ def test_no_token_get_run_401(client: TestClient) -> None:
 
 @pytest.mark.parametrize("header", ["Basic abc", "Bearer", "Bearer a b", "token"])
 def test_malformed_authorization_401(client: TestClient, header: str) -> None:
-    res = client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers={"Authorization": header})
+    res = client.post("/graphs/arch.review/runs", json=review_body(RUN_ID), headers={"Authorization": header})
     assert res.status_code == 401
 
 
@@ -200,7 +200,9 @@ def test_invalid_token_401_before_body_validation(client: TestClient) -> None:
 
 def test_forged_token_http_401(client: TestClient) -> None:
     token = Issuer(Ed25519PrivateKey.generate()).token()
-    res = client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers={"Authorization": f"Bearer {token}"})
+    res = client.post(
+        "/graphs/arch.review/runs", json=review_body(RUN_ID), headers={"Authorization": f"Bearer {token}"}
+    )
     assert res.status_code == 401
 
 

@@ -8,7 +8,7 @@ from collections.abc import Callable
 import httpx
 from fastapi.testclient import TestClient
 
-from tests.conftest import ORG_A, ORG_B
+from tests.conftest import ORG_A, ORG_B, review_body
 
 RUN_ID = "33333333-3333-4333-8333-333333333333"
 Auth = Callable[..., dict[str, str]]
@@ -18,7 +18,11 @@ def start(
     client: TestClient, auth: Auth, graph: str = "arch.review", body: object = None, **claims: object
 ) -> httpx.Response:
     claims.setdefault("scope", f"graph:{graph}")
-    res: httpx.Response = client.post(f"/graphs/{graph}/runs", json=body or {"run_id": RUN_ID}, headers=auth(**claims))
+    res: httpx.Response = client.post(
+        f"/graphs/{graph}/runs",
+        json=body or (review_body(RUN_ID) if graph == "arch.review" else {"run_id": RUN_ID}),
+        headers=auth(**claims),
+    )
     return res
 
 
@@ -48,8 +52,8 @@ def test_user_token_on_job_route_403(client: TestClient, auth: Auth) -> None:
 
 def test_jti_replay_401(client: TestClient, auth: Auth) -> None:
     headers = auth(scope="graph:arch.review")
-    assert client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers=headers).status_code == 202
-    again = client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers=headers)
+    assert client.post("/graphs/arch.review/runs", json=review_body(RUN_ID), headers=headers).status_code == 202
+    again = client.post("/graphs/arch.review/runs", json=review_body(RUN_ID), headers=headers)
     assert again.status_code == 401
 
 
@@ -92,7 +96,7 @@ def test_body_run_id_must_be_uuid_422(client: TestClient, auth: Auth) -> None:
 def test_invalid_body_does_not_burn_jti(client: TestClient, auth: Auth) -> None:
     headers = auth(scope="graph:arch.review")
     assert client.post("/graphs/arch.review/runs", json={"run_id": "x"}, headers=headers).status_code == 422
-    assert client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers=headers).status_code == 202
+    assert client.post("/graphs/arch.review/runs", json=review_body(RUN_ID), headers=headers).status_code == 202
 
 
 def test_get_run_same_org(client: TestClient, auth: Auth) -> None:
@@ -159,9 +163,9 @@ def test_run_claim_mismatch_403(client: TestClient, auth: Auth) -> None:
 
 def test_run_mismatch_does_not_burn_jti(client: TestClient, auth: Auth) -> None:
     headers = auth(scope="graph:arch.review")  # run 클레임 = RUN_ID
-    other = {"run_id": str(uuid.uuid4())}
+    other = review_body(str(uuid.uuid4()))
     assert client.post("/graphs/arch.review/runs", json=other, headers=headers).status_code == 403
-    assert client.post("/graphs/arch.review/runs", json={"run_id": RUN_ID}, headers=headers).status_code == 202
+    assert client.post("/graphs/arch.review/runs", json=review_body(RUN_ID), headers=headers).status_code == 202
 
 
 def test_run_binding_is_exact(client: TestClient, auth: Auth) -> None:
