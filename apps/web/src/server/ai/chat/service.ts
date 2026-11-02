@@ -61,9 +61,9 @@ export interface ChatLedgerRow {
 }
 
 export interface ChatLedger {
-  /** 이 멱등 키의 차감 원장 행 id(없으면 null). */
-  find(key: string): Promise<string | null>;
-  /** 오늘(KST 0시 = sinceIso 이후) 이 조직의 채팅 순차감 건수(차감 − 환불). */
+  /** 이 멱등 키의 차감 원장 행(없으면 null). refunded = refund_of가 이 행인 환불 행이 있음. */
+  find(key: string): Promise<{ ledgerId: string; actorId: string | null; refunded: boolean } | null>;
+  /** 오늘(KST 0시 = sinceIso 이후) 이 조직의 채팅 차감 건수. 환불된 턴도 시도로 센다(환불 반복 비용 공격 방지). */
   countSince(orgId: string, sinceIso: string): Promise<number>;
   /** 같은 키 원장이 이미 있으면 새로 차감하지 않고 그 행의 사실을 돌려준다(차감 RPC 멱등 키). */
   consume(args: { orgId: string; actorId: string; amount: number; key: string; requestId: string; conversationId: string; nonce: string }): Promise<ChatLedgerRow>;
@@ -73,8 +73,8 @@ export interface ChatLedger {
 export interface ChatStore {
   /** 이 사용자의 이 조직 대화인가. */
   ownsConversation(orgId: string, userId: string, conversationId: string): Promise<boolean>;
-  /** 원장 id로 저장된 답변(재전송용). 없으면 null. */
-  findAnswer(orgId: string, ledgerId: string): Promise<{ conversationId: string; answer: ChatAnswer } | null>;
+  /** 원장 id로 저장된 답변(재전송용). 대화 소유자가 userId가 아니면 null. */
+  findAnswer(orgId: string, userId: string, ledgerId: string): Promise<{ conversationId: string; answer: ChatAnswer } | null>;
   saveTurn(args: {
     orgId: string;
     userId: string;
@@ -293,7 +293,9 @@ export async function handleChat(req: Request, deps: ChatDeps): Promise<Response
 
     const existing = await deps.ledger.find(key);
     if (existing !== null) {
-      const stored = await deps.store.findAnswer(session.orgId, existing);
+      // 다른 사용자의 키·환불된 원장은 재전송하지 않는다(무료 답·타인 답 노출 방지).
+      if (existing.actorId !== session.userId || existing.refunded) throw new ChatReject("IDEMPOTENT_REPLAY");
+      const stored = await deps.store.findAnswer(session.orgId, session.userId, existing.ledgerId);
       if (stored) return sseResponse(stored.conversationId, stored.answer, { credits: NO_CHARGE, replay: true });
       throw new ChatReject("IDEMPOTENT_REPLAY");
     }

@@ -47,7 +47,7 @@ function harness(
   const consumed: string[] = [];
   const refunds: { ledgerId: string; reason: string }[] = [];
   const saved: H["saved"] = [];
-  const answers = new Map<string, { conversationId: string; answer: ChatAnswer }>();
+  const answers = new Map<string, { conversationId: string; answer: ChatAnswer; userId: string }>();
   const upstream = { n: 0, auth: [] as string[], bodies: [] as unknown[] };
   const deps: ChatDeps = {
     enabled: () => opts.enabled ?? true,
@@ -60,10 +60,13 @@ function harness(
     turnsPerDay: async () => opts.perDay ?? 20,
     ledger: {
       async find(key) {
-        return opts.findMisses ? null : (keys.get(key)?.ledgerId ?? null);
+        const row = keys.get(key);
+        if (opts.findMisses || !row) return null;
+        return { ledgerId: row.ledgerId, actorId: row.actorId, refunded: refunds.some((x) => x.ledgerId === row.ledgerId) };
       },
       async countSince() {
-        return opts.used ?? 0;
+        // 실제 구현과 같이 환불된 턴도 센다.
+        return (opts.used ?? 0) + consumed.length;
       },
       async consume(a) {
         let row = keys.get(a.key);
@@ -83,12 +86,13 @@ function harness(
       async ownsConversation() {
         return true;
       },
-      async findAnswer(_org, ledgerId) {
-        return answers.get(ledgerId) ?? null;
+      async findAnswer(_org, userId, ledgerId) {
+        const a = answers.get(ledgerId);
+        return a && a.userId === userId ? { conversationId: a.conversationId, answer: a.answer } : null;
       },
       async saveTurn(a) {
         saved.push({ conversationId: a.conversationId, answer: a.answer, create: a.createConversation });
-        answers.set(a.ledgerId, { conversationId: a.conversationId, answer: a.answer });
+        answers.set(a.ledgerId, { conversationId: a.conversationId, answer: a.answer, userId: a.userId });
       },
     },
     apiUrl: () => "http://api.test",
@@ -361,4 +365,37 @@ test("상류 대기 중 클라이언트 중단: 499, 환불 chat_aborted", async
   const res = await handleChat(request(undefined, ac.signal), h.deps);
   assert.equal(res.status, 499);
   assert.deepEqual(h.refunds.map((r) => r.reason), ["chat_aborted"]);
+});
+
+test("재전송: 같은 조직 다른 사용자가 같은 request_id → 409, 저장 답 노출·차감·상류 호출 0", async () => {
+  const h = harness();
+  await (await handleChat(request(), h.deps)).text();
+  const other = harness({ sess: session({ userId: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee" }) });
+  other.deps.ledger = h.deps.ledger;
+  other.deps.store = h.deps.store;
+  const res = await handleChat(request(), other.deps);
+  assert.equal(res.status, 409);
+  assert.equal(await code(res), "IDEMPOTENT_REPLAY");
+  assert.equal(other.upstream.n, 0);
+  assert.equal(h.consumed.length, 1);
+});
+
+test("재전송: 환불 행이 있는 원장(refund_of) → 저장 답이 있어도 409", async () => {
+  const h = harness();
+  await (await handleChat(request(), h.deps)).text();
+  // 저장 뒤 운영 정정 등으로 환불된 경우
+  await h.deps.ledger.refund({ ledgerId: "100", reason: "manual", key: "k", actorId: USER });
+  const res = await handleChat(request(), h.deps);
+  assert.equal(res.status, 409);
+  assert.equal(h.upstream.n, 1);
+});
+
+test("일일 상한: 환불된 턴(no_source)도 시도로 세어 상한 도달 → 429", async () => {
+  const h = harness({ perDay: 2, upstream: async () => new Response(JSON.stringify({ ok: true, data: { answer: { sentences: [] }, sources: [], no_source: true } }), { status: 200 }) });
+  const rid = (n: number) => `11111111-1111-4111-8111-11111111111${n}`;
+  for (const n of [2, 3]) assert.equal((await handleChat(request({ request_id: rid(n), message: "q" }), h.deps)).status, 200);
+  assert.equal(h.refunds.length, 2);
+  const res = await handleChat(request({ request_id: rid(4), message: "q" }), h.deps);
+  assert.equal(res.status, 429);
+  assert.equal(h.upstream.n, 2);
 });

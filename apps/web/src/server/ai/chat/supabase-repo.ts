@@ -20,24 +20,24 @@ export function supabaseChatLedger(service: Client, schemas: SchemaNames): ChatL
   const ledger = () => service.schema(schemas.core).from("credit_ledger");
   return {
     async find(key) {
-      const { data, error } = await ledger().select("id").eq("idempotency_key", key).maybeSingle();
+      const { data, error } = await ledger().select("id, actor_id").eq("idempotency_key", key).maybeSingle();
       if (error) throw new DbCodeError(error);
-      return data ? String((data as { id: unknown }).id) : null;
+      if (!data) return null;
+      const row = data as { id: unknown; actor_id: unknown };
+      const { count, error: e2 } = await ledger().select("id", { count: "exact", head: true }).eq("refund_of", Number(row.id));
+      if (e2) throw new DbCodeError(e2);
+      return { ledgerId: String(row.id), actorId: typeof row.actor_id === "string" ? row.actor_id : null, refunded: (count ?? 0) > 0 };
     },
     async countSince(orgId, sinceIso) {
-      const count = async (type: "consume" | "refund") => {
-        const { count: n, error } = await ledger()
-          .select("id", { count: "exact", head: true })
-          .eq("org_id", orgId)
-          .eq("entry_type", type)
-          .eq("ref_type", "ai_chat")
-          .gte("created_at", sinceIso);
-        if (error) throw new DbCodeError(error);
-        return n ?? 0;
-      };
-      // 환불 행도 ref_type이 같도록 refund_credits가 원 행을 따른다는 가정: 아니면 환불 건수가 0이라 상한이 안전 쪽(보수적)으로 기운다.
-      const [consumed, refunded] = await Promise.all([count("consume"), count("refund")]);
-      return Math.max(0, consumed - refunded);
+      // 환불된 턴도 시도로 센다(no_source·실패를 반복 유도해 상류 비용만 쓰는 공격 방지).
+      const { count, error } = await ledger()
+        .select("id", { count: "exact", head: true })
+        .eq("org_id", orgId)
+        .eq("entry_type", "consume")
+        .eq("ref_type", "ai_chat")
+        .gte("created_at", sinceIso);
+      if (error) throw new DbCodeError(error);
+      return count ?? 0;
     },
     async consume(a) {
       const { data, error } = await service.schema(schemas.core).rpc("consume_credits", {
@@ -123,7 +123,7 @@ export function supabaseChatStore(service: Client, schemas: SchemaNames): ChatSt
       if (error) throw new DbCodeError(error);
       return data !== null;
     },
-    async findAnswer(orgId, ledgerId) {
+    async findAnswer(orgId, userId, ledgerId) {
       const { data, error } = await core()
         .from("ai_messages")
         .select("conversation_id, citations")
@@ -134,6 +134,10 @@ export function supabaseChatStore(service: Client, schemas: SchemaNames): ChatSt
       if (error) throw new DbCodeError(error);
       if (!data) return null;
       const row = data as { conversation_id: string; citations: unknown };
+      // 대화 소유자 = 이 사용자일 때만 재전송(같은 조직 다른 사용자의 request_id 재사용 차단).
+      const owner = await core().from("ai_conversations").select("id").eq("id", row.conversation_id).eq("org_id", orgId).eq("user_id", userId).maybeSingle();
+      if (owner.error) throw new DbCodeError(owner.error);
+      if (!owner.data) return null;
       const answer = parseCitations(row.citations);
       return answer ? { conversationId: row.conversation_id, answer } : null;
     },

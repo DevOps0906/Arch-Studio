@@ -2,6 +2,8 @@
 
 보장: 응답의 모든 문장은 이번 검색 청크 중 하나 이상을 인용하고, 문장 속 숫자는 인용 청크 원문에 그대로 있는 숫자뿐이다.
 숫자가 맞지 않는 문장은 1회 재작성하고, 그래도 안 맞으면 제거한다. 적법성 단정(compliance WARN·FAIL)은 제거한다.
+비용 상한: 요청 전체 데드라인 ANSWER_DEADLINE_S(web 상류 60초보다 짧게), 재작성은 요청당 MAX_REWRITES회.
+넘으면 그 문장은 제거한다.
 DB·세션 없음: 저장소·LLM은 주입받는다. 조직은 호출자(토큰)가 넘긴 값만 쓴다.
 """
 
@@ -9,7 +11,9 @@ from __future__ import annotations
 
 import logging
 import re
-from dataclasses import dataclass
+import time
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from datetime import date
 
 from app.ai.compliance.arch import severity_of
@@ -34,6 +38,9 @@ RETRIEVE_K = 5
 MAX_SENTENCES = 10
 SENTENCE_MAX = 1000
 LLM_TIMEOUT_S = 50.0
+ANSWER_DEADLINE_S = 50.0  # 검색·생성·재작성 전체. web CHAT_TIMEOUT_MS(60초)보다 짧게
+MAX_REWRITES = 2  # 요청당 재작성 LLM 호출 상한
+MIN_CALL_S = 1.0  # 남은 시간이 이보다 짧으면 LLM을 부르지 않는다
 
 _NUM = re.compile(r"\d+(?:\.\d+)?")
 
@@ -47,6 +54,7 @@ class ChatDeps:
     llm: StructuredLLM
     store: KnowledgeStore
     embedder: Embedder
+    clock: Callable[[], float] = field(default=time.monotonic)  # 테스트 주입용
 
 
 def _u16(text: str) -> int:
@@ -81,6 +89,11 @@ def _valid(text: str) -> bool:
 
 
 def answer(deps: ChatDeps, *, org: str, message: str, application_date: date) -> ChatResponse:
+    deadline = deps.clock() + ANSWER_DEADLINE_S
+
+    def remaining() -> float:
+        return min(LLM_TIMEOUT_S, deadline - deps.clock())
+
     try:
         found = search_effective(
             deps.store, deps.embedder, org_id=org, query=message, application_date=application_date, k=RETRIEVE_K
@@ -92,19 +105,23 @@ def answer(deps: ChatDeps, *, org: str, message: str, application_date: date) ->
     if not by_id:
         return ChatResponse(answer=ChatAnswer(sentences=[]), sources=[], no_source=True)
 
+    if remaining() < MIN_CALL_S:
+        logger.error("arch.chat 데드라인 초과(검색 후)")
+        raise AnswerError
     try:
         out = deps.llm.generate(
             feature=FEATURE,
             org=org,
             prompt=_prompt(message, found.hits),
             output_model=ChatLlmOutput,
-            timeout_s=LLM_TIMEOUT_S,
+            timeout_s=remaining(),
         )
     except Exception as exc:
         logger.error("arch.chat 생성 실패: %s", type(exc).__name__)
         raise AnswerError from exc
 
     kept: list[ChatSentence] = []
+    rewrites = 0
     for s in out.sentences:
         if len(kept) >= MAX_SENTENCES:
             break
@@ -113,13 +130,16 @@ def answer(deps: ChatDeps, *, org: str, message: str, application_date: date) ->
             continue
         text = s.text
         if not _numbers_ok(text, ids, by_id):  # 1회 재작성 후 제거
+            if rewrites >= MAX_REWRITES or remaining() < MIN_CALL_S:
+                continue  # 비용·시간 상한: 재작성 없이 제거
+            rewrites += 1
             try:
                 text = deps.llm.generate(
                     feature=FEATURE,
                     org=org,
                     prompt="다음 문장에서 근거 chunk에 없는 숫자를 빼고 다시 써라: " + _esc(s.text),
                     output_model=ReviewLlmRewrite,
-                    timeout_s=LLM_TIMEOUT_S,
+                    timeout_s=remaining(),
                 ).text
             except Exception as exc:
                 logger.error("arch.chat 재작성 실패: %s", type(exc).__name__)
