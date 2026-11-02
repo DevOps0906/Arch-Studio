@@ -81,3 +81,9 @@
 - 049: 결정 8항(국외 제공자 0, 공개 표식 컬렉션, 강제 14행 마이그레이션화). 구현 커밋(워크트리) → 073 병합·마이그레이션 `20261102000002`로 변경 중. 리뷰 전.
 - 072: 구현 완료(shell-bridge 118건), 리뷰 REVISE 🔴0 🟠2(캐시 principal·로그아웃 epoch) 반영 중. 서버에 GET /api/cloud-projects/{id}/blob·/api/entitlement 없음 → 071 전에 apps/web 라우트 신설 필요(작업 표 밖, 073 후속으로 기록).
 - 병합 순서: 073(PR CI db 잡) → 072·049(073 기반) → 071. 086은 독립.
+
+## 갱신 (2026-11-02, 072·049 리뷰 반영 push — 병합은 073 CI 대기)
+- 072: 리뷰 🟠2 반영(캐시 주체 가드·로그아웃 epoch·서명 URL https·본문 상한), shell-bridge 123건·lint·typecheck 통과 → origin `feat/ar-06-072`(799df22).
+- 049: 보안 리뷰(reviewer, Codex 한도) 🔴0 🟠2 🟡3 → 가드 core.is_service_caller()·검색 시 공개 자격 재검사·14행 키 한정·덮어쓰기 주석 반영, convert --check 통과 → origin `feat/ar-06-049`(d167753). SQL 테스트 미실행(docker 없음, 강등 테스트 `returning 1` 집계 CI에서 확인). 후속: 코어 match_ai_chunks 같은 가드 결함, ai_providers 비면 체인 검증 건너뜀.
+- **사람 몫**: 073·086·072·049 PR 생성·CI 결과 확인(비공개 저장소+gh 없음).
+- 다음: 073 CI 통과 → main 병합 → 072·049 병합(README 완료) → 071 착수. 086 독립 병합.
