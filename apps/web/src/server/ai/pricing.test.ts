@@ -63,6 +63,9 @@ test("크레딧팩: seed credit_packs와 같은 크레딧·원 금액(정수)", 
   }
 });
 
+// 스캔에서 빼는 파일은 정본 pricing.ts 경로 하나뿐(이름이 같은 다른 파일은 스캔한다).
+const PRICING_TS = path.join(ROOT, "apps/web/src/server/ai/pricing.ts");
+
 function sourceFiles(dirs: string[]): string[] {
   const files: string[] = [];
   const walk = (dir: string) => {
@@ -70,7 +73,7 @@ function sourceFiles(dirs: string[]): string[] {
       const p = path.join(dir, ent.name);
       if (ent.isDirectory()) {
         if (ent.name !== "node_modules" && ent.name !== "__pycache__") walk(p);
-      } else if (/\.(tsx?|py)$/.test(ent.name) && !/\.test\.tsx?$|^test_.*\.py$/.test(ent.name) && !p.endsWith("pricing.ts")) files.push(p);
+      } else if (/\.(tsx?|py)$/.test(ent.name) && !/\.test\.tsx?$|^test_.*\.py$/.test(ent.name) && p !== PRICING_TS) files.push(p);
     }
   };
   for (const d of dirs) walk(d);

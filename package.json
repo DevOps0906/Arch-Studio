@@ -20,7 +20,7 @@
     "test:dev": "node --test scripts/dev/seed-lib.test.mjs",
     "db:seed-users": "node scripts/dev/seed-users.mjs --app arch",
     "test:ai-routing": "node --test \"scripts/ai-routing/*.test.mjs\"",
-    "test:rls":"node scripts/test-rls/run.mjs --target mono"
+    "test:rls": "node scripts/test-rls/run.mjs --target mono"
   },
   "devDependencies": {
     "@next/eslint-plugin-next": "16.2.12",
