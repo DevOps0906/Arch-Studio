@@ -35,7 +35,7 @@ resvg = { version = "=0.34.0", default-features = false, features = ["text"] }
 usvg = { version = "=0.34.1", default-features = false, features = ["text"] }
 tiny-skia = "=0.10.0"
 fontdb = { version = "=0.14.1", default-features = false }
-png = "=0.17.5"
+png = "=0.18.1"
 # deflate =1.0.0(MIT/Apache-2.0): png 0.17.5가 IDAT 압축에 쓰는 같은 크레이트·같은 버전(새 크레이트 아님, 이미 Cargo.lock에 있음).
 # PNG 결과 상한을 압축 중에 검사하려고 IDAT 압축만 직접 한다(AR-06-080 보안 리뷰). 바뀌면 골든 바이트가 달라지므로 정확히 고정.
 deflate = "=1.0.0"
