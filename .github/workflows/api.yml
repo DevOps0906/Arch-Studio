@@ -1,0 +1,44 @@
+# apps/api(FastAPI) CI(AR-06-058a). 필수 검사 후보라 paths 필터를 두지 않는다. 시크릿 참조 없음.
+name: api
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: api-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: api ruff·mypy·pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # 계약 테스트가 zod 덤프를 Node 로 만든다(apps/api/README.md)
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+      - run: python -m venv .venv && .venv/bin/pip install -e ".[dev]"
+        working-directory: apps/api
+      - run: .venv/bin/ruff check . && .venv/bin/ruff format --check .
+        working-directory: apps/api
+      - run: .venv/bin/mypy app tests
+        working-directory: apps/api
+      - run: .venv/bin/python -m pytest
+        working-directory: apps/api

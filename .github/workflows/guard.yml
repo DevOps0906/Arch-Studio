@@ -1,0 +1,41 @@
+# 금지 문자열·키 모양 비밀·워크플로 강화 검사(AR-06-058a [DECISION] 4·5). 필수 검사 후보라 paths 필터 없음.
+# 기존 검사 재사용: eslint 경계 규칙(web 잡 pnpm -r lint), boundary.test.ts(web 잡 pnpm test),
+# check-bundle-mock(web 잡)·check-release-bundle(desktop 잡).
+name: guard
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: 키 모양 비밀·워크플로 규칙·actionlint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      - run: node --test scripts/ci/
+      - run: node scripts/ci/scan-secrets.mjs repo
+      - run: node scripts/ci/check-workflows.mjs
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: stable
+          cache: false
+      # 모듈 프록시·sumdb 가 무결성을 검증한다(버전 고정)
+      - run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+      - run: "$(go env GOPATH)/bin/actionlint"
