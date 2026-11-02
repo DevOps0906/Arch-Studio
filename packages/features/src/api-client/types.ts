@@ -52,7 +52,16 @@ export interface WriteRequest<T> extends CommonOptions<T> {
   readonly method: "POST" | "PUT" | "PATCH" | "DELETE";
   readonly body?: JsonObject;
   readonly idempotencyKey: string;
+  /** 바이너리 본문(음성 받아쓰기 등). body와 함께 쓸 수 없다. contentType 필수. 멀티파트 미사용. */
+  readonly rawBody?: BinaryBody;
+  readonly contentType?: string;
+  /** 추가 헤더(예: x-request-id). Authorization·Content-Type·Idempotency-Key는 덮어쓰지 못한다. */
+  readonly headers?: Readonly<Record<string, string>>;
+  /** false면 5xx·네트워크 오류도 자동 재시도하지 않는다(사용자가 다시 누른다). 기본 재시도. */
+  readonly autoRetry?: false;
 }
+
+export type BinaryBody = Uint8Array | Blob;
 
 export type ApiRequest<T> = ReadRequest<T> | WriteRequest<T>;
 
@@ -67,6 +76,8 @@ export interface FetchInit {
   readonly method: string;
   readonly headers: Record<string, string>;
   readonly body?: string;
+  /** 바이너리 본문. 기본 fetch는 body로 바꿔 보낸다(주입 fetch는 이 필드를 직접 받는다). */
+  readonly binaryBody?: BinaryBody;
   readonly signal?: AbortSignalLike;
 }
 export interface FetchResponseLike {

@@ -8,6 +8,7 @@ import {
   type ApiClientOptions,
   type ApiLogEvent,
   type ApiRequest,
+  type BinaryBody,
   type FetchLike,
 } from "./types.ts";
 
@@ -35,6 +36,10 @@ interface Entry {
   readonly path: string;
   readonly url: string;
   readonly bodyText: string | undefined;
+  readonly rawBody: BinaryBody | undefined;
+  readonly contentType: string | undefined;
+  readonly extraHeaders: Readonly<Record<string, string>> | undefined;
+  readonly autoRetry: boolean;
   readonly idemKey: string | undefined;
   readonly parse: ((d: unknown) => unknown) | undefined;
   readonly enqueuedAt: number;
@@ -111,7 +116,9 @@ function buildUrl(baseUrl: string, path: string, query: Readonly<Record<string, 
 }
 
 export function createApiClient(opts: ApiClientOptions): ApiClient {
-  const doFetch: FetchLike | undefined = opts.fetch ?? G.fetch?.bind(globalThis);
+  const doFetch: FetchLike | undefined =
+    opts.fetch ??
+    (G.fetch ? (url, init) => G.fetch!(url, { ...init, ...(init.binaryBody !== undefined ? { body: init.binaryBody } : {}) } as never) : undefined);
   const now = opts.now ?? ((): number => Date.now());
   const sleep = opts.sleep ?? defaultSleep;
   const genId =
@@ -236,8 +243,9 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       if (!doFetch) return fail(en, mk("network_offline", null, true));
 
       ev("attempt", en, { attempt });
-      const headers: Record<string, string> = { Authorization: `Bearer ${token}`, Accept: "application/json" };
+      const headers: Record<string, string> = { ...en.extraHeaders, Authorization: `Bearer ${token}`, Accept: "application/json" };
       if (en.bodyText !== undefined) headers["Content-Type"] = "application/json";
+      else if (en.rawBody !== undefined && en.contentType !== undefined) headers["Content-Type"] = en.contentType;
       if (en.idemKey) headers["Idempotency-Key"] = en.idemKey;
 
       let err: ApiError;
@@ -247,7 +255,7 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         const res = await doFetch(en.url, {
           method: en.method,
           headers,
-          ...(en.bodyText !== undefined ? { body: en.bodyText } : {}),
+          ...(en.bodyText !== undefined ? { body: en.bodyText } : en.rawBody !== undefined ? { binaryBody: en.rawBody } : {}),
           signal: en.abort.signal,
         });
         const text = await res.text();
@@ -265,7 +273,7 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
         err = mk("network_offline", null, true); // fetch 예외는 원문을 버리고 코드만 남긴다.
       }
 
-      if (!retry || attempt >= maxAttempts) return fail(en, err);
+      if (!retry || !en.autoRetry || attempt >= maxAttempts) return fail(en, err);
 
       const backoff = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
       const delay = Math.max(retryAfterMs ?? 0, backoff + Math.max(0, jitter(backoff)));
@@ -340,6 +348,11 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
     if (method !== "GET" && (typeof idemKey !== "string" || idemKey.length === 0)) {
       return Promise.reject(mk("forbidden_field", null, false)); // 타입이 막지만 런타임에서도 보낸 적 없는 것으로 처리
     }
+    const rawBody = req.method === "GET" ? undefined : req.rawBody;
+    const contentType = req.method === "GET" ? undefined : req.contentType;
+    if (rawBody !== undefined && (req.body !== undefined || typeof contentType !== "string" || contentType.length === 0)) {
+      return Promise.reject(mk("forbidden_field", null, false));
+    }
     if (req.body !== undefined && hasForbiddenKey(req.body)) {
       return Promise.reject(mk("forbidden_field", null, false));
     }
@@ -366,6 +379,10 @@ export function createApiClient(opts: ApiClientOptions): ApiClient {
       path,
       url: buildUrl(opts.baseUrl, req.path, req.query),
       bodyText: req.body === undefined ? undefined : JSON.stringify(req.body),
+      rawBody,
+      contentType,
+      extraHeaders: req.method === "GET" ? undefined : req.headers,
+      autoRetry: req.method === "GET" ? true : req.autoRetry !== false,
       idemKey,
       parse: req.parse as ((d: unknown) => unknown) | undefined,
       enqueuedAt: now(),

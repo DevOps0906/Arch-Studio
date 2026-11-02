@@ -11,6 +11,7 @@ export type {
   ApiRequest,
   ReadRequest,
   WriteRequest,
+  BinaryBody,
   JsonObject,
   JsonValue,
   FetchLike,
