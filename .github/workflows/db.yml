@@ -1,0 +1,40 @@
+# DB(RLS 스모크·도메인 검사) CI(AR-06-058a [DECISION] 6). 로컬 Supabase 컨테이너만 쓴다(원격 접속·시크릿 없음).
+# 모듈러(mod) 대상은 이 저장소에서 재현되지 않아 AR-06-002 "두 대상" 조건은 열려 있다.
+name: db
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: db-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  db:
+    name: db reset·RLS 스모크·arch 검사
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      SUPABASE_CLI: supabase@2.122.0
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+      # auth(gotrue)·storage 스키마가 마이그레이션 선행 조건이라 그 둘은 남기고 나머지는 뺀다
+      - run: npx --yes "$SUPABASE_CLI" start -x realtime,imgproxy,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - run: npx --yes "$SUPABASE_CLI" db reset --local
+      - run: node scripts/test-rls/run.mjs --target mono
+      - run: node scripts/db/check.mjs
+      - run: node scripts/db/convert.mjs
+      - if: always()
+        run: npx --yes "$SUPABASE_CLI" stop --no-backup

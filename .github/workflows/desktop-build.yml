@@ -1,0 +1,77 @@
+# 데스크톱 debug 빌드 CI(AR-06-058a [DECISION] 2·3). 릴리스 프로필·서명은 058b(desktop-release)에서 한다.
+# 프런트 번들 검사는 ubuntu(PR 포함), Rust 빌드·테스트는 Windows(main 푸시·수동만, RegGetValueW 실기 테스트 포함).
+# VITE_ 값은 로컬 Supabase 데모 주소이며 비밀이 아니다.
+name: desktop-build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: desktop-build-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  desktop-web:
+    name: 데스크톱 프런트 릴리스 번들 검사
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter ./apps/desktop test
+      # 릴리스 빌드 모사: production + VITE_AUTH_MODE=live 강제
+      - run: pnpm --filter ./apps/desktop build
+        env:
+          NODE_ENV: production
+          VITE_AUTH_MODE: live
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_API_BASE_URL: http://127.0.0.1:8000
+      - run: pnpm --filter ./apps/desktop check:release
+      - run: node scripts/ci/scan-secrets.mjs dir apps/desktop/dist
+
+  desktop-rust:
+    name: 데스크톱 Rust debug 빌드·테스트(Windows)
+    if: github.event_name != 'pull_request'
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter ./apps/desktop build
+        env:
+          NODE_ENV: production
+          VITE_AUTH_MODE: live
+          VITE_SUPABASE_URL: http://127.0.0.1:54321
+          VITE_API_BASE_URL: http://127.0.0.1:8000
+      - run: rustup toolchain install stable --profile minimal --component clippy rustfmt
+      - run: cargo fmt --check
+        working-directory: apps/desktop/src-tauri
+      - run: cargo clippy --all-targets --locked -- -D warnings
+        working-directory: apps/desktop/src-tauri
+      - run: cargo test --locked
+        working-directory: apps/desktop/src-tauri
+      - run: cargo build --locked
+        working-directory: apps/desktop/src-tauri
