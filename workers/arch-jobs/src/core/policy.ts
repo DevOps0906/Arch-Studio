@@ -13,7 +13,7 @@ export interface JobPolicy {
 // 02_ARCHITECTURE.md 4절 잡 표. "제안" 표시는 문서에 수치가 없어 정한 값(팀장 확인).
 export const JOB_POLICIES: Readonly<Record<string, JobPolicy>> = {
   "arch.render": { timeoutMs: 3 * MINUTE, retryOnTimeout: false }, // 3분 초과 → 환불, 재시도는 제출·네트워크 오류만
-  "arch.review": { timeoutMs: 10 * MINUTE, retryOnTimeout: true }, // 10분 초과, 타임아웃 재시도 1회
+  "arch.review": { timeoutMs: 10 * MINUTE, retryOnTimeout: false }, // 요청부터 전체 10분(재시도 포함, 핸들러가 남은 시간 계산). 초과 → 재시도 없이 실패·전액 환불
   "arch.proposal_pdf": { timeoutMs: 5 * MINUTE, retryOnTimeout: true }, // 제안: 서술+조립 합계. PDF 렌더 단계 120초는 핸들러가 건다
   "arch.intake": { timeoutMs: 5 * MINUTE, retryOnTimeout: false }, // 제안: 재시도는 제공자 오류만
   "arch.stt": { timeoutMs: 30 * MINUTE, retryOnTimeout: false }, // 제안: 녹음 최대 2시간 기준
