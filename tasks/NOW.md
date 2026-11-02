@@ -1,89 +1,24 @@
 # NOW — 재진입 스냅샷 (30줄 이내, 매 작업 끝에 덮어쓴다)
 
-- 갱신: 2026-10-29 (PC 종료 직전 스냅샷)
-- 문서 정리(2026-10-30, 커밋 전): docs/README.md 입구 재작성, DESIGN_TOKENS.md → docs/file/03-설계/디자인/, 팀 도식 → docs/diagrams/team/, 05-검증 이동 마무리. 정본 docs/file/0N-* 경로는 유지(규칙 팩 sha256·테스트가 참조)
-- 현재 작업: 없음 — 1단계(도면 뷰 023·024·025) 병합 완료(2026-10-29), 2단계 022·033 병합 완료, 다음 057 랜딩. 사람 확인: 번들 한글 글꼴(나눔고딕/Noto Sans KR), PNG 래스터화 방식(sharp=LGPL 여부), 샘플에 SVG·PDF 추가
-- 완료(push됨): W0 8, W0-D 3, W1 002·006·014·018·048, W2 015·016·017·020·021, W3 022·023·024·025, W4 033, W5 057(축소 범위) → 85개 중 30개 (005·040·046 완료. 040은 운영 투입 불가 조건 있음)
-- 다음 한 걸음: W1 나머지 005·007·008·046·070·V2-01, W2 017·040·041·043·047 등. 016 팀장 확인 필요(로그): 한 변 4면 허용, 산정 가정 ①~⑤, sharp LGPL(036·058에서 검사)
-- 결정됨(오늘): D-37 히어로=정지 이미지+CSS/SVG 연출 1회(3D 미채택, 킬 스위치 NEXT_PUBLIC_HERO3D_ENABLED 의미를 연출 on/off로), D-38 랜딩=단일 7섹션, D-39 landing.html 시안은 시각 참고용(문구·수치·가격·경쟁사·플랫폼 범위는 03장·PRD·ADR-001이 정본; DASHBOARD_VISUAL.md는 docs/.../디자인/에 가져옴), D-35 번들 글꼴 Noto Sans KR(OFL), D-36 PNG 래스터화 resvg 단일 렌더러(설치형 Rust 크레이트·웹 resvg-js, sharp 기각) → 신규 AR-06-080(85개로 증가), D-034 테마·밀도 사용자 선택형, D-071a Vite SPA+정적 호스팅·Bearer, AR-02-D1 정수 자체 구현, 형상 모든 엔진 바이트 동일·miter/square·압출은 016, S-5 평문 SQLite+OS 디스크 암호화, 스냅샷 실패 시 읽기 전용(AR061), AR060 DB 손상
-- 열린 결정: OH Architecture 확인, DB 예외(073·074 계열), 보안 L2(S-1), 기간제 가격, 본인인증 제공자, 법규 범위, 규칙 세트·단가표 정본 위치(018), 면적표 같은 이름 실 허용 여부
-- 주의: 3000번 포트 Windows 예약 → dev는 `next dev -H 127.0.0.1 -p 3123` + 메모리 env. 로컬 Supabase 5532x(컨테이너 supabase_db_Arch-Studio). 검사: `pnpm test`(db 변환 골든 포함)·`pnpm test:rls`(db reset 먼저)·`node scripts/db/check.mjs`. 결정 기록은 tasks/logs/AR-06-NNN.md. bash에서 cargo는 `export PATH="$HOME/.cargo/bin:$PATH"`. 위임 기본 Opus, 고난도 검증 Fable, Codex astra 금지
-- 뷰 후속(023~025 보고): rules가 면적 분해(건축면적·연면적·층별·용도별 ㎡)·최단 이격 점 쌍·장애인 주차 대수·일조사선 초과 구간을 JudgmentResult/envelope로 내보내야 뷰가 값을 재계산하지 않음(현재 구조적 입력 extras/area_breakdown으로 대체)
-- 수정됨: geometry offset 안쪽 오프셋 바늘 꼭짓점 결함(014 잠복) — 판정을 정수 외적 부호로 교체, 회귀 테스트 추가(tasks/logs/AR-06-014.md [FIX])
-- 017 후속: 워커 호스트 연결(new Worker, src/routes)·실제 RulePackProvider·엔벨로프 op(솔리드 wasm)·suggest_mass/validate_layout/import_dxf는 해당 패키지 구현 후 연결. export·import 레인은 문서(마지막 1건만)와 달리 응답 못 받은 요청을 모두 순서대로 재전송(출력 유실 방지) — 04_API/02_ARCH 2.4절 정정 필요
-- 040 코드 완료(독립 보안 리뷰 🟠 지적 수정 반영, 웹 테스트 75건). **운영 투입 불가 조건**: C-3 서명 키 규격 사람 승인, 레이트리밋 저장소 메모리→core.rate_limit_hit/Redis, T-C1 requireSession·좌석·권리(074/074a), 영구 파일 rights_expiry는 30일로 넣었으나 plan 출처·subscription_ends_at clamp는 074, Vercel은 TRUSTED_PROXY_HOPS=1 설정 필요, 로컬 Supabase 통합 시나리오 S1~S11 미실행. Rust 041과 합의: 서명 입력 접두 "arch-license-v1
-"+payload 바이트, rights_expiry 5키; 042·규칙 팩은 다른 접두 사용
-- 005 완료(독립 보안 리뷰 🟡 3건 수정, Rust 통합 테스트 Linux 통과). 005 후속: BroadcastChannel 토큰 전달(072 httpOnly 쿠키로 대체·클라이언트 차단 검토), tauri-plugin-single-instance(008), 실제 Windows 키체인 사람 확인. 046 완료(독립 보안 리뷰 🟡 로컬 수정 반영: 트레이스백 로그 가리기·수치/길이 상한·JWKS 주기 갱신). 046 후속: 잡 토큰 run_id·job_id 바인딩(047과 함께), LLM 출력 모델/최종 결과 모델 분리(engine_value 숫자), packages/domain zod에 안전 정수(.safe()) 상한 추가(Floor.level·Road.edge_index·pending_changes; 코퍼스에 zod:accept로 고정됨), env에 AI_TOKEN_JWKS_REFRESH_S 추가, zod에 intake·review·layout 결과 스키마 없음(pydantic만 PENDING_ZOD), 루트 pnpm test·CI api.yml 연결, jti/실행 저장소 메모리→공유, .env.example에 AI_TOKEN_JWKS_URL·AI_TOKEN_JWKS·AI_API_MAX_BODY_BYTES·AI_TOKEN_LEEWAY_S 추가 필요.
-- 057 후속(축소 범위로 완료): 375px에서 비교 표 3번째 열 잘림(수정 필요), 법무 확정 필요 항목은 content/legal/legal.ts의 "[확정 필요]", 가격은 pricing/page.tsx PRICE_NOTE·랜딩 #preorder·FAQ 자리, 푸터 회사명(D-1)·사전예약 문의 채널(contact.tsx CONTACT_EMAIL=null), 웹 스튜디오·다운로드 버튼은 '준비 중'(PendingButton, 071·076 때 교체), sitemap/robots/og 미작성, 3D 교체 지점 components/hero/HeroVisual.tsx·hero-mode.ts, 킬 스위치는 process.env.NEXT_PUBLIC_HERO3D_ENABLED 직접 읽음(publicEnv는 다른 필수 env 때문에 빌드가 막혀 불가). samples 페이지의 '얼리버드' 문구 제거·금지어 추가
-- 022 완료(글꼴 Noto Sans KR 11,172자 서브셋 2.7MB·SVG 골든 25건 갱신·resvg-js PNG·골든 3건). 후속: (1) AR-06-080은 resvg-js 2.6.2가 내장한 **resvg 0.34.0(zimond 포크 rev 3495d870, tiny-skia 0.10.0, fontdb 0.14.1)** 와 같은 결과를 내야 함 — 업스트림 Rust 크레이트와 포크 차이가 픽셀에 영향 주는지 080 착수 때 먼저 검증(골든 golden/png-* input.svg·expected.png 재사용). (2) 번들 글꼴 OFL 예약 이름(RFN) 판단은 법무 확인 필요(법률 자문 아님). (3) manifold-3d(geometry)가 sharp·@img/sharp-libvips(LGPL-3.0)를 전이 설치 중 — PNG 경로와 무관하나 058·배포 때 고지·제거 검토. (4) 샘플(/samples)에 SVG·PDF 추가는 글꼴 확정으로 이제 가능(033 후속, 샘플 재생성 시 font-family 변경). (5) 설치형 데스크톱은 080 전까지 PNG 없음(SVG·PDF·DXF만)
-- 007 완료(packages/features/src/api-client, 테스트 30건). 047 확정 필요: 402 entitled=false envelope code(현재 합성 코드 entitled_false), Idempotency-Key 헤더 수용 여부(04장은 본문 request_id), 03장 5.2절에 없는 오류 문구(AR044·AR045·CR001·AI002 등) UX 확인. 008은 getAccessToken을 shell-bridge에서 주입(예시는 tasks/logs/AR-06-007.md)
-- 070 완료(어댑터 5종·capabilities·계약 하네스·린트 규칙, shell-bridge 64건). 후속: 설치형 EntitlementClient는 실패 닫힘(view_export만 허용, 041·074 근거 연결 전 화면 연결 금지), useCapabilities 훅은 features/ui에서 Context로, 린트 우회 가능 패턴(템플릿 리터럴·includes·별칭)은 리뷰에서 확인, 072는 createPlatformAdapters 웹 기본값 교체·assertImportSize 선행·AR041→VERSION_CONFLICT 매핑
-- 041·047 병합됨(상태=진행, 독립 보안 리뷰 중). 041: cargo 전체 98건 통과, 교차 벡터 18건 Node=Rust 일치, 운영 공개키 슬롯 비어 있음(keys/mod.rs LICENSE_KEYS, 모든 파일 unknown_kid=실패 닫힘), Windows/macOS 기기 ID 읽기는 Windows CI 확인 필요, ARCH_BUILD_DATE 릴리스 빌드 주입 필요, 042와 합의: 규칙 팩 접두 "arch-rulepack-v1\n"·매니페스트 {manifest,sig,kid}. 047: 웹 179건·api pytest 통과, 046 후속(run·job 바인딩) 해결, 미해결: ai-settle 규약 없음(501 — 워커 정산 크론이 5분마다 오류), 단가 review 15·walkthrough 40 미확정, 04_API.md에 run·job 클레임·RUN_MISMATCH·ctx 헤더·ai-token 응답 반영 필요, 워커 job-token.ts가 data.token 읽도록 수정 필요, 통합 시나리오 10개 미실행, 레이트리밋 메모리(운영 전 교체)
-- 047 완료(독립 보안 리뷰 🟡 5건 수정: ctx 헤더·UUID 정규형·상담 녹음 50MB·web_edit 주입 지점·거짓 경보 제거). 운영 투입 전: 레이트리밋 메모리→공유(040과 함께), 업로드 소비 경로의 크기·MIME·매직바이트·sha256 재검사를 렌더·제안서·cloud-projects Route Handler 완료 조건으로, consult_audio 경로를 코어 voice 규약에 맞추거나 고아 정리 크론, arch-user 버킷 MIME 허용 목록(마이그레이션), start_ai_run 멱등 키 kind 비교(DB), ai-settle 규약 확정(현재 501), AR040 사전 검사는 074에서, start_ai_run 호출마다 실행 테이블 4개 조회 추가(비용 걱정 시 제거 가능)
-- 008 완료(독립 보안 리뷰 🟠 safeNextPath open redirect·🟡 dev 노출·bootstrap 재검사·판정 함수 import 제한·next.config 빌드 가드 수정). Mock 로그인은 이제 `next dev -H 127.0.0.1`에서만 열림(next start 불가, E2E는 next dev -p 3123). 후속: 약관 동의 저장·서버 강제(DB 테이블·RPC, 공개 베타 전 필수), 쿠키 HttpOnly(T-9), finish 레이트리밋 공유 저장소, /login Mock 패널은 전달 헤더가 있어도 화면에 보임(headers() 검사), 루트 layout Mock 띠, 통합 시나리오 I1~I12 미실행, 데스크톱 login 연결은 004b 앱 셸 작업에서, 062는 login/page.tsx 제공자 버튼 자리·/auth/callback·unsupportedTermsStore 교체에서 이어받음
-- 041 완료(독립 보안 리뷰 🟠 Windows reg.exe 하이재킹→RegGetValueW 직접 호출, 🟡 시계 잠금 복구·build_eligible 강제·판정 봉인·키체인 실패 처리 수정, cargo 112건). **운영 전 필수**: 릴리스 빌드는 ARCH_BUILD_DATE=YYYY-MM-DD 없으면 컴파일 실패(058 릴리스 파이프라인이 주입), Windows CI에서 RegGetValueW 실기 확인(Linux에서는 타입검사·clippy만; windows-msvc/gnu·aarch64-darwin 최소 크레이트 clippy 통과), 규칙 팩 롤백·회수 방어(042), 화면 안내 문구(build_eligible=false·기록 없음 expired), 운영 공개키 주입(keys/mod.rs LICENSE_KEYS, 사람)
-- 069 완료(apps/web/src/components/marketing 8종, 테스트 89건; StepRail은 03장 7.7절이 DualTimeline으로 흡수해 제외). 후속: 057 랜딩 비교 표(375px 3열 잘림)를 ContrastPair로 교체(057 소유라 미적용), 판정표·ProofLink·Callout은 AR-F-039·040(065)에서 사용, 도입 단계 '탭'은 호출 쪽이 packages/ui Tabs로 감쌈, 768px 판정표 렌더 미확인, 웹 빌드는 마지막 클래스 수정 후 재확인 필요
-- 026 완료(packages/layout + drafting floor_plan, 골든 5건, 경계 이동 p95 0.9ms). 문서와 다름/후속: AR051 kind에 opening·invalid 추가·창 레이어 A-GLAZ, 벽 두께는 DesignModel·DraftingProfile에 칸 없어 상수(외벽200·내벽100)·인자, 실↔목표 연결 키 없어 이름 완전 일치, 문 swing 의미 미정의(왼손 경첩·실 안쪽 열림으로 가정), 직각 아닌 외벽 모서리 마이터 없음, 04_API 4.7.5 정정 필요. 027 편집기가 쓸 API: createLayoutState/moveBoundary/validateLayoutResult. 029 완료(packages/io dxf-import, 테스트 56건·퍼징 7,800건·20MB 약 1.4초): 팀장 확인 필요 — 단위 집합 mm|cm|m|in|ft 확장, '조용한 추정 금지'를 range_heuristic+needs_confirmation(화면이 확인 대화상자를 반드시 표시)로 해석, 결과 형식 status:needs_unit, 파싱 실패 코드 DXF_* → AR062 정식화 제안, CP949 한글 레이어명 깨짐, 구멍·분기 선분 후보 없음. 035 대지 화면이 importDxf 사용, drafting.handlers.ts import_dxf 연결은 후속
-- 004b 앱 셸 통합 완료(작업 표 밖 보강, apps/desktop+packages/features/shell·demo·scripts/shot): 화면 작성 규약은 packages/features/README.md(feature 폴더 ↔ AR 작업 표), 훅 useAdapters·useCapabilities·useEntitlement·useSession·useApi·useEngine·useProject, 데모 모드 VITE_DEMO_MODE=1(릴리스 번들 0 검사 `pnpm --filter ./apps/desktop check:release`는 build 후), 스크린샷 `node scripts/shot/shot.mjs --out <폴더>`. 미해결: packages/ui 부족 컴포넌트(Icon menu/folder/message-square/settings/chevron-left/search, 왼쪽 서랍, 레일 툴팁, 링크형 내비 탭, PageHeader·LockedState·LoadingState는 features/shell 임시), EntitlementStatus에 업데이트 기한 필드 없음(074·044), 로그인 없는 영구 PC 가드(041 연결 때), 온보딩 저장 미연결(약관 RPC 등), 앱 재시작 시 finish 재호출, 엔진 프로토콜 타입이 apps/desktop에 있음(패키지로 이동 필요), 명령 팔레트·알림·새로 만들기 비활성, 데스크톱 desktop에 @tailwindcss/postcss·tailwindcss 4.3.3 devDeps 추가(web과 같은 버전). 080 병합됨(상태=진행, cargo·보안 리뷰 전): 업스트림 resvg 0.34.0+usvg 0.34.1+png 0.17.5 조합이 resvg-js 포크 골든과 바이트 동일(Linux x86_64), Windows·macOS 실기 확인 필요
-- 037 완료(packages/features/src/judgment, features 테스트 107건, 개발 전용 라우트 /dev/judgment는 릴리스 번들 0). 036이 쓸 시그니처: useJudgment({model,modelRev,pendingChanges?,enabled?}), <JudgmentPanel phase data errorCode onRetry hasMass massIds onHighlight fallback onShowRevisions onExtendUpdates revisionCheck .../>(import ../judgment/index.ts). 미해결: 판정 항목↔매스 id 대응은 rules가 내보내야 함(지금은 호출 쪽 massIds 전체), 폴백 배너 데이터는 044가 연결, 30일 '개정 확인 필요' 배너 문구는 제안(03장 미확정), 판정 reason 문구 표를 features에 복제(rules REASON_MESSAGES와 동기), 앱에 규칙 팩 공급(load_rule_pack/RulePackProvider) 없음 → 실제 엔진 연결 미확인, ui에 Accordion·중립 판정 배지·패널 폭 토큰 없음
-- **재개 안내(세션 종료 시점 상태)**: 병합·push 완료분 = 85개 중 39개 완료. **진행 중이던 작업의 중간 백업(미검증·병합 금지)은 origin의 wip/ 브랜치에 있다: `wip/ar-06-036-spike`(spikes/modeler-perf), `wip/ar-06-035`, `wip/ar-06-034`, `wip/ar-06-031` — 재개 시 해당 브랜치를 기반으로 이어서 마무리하고(린트·타입·테스트·스크린샷 확인·보안 리뷰) 메인 브랜치에 병합한다. 080 보안 리뷰는 읽기 전용이라 백업 없음(처음부터 재실행). 진행 중이던 5개는**: (1) 036 모델러 성능 스파이크(spikes/modeler-perf, R3F+Manifold, 실기 측정 하니스 포함; 결과는 tasks/logs/AR-06-036.md [DECISION]) (2) 035 대지 화면·VWorld 중계 (3) 034 프로젝트 목록·버전·클라우드 사본 API (4) 031 설정(표제란·레이어 매핑·일반) (5) 080 설치형 PNG 독립 보안 리뷰(읽기 전용; 080은 병합됨·상태=진행). 다음 순서: 036 본구현(스파이크 결과 반영, 최우선) → 028·039·056, 027(026 완료됨), 030(080 완료 후), 038(042 필요)·044(043 필요), 이후 결제 043·배포 042·058, DB 073→074→074a·074b→075. 사람 확인 대기: 규칙 팩 법규 수치, 번들 글꼴 OFL RFN 법무 확인, 서명 키 규격 C-3·운영 공개키, 법적 고지 초안 법무 검토, 가격(D-2·D-4), PC 실기 측정(3D 뷰포트 fps), .env.example에 환경 변수 추가(AI_TOKEN_JWKS_URL 등 5개)
-- 후속(작업 표 '발견한 문제'): reconcile refunded 전이 마이그레이션, CI 신설(S-7, test:rls·db:check 포함), ADR-001·071/072 문서 정정, 내부 API 경로·타임아웃(047), design-preview 랜딩 덮어쓰기 결함
-- 테스트 상태: pnpm -r lint·typecheck·test 통과, RLS 129+9, db check 6/6
+- 갱신: 2026-11-02. 85개 중 완료 51(050 포함). 이전 스냅샷 전문은 git 이력(5237e18 이전 tasks/NOW.md)과 tasks/logs/AR-06-NNN.md.
+- 방금 완료: 050 RAG 색인·평가셋·위키 설정(예시 데이터 선구현, main 병합). 사람 확정 대기: 위키 제안값(ingest 10분·lint 7일·크레딧 상한 200/100·stale 365일).
 
+## 병합 대기 (PR CI 확인 필요 — 비공개 저장소+gh 없음 → 사람이 PR 생성·CI 결과 전달)
+- `feat/ar-06-073`(클라우드 blob·RLS): db 잡 test:rls 통과 → main 병합이 다음 모든 병합의 선행.
+- `feat/ar-06-072`(799df22, 웹 어댑터, 리뷰 🟠2 반영) · `feat/ar-06-049`(d167753, AI 라우팅, 보안 리뷰 🟠2 반영, SQL 미실행·강등 테스트 `returning 1` 집계 CI 확인) → 073 뒤 병합.
+- `feat/ar-06-086`(annotations, ACCEPT) 독립 병합. `feat/ar-06-032`(제안서 PDF) R-A5 전 보류.
+- 병합 후: 071 착수(결정 tasks/logs/AR-06-071.md, 서버에 GET /api/cloud-projects/{id}/blob·/api/entitlement 라우트 먼저 필요).
 
-## 갱신 (031·034·035·080 완료)
-- 완료: 031, 034, 035, 080(보안 리뷰 반영 병합). 036 스파이크 병합, 본 구현 진행 중(worktree 에이전트).
-- 운영 전 차단 추가: 080 래스터화는 시간 초과 후에도 작업이 계속됨(sidecar 프로세스 전환 후속), 031 DB(RPC 직접 호출·로고 버킷), 035 F1 제공자 쿼터, 034→073 계약(upload-url 폴더 키), 공용 레이트리밋 저장소.
-- 실기 필요: 036 GPU fps 측정(spikes/modeler-perf/README.md).
-- 다음: 036 본 구현 병합 → 030(080 완료로 해제), 028, 039, 056, 027.
+## 다음 후보 (선행 끝난 대기)
+- 043 결제(R-A1·가격 미정으로 사용자가 미룸), 071(073·072 병합 뒤), 077·078(072·073 뒤), 051·054(050 완료로 일부 해제, 047·048 완료 확인).
+- 사람 판정 대기: D-14(VWorld·국가법령정보 이용 조건), 규칙 팩 법규 수치, 서명 키 규격 C-3·운영 공개키, OFL RFN 법무, 가격 D-2·D-4, 실기 GPU fps(036·085), 038 규칙 세트 정본, 039 IFC 뷰어 점검, 056 2단계 6건·032 7건.
 
-## 갱신 (036 완료)
-- 036 본 구현 병합·완료. 사람 몫: 실기 GPU fps 측정. 결정 필요: 02_ARCHITECTURE 2.4절·04_API 4.7.5절에 mesh/preview 레인·mass_meshes/mass_excess op 추가(제안 문안은 tasks/logs/AR-06-036.md).
-- 높음: 앱에 규칙 팩 공급 경로 없음 → 판정·엔벨로프가 AR050으로 끝남(042/RulePackProvider 필요). 037 문구에서 AR050이 원인과 다르게 읽힘 → 오류 코드 세분화 필요.
+## 운영 전 차단(누적, 상세는 각 로그)
+- 공용 레이트리밋 저장소(040·042·047·008), ai-settle 501(047), 약관 동의 서버 강제(008), 080 래스터화 시간 초과 후 지속, 코어 match_ai_chunks 가드 결함(049 후속), 058b 서명·릴리스(인증서 대기).
 
-## 갱신 (027·028·030·042 완료)
-- 완료 추가: 027, 028, 030, 042(보안 리뷰 반영 병합). 데모에서는 개발용 규칙 팩으로 판정·엔벨로프·매스 제안 동작.
-- 042 운영 전 차단: 공유 레이트리밋/URL 캐시, 릴리스 CI 공개키 유효성, CSP connect-src+라이선스 파일 전달+동기화 호출 연결(설치형 팩 공급 완성), Tauri 업데이터, DB 버전 CHECK 정준형 후속 마이그레이션, 로컬 Supabase 통합 시나리오.
-- 사람 판정: 운영 공개키 주입(ARCH_LICENSE_PUBKEYS·ARCH_RULEPACK_PUBKEYS), 서명키 규격 C-3.
-
-## 갱신 (2026-11-01, 038 진척·039 착수)
-- 038 커밋(6d7bb02, push 전): 답 수정→잠금 제외 재계산, 개발용 규칙 세트(데모 전용). 상태=진행 유지 — 남음: 3구간 캡처(Playwright 의존성 결정), 운영 ProgramRuleSet·질문 형식 정본 결정, check:release에 개발용 규칙 세트 표식.
-- 039 착수: AR-02-D2 확인값 rhino3dm 8.35.0 MIT · web-ifc 0.0.78 MPL-2.0 · three 0.187.0 MIT(npm). challenger 검토 중.
-- Codex 사용량 한도(재개 2026-11-04 17:54) → 리뷰는 reviewer(Opus)로 대체.
-- 작업 표: 85개 중 완료 49 · 진행 1(038) · 대기 35.
-- 039 코드 완료(로컬 커밋, push 전): glTF·IFC4 자체 작성기(바이트 결정적), .3dm 내보내기·가져오기 후보(rhino3dm 8.35.0, `@arch-studio/io/rhino` 서브경로, 의미 골든 — rhino3dm이 id·시각 고정 불가). 남음: 무료 IFC 뷰어 수동 점검(사람), 앱 연결 시 .3dm 가져오기 워커+terminate+메모리 상한, 058에 THIRD_PARTY_NOTICES(rhino3dm MIT·openNURBS·Draco Apache NOTICE·zlib). 상한 제안값 20MB·객체 1만·꼭짓점 200만·면 400만·메모리 512MB.
-
-## 갱신 (2026-11-02 재개)
-- 완료·push: 056 0·1단계(fa93a40)·3단계 화면(48ee3c8, 설치형은 어댑터 없어 '지원 안 함'), .env.example 렌더 2줄 + .claude/settings.json 읽기 차단을 .env.example만 예외(2cbeb8a). 작업 표 039·056=진행.
-- 032 제안서 PDF: feat/ar-06-032 브랜치(ed5c08b·8a13cd3) push, R-A5(공용 WeasyPrint app_id arch) 전 main 병합 보류.
-- 진행 중: 새 프로젝트 창 대지 조회(사용자 추가 요청, 작업 표 밖) — 조회 버튼·용도지역·가로세로(최소 회전 직사각형)·경계 SVG(배경 지도는 D-14 뒤), 데모 예시 대지. builder 작업 중(미커밋).
-- 사람 결정 대기: 056 2단계 6건·032 7건(tasks/logs), 038 규칙 세트 정본, 039 IFC 뷰어 수동 점검, D-14(VWorld 이용 조건).
-
-## 갱신 (2026-11-02, 085 완료)
-- 085 완료: 표시 절(조명·그림자·재질·층 라벨·층 탭·분해도), 표시 값은 localStorage(층 숨김은 세션만), 분해도 중 측정 D 막음. reviewer(code) ACCEPT, 🟠1·🟡2 반영.
-- 085 후속: 실기 GPU 60fps 측정(사람), 그림자 지도 2048→저사양 1024 여부, scripts/shot은 playwright 없어 실행 불가(대체 캡처 사용), 03장 3.5절 '레이어/표시' 위치 정정(레이어 토글은 왼쪽 목록).
-- 043은 R-A1·가격 미정으로 미룸(사용자 선택). 다음 후보: 086(높음·challenger), 073(높음, 072·074·077 해제), 043.
-
-## 갱신 (2026-11-02, 보안 L2 확정 후 병렬 3작업 착수)
-- 보안 레벨 L2 확정·push(2bb18c5). S-1 닫힘.
-- 병렬 진행: A=073(클라우드 blob·RLS·expected_version), B=086(annotations[]), C=058+S-7(CI·SBOM·OSV·cargo audit; 서명·릴리스 실행은 인증서 대기로 뼈대만). 단계: challenger 3명 검토 중 → builder(worktree) → reviewer(Codex 한도 11-04까지 → reviewer 대체).
-- 환경: python은 PATH 없음 → `PATH="$HOME/AppData/Local/Programs/Python/Python312:$PATH"`로 nomad 도구 실행.
-
-## 갱신 (2026-11-02, 058a 병합·073/086 PR 대기)
-- main push(f7b37c7): 058a CI(web·api·db·desktop-build·guard·supply-chain) 병합 → 첫 CI 실행 확인 필요(db `supabase start -x`, frontendDist, Windows Rust). envelope 테스트 CRLF 수정.
-- 073 → origin `feat/ar-06-073`, 086 → `feat/ar-06-086` push(main 병합해 둠). **이 PC에 gh 없음 → 초안 PR은 사람이 링크로 생성**. PR CI(특히 073 db 잡 test:rls) 통과 후 main 병합.
-- 086 리뷰 ACCEPT(🟡5 후속), 073 리뷰 🔴0 반영. 결정·후속은 tasks/logs/AR-06-073·086·058.md.
-- 이 PC 환경: docker·pnpm·cargo·gh·python(PATH) 없음. pnpm은 `npx -y pnpm@10`, python은 `~/AppData/Local/Programs/Python/Python312`.
-- 다음 후보: 072(073 뒤), 049, 050, 071(문서 정정 먼저), 058b(인증서 대기).
-
-## 갱신 (2026-11-02, 049·071·072 진행)
-- D-071a 문서 정정 완료·push(0132a03). 071 결정 1~11 기록(tasks/logs/AR-06-071.md): 071은 072 병합 뒤 착수, 팝업 OAuth, 메모리 Bearer 재로그인 수용, Vercel, CORS 스튜디오1+설치형.
-- 049: 결정 8항(국외 제공자 0, 공개 표식 컬렉션, 강제 14행 마이그레이션화). 구현 커밋(워크트리) → 073 병합·마이그레이션 `20261102000002`로 변경 중. 리뷰 전.
-- 072: 구현 완료(shell-bridge 118건), 리뷰 REVISE 🔴0 🟠2(캐시 principal·로그아웃 epoch) 반영 중. 서버에 GET /api/cloud-projects/{id}/blob·/api/entitlement 없음 → 071 전에 apps/web 라우트 신설 필요(작업 표 밖, 073 후속으로 기록).
-- 병합 순서: 073(PR CI db 잡) → 072·049(073 기반) → 071. 086은 독립.
-
-## 갱신 (2026-11-02, 072·049 리뷰 반영 push — 병합은 073 CI 대기)
-- 072: 리뷰 🟠2 반영(캐시 주체 가드·로그아웃 epoch·서명 URL https·본문 상한), shell-bridge 123건·lint·typecheck 통과 → origin `feat/ar-06-072`(799df22).
-- 049: 보안 리뷰(reviewer, Codex 한도) 🔴0 🟠2 🟡3 → 가드 core.is_service_caller()·검색 시 공개 자격 재검사·14행 키 한정·덮어쓰기 주석 반영, convert --check 통과 → origin `feat/ar-06-049`(d167753). SQL 테스트 미실행(docker 없음, 강등 테스트 `returning 1` 집계 CI에서 확인). 후속: 코어 match_ai_chunks 같은 가드 결함, ai_providers 비면 체인 검증 건너뜀.
-- **사람 몫**: 073·086·072·049 PR 생성·CI 결과 확인(비공개 저장소+gh 없음).
-- 다음: 073 CI 통과 → main 병합 → 072·049 병합(README 완료) → 071 착수. 086 독립 병합.
+## 환경 (이 PC)
+- docker·pnpm·gh·python PATH 없음. pnpm은 `npx -y pnpm@10`, nomad 도구는 `PATH="$HOME/AppData/Local/Programs/Python/Python312:$PATH"`.
+- api pytest는 scratchpad venv(세션별) 또는 새로 `pip install -e ".[dev]"`. 워크트리는 pnpm 미설치라 contract/test_zod_equivalence 실패(환경).
+- dev 포트 `next dev -H 127.0.0.1 -p 3123`(3000 예약). bash cargo는 `export PATH="$HOME/.cargo/bin:$PATH"`.
+- Codex 한도 → 2026-11-04 17:54 재개, 그 전 리뷰는 reviewer(Opus). Codex astra 금지.
+- 테스트 상태: main pnpm -r lint·typecheck·test 통과(최근 확인 058a), api 159건(050 워크트리).
