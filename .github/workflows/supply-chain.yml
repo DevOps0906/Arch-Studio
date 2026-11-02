@@ -35,7 +35,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: mkdir -p sbom
-      - run: pnpm sbom --sbom-format cyclonedx --prod > sbom/js.cdx.json
+      # pnpm 10 에는 sbom 명령이 없다 → 루트 devDependency @cyclonedx/cdxgen(lockfile 고정). 설치 스크립트·네트워크 조회 없이 lock 기준.
+      - run: pnpm exec cdxgen -t js -r --required-only --no-install-deps --spec-version 1.5 -o sbom/js.cdx.json .
+        env:
+          CDXGEN_NO_BANNER: "true"
+          FETCH_LICENSE: "false"
+      - run: test -s sbom/js.cdx.json
       - run: rustup toolchain install stable --profile minimal
       - run: cargo install cargo-cyclonedx --version 0.5.9 --locked
       - run: cargo cyclonedx --format json --spec-version 1.5 --override-filename rust.cdx
