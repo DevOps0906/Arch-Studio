@@ -9,7 +9,14 @@ import pytest
 from pydantic import ValidationError
 
 from app.ai.products.arch.ingest import SourceDocument, ingest
-from app.ai.products.arch.knowledge import KnowledgeIndex, SourceMeta, filter_in_force, in_force
+from app.ai.products.arch.knowledge import (
+    KnowledgeIndex,
+    SourceMeta,
+    filter_in_force,
+    from_db_metadata,
+    in_force,
+    to_db_metadata,
+)
 from app.ai.products.arch.knowledge.evaluation import HashingEmbedder
 
 
@@ -24,6 +31,34 @@ def meta(**over: Any) -> SourceMeta:
     }
     base.update(over)
     return SourceMeta(**base)
+
+
+def test_db_metadata_round_trip_omits_none() -> None:
+    m = meta()  # effective_to·jurisdiction·attribution 없음
+    data = to_db_metadata(m)
+    assert None not in data.values()
+    assert data["effective_from"] == "2020-01-01"
+    assert from_db_metadata(data) == m
+    full = meta(effective_to=date(2024, 7, 1), jurisdiction="11680", attribution="예시 표기")
+    assert from_db_metadata(to_db_metadata(full)) == full
+
+
+def test_db_metadata_rejects_extra_and_null() -> None:
+    with pytest.raises(ValidationError):
+        from_db_metadata({**to_db_metadata(meta()), "chunk_index": 0})
+    with pytest.raises(ValidationError):
+        from_db_metadata({**to_db_metadata(meta()), "effective_to": None})
+
+
+def test_production_index_rejects_example_chunks() -> None:
+    old, new = _two_versions()
+    index = KnowledgeIndex(HashingEmbedder())
+    with pytest.raises(ValueError, match="예시"):
+        index.add(ingest([old, new], allow_examples=True))
+    assert len(index) == 0
+    real = SourceDocument(meta=meta(is_example=False), text="제1조 운영 문구")
+    index.add(ingest([real]))
+    assert len(index) == 1
 
 
 def test_half_open_range() -> None:
@@ -78,14 +113,14 @@ def _two_versions() -> list[SourceDocument]:
     ],
 )
 def test_search_returns_only_version_in_force(application_date: date, expected: str) -> None:
-    index = KnowledgeIndex(HashingEmbedder())
+    index = KnowledgeIndex(HashingEmbedder(), allow_examples=True)
     index.add(ingest(_two_versions(), allow_examples=True))
     hits = index.search("정북 방향 이격", application_date=application_date, k=10)
     assert {h.chunk.meta.version_key for h in hits} == {expected}
 
 
 def test_search_before_any_version_is_empty() -> None:
-    index = KnowledgeIndex(HashingEmbedder())
+    index = KnowledgeIndex(HashingEmbedder(), allow_examples=True)
     index.add(ingest(_two_versions(), allow_examples=True))
     assert index.search("정북", application_date=date(2010, 1, 1)) == []
 
@@ -94,14 +129,14 @@ def test_filter_happens_before_top_k() -> None:
     """폐지된 판이 더 비슷해도 top-1 자리를 차지하지 않는다."""
     old = SourceDocument(meta=meta(effective_to=date(2024, 7, 1)), text="주차 주차 주차 주차 기준")
     new = SourceDocument(meta=meta(effective_from=date(2024, 7, 1)), text="완전히 다른 개정 문구")
-    index = KnowledgeIndex(HashingEmbedder())
+    index = KnowledgeIndex(HashingEmbedder(), allow_examples=True)
     index.add(ingest([old, new], allow_examples=True))
     (hit,) = index.search("주차 주차 주차 주차 기준", application_date=date(2025, 1, 1), k=1)
     assert hit.chunk.meta.version_key == "sample-law@2024-07-01"
 
 
 def test_search_is_deterministic() -> None:
-    index = KnowledgeIndex(HashingEmbedder())
+    index = KnowledgeIndex(HashingEmbedder(), allow_examples=True)
     index.add(ingest(_two_versions(), allow_examples=True))
     a = [h.chunk.chunk_id for h in index.search("이격", application_date=date(2025, 1, 1))]
     b = [h.chunk.chunk_id for h in index.search("이격", application_date=date(2025, 1, 1))]

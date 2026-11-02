@@ -5,7 +5,6 @@ from __future__ import annotations
 from app.ai.products.arch.ingest.pipeline import (
     IngestError,
     SourceDocument,
-    build_chunks,
     check_versions,
     chunk_text,
     document_hash,
@@ -16,7 +15,6 @@ from app.ai.products.arch.ingest.pipeline import (
 __all__ = [
     "IngestError",
     "SourceDocument",
-    "build_chunks",
     "check_versions",
     "chunk_text",
     "document_hash",

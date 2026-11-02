@@ -10,7 +10,6 @@ import pytest
 from app.ai.products.arch.ingest import (
     IngestError,
     SourceDocument,
-    build_chunks,
     check_versions,
     chunk_text,
     document_hash,
@@ -65,7 +64,7 @@ def test_chunk_text_bounds_long_article() -> None:
 
 def test_chunks_are_deterministic() -> None:
     doc = _doc("a-law", "2020-01-01")
-    assert build_chunks(doc) == build_chunks(doc)
+    assert ingest([doc], allow_examples=True) == ingest([doc], allow_examples=True)
     assert document_hash(doc) == document_hash(_doc("a-law", "2020-01-01"))
     assert document_hash(doc) != document_hash(_doc("a-law", "2020-01-01", "2021-01-01"))
 
@@ -120,7 +119,7 @@ def test_recall_at_k() -> None:
 def test_wrong_version_counts_as_miss() -> None:
     old = _doc("a-law", "2020-01-01", "2024-01-01")
     new = _doc("a-law", "2024-01-01")
-    index = KnowledgeIndex(HashingEmbedder())
+    index = KnowledgeIndex(HashingEmbedder(), allow_examples=True)
     index.add(ingest([old, new], allow_examples=True))
     case = EvalCase(id="c1", question="예시 본문", application_date=date(2025, 1, 1), expected=["a-law@2020-01-01"])
     report = evaluate(index, EvalSet(is_example=True, note="t", cases=[case]), k=5)
@@ -142,7 +141,7 @@ def test_fixture_eval_set_shape() -> None:
 
 def test_fixture_eval_runs_and_meets_target() -> None:
     """하니스가 끝까지 돌고 결정적인지 확인한다. 예시 코퍼스 + 해시 임베더 수치라 운영 품질 지표가 아니다."""
-    index = KnowledgeIndex(HashingEmbedder())
+    index = KnowledgeIndex(HashingEmbedder(), allow_examples=True)
     index.add(ingest(load_corpus(FIXTURES / "corpus"), allow_examples=True))
     es = EvalSet.model_validate_json((FIXTURES / "eval_set.json").read_bytes())
     first = evaluate(index, es, k=5)

@@ -56,7 +56,7 @@ def main(argv: list[str] | None = None) -> int:
     if eval_set.is_example and not args.allow_examples:
         print(json.dumps({"ok": False, "error": "예시(미확인) 평가셋입니다(--allow-examples)"}, ensure_ascii=False))
         return 1
-    index = KnowledgeIndex(HashingEmbedder())
+    index = KnowledgeIndex(HashingEmbedder(), allow_examples=args.allow_examples)
     index.add(chunks)
     report = evaluate(index, eval_set, k=args.k)
     out = {

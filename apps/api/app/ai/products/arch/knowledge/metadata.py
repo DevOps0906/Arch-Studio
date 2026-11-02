@@ -4,16 +4,17 @@
 적용되지 않음)이고, 없으면 현행이다. 같은 원본(`source_id`)의 판끼리 구간이 겹치면 ingest가 거부한다
 (`app.ai.products.arch.ingest.pipeline.check_versions`).
 
-DB 저장 위치: `ai_chunks.metadata`(jsonb)에 `SourceMeta.model_dump(mode="json")` + `chunk_index`를 넣는다
+DB 저장 위치: `ai_chunks.metadata`(jsonb)에 `to_db_metadata()` 값, 청크 순번은 `ai_chunks.chunk_index` 컬럼
 (core_lite 스키마 그대로, 추가 컬럼 제안은 tasks/logs/AR-06-050.md).
 """
 
 from __future__ import annotations
 
+import json
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import date
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import Field, model_validator
 
@@ -59,6 +60,16 @@ class SourceMeta(Strict):
     @property
     def version_key(self) -> str:
         return f"{self.source_id}@{self.effective_from.isoformat()}"
+
+
+def to_db_metadata(meta: SourceMeta) -> dict[str, Any]:
+    """`ai_chunks.metadata`(jsonb)에 넣을 값. Strict 모델은 명시적 null을 거부하므로 None 키는 뺀다."""
+    return meta.model_dump(mode="json", exclude_none=True)
+
+
+def from_db_metadata(data: Mapping[str, Any]) -> SourceMeta:
+    """`ai_chunks.metadata`를 되읽는다. JSON 모드 strict 검증(날짜 문자열 허용, 형 변환·추가 키 거부)."""
+    return SourceMeta.model_validate_json(json.dumps(dict(data), ensure_ascii=False))
 
 
 class KnowledgeChunk(Strict):

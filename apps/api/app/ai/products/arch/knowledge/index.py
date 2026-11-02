@@ -40,12 +40,18 @@ def _cosine(a: Sequence[float], b: Sequence[float]) -> float:
 
 
 class KnowledgeIndex:
-    def __init__(self, embedder: Embedder) -> None:
+    def __init__(self, embedder: Embedder, *, allow_examples: bool = False) -> None:
+        """`allow_examples=False`(운영 기본)면 예시(미확인) 청크를 거부한다. 테스트·하니스만 True."""
         self._embedder = embedder
+        self._allow_examples = allow_examples
         self._chunks: list[KnowledgeChunk] = []
         self._vectors: dict[str, list[float]] = {}
 
     def add(self, chunks: Sequence[KnowledgeChunk]) -> None:
+        if not self._allow_examples:
+            examples = sorted({c.meta.version_key for c in chunks if c.meta.is_example})
+            if examples:
+                raise ValueError(f"예시(미확인) 청크는 운영 색인에 넣지 않습니다: {', '.join(examples)}")
         new = [c for c in chunks if c.chunk_id not in self._vectors]
         if not new:
             return

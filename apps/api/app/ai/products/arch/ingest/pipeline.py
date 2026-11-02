@@ -72,7 +72,7 @@ def chunk_text(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[str]:
     return out
 
 
-def build_chunks(doc: SourceDocument, max_chars: int = MAX_CHUNK_CHARS) -> list[KnowledgeChunk]:
+def _build_chunks(doc: SourceDocument, max_chars: int = MAX_CHUNK_CHARS) -> list[KnowledgeChunk]:
     chunks: list[KnowledgeChunk] = []
     for i, body in enumerate(chunk_text(doc.text, max_chars)):
         # 제목을 앞에 붙여 조문만으로는 모르는 법령명을 검색에 반영한다.
@@ -115,7 +115,7 @@ def ingest(
     check_versions(docs)
     out: list[KnowledgeChunk] = []
     for d in sorted(docs, key=lambda d: d.meta.version_key):
-        out.extend(build_chunks(d, max_chars))
+        out.extend(_build_chunks(d, max_chars))
     return out
 
 

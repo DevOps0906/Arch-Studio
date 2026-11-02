@@ -118,6 +118,32 @@ def test_lint_wiki_orphans_and_archived() -> None:
     assert [(i.slug, i.code) for i in issues] == [("topics/lonely", "orphan")]
 
 
+def test_naive_datetime_reported_not_raised() -> None:
+    assert "naive_datetime" in run(page(updated_at=datetime(2026, 11, 1)))
+    naive_docs = {DOC: datetime(2026, 10, 1)}
+    issues = lint_page(page(), today=TODAY, known_slugs={"concepts/floor-count"}, document_updated_at=naive_docs)
+    assert codes(issues) == {"naive_datetime"}
+
+
+def test_source_heading_inside_code_fence_ignored() -> None:
+    body = GOOD_BODY.replace("## 출처\n", "## 출처 예시\n```md\n## 출처\n- 가짜 (확인일: 2026-10-30)\n```\n")
+    assert "missing_source" in run(page(body_md=body))
+    tilde = GOOD_BODY.replace("## 관련\n", "~~~\n## 관련\n~~~\n")
+    assert "missing_related" in run(page(body_md=tilde))
+
+
+def test_indented_sub_items_are_not_sources() -> None:
+    body = GOOD_BODY.replace("(확인일: 2026-10-30)\n", "(확인일: 2026-10-30)\n  - 해당 조문 발췌 설명\n")
+    assert run(page(body_md=body)) == set()
+
+
+def test_each_source_on_one_line_needs_own_date() -> None:
+    both = GOOD_BODY.replace("(확인일: 2026-10-30)", "(확인일: 2026-10-30); 건축법 해설집 (확인일: 2026-10-29)")
+    assert run(page(body_md=both)) == set()
+    one = GOOD_BODY.replace("(확인일: 2026-10-30)", "(확인일: 2026-10-30); 건축법 해설집")
+    assert run(page(body_md=one)) == {"missing_confirmed_date"}
+
+
 def test_config_defaults() -> None:
     assert DEFAULT_CONFIG.features == {"ingest": "wiki.ingest", "query": "wiki.query", "lint": "wiki.lint"}
     assert DEFAULT_CONFIG.max_pages_per_document == 5

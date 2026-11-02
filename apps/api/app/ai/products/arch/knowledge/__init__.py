@@ -15,7 +15,9 @@ from app.ai.products.arch.knowledge.metadata import (
     KnowledgeKind,
     SourceMeta,
     filter_in_force,
+    from_db_metadata,
     in_force,
+    to_db_metadata,
 )
 
 __all__ = [
@@ -28,5 +30,7 @@ __all__ = [
     "ScoredChunk",
     "SourceMeta",
     "filter_in_force",
+    "from_db_metadata",
     "in_force",
+    "to_db_metadata",
 ]

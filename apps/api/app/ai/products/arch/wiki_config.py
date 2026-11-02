@@ -6,6 +6,8 @@ ingest·query·lint의 LLM 호출은 라우팅 feature(`wiki.*`)가 모델을 �
 
 페이지 본문 규칙: `## 출처` 절의 목록 항목마다 `확인일: YYYY-MM-DD`를 적는다.
 예) `- 건축법 시행령 제NN조, 국가법령정보센터 (확인일: 2026-10-30)`
+한 항목에 출처가 여럿이면 `;`로 나누고 각각 확인일을 적는다. 출처 항목은 최상위 목록만(들여쓴 하위 목록은 설명),
+코드 펜스(``` 또는 ~~~) 안의 줄은 제목·항목으로 보지 않는다. 시각 값은 시간대가 있어야 한다(naive면 lint 오류).
 """
 
 from __future__ import annotations
@@ -24,7 +26,8 @@ SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$")
 LINK_RE = re.compile(r"\[\[([^\]\n]+)\]\]")
 CONFIRMED_RE = re.compile(r"확인일:\s*(\d{4}-\d{2}-\d{2})")
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
-_ITEM_RE = re.compile(r"^\s*[-*]\s+\S")
+_ITEM_RE = re.compile(r"^[-*]\s+\S")
+_FENCE_RE = re.compile(r"^\s*(```|~~~)")
 
 
 @dataclass(frozen=True)
@@ -71,7 +74,16 @@ class LintIssue:
 def _sections(body: str) -> dict[str, list[str]]:
     out: dict[str, list[str]] = {}
     current: str | None = None
+    fence: str | None = None
     for line in body.splitlines():
+        fm = _FENCE_RE.match(line)
+        if fence is not None:
+            if fm and fm.group(1) == fence:
+                fence = None
+            continue
+        if fm:
+            fence = fm.group(1)
+            continue
         m = _HEADING_RE.match(line)
         if m and len(m.group(1)) == 2:
             current = m.group(2)
@@ -89,6 +101,10 @@ def _summary(body: str) -> str:
             continue
         return "" if s.startswith("#") else s
     return ""
+
+
+def _aware(value: datetime) -> bool:
+    return value.tzinfo is not None and value.utcoffset() is not None
 
 
 def lint_page(
@@ -113,7 +129,8 @@ def lint_page(
     items = [ln.strip() for ln in sections.get(config.source_section, []) if _ITEM_RE.match(ln)]
     if not items:
         add("missing_source", "error", f"'## {config.source_section}' 절에 출처 항목이 없습니다")
-    for item in items:
+    sources = [part.strip() for item in items for part in item.lstrip("-* ").split(";") if part.strip()]
+    for item in sources:
         m = CONFIRMED_RE.search(item)
         if m is None:
             add("missing_confirmed_date", "error", f"출처에 확인일이 없습니다: {item}")
@@ -130,13 +147,18 @@ def lint_page(
         if config.require_attribution and "표기:" not in item:
             add("missing_attribution", "error", f"출처 표기 문구가 없습니다: {item}")
 
+    page_aware = _aware(page.updated_at)
+    if not page_aware:
+        add("naive_datetime", "error", "페이지 updated_at에 시간대가 없습니다")
     if not page.source_document_ids:
         add("missing_source_documents", "error", "source_document_ids가 비었습니다")
     for doc_id in page.source_document_ids:
         updated = document_updated_at.get(doc_id)
         if updated is None:
             add("unknown_source_document", "error", f"근거 문서를 찾을 수 없습니다: {doc_id}")
-        elif updated > page.updated_at:
+        elif not _aware(updated):
+            add("naive_datetime", "error", f"근거 문서 updated_at에 시간대가 없습니다: {doc_id}")
+        elif page_aware and updated > page.updated_at:
             add("stale_source", "warn", f"근거 문서가 페이지보다 새롭습니다: {doc_id}")
 
     if config.related_section not in sections:
