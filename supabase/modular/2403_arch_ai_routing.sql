@@ -15,6 +15,13 @@
 -- 1. AI·음성 기능별 라우팅 기본값 14행 (2400 14절 seed 블록과 같은 값)
 -- =====================================================================
 -- 의도: do update 는 운영에서 손댄 기본 행(mode·chain·force)을 이 파일 값으로 되돌린다. 이 14행은 마이그레이션이 정본이다(조정은 org 행 또는 새 마이그레이션).
+-- 선행 행: app_id 'arch' 외래키. 모놀리스는 apps 행이 seed.sql 에만 있어(2400 은 @modular-only) 새 DB 의 db reset 이
+-- 이 insert 에서 23503 으로 실패했다. 없을 때만 넣는다(seed 의 do update 가 이름·상태를 정본으로 덮는다).
+-- schema_name: 모듈형은 arch 스키마, 모놀리스는 public(arch 스키마 없음).
+insert into core.apps (id, name, schema_name, signup_policy, status)
+values ('arch', 'Arch Studio', case when to_regnamespace('arch') is not null then 'arch' else 'public' end, 'open', 'beta')
+on conflict (id) do nothing;
+
 insert into core.ai_routing_settings (org_id, app_id, feature, kind, mode, chain, force_open_source) values
   (null, 'arch', 'arch.review',             'llm',       'auto',        '[{"provider":"anthropic","model":"*"},{"provider":"openai","model":"*"},{"provider":"google","model":"*"},{"provider":"oss-llm","model":"*"}]', false),
   (null, 'arch', 'arch.intake',             'llm',       'auto',        '[{"provider":"anthropic","model":"*"},{"provider":"openai","model":"*"},{"provider":"oss-llm","model":"*"}]', false),
