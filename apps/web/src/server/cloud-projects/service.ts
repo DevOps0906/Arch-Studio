@@ -31,7 +31,15 @@ export interface SaveCloudProjectArgs {
   name: string;
   storagePath: string;
   expectedVersion: number;
+  /** 세션 사용자(service_role RPC가 멤버십을 다시 확인한다). */
+  actorId: string;
+  /** 서버가 업로드 객체 메타로 잰 크기(클라이언트 값 아님). */
+  blobBytes: number;
+  schemaVersion: number;
 }
+
+/** 서버가 정하는 DesignModel schema_version(클라이언트 값 신뢰 0). 모델 버전이 오르면 여기와 파서를 함께 바꾼다. */
+export const CLOUD_SCHEMA_VERSION = 1;
 
 /**
  * 사용자 JWT 저장소(RLS). AR-06-073이 구현한다: list = SELECT arch.cloud_projects(조직 updated_at desc, 커서),
@@ -43,11 +51,15 @@ export interface CloudProjectRepo {
   usage(orgId: string): Promise<{ count: number; max: number; retentionUntil: string | null }>;
   find(orgId: string, projectUuid: string): Promise<{ version: number } | null>;
   save(args: SaveCloudProjectArgs): Promise<{ project_uuid: string; version: number }>;
+  /** arch.delete_cloud_project(service_role). 없거나 다른 조직이면 CloudDbError(not_found), 버전이 다르면 AR041. */
+  remove(orgId: string, actorId: string, projectUuid: string, expectedVersion: number | null): Promise<{ version: number }>;
 }
 
 /** 업로드 객체 재검사(04_API 2.1 "업로드 객체 재검사"). 없으면 null. service_role Storage(073 구현). */
 export interface SnapshotInspector {
   inspect(path: string): Promise<{ bytes: number } | null>;
+  /** 프로젝트 폴더(<org>/arch/project_snapshot/<project_uuid>/)의 객체를 모두 지운다. 실패하면 던진다. */
+  purge(orgId: string, projectUuid: string): Promise<void>;
 }
 
 export type WebEditDecision = "allowed" | "fallback" | "denied";
@@ -172,9 +184,9 @@ export async function handleListCloudProjects(req: Request, deps: CloudDeps): Pr
   }
 }
 
-/** 업로드 경로의 프로젝트 폴더(로컬에서 올린 사본은 local_id, 웹 프로젝트는 project_uuid). */
-export function snapshotFolder(input: { project_uuid: string; local_id?: string | undefined }): string {
-  return input.local_id ?? input.project_uuid;
+/** 업로드 경로의 프로젝트 폴더 = project_uuid 하나(05_DATA_MODEL 2.9절). local_id는 폴더 키가 아니다. */
+export function snapshotFolder(input: { project_uuid: string }): string {
+  return input.project_uuid;
 }
 
 /** 경로 검사: 서버 형식(uploads/policy) + 첫 폴더 = 세션 조직 + 프로젝트 폴더 일치. */
@@ -218,6 +230,9 @@ export async function handleSaveCloudProject(req: Request, deps: CloudDeps): Pro
           name: input.name,
           storagePath: input.storage_path,
           expectedVersion: input.expected_version,
+          actorId: session.userId,
+          blobBytes: object.bytes,
+          schemaVersion: CLOUD_SCHEMA_VERSION,
         }),
       );
     } catch (e) {
@@ -272,6 +287,51 @@ export async function handleCloudUploadUrl(req: Request, id: string, deps: Cloud
     return await deps.signUpload(forwarded);
   } catch (error) {
     cloudLog.warn("cloud_projects.upload_url_rejected", { route: "cloud_projects_upload_url", code: codeOf(error) });
+    return toCloudResponse(error);
+  }
+}
+
+const EXPECTED_VERSION = /^[0-9]{1,10}$/;
+
+/**
+ * DELETE /api/cloud-projects/{project_uuid}[?expected_version=n] (결정 9). 순서: 인증 → 입력 → 레이트 → member+ → RPC(조직·멤버십·버전 확인, 감사)
+ * → Storage 폴더 정리. 정리 실패는 사용자에게 실패로 알리지 않고(행은 이미 지워졌다) project_uuid만 로그에 남긴다(고아 목록, 본문·경로 0).
+ * 엔타이틀먼트는 보지 않는다: 만료 조직도 자기 사본을 지울 수 있다(데이터 정리 경로).
+ */
+export async function handleDeleteCloudProject(req: Request, id: string, deps: CloudDeps): Promise<Response> {
+  try {
+    const session = await deps.session.resolve(req);
+    if (!UUID_RE.test(id)) throw new CloudApiError("invalid_input");
+    const url = new URL(req.url);
+    for (const key of url.searchParams.keys()) if (key !== "expected_version") throw new CloudApiError("invalid_input");
+    const rawExpected = url.searchParams.get("expected_version");
+    let expected: number | null = null;
+    if (rawExpected !== null) {
+      if (!EXPECTED_VERSION.test(rawExpected) || Number(rawExpected) > 2_147_483_647) throw new CloudApiError("invalid_input");
+      expected = Number(rawExpected);
+    }
+    await limit(deps, `arch:cloud_projects_save:${session.orgId}`, SAVE_RATE);
+    if (!MEMBER_PLUS.has(session.role)) throw new CloudApiError("42501");
+
+    const repo = deps.repo(session);
+    let removed: { version: number };
+    try {
+      removed = await db(() => repo.remove(session.orgId, session.userId, id, expected));
+    } catch (e) {
+      if (e instanceof CloudDbError && e.code === "AR041") {
+        throw new CloudApiError("AR041", e.currentVersion !== undefined ? { current_version: e.currentVersion } : undefined);
+      }
+      throw e;
+    }
+    try {
+      await deps.snapshots().purge(session.orgId, id);
+    } catch {
+      cloudLog.error("cloud_projects.blob_orphan", { route: "cloud_projects_delete", project_uuid: id, reason: "purge_failed" });
+    }
+    cloudLog.info("cloud_projects.deleted", { route: "cloud_projects_delete", project_uuid: id, version: removed.version });
+    return cloudOk({ project_uuid: id, deleted: true });
+  } catch (error) {
+    cloudLog.warn("cloud_projects.delete_rejected", { route: "cloud_projects_delete", code: codeOf(error) });
     return toCloudResponse(error);
   }
 }

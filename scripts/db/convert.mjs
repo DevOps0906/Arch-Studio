@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 // 모듈러 조각(supabase/modular/*.sql) → 모놀리스 마이그레이션·seed.sql 변환기. Node 내장 모듈만, 결정적(같은 입력 → 같은 바이트).
 //
-// 사용: node scripts/db/convert.mjs           산출물과 디스크 파일 비교(--check, 기본). 다르면 exit 1
+// 적용 순서: 2400 → 2401 → 2402. 2402는 2400 객체를 바꾸므로 2402 단독 반복 실행만 안전하고, 2400을 다시 적용하면 2402도 다시 적용해야 한다.
+//
+// 사용: node scripts/db/convert.mjs         산출물과 디스크 파일 비교(--check, 기본). 다르면 exit 1
 //       node scripts/db/convert.mjs --write   산출물을 디스크에 쓴다(LF)
 //
 // 규칙(실제 산출물 20261013000002_arch_domain.sql·seed.sql 을 바이트 단위로 재현하도록 옮긴 것):
@@ -41,6 +43,13 @@ export const TARGETS = [
     out: 'supabase/migrations/20261029000001_arch_fixes.sql',
     title: '20261029000001_arch_fixes.sql (모놀리스 arch-studio)',
     origin: 'supabase/modular/2401_arch_fixes.sql',
+    seed: null,
+  },
+  {
+    src: 'supabase/modular/2402_arch_cloud_projects.sql',
+    out: 'supabase/migrations/20261102000001_arch_cloud_projects.sql',
+    title: '20261102000001_arch_cloud_projects.sql (모놀리스 arch-studio)',
+    origin: 'supabase/modular/2402_arch_cloud_projects.sql',
     seed: null,
   },
 ];
