@@ -185,7 +185,11 @@ test("Route Handler·서버 AI 코드에서 consume_credits 직접 호출 0(04_A
     } catch {
       return;
     }
-    if (st.isDirectory()) for (const n of readdirSync(p)) walk(path.join(p, n));
+    if (st.isDirectory()) {
+      // 04_API.md 1장 "선차감 위치": 동기 채팅 턴(withCredits)은 Route Handler 직접 차감을 허용한다(AR-06-054).
+      if (p === path.join(root, "server/ai/chat")) return;
+      for (const n of readdirSync(p)) walk(path.join(p, n));
+    }
     else if (/\.tsx?$/.test(p) && !p.endsWith(".test.ts") && /consume_credits/.test(readFileSync(p, "utf8").replace(/^\s*\/\/.*$/gm, ""))) hits.push(p);
   };
   for (const d of targets) walk(d);

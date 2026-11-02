@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     # 둘 중 정확히 하나. URL은 https만(AI_ARCHITECTURE.md 2.1절 "공개키(JWKS)로 검증만").
     ai_token_jwks_url: str | None = Field(default=None, validation_alias="AI_TOKEN_JWKS_URL")
     ai_token_jwks: str | None = Field(default=None, validation_alias="AI_TOKEN_JWKS")
+
+    # Dify `arch-chat` → `/tools/answer` 내부 키(arch 전용, 02_ARCHITECTURE.md 환경 변수 표). 없거나 짧으면 기동 거부.
+    dify_internal_api_key: SecretStr = Field(min_length=32, validation_alias="DIFY_INTERNAL_API_KEY")
 
     # 비밀이 아닌 운영 상한(기본값 허용).
     max_body_bytes: int = Field(default=64 * 1024, ge=1024, le=1024 * 1024, validation_alias="AI_API_MAX_BODY_BYTES")

@@ -90,6 +90,14 @@ def issuer(signing_key: Ed25519PrivateKey) -> Issuer:
     return Issuer(signing_key)
 
 
+@pytest.fixture(autouse=True)
+def dify_internal_key(monkeypatch: pytest.MonkeyPatch) -> str:
+    """기동 필수 설정(테스트 전용 값, 32자 이상)."""
+    key = "test-dify-internal-key-0123456789abcdef"
+    monkeypatch.setenv("DIFY_INTERNAL_API_KEY", key)
+    return key
+
+
 @pytest.fixture
 def settings(jwks_json: str, monkeypatch: pytest.MonkeyPatch) -> Settings:
     monkeypatch.delenv("AI_TOKEN_JWKS_URL", raising=False)
