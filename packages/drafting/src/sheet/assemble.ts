@@ -1,5 +1,6 @@
 // sheet/assemble — 파이프라인 6단계: 정렬·불변식 검사·input_hash → SheetModel(02_ARCHITECTURE.md 2.3절 결정성 규칙).
 // 정렬: 레이어 표 순서 → 엔티티 종류 → key(UTF-16 코드 단위 사전순). 뷰는 넘어온 순서, 주석은 anno_id 순.
+import { normalizeSheetSpec } from "@arch-studio/domain";
 import { checkValueText } from "../annotate/index.ts";
 import { layerOrder } from "../layers/index.ts";
 import { assertDisclaimer } from "../titleblock/index.ts";
@@ -158,7 +159,7 @@ export function assembleSheet(a: AssembleInput): SheetModel {
     sheet_id: input.sheet.id,
     kind: input.sheet.kind,
     engine_version: input.engine_version,
-    input_hash: sha256Hex(canonicalJson(input)),
+    input_hash: sha256Hex(canonicalJson({ ...input, sheet: normalizeSheetSpec(input.sheet) })),
     paper: { size: input.sheet.paper, orientation: input.sheet.orientation, w, h },
     scale: fit.scale,
     views,

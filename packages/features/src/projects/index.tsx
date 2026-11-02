@@ -37,7 +37,7 @@ import { classifyStoreError, localError, storeErrorText, TEXT, viewOnlyReason } 
 import { copyName, newProjectInput, uuidV7, type NewProjectValues } from "./new-project.ts";
 import { todayItems } from "./today.ts";
 import { parseDesignModel } from "../site/model.ts";
-import { parseStored, storeKey } from "../sheets/model.ts";
+import { readStoredSheets } from "../sheets/model.ts";
 import { buildCard, projectTodos, sortCards, summarize, type VerdictFacts } from "./dashboard.ts";
 import { CloudActivityCard, CreditCard, DASH_TEXT, ProjectCard, ProjectCardSkeleton, RevisionCard, SummaryStrip, TodoPanel } from "./cards.tsx";
 import { applyListQuery, isFiltered, parseListQuery, writeListQuery, type ListQuery } from "./list-query.ts";
@@ -125,7 +125,7 @@ interface Facts {
 
 function readSheets(id: string): readonly SheetSpec[] {
   try {
-    return parseStored(globalThis.localStorage?.getItem(storeKey(id)) ?? null).specs;
+    return readStoredSheets(globalThis.localStorage, id).specs;
   } catch {
     return [];
   }

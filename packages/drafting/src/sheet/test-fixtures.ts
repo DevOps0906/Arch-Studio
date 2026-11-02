@@ -83,7 +83,6 @@ export function sampleInput(model: DesignModelV1 = sampleModel(), over: Partial<
       paper: "A3",
       orientation: "landscape",
       scale: "auto",
-      annotation_overrides: [],
       include_in_proposal: false,
     },
     profile: { office_name: "테스트건축", layer_map: {}, default_paper: "A3", default_text_height_mm: 2.5, font_family: "Pretendard" },
@@ -106,6 +105,11 @@ export function sampleView(model: DesignModelV1): ViewModel {
   }
   return {
     views: [{ view_id: "main", prims }],
+    anchors: [
+      { ref: "site", ring: ring(model.site.boundary) },
+      ...model.masses.map((m) => ({ ref: m.id, ring: ring(m.footprint) })),
+      ...model.floor_layouts.flatMap((l) => l.rooms.map((r) => ({ ref: r.id, ring: ring(r.polygon) }))),
+    ],
     annotate: (ctx) => {
       const out = model.masses.map((m) => {
         const [x, y] = m.footprint.outer[0] as [number, number];

@@ -275,12 +275,75 @@ class SectionLine(Strict):
     b: Point
 
 
-class AnnotationOverride(Strict):
+# 주석 편집층(AR-06-086). 상한은 packages/domain sheet.ts ANNOTATION_LIMITS 와 같은 값이다.
+ANNO_COUNT_MAX = 500
+ANNO_TEXT_MAX = 200
+ANNO_ID_MAX = 200
+ANNO_REF_MAX = 128
+CLOUD_POINTS_MAX = 64
+LEADER_POINTS_MAX = 16
+ANNO_OFFSET_MM_MAX = 10_000
+
+AnnoId = Annotated[str, Field(min_length=1, max_length=ANNO_ID_MAX), _max_len(ANNO_ID_MAX)]
+AnnoText = Annotated[str, Field(max_length=ANNO_TEXT_MAX), _max_len(ANNO_TEXT_MAX)]
+PaperMm = Annotated[float, Field(ge=-ANNO_OFFSET_MM_MAX, le=ANNO_OFFSET_MM_MAX)]
+
+
+class Anchor(Strict):
+    ref: Annotated[str, Field(min_length=1, max_length=ANNO_REF_MAX), _max_len(ANNO_REF_MAX)]
+    part: Literal["vertex", "edge", "center"]
+    index: NonNegInt | None = None
+    at: Literal["start", "end", "mid"] | None = None
+
+
+class OverrideAnnotation(Strict):
+    id: AnnoId
+    kind: Literal["override"]
     target: str
-    dx_mm: float | None = None
-    dy_mm: float | None = None
-    text: str | None = None
+    dx_mm: PaperMm | None = None
+    dy_mm: PaperMm | None = None
+    text: AnnoText | None = None
     hidden: bool | None = None
+
+
+class DimAnnotation(Strict):
+    id: AnnoId
+    kind: Literal["dim"]
+    a: Anchor
+    b: Anchor
+    offset_mm: PaperMm
+    text: AnnoText | None = None
+
+
+class TextAnnotation(Strict):
+    id: AnnoId
+    kind: Literal["text"]
+    anchor: Anchor | None = None
+    dx_mm: PaperMm
+    dy_mm: PaperMm
+    text: AnnoText
+
+
+class LeaderAnnotation(Strict):
+    id: AnnoId
+    kind: Literal["leader"]
+    anchors: Annotated[list[Anchor], Field(min_length=1, max_length=LEADER_POINTS_MAX)]
+    dx_mm: PaperMm
+    dy_mm: PaperMm
+    text: AnnoText
+
+
+class CloudAnnotation(Strict):
+    id: AnnoId
+    kind: Literal["cloud"]
+    anchors: Annotated[list[Anchor], Field(min_length=3, max_length=CLOUD_POINTS_MAX)]
+    text: AnnoText | None = None
+
+
+Annotation = Annotated[
+    OverrideAnnotation | DimAnnotation | TextAnnotation | LeaderAnnotation | CloudAnnotation,
+    Field(discriminator="kind"),
+]
 
 
 class SheetSpec(Strict):
@@ -292,8 +355,15 @@ class SheetSpec(Strict):
     floor_id: str | None = None
     section_line: SectionLine | None = None
     elevation_face: Literal["N", "S", "E", "W"] | None = None
-    annotation_overrides: list[AnnotationOverride]
+    annotations: Annotated[list[Annotation], Field(max_length=ANNO_COUNT_MAX)] | None = None
     include_in_proposal: bool
+
+    @model_validator(mode="after")
+    def _unique_annotation_ids(self) -> SheetSpec:
+        ids = [a.id for a in self.annotations or []]
+        if len(set(ids)) != len(ids):
+            raise ValueError("주석 id 중복")
+        return self
 
 
 class DraftingProfile(Strict):

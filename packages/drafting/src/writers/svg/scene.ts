@@ -3,8 +3,7 @@
 // DXF 작성기와 같은 규약이다: DXF 모델 좌표 = S − 첫 뷰 원점 × k(평행 이동만 다름). 뷰 형상은 모델 mm 그대로 + 뷰 원점 × k,
 // 용지 요소(도곽·표제란·용지 주석)는 × k. 문자 높이는 항상 용지 0.01mm × k. SVG는 y를 뒤집고, PDF는 다시 축척 분모로 나눠 용지 mm로 쓴다.
 // INSERT는 블록 정의를 펼친다(SVG <use>는 정화기가 지우는 경우가 많아 쓰지 않는다). 펼친 엔티티는 자기 레이어 그룹에 들어간다(DXF와 같음).
-import type { StdLayer } from "@arch-studio/domain";
-import { LAYER_TABLE, layerOrder } from "../../layers/index.ts";
+import { LAYER_TABLE, layerOrder, USER_LAYER, type DraftLayer } from "../../layers/index.ts";
 import { comparePrim } from "../../sheet/assemble.ts";
 import { DraftingError } from "../../sheet/errors.ts";
 import { PRIM_KINDS, type BlockDef, type Prim, type SheetModel, type Vec } from "../../sheet/types.ts";
@@ -29,7 +28,7 @@ export type SceneItem =
   | { t: "hatch"; pattern: "ANSI31"; loops: Pt[][]; segs: Array<[Pt, Pt]> };
 
 export interface SceneLayer {
-  layer: StdLayer;
+  layer: DraftLayer;
   items: SceneItem[];
 }
 
@@ -134,9 +133,10 @@ export function buildScene(sheet: SheetModel, options: SceneOptions = {}): Scene
       cmpStr(a.p.key, b.p.key),
   );
 
-  const buckets = new Map<StdLayer, SceneItem[]>();
+  const buckets = new Map<DraftLayer, SceneItem[]>();
   for (const def of LAYER_TABLE) buckets.set(def.name, []);
-  const put = (layer: StdLayer, item: SceneItem) => {
+  buckets.set(USER_LAYER, []);
+  const put = (layer: DraftLayer, item: SceneItem) => {
     const b = buckets.get(layer);
     if (b === undefined) throw new RangeError(`표준 레이어가 아닙니다: ${layer}`);
     b.push(item);
@@ -208,7 +208,11 @@ export function buildScene(sheet: SheetModel, options: SceneOptions = {}): Scene
     w: sheet.paper.w * k,
     h: sheet.paper.h * k,
     scale: sheet.scale,
-    layers: LAYER_TABLE.map((d) => ({ layer: d.name, items: buckets.get(d.name) as SceneItem[] })),
+    // 사람 주석 레이어는 그린 것이 있을 때만 붙인다(없으면 기존 출력과 바이트 동일).
+    layers: [...LAYER_TABLE.map((d) => d.name), ...((buckets.get(USER_LAYER) as SceneItem[]).length > 0 ? [USER_LAYER] : [])].map((layer) => ({
+      layer,
+      items: buckets.get(layer) as SceneItem[],
+    })),
   };
 }
 

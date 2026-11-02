@@ -10,7 +10,7 @@ import type { ProjectRecord } from "@arch-studio/shell-bridge";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { useJudgment } from "../judgment/index.ts";
-import { defaultStorage, type StorageLike } from "../settings/drafting/cache.ts";
+import { defaultStorage } from "../settings/drafting/cache.ts";
 import {
   ErrorState,
   LoadingState,
@@ -40,6 +40,7 @@ import {
   outputErrorText,
   parseModel,
   parseStored,
+  readStoredSheets,
   serializeStored,
   sheetAccess,
   sheetName,
@@ -76,14 +77,6 @@ export function Screen() {
   return <SheetsScreen key={`${load.record.id}:${load.record.version}`} record={load.record} forcedEmpty={forced === "empty"} />;
 }
 
-function readStored(storage: StorageLike | null, projectId: string): StoredSheets {
-  try {
-    return parseStored(storage?.getItem(storeKey(projectId)) ?? null);
-  } catch {
-    return parseStored(null);
-  }
-}
-
 function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEmpty: boolean }) {
   const adapters = useAdapters();
   const engine = useEngine();
@@ -98,13 +91,14 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
 
   const parsed = useMemo(() => parseModel(record.designModel), [record.designModel]);
   const storage = useMemo(() => defaultStorage(), []);
-  const [stored, setStored] = useState<StoredSheets>(() => (forcedEmpty ? parseStored(null) : readStored(storage, record.id)));
+  const [stored, setStored] = useState<StoredSheets>(() => (forcedEmpty ? parseStored(null) : readStoredSheets(storage, record.id)));
   const [selectedId, setSelectedId] = useState<string | null>(stored.specs[0]?.id ?? null);
   const [zoom, setZoom] = useState(100);
   const [exportOpen, setExportOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [staleDismissed, setStaleDismissed] = useState(false);
   const [preview, setPreview] = useState<PreviewData>({ status: "loading" });
+  const [orphanCount, setOrphanCount] = useState(0);
   const [date] = useState(() => localDate(new Date()));
   const reqCounter = useRef(0);
   const engineVersionRef = useRef<string | null>(null);
@@ -167,6 +161,7 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
       if (!alive) return;
       if (urlRef.current) URL.revokeObjectURL(urlRef.current);
       urlRef.current = null;
+      setOrphanCount(r.ok ? r.built.orphanCount : 0);
       if (!r.ok) {
         setPreview({ status: "error", code: r.code, title: "시트를 만들지 못했습니다", description: outputErrorText(r.code) });
         return;
@@ -443,6 +438,7 @@ function SheetsScreen({ record, forcedEmpty }: { record: ProjectRecord; forcedEm
         initialIds={selected ? [selected.id] : []}
         access={access}
         png={pngSupport}
+        orphanCount={orphanCount}
         hasOfficeMap={profileState.status === "ready" && Object.keys(profileState.profile.layer_map).length > 0}
         onRun={onRun}
       />

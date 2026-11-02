@@ -280,6 +280,11 @@ export function buildSitePlanView(input: DraftingInput, extras: SitePlanExtras =
     views: [{ view_id: SITE_PLAN_VIEW_ID, prims }],
     paper_prims: tablePrims(table),
     checks,
+    // 사람 주석 앵커: 대지와, 그려지는(층이 있는) 매스. 매스는 합쳐 그리지만 앵커는 매스별 외곽을 쓴다.
+    anchors: [
+      { ref: "site", ring: siteRing.map(([x, y]) => [x, y] as Vec<Mm>) },
+      ...built.map((m) => ({ ref: m.id, ring: m.footprint.outer.map(([x, y]) => [x, y] as Vec<Mm>) })),
+    ],
     annotate: (ctx) => {
       const out: Annotation[] = [...failMarks(table)];
       const view_id = SITE_PLAN_VIEW_ID;

@@ -1,6 +1,7 @@
 // 시트 1장 생성(파이프라인 3~6단계): fit → annotate(+덮어쓰기) → titleblock → assemble.
 // 1단계 validate는 호출자가 먼저 부르고, 2단계 뷰 생성기(views/<kind>, 023~026)는 ViewModel로 넘긴다.
-import { applyOverrides, type AnnotateContext, type UnappliedOverride } from "../annotate/index.ts";
+import type { AnnotateContext, UnappliedOverride } from "../annotate/index.ts";
+import { anchorTable, applyAnnotations, type ViewAnchor } from "../annotate/user.ts";
 import { buildTitleBlock, textHeightUm } from "../titleblock/index.ts";
 import { roundHalfAway } from "@arch-studio/geometry";
 import { assembleSheet } from "./assemble.ts";
@@ -16,6 +17,8 @@ export interface ViewModel {
   warnings?: SheetWarning[];
   /** 축척이 정해진 뒤 주석을 만든다(치수 모양·문자 간격이 축척에 따른다). */
   annotate?: (ctx: AnnotateContext & { fit: FitResult }) => Annotation[];
+  /** 이 시트에 그려진 모델 객체의 외곽(사람 주석 앵커가 가리킬 수 있는 것). 없으면 앵커 주석은 모두 고아. */
+  anchors?: ViewAnchor[];
 }
 
 export interface BuildResult {
@@ -158,7 +161,7 @@ export function buildSheet(input: DraftingInput, view: ViewModel): BuildResult {
   });
   const ctx: AnnotateContext = { scale: fit.scale, text_h: textHeightUm(profile.default_text_height_mm) };
   const raw = view.annotate ? view.annotate({ ...ctx, fit }) : [];
-  const { annotations, unapplied } = applyOverrides(raw, sheet.annotation_overrides, ctx);
+  const { annotations, unapplied } = applyAnnotations(raw, sheet.annotations, ctx, anchorTable(view.anchors), view.views[0]?.view_id);
   const title = buildTitleBlock({
     profile,
     kind: sheet.kind,

@@ -1,0 +1,10 @@
+{
+  "case_id": "writer-user-annotations",
+  "note": "사람 주석(AR-06-086): dim·text·메모·leader·cloud·override가 A-ANNO-USER 레이어에 id 순으로(DXF 표에 레이어가 추가됨)",
+  "writer_version": "dxf-1.0.0",
+  "engine_version": "0.0.0",
+  "features": [
+    "AR-F-028",
+    "AR-F-038"
+  ]
+}

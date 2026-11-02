@@ -94,6 +94,19 @@ export function zodToJsonSchema(schema: ZodLike): JsonSchema {
       return { anyOf: [zodToJsonSchema(def.innerType as ZodLike), { type: "null" }] };
     case "ZodUnion":
       return { anyOf: (def.options as ZodLike[]).map(zodToJsonSchema) };
+    case "ZodDiscriminatedUnion":
+      // pydantic 의 discriminator 유니온과 같은 모양: oneOf + discriminator.propertyName
+      return {
+        oneOf: [...(def.options as Map<unknown, ZodLike> | ZodLike[]).values()].map(zodToJsonSchema),
+        discriminator: { propertyName: def.discriminator },
+      };
+    case "ZodEffects": {
+      // refine/superRefine(중복 id 같은 교차 검사)은 JSON Schema 로 표현할 수 없다: 구조는 안쪽 스키마로 비교하고,
+      // 교차 검사 자체는 코퍼스 사례(양쪽 수락/거부 일치)로 고정한다. transform/preprocess 는 계속 거부한다.
+      const effect = def.effect as { type: string };
+      if (effect.type !== "refinement") unsupported(`effects.${effect.type}`);
+      return zodToJsonSchema(def.schema as ZodLike);
+    }
     case "ZodRecord": {
       const out: JsonSchema = { type: "object", additionalProperties: zodToJsonSchema(def.valueType as ZodLike) };
       const key = zodToJsonSchema(def.keyType as ZodLike);

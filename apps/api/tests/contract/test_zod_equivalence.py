@@ -119,6 +119,12 @@ def normalize(node: Any, defs: dict[str, Any]) -> Any:
             out["enum"] = sorted({_sort_key(v): v for m in members for v in m["enum"]}.values(), key=_sort_key)
         else:
             out["anyOf"] = sorted(members, key=_sort_key)
+    if "oneOf" in out:
+        # 판별 유니온(zod discriminatedUnion ↔ pydantic Field(discriminator)): 멤버 순서는 의미가 없고,
+        # pydantic 의 mapping($ref 이름)은 표현 차이라 버린다. 판별 키(propertyName)는 비교 대상이다.
+        out["oneOf"] = sorted(out["oneOf"], key=_sort_key)
+    if isinstance(out.get("discriminator"), dict):
+        out["discriminator"] = {"propertyName": out["discriminator"].get("propertyName")}
     if out.get("type") == "object" and "properties" in out:
         required = set(out.get("required", []))
         props = {}
@@ -230,3 +236,55 @@ def test_all_models_forbid_extra_fields_everywhere() -> None:
 
     for name, model in MODELS.items():
         assert walk(pydantic_schema(model), name) == []
+
+
+# --- 정규화기 자체 검증(판별 유니온, AR-06-086 결정 9): 일부러 어긋난 스키마를 잡아내야 한다 -----------------------
+
+
+def _variant(kind: str, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    props = {"id": {"type": "string"}, "kind": {"const": kind}, **(extra or {})}
+    return {"type": "object", "properties": props, "required": ["id", "kind"], "additionalProperties": False}
+
+
+def _union(*variants: dict[str, Any], key: str = "kind") -> dict[str, Any]:
+    return {"oneOf": list(variants), "discriminator": {"propertyName": key}}
+
+
+def test_union_normalizer_ignores_member_order_and_mapping() -> None:
+    a, b = _variant("a"), _variant("b", {"n": {"type": "number"}})
+    zod = _union(a, b)
+    py = {**_union(b, a), "discriminator": {"propertyName": "kind", "mapping": {"a": "#/$defs/A", "b": "#/$defs/B"}}}
+    assert diff(normalize(zod, {}), normalize(py, {})) == []
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        pytest.param(lambda u: {**u, "oneOf": u["oneOf"][:1]}, id="member_missing"),
+        pytest.param(lambda u: {**u, "oneOf": [*u["oneOf"], _variant("c")]}, id="member_extra"),
+        pytest.param(lambda u: {**u, "discriminator": {"propertyName": "type"}}, id="discriminator_renamed"),
+        pytest.param(lambda u: {**u, "oneOf": [_variant("a"), _variant("z")]}, id="kind_value_changed"),
+        pytest.param(
+            lambda u: {**u, "oneOf": [u["oneOf"][0], _variant("b", {"n": {"type": "string"}})]},
+            id="field_type_changed",
+        ),
+        pytest.param(
+            lambda u: {**u, "oneOf": [u["oneOf"][0], {**u["oneOf"][1], "additionalProperties": True}]},
+            id="extra_keys_allowed",
+        ),
+        pytest.param(lambda u: {"anyOf": u["oneOf"]}, id="oneOf_vs_anyOf"),
+    ],
+)
+def test_union_normalizer_detects_mismatch(mutate: Any) -> None:
+    zod = _union(_variant("a"), _variant("b", {"n": {"type": "number"}}))
+    assert diff(normalize(zod, {}), normalize(mutate(zod), {})), "어긋난 스키마를 잡아내지 못했다"
+
+
+def test_sheet_annotations_are_a_discriminated_union_on_both_sides() -> None:
+    py = pydantic_schema(S.SheetSpec)
+    node = py["properties"]["annotations"]
+    items = (node.get("anyOf") or [node])[0]["items"] if "anyOf" in node else node["items"]
+    assert items["discriminator"]["propertyName"] == "kind"
+    assert len(items["oneOf"]) == 5
+    zod = normalize(zod_dump()["schemas"]["SheetSpec"], {})
+    assert zod["properties"]["annotations"]["items"]["discriminator"] == {"propertyName": "kind"}

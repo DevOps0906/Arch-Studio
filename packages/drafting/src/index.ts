@@ -9,6 +9,9 @@ export { buildSheet, cosSinDeg, viewBounds, type BuildResult, type ViewModel } f
 export { canonicalJson, sha256Hex } from "./sheet/hash.ts";
 export {
   LAYER_TABLE,
+  USER_LAYER,
+  USER_LAYER_DEF,
+  type DraftLayer,
   layerDef,
   layerOrder,
   resolveLayerMap,
@@ -43,6 +46,7 @@ export {
   type LabelSpec,
   type UnappliedOverride,
 } from "./annotate/index.ts";
+export { anchorTable, applyAnnotations, resolveAnchor, type AnchorTable, type ViewAnchor } from "./annotate/user.ts";
 export { buildSitePlanView, SITE_PLAN_VIEW_ID, type SitePlanExtras } from "./views/site_plan/index.ts";
 export { buildAreaPlanView, type AreaPlanInput, type AreaBreakdown } from "./views/area_plan/index.ts";
 export {

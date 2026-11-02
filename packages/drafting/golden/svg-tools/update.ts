@@ -12,6 +12,10 @@ import { GOLDEN, SVG_MANIFEST, svgCaseId, svgGoldenFiles, type SvgGoldenManifest
 const sha256 = (s: string) => createHash("sha256").update(s, "utf8").digest("hex");
 const old = existsSync(SVG_MANIFEST) ? (JSON.parse(readFileSync(SVG_MANIFEST, "utf8")) as SvgGoldenManifest) : null;
 const bumped = old === null || old.writer_version !== SVG_WRITER_VERSION;
+// --hash-only: 버전을 올리지 않고 64자 16진 토큰(data-input-hash)만 다른 골든을 갱신한다(AR-06-086 결정 1). 그 밖의 차이는 거부한다.
+const hashOnly = process.argv.includes("--hash-only");
+const maskHash = (s: string) => s.replace(/[0-9a-f]{64}/g, "<hash>");
+const hashOnlyKeys = new Set<string>();
 
 const refused: string[] = [];
 const writes: Array<[URL, string]> = [];
@@ -28,6 +32,13 @@ for (const c of CASES) {
   });
   const stale = isNew ? [] : readdirSync(dir).filter((f) => !(f in files));
   if (changed.length === 0 && stale.length === 0) continue;
+  if (!bumped && !isNew && hashOnly && stale.length === 0 && changed.every(([n, b]) => existsSync(new URL(n, dir)) && maskHash(readFileSync(new URL(n, dir), "utf8")) === maskHash(b))) {
+    for (const [name, body] of changed) {
+      writes.push([new URL(name, dir), body]);
+      hashOnlyKeys.add(`${id}/${name}`);
+    }
+    continue;
+  }
   if (!bumped && !isNew) {
     refused.push(`${id}: ${[...changed.map(([n]) => n), ...stale.map((n) => `${n}(남는 파일)`)].join(", ")}`);
     continue;
@@ -41,7 +52,7 @@ for (const d of readdirSync(GOLDEN)) {
 }
 if (!bumped) {
   for (const [k, v] of Object.entries(old.sha256)) {
-    if (hashes[k] !== undefined && hashes[k] !== v) refused.push(`${k}: manifest 해시와 다름`);
+    if (hashes[k] !== undefined && hashes[k] !== v && !hashOnlyKeys.has(k)) refused.push(`${k}: manifest 해시와 다름`);
   }
 }
 if (refused.length > 0) {
