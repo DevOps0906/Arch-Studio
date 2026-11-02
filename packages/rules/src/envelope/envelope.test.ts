@@ -183,7 +183,7 @@ test("초월함수 미사용: envelope 소스의 Math는 허용 목록만, ** �
   const files = readdirSync(dir).filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
   for (const f of files) {
     readFileSync(new URL(f, dir), "utf8")
-      .split("\n")
+      .split(/\r?\n/)
       .forEach((line, i) => {
         const codePart = line.replace(/\/\/.*$/, "").replace(/^\s*\/?\*.*$/, "");
         const where = `${f}:${i + 1}: ${line.trim()}`;
