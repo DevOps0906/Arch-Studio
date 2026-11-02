@@ -8,6 +8,7 @@ import { createRenderHandler } from "./handlers/render/handler.ts";
 import { mockRenderProvider } from "./handlers/render/mock-provider.ts";
 import type { RenderStorage } from "./handlers/render/storage.ts";
 import { supabaseRenderStorage } from "./handlers/render/storage.ts";
+import { buildSttHandler } from "./handlers/stt/register.ts";
 
 type Env = Readonly<Record<string, string | undefined>>;
 
@@ -17,6 +18,8 @@ export function buildHandlers(env: Env, makeStorage: (env: Env) => RenderStorage
   if (render.enabled && render.provider === "mock") {
     handlers["arch.render"] = createRenderHandler({ provider: mockRenderProvider(), storage: makeStorage(env), randomUUID: () => randomUUID() });
   }
+  const stt = buildSttHandler(env);
+  if (stt) handlers["arch.stt"] = stt;
   return handlers;
 }
 
