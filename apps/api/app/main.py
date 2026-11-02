@@ -10,13 +10,14 @@ from fastapi import FastAPI
 from app.ai.interfaces import GraphRunner, NotConfiguredRunner
 from app.ai.products import registered_products
 from app.ai.products.arch import APP as ARCH_APP
+from app.ai.tools.arch.answer import ChatDeps
 from app.auth.deps import AuthContext
 from app.auth.keys import KeyStore
 from app.auth.replay import JtiStore, MemoryJtiStore
 from app.errors import install_error_handlers
 from app.log import install_log_redaction
 from app.middleware import BodySizeLimitMiddleware
-from app.routes import graphs, health
+from app.routes import graphs, health, tools
 from app.runs import MemoryRunStore, RunStore
 from app.settings import Settings, load_settings
 
@@ -28,6 +29,7 @@ def create_app(
     replay: JtiStore | None = None,
     runs: RunStore | None = None,
     runner: GraphRunner | None = None,
+    chat: ChatDeps | None = None,
 ) -> FastAPI:
     settings = settings or load_settings()
     # 이 설치의 검증 키는 제품 arch의 발급 키에 묶인다(제품별 키 분리, AI_ARCHITECTURE.md 2.1절).
@@ -39,9 +41,11 @@ def create_app(
     app.state.products = registered_products()
     app.state.runs = runs or MemoryRunStore()
     app.state.runner = runner or NotConfiguredRunner()
+    app.state.chat = chat  # None = 실제 LLM·코퍼스 미연결(503)
 
     install_error_handlers(app)
     app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.max_body_bytes)
     app.include_router(health.router)
     app.include_router(graphs.router)
+    app.include_router(tools.router)
     return app
