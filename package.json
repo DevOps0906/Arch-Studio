@@ -28,7 +28,7 @@
     "@cyclonedx/cdxgen": "12.9.0",
     "@next/eslint-plugin-next": "16.2.12",
     "eslint": "10.13.0",
-    "typescript": "5.9.3",
+    "typescript": "6.0.3",
     "typescript-eslint": "8.72.1"
   }
 }
