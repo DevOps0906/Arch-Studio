@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 dependencies = [
   "fastapi==0.162.0",            # MIT
   "starlette==1.10.0",           # BSD-3-Clause
-  "pydantic==2.14.1",            # MIT
+  "pydantic==2.14.3",            # MIT
   "pydantic-settings==2.16.2",   # MIT
   "uvicorn==0.54.0",             # BSD-3-Clause
   "PyJWT==2.15.1",               # MIT (EdDSA 검증)
@@ -19,7 +19,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest==9.2.0",               # MIT
-  "ruff==0.17.3",                # MIT
+  "ruff==0.17.4",                # MIT
   "mypy==2.4.1",                 # MIT
 ]
 
