@@ -92,6 +92,20 @@
 
 현재 우선순위는 작업표의 미완료 선행 관계를 따릅니다. 프로그램 화면(AR-06-038)은 엔진은 있지만 화면에 필요한 목표 면적·체크리스트 및 단가 출처/기준일이 확정됐는지 확인이 필요합니다. 미정 기준은 임의로 채우지 않습니다.
 
+## 화면 (2026-11-11 캡처, 1440×900)
+
+### 랜딩
+
+![Arch Studio 랜딩](docs/screenshots/landing.png)
+
+출처: 확정 랜딩 시안 [`design/reference/landing/landing.html`](design/reference/landing/landing.html). 실제 랜딩(`apps/web`)은 필수 환경 변수 19개가 있어야 기동되므로 시안으로 대신했습니다.
+
+### 대시보드(스튜디오 홈 · 프로젝트)
+
+![Arch Studio 스튜디오 홈](docs/screenshots/dashboard.png)
+
+출처: 실행 화면 `apps/desktop`을 데모 모드(`VITE_DEMO_MODE=1 pnpm exec vite`)로 띄운 브라우저 화면입니다. 표시된 프로젝트·크레딧은 `[예시]` 데모 데이터입니다.
+
 ## 콘텐츠 바로가기
 
 설치형 앱 화면과 웹 화면별 기획 문서와 구현 코드입니다. 화면 경로는 앱 안 주소입니다(웹 스튜디오는 `app.` 아래 같은 경로). 화면 정의는 [화면설계서](docs/file/03-설계/03_SCREENS_UX.md)를 따릅니다.
