@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@arch-studio/domain": "workspace:*",
-    "manifold-3d": "3.5.4"
+    "manifold-3d": "3.5.5"
   },
   "devDependencies": {
     "fast-check": "4.10.2"
