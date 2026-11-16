@@ -18,6 +18,6 @@
     "rhino3dm": "8.35.0"
   },
   "devDependencies": {
-    "web-ifc": "0.0.78"
+    "web-ifc": "0.0.79"
   }
 }
